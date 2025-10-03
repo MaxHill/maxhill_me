@@ -90,6 +90,8 @@
                         align-items: center;
 
                         display: flex;
+                        flex-direction: column;
+                        gap: var(--size-fluid-1);
                     }
                 }
 

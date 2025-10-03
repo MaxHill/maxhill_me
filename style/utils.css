@@ -50,4 +50,8 @@
     .bg-accent {
         background-color: hsl(var(--color-accent));
     }
+
+    .width-content-1 { width: var(--size-content-1); }
+    .width-content-2 { width: var(--size-content-2); }
+    .width-content-3 { width: var(--size-content-3); }
 }
