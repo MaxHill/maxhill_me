@@ -1,0 +1,53 @@
+@layer utils {
+    .h1 {
+        font: var(--h1);
+    }
+
+    .h2 {
+        font: var(--h2);
+    }
+
+    .p {
+        font: var(--p);
+    }
+
+    .p2 {
+        font: var(--p2);
+    }
+
+    .color-text {
+        color: hsl(var(--color-text));
+    }
+    .color-text-weak {
+        color: hsl(var(--color-text-weak));
+    }
+    .color-text-weaker {
+        color: hsl(var(--color-text-weaker));
+    }
+    .color-text-weakest {
+        color: hsl(var(--color-text-weakest));
+    }
+
+    .color-text-link {
+        color: hsl(var(--color-text-link));
+    }
+    .color-text-on-accent {
+        color: hsl(var(--color-text-on-accent));
+    }
+    .color-text-danger {
+        color: hsl(var(--color-text-danger));
+    }
+    .color-text-success {
+        color: hsl(var(--color-text-success));
+    }
+    .color-text-warning {
+        color: hsl(var(--color-text-warning));
+    }
+    .color-text-neutral {
+        color: hsl(var(--color-text-neutral));
+    }
+
+    .bg-accent {
+        background-color: hsl(var(--color-accent));
+    }
+}

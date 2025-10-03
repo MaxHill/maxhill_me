@@ -1,0 +1,70 @@
+@layer components {
+
+    .exposed-grid {
+        /* space between cells */
+        --_grid-gap: var(--border-width);
+        /* cell border color */
+        --_cell-border: hsl(var(--color-border));
+
+        gap: var(--_grid-gap);
+        /* overflow: hidden; */ /*TODO: Investigate if this is needed */
+
+        &>*:not(script) {
+            box-shadow: 0 0 0 var(--_grid-gap) var(--_cell-border);
+        }
+    }
+
+    .content-grid {
+        --_padding-inline: var(--size-1);
+        --_content-max-width: 1600px;
+        --_breakout-max-width: 1800px;
+
+        --breakout-size: calc((var(--_breakout-max-width) - var(--_content-max-width)) / 2);
+
+        display: grid;
+        grid-template-columns:
+            [full-width-start] minmax(var(--_padding-inline), 1fr) [breakout-start] minmax(0, var(--breakout-size)) [content-start] min(100% - (var(--_padding-inline) * 2),
+                var(--_content-max-width)) [content-end] minmax(0, var(--breakout-size)) [breakout-end] minmax(var(--_padding-inline), 1fr) [full-width-end];
+    }
+
+    .content-grid> :not(.breakout, .full-width),
+    .full-width> :not(.breakout, .full-width) {
+        grid-column: content;
+    }
+
+    .content-grid>.breakout {
+        grid-column: breakout;
+    }
+
+    .content-grid>.full-width {
+        grid-column: full-width;
+    }
+
+
+
+
+
+    .obsidian-image {
+        border: var(--border-width) solid hsl(var(--color-border));
+        border-radius: var(--radius-6);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        aspect-ratio: 6/14;
+        max-width: var(--size-content-1);
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            animation: kenBurns 15s ease-in-out infinite;
+        }
+
+        &[data-variant="horizontal"] {
+            aspect-ratio: 14/6;
+            max-height: var(--size-content-1);
+            max-width: unset;
+        }
+    }
+}

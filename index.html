@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Document</title>
+    <link rel="stylesheet" href="/style/style.css" />
+
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme');
+            if (theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+</head>
+<body class="component-system-page exposed-grid">
+    <nav>
+        <ul>
+            <li><a href="/">Home</a></li>
+        </ul>
+        <form class="theme-switcher">
+            <label>
+                <input type="radio" name="theme" value="system" checked>
+                System
+            </label>
+            <label>
+                <input type="radio" name="theme" value="light">
+                Light
+            </label>
+            <label>
+                <input type="radio" name="theme" value="dark">
+                Dark
+            </label>
+        </form>
+    </nav>
+    <div class="page-title">
+        <h1>Component system</h1>
+        <p>Below is a description of the design system that powers this site</p>
+    </div>
+    <ul class="sub-menu">
+        <li>Section 1</li>
+        <li>Section 2</li>
+    </ul>
+    <main class="exposed-grid">
+        <section class="exposed-grid">
+            <div class="category-title">
+                <h2>Text & Type</h2>
+                <p>Maecenas vel euismod enim.</p>
+            </div>
+            <section class="part exposed-grid">
+                <div class="documentation">
+                    <h3 class="h2">Text sizes</h3>
+                    <p>Documentation... todo</p>
+                </div>
+
+                <div class="example">
+                    <div> 
+                        <p class="h1">Heading 1</p>
+                        <p class="h2">Heading 2</p>
+                        <p class="p">Paragraph</p>
+                        <p class="p2">Paragraph 2</p>
+                    </div>
+                </div>
+            </section>
+
+
+            <section class="part exposed-grid">
+                <div class="documentation">
+                    <h3 class="h2">Text colors</h3>
+                    <p>Documentation... todo</p>
+                </div>
+
+                <div class="example">
+                    <div> 
+                        <p class="color-text">Color text</p>
+                        <p class="color-text-weak">Color text weak</p>
+                        <p class="color-text-weaker">Color text weaker</p>
+                        <p class="color-text-weakest">Color text weakest</p>
+                        <p class="color-text-link">Color text link</p>
+                        <p class="color-text-on-accent bg-accent">Color text on-accent</p>
+                        <p class="color-text-danger">Color text danger</p>
+                        <p class="color-text-success">Color text success</p>
+                        <p class="color-text-warning">Color text warning</p>
+                        <p class="color-text-neutral">Color text neutral</p>
+
+                    </div>
+                </div>
+            </section>
+
+
+            <section class="part exposed-grid">
+                <div class="documentation">
+                    <h3 class="h2">Paragraphs</h3>
+                    <p>Documentation... todo</p>
+                </div>
+
+            </section>
+        </section>
+
+        <section>
+            <h2>Section 3</h2>
+        <div class="obsidian-image">
+            <!-- https://unsplash.com/photos/abstract-wavy-lines-on-a-black-background--kG_ZPTn5cQ -->
+            <img src="https://images.unsplash.com/photo-1759266097947-397b6b7e7440?q=80&w=1364&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"  />
+        </div>
+
+        <div class="obsidian-image" data-variant="horizontal">
+            <!-- https://unsplash.com/photos/a-distorted-image-of-wavy-lines-JmxMpGdRPM4 -->
+            <img src="https://plus.unsplash.com/premium_photo-1666942829269-caedceb846af?q=80&w=1227&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"  />
+        </div>
+        </section>
+        <section>
+            <h2>Section 3</h2>
+            <p>Maecenas vel euismod enim. Morbi eget turpis sem. Vestibulum eget lectus neque. Nunc consectetur viverra mattis. Quisque nec justo at velit ullamcorper tristique id at nibh. In id eros ac nibh tempus dapibus. Donec malesuada eu mi quis sodales. Phasellus a lacus quis eros eleifend pretium. Vestibulum pharetra mattis posuere. Fusce malesuada consectetur dictum.</p>
+        </section>
+        <section>
+            <h2>Section 3</h2>
+            <p>Maecenas vel euismod enim. Morbi eget turpis sem. Vestibulum eget lectus neque. Nunc consectetur viverra mattis. Quisque nec justo at velit ullamcorper tristique id at nibh. In id eros ac nibh tempus dapibus. Donec malesuada eu mi quis sodales. Phasellus a lacus quis eros eleifend pretium. Vestibulum pharetra mattis posuere. Fusce malesuada consectetur dictum.</p>
+        </section>
+        <section>
+            <h2>Section 3</h2>
+            <p>Maecenas vel euismod enim. Morbi eget turpis sem. Vestibulum eget lectus neque. Nunc consectetur viverra mattis. Quisque nec justo at velit ullamcorper tristique id at nibh. In id eros ac nibh tempus dapibus. Donec malesuada eu mi quis sodales. Phasellus a lacus quis eros eleifend pretium. Vestibulum pharetra mattis posuere. Fusce malesuada consectetur dictum.</p>
+        </section>
+        <section>
+            <h2>Section 3</h2>
+            <p>Maecenas vel euismod enim. Morbi eget turpis sem. Vestibulum eget lectus neque. Nunc consectetur viverra mattis. Quisque nec justo at velit ullamcorper tristique id at nibh. In id eros ac nibh tempus dapibus. Donec malesuada eu mi quis sodales. Phasellus a lacus quis eros eleifend pretium. Vestibulum pharetra mattis posuere. Fusce malesuada consectetur dictum.</p>
+        </section>
+    </main>
+
+       <script>
+        const form = document.querySelector('.theme-switcher');
+        const html = document.documentElement;
+        
+        // Set initial radio state
+        const savedTheme = localStorage.getItem('theme') || 'system';
+        document.querySelector(`input[value="${savedTheme}"]`).checked = true;
+        
+        // Function to update theme with view transition
+        function updateTheme(theme) {
+            if (theme === 'system') {
+                localStorage.removeItem('theme');
+                // Apply system preference
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    html.setAttribute('data-theme', 'dark');
+                } else {
+                    html.setAttribute('data-theme', 'light');
+                }
+            } else {
+                localStorage.setItem('theme', theme);
+                html.setAttribute('data-theme', theme);
+            }
+        }
+        
+        // Handle theme changes with view transition
+        form.addEventListener('change', (e) => {
+            if (e.target.name === 'theme') {
+                const theme = e.target.value;
+                
+                // Check if View Transitions API is supported
+                if (document.startViewTransition) {
+                    document.startViewTransition(() => updateTheme(theme));
+                } else {
+                    updateTheme(theme);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

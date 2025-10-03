@@ -1,0 +1,311 @@
+@layer semantics {
+    [data-theme="light"] {
+        /**
+         * Accent color.
+         * Used as primary button background,
+         * hero area background, and as a link
+         * color. This color provides accessible
+         * contrast when used for text on light
+         * background.
+         */
+        --color-accent: blue;
+
+        /**
+         * Default text color. Used as the main
+         * text color throughout the UI. Provides
+         * good and legible contrast for our
+         * content.
+         */
+        --color-text: var(--f-color-beige), 10%;
+        /**
+         * Default link text color. Used for all
+         * paragraph level links in an user
+         * interface.
+         */
+        --color-text-link: blue;
+        /**
+         * Weak text color. Used for e.g. introduction
+         * paragraphs and help texts that are
+         * coupled with form elements.
+         */
+        --color-text-weak: var(--f-color-beige), 20%;
+
+        /**
+         * Weaker text color. Used for e.g. disabled
+         * buttons, footers, table headings,
+         * captions and placeholder texts.
+         */
+        --color-text-weaker: gray;
+        /**
+         * Weakest text color. Used for e.g. disabled
+         * input text and placeholder text in
+         * focused inputs.
+         */
+        --color-text-weakest: gray;
+        /**
+         * Default text on accent color.
+         * Used when text sits on the acccent
+         * color or a dark background.
+         */
+        --color-text-on-accent: white;
+        /**
+         * Default text color for danger messages.
+         * Also used for the danger badge text.
+         */
+        --color-text-danger: tomato;
+        /**
+         * Default text color for success messages.
+         * Also used for the success badge text.
+         */
+        --color-text-success: green;
+        /** Neutral text color. Used for the neutral badge text. */
+        --color-text-neutral: gray;
+        /** Info text color. Used for the info badge text. */
+        --color-text-info: blue;
+        /** Warning text color. Used for the warning badge text. */
+        --color-text-warning: orange;
+
+
+        /**
+         * Default application background color.
+         * Should be set to either html or body element.
+         */
+        --color-background: var(--f-color-beige), 90%;
+        /**
+         * Default application surface color.
+         * Use this for e.g. card backgrounds.
+         */
+        --color-surface: white;
+        /**
+         * Default raised surface color.
+         * Use this when you need to separate a
+         * specific layer from the surface color,
+         * e.g. table headers.
+         */
+        --color-surface-raised: white;
+        /**
+         * Default lowered surface color.
+         * Use this when you need to make
+         * a specific layer to appear lower
+         * than the surface color, e.g.
+         * progress bar.
+         */
+        --color-surface-lowered: white;
+
+        /** Default border color */
+        --color-border: var(--f-color-beige), 40%;
+
+        /**
+         * Strong border color for highlighting
+         * specific parts in the user interface.
+         */
+        --color-border-strong: black;
+        /** Default border hover color. */
+        --color-border-hover: black;
+        /** Danger border color. Used for the danger badge border style. */
+        --color-border-danger: tomato;
+        /** Success border color. Used for the success badge border style. */
+        --color-border-success: green;
+        /** Neutral border color. Used for the neutral badge border style. */
+        --color-border-neutral: gray;
+        /** Info border color. Used for the info badge border style. */
+        --color-border-info: blue;
+        /** Warning border color. Used for the warning badge border style. */
+        --color-border-warning: orange;
+
+        /**
+         * Default danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.
+         */
+        --color-status-danger: tomato;
+        /**
+         * Default success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.
+         */
+        --color-status-success: green;
+        /** Default neutral status color. */
+        --color-status-neutral: gray;
+        /** Default info status color. Used to convey something informal. */
+        --color-status-info: blue;
+        /** Default warning status color. Used to display information that needs user’s attention and may require further steps. */
+        --color-status-warning: orange;
+
+        /**
+         * Weak danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.
+         */
+        --color-status-danger-weak: tomato;
+        /**
+         * Weak success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.
+         */
+        --color-status-success-weak: green;
+        /** Weak neutral status color. Used for the badge default state. */
+        --color-status-neutral-weak: gray;
+        /** Weak info status color. Used to convey something informal. */
+        --color-status-info-weak: blue;
+        /** Weak warning status color. Used to display information that needs a user’s attention and may require further steps. */
+        --color-status-warning-weak: orange;
+
+        /** Default button hover background color. */
+        --color-button-hover: white;
+
+        /** Default icon color */
+        --color-icon: black;
+        /** Default icon hover color */
+        --color-icon-hover: black;
+
+
+        --border-width: 1px;
+    }
+
+    [data-theme="dark"] {
+        /**
+         * Accent color.
+         * Used as primary button background,
+         * hero area background, and as a link
+         * color. This color provides accessible
+         * contrast when used for text on light
+         * background.
+         */
+        --color-accent: blue;
+
+        /**
+         * Default text color. Used as the main
+         * text color throughout the UI. Provides
+         * good and legible contrast for our
+         * content.
+         */
+        --color-text: var(--f-color-beige), 90%;
+        /**
+         * Default link text color. Used for all
+         * paragraph level links in an user
+         * interface.
+         */
+        --color-text-link: blue;
+        /**
+         * Weak text color. Used for e.g. introduction
+         * paragraphs and help texts that are
+         * coupled with form elements.
+         */
+        --color-text-weak: var(--f-color-beige), 80%;
+        /**
+         * Weaker text color. Used for e.g. disabled
+         * buttons, footers, table headings,
+         * captions and placeholder texts.
+         */
+        --color-text-weaker: var(--f-color-beige), 70%;
+        /**
+         * Weakest text color. Used for e.g. disabled
+         * input text and placeholder text in
+         * focused inputs.
+         */
+        --color-text-weakest: var(--f-color-beige), 60%;
+        /**
+         * Default text on accent color.
+         * Used when text sits on the acccent
+         * color or a dark background.
+         */
+        --color-text-on-accent: white;
+        /**
+         * Default text color for danger messages.
+         * Also used for the danger badge text.
+         */
+        --color-text-danger: tomato;
+        /**
+         * Default text color for success messages.
+         * Also used for the success badge text.
+         */
+        --color-text-success: green;
+        /** Neutral text color. Used for the neutral badge text. */
+        --color-text-neutral: gray;
+        /** Info text color. Used for the info badge text. */
+        --color-text-info: blue;
+        /** Warning text color. Used for the warning badge text. */
+        --color-text-warning: orange;
+
+
+        /**
+         * Default application background color.
+         * Should be set to either html or body element.
+         */
+        --color-background: var(--f-color-beige), 2%;
+        /**
+         * Default application surface color.
+         * Use this for e.g. card backgrounds.
+         */
+        --color-surface: white;
+        /**
+         * Default raised surface color.
+         * Use this when you need to separate a
+         * specific layer from the surface color,
+         * e.g. table headers.
+         */
+        --color-surface-raised: white;
+        /**
+         * Default lowered surface color.
+         * Use this when you need to make
+         * a specific layer to appear lower
+         * than the surface color, e.g.
+         * progress bar.
+         */
+        --color-surface-lowered: white;
+
+        /** Default border color */
+        --color-border: var(--f-color-beige), 15%;
+        /**
+         * Strong border color for highlighting
+         * specific parts in the user interface.
+         */
+        --color-border-strong: black;
+        /** Default border hover color. */
+        --color-border-hover: black;
+        /** Danger border color. Used for the danger badge border style. */
+        --color-border-danger: tomato;
+        /** Success border color. Used for the success badge border style. */
+        --color-border-success: green;
+        /** Neutral border color. Used for the neutral badge border style. */
+        --color-border-neutral: gray;
+        /** Info border color. Used for the info badge border style. */
+        --color-border-info: blue;
+        /** Warning border color. Used for the warning badge border style. */
+        --color-border-warning: orange;
+
+        /**
+         * Default danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.
+         */
+        --color-status-danger: tomato;
+        /**
+         * Default success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.
+         */
+        --color-status-success: green;
+        /** Default neutral status color. */
+        --color-status-neutral: gray;
+        /** Default info status color. Used to convey something informal. */
+        --color-status-info: blue;
+        /** Default warning status color. Used to display information that needs user’s attention and may require further steps. */
+        --color-status-warning: orange;
+
+        /**
+         * Weak danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.
+         */
+        --color-status-danger-weak: tomato;
+        /**
+         * Weak success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.
+         */
+        --color-status-success-weak: green;
+        /** Weak neutral status color. Used for the badge default state. */
+        --color-status-neutral-weak: gray;
+        /** Weak info status color. Used to convey something informal. */
+        --color-status-info-weak: blue;
+        /** Weak warning status color. Used to display information that needs a user’s attention and may require further steps. */
+        --color-status-warning-weak: orange;
+
+        /** Default button hover background color. */
+        --color-button-hover: white;
+
+        /** Default icon color */
+        --color-icon: black;
+        /** Default icon hover color */
+        --color-icon-hover: black;
+
+
+        --border-width: 1px;
+    }
+}
