@@ -85,6 +85,7 @@
 
                 .part {
                     display: flex;
+                    flex-direction: column;
 
                     .documentation,
                     .example {
@@ -93,10 +94,10 @@
 
                     .documentation {
                         position: sticky;
-                        top: 4.5rem;
                         /* TODO: Should not be static */
-                        flex-basis: var(--size-content-2);
-                        align-self: flex-start;
+                        top: 4.4rem;
+                        width: 100%;
+                        background: hsl(var(--color-background));
                     }
 
                     .example {
@@ -125,6 +126,18 @@
 }
 
 @media (min-width: 768px) {
+    .part {
+        flex-direction: row;
+    }
+
+    .documentation {
+        position: sticky;
+        top: 4.5rem;
+        flex-basis: var(--size-content-2);
+        align-self: flex-start;
+        width: auto;
+    }
+}
     .component-system-page {
         grid-template-columns: 1fr;
         grid-template-rows: auto auto 1fr;

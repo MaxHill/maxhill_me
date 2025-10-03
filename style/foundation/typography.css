@@ -1,6 +1,5 @@
 @layer foundations {
     :root {
-        /* --ff: -apple-system, BlinkMacSystemFont, "SF Pro", "SF UI", "Helvetica Neue", Arial, sans-serif; */
         --ff: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
         --h1: bold 2rem/1.4 var(--ff);
         --h2: bold 1.5rem/1.4 var(--ff);
