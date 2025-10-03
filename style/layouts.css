@@ -2,39 +2,44 @@
     .component-system-page {
         display: grid;
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto 1fr;
+        grid-template-rows: auto auto 1fr;
         grid-template-areas:
             "nav"
-            "sub"
             "title"
             "content";
         min-height: 100vh;
 
         nav {
+            padding: var(--size-fluid-1);
             grid-area: nav;
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
 
-        .sub-menu {
-            list-style: none;
-            margin: 0;
-            padding: 0;
+            ul {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                gap: var(--size-fluid-1);
 
-            grid-area: sub;
-            display: flex;
-            /* horizontal on mobile */
-            overflow-x: auto;
-
-            li {
-                padding: var(--size-1);
+                li {
+                    a {
+                        color: hsl(var(--color-text));
+                        text-decoration: none;
+                    }
+                }
             }
         }
 
         .page-title {
             grid-area: title;
             padding: var(--size-fluid-1);
+            height: var(--size-content-1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+
 
             h1 {
                 font: var(--h1);
@@ -50,6 +55,7 @@
             grid-area: content;
             display: flex;
             flex-direction: column;
+            border-top: var(--border-width) solid hsl(var(--color-border));
 
             >section {
                 border: 1px solid var(--color-boder);
@@ -61,6 +67,10 @@
                     padding: var(--size-fluid-1);
                     background: hsl(var(--color-background));
                     z-index: var(--layer-1);
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
 
                     h2 {
                         font: var(--h2);
@@ -75,15 +85,20 @@
 
                 .part {
                     display: flex;
-                    .documentation, .example {
+
+                    .documentation,
+                    .example {
                         padding: var(--size-fluid-1);
                     }
+
                     .documentation {
                         position: sticky;
-                        top: 4.5rem; /* TODO: Should not be static */
+                        top: 4.5rem;
+                        /* TODO: Should not be static */
                         flex-basis: var(--size-content-2);
                         align-self: flex-start;
                     }
+
                     .example {
                         flex: 1;
                         justify-content: center;
@@ -92,9 +107,16 @@
                         display: flex;
                         flex-direction: column;
                         gap: var(--size-fluid-1);
+
+                        .example-grid {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr 1fr;
+                            div {
+                                padding: var(--size-fluid-1);
+                            }
+                        }
                     }
                 }
-
             }
         }
     }
@@ -104,17 +126,11 @@
 
 @media (min-width: 768px) {
     .component-system-page {
-        grid-template-columns: 250px 1fr;
+        grid-template-columns: 1fr;
         grid-template-rows: auto auto 1fr;
         grid-template-areas:
-            "nav nav"
-            "title title"
-            "sub content";
-    }
-
-    .sub-menu {
-        flex-direction: column;
-        /* sidebar style */
-        overflow: visible;
+            "nav"
+            "title"
+            "content";
     }
 }

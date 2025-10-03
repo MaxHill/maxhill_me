@@ -2,13 +2,13 @@
 
 @import "./reset.css";
 @import "./foundation/foundation.css";
-@import "./semantic.css";
+@import "./semantic/semantic.css";
 @import "./components.css";
 @import "./layouts.css";
 @import "./utils.css";
 
-
-
+/* White: rgb(255, 252, 247) hsl(38, 100, 98,4) */
+/* Black: 0, 0, 0 */
 
 @layer base {
     body {
@@ -73,9 +73,6 @@
     .footer {
         grid-area: footer;
     }
-
-
-
 }
 
 

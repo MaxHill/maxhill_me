@@ -1,12 +1,9 @@
 @layer foundations {
-  :root {
-    --f-color-beige: 36, 23%;
-    --f-color-blue: 240, 100%;
-    --f-color-white: 0, 0%;
-    --f-color-black: 0, 0%;
-    --f-color-gray: 0, 0%;
-    --f-color-tomato: 9, 100%;
-    --f-color-green: 120, 100%;
-    --f-color-orange: 39, 100%;
-  }
+    :root {
+        --f-color-blue: 220, 85%;
+        --f-color-red: 9, 85%;
+        --f-color-green: 145, 70%;
+        --f-color-gray: 0, 0%;
+        --f-color-orange: 38, 100%;
+    }
 }

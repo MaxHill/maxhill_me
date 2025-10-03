@@ -6,8 +6,9 @@
         /* cell border color */
         --_cell-border: hsl(var(--color-border));
 
+        display: grid;
         gap: var(--_grid-gap);
-        /* overflow: hidden; */ /*TODO: Investigate if this is needed */
+        overflow: clip;
 
         &>*:not(script) {
             box-shadow: 0 0 0 var(--_grid-gap) var(--_cell-border);
