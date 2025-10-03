@@ -68,4 +68,32 @@
             max-width: unset;
         }
     }
+
+    .color-table {
+        width: 100%;
+        border-collapse: collapse;
+
+        th, td {
+            padding: var(--size-2);
+            text-align: left;
+        }
+        tr {
+            border-bottom: var(--border-width) solid hsl(var(--color-border));
+        }
+        tr:last-child {
+            border-bottom: none;
+        }
+
+        .swatch {
+            width: var(--size-9);
+            border-radius: var(--radius-3);
+            border: 1px solid hsl(var(--color-border));
+            aspect-ratio: 3/2;
+        }
+
+        td:nth-child(3) {
+            color: hsl(var(--color-text-weaker));
+        }
+
+    }
 }

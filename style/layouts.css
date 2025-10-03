@@ -88,7 +88,7 @@
 
                     .documentation,
                     .example {
-                        padding: var(--size-fluid-1);
+                        padding: var(--size-fluid-2);
                     }
 
                     .documentation {
