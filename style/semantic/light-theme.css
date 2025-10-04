@@ -66,31 +66,31 @@
         --color-text-warning: var(--f-color-orange), 50%;
 
 
-        /**
-         * Default application background color.
-         * Should be set to either html or body element.
-         */
-        --color-background: var(--f-color-orange), 98%;
-        /**
-         * Default application surface color.
-         * Use this for e.g. card backgrounds.
-         */
-        --color-surface: var(--f-color-gray), 100%;
-        /**
-         * Default raised surface color.
-         * Use this when you need to separate a
-         * specific layer from the surface color,
-         * e.g. table headers.
-         */
-        --color-surface-raised: var(--f-color-gray), 100%;
-        /**
-         * Default lowered surface color.
-         * Use this when you need to make
-         * a specific layer to appear lower
-         * than the surface color, e.g.
-         * progress bar.
-         */
-        --color-surface-lowered: var(--f-color-gray), 100%;
+         /**
+          * Default application background color.
+          * Should be set to either html or body element.
+          */
+         --color-background: var(--f-color-orange), 98%;
+         /**
+          * Default application surface color.
+          * Use this for e.g. card backgrounds.
+          */
+         --color-surface: var(--f-color-orange), 95%;
+         /**
+          * Default raised surface color.
+          * Use this when you need to separate a
+          * specific layer from the surface color,
+          * e.g. table headers.
+          */
+         --color-surface-raised: var(--f-color-orange), 100%;
+         /**
+          * Default lowered surface color.
+          * Use this when you need to make
+          * a specific layer to appear lower
+          * than the surface color, e.g.
+          * progress bar.
+          */
+         --color-surface-lowered: var(--f-color-orange), 90%;
 
         /** Default border color */
         --color-border: var(--f-color-gray), 85%;

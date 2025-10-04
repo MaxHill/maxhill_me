@@ -76,6 +76,7 @@
         th, td {
             padding: var(--size-2);
             text-align: left;
+            word-break: break-word;
         }
         tr {
             border-bottom: var(--border-width) solid hsl(var(--color-border));
