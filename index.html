@@ -121,22 +121,21 @@
                 </div>
 
                 <div class="example">
-                    <table class="color-table">
-                        <thead>
-                            <tr>
-                                <th>Color</th>
-                                <th>Name</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-accent))"></div></td>
-                                <td>color-accent</td>
-                                <td>Accent color. Used as primary button background, hero area background, and as a link color. This color provides accessible contrast when used for text on light background.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="color-table">
+                        <div class="header">
+                            <div>Color</div>
+                            <div>Name</div>
+                            <div>Description</div>
+                        </div>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-accent))"></div></div>
+                                <div>color-accent</div>
+                                <div>Accent color. Used as primary button background, hero area background, and as a link color. This color provides accessible contrast when used for text on light background.</div>
+                            </summary>
+                            <div>Accent color. Used as primary button background, hero area background, and as a link color. This color provides accessible contrast when used for text on light background.</div>
+                        </details>
+                    </div>
                 </div>
             </section>
 
@@ -147,72 +146,101 @@
                 </div>
 
                 <div class="example">
-                    <table class="color-table">
-                        <thead>
-                            <tr>
-                                <th>Color</th>
-                                <th>Name</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-text))"></div></td>
-                                <td>color-text</td>
-                                <td>Default text color. Used as the main text color throughout the UI. Provides good and legible contrast for our content.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-text-link))"></div></td>
-                                <td>color-text-link</td>
-                                <td>Default link text color. Used for all paragraph level links in an user interface.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-text-weak))"></div></td>
-                                <td>color-text-weak</td>
-                                <td>Weak text color. Used for e.g. introduction paragraphs and help texts that are coupled with form elements.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-text-weaker))"></div></td>
-                                <td>color-text-weaker</td>
-                                <td>Weaker text color. Used for e.g. disabled buttons, footers, table headings, captions and placeholder texts.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-text-weakest))"></div></td>
-                                <td>color-text-weakest</td>
-                                <td>Weakest text color. Used for e.g. disabled input text and placeholder text in focused inputs.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-text-on-accent))"></div></td>
-                                <td>color-text-on-accent</td>
-                                <td>Default text on accent color. Used when text sits on the accent color or a dark background.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-text-danger))"></div></td>
-                                <td>color-text-danger</td>
-                                <td>Default text color for danger messages. Also used for the danger badge text.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-text-success))"></div></td>
-                                <td>color-text-success</td>
-                                <td>Default text color for success messages. Also used for the success badge text.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-text-neutral))"></div></td>
-                                <td>color-text-neutral</td>
-                                <td>Neutral text color. Used for the neutral badge text.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-text-info))"></div></td>
-                                <td>color-text-info</td>
-                                <td>Info text color. Used for the info badge text.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-text-warning))"></div></td>
-                                <td>color-text-warning</td>
-                                <td>Warning text color. Used for the warning badge text.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="color-table">
+                        <div class="header">
+                            <div>Color</div>
+                            <div>Name</div>
+                            <div>Description</div>
+                        </div>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-text))"></div></div>
+                                <div>color-text</div>
+                                <div>Default text color. Used as the main text color throughout the UI. Provides good and legible contrast for our content.</div>
+                            </summary>
+                            <div>Default text color. Used as the main text color throughout the UI. Provides good and legible contrast for our content.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-text-link))"></div></div>
+                                <div>color-text-link</div>
+                                <div>Default link text color. Used for all paragraph level links in an user interface.</div>
+                            </summary>
+                            <div>Default link text color. Used for all paragraph level links in an user interface.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-text-weak))"></div></div>
+                                <div>color-text-weak</div>
+                                <div>Weak text color. Used for e.g. introduction paragraphs and help texts that are coupled with form elements.</div>
+                            </summary>
+                            <div>Weak text color. Used for e.g. introduction paragraphs and help texts that are coupled with form elements.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-text-weaker))"></div></div>
+                                <div>color-text-weaker</div>
+                                <div>Weaker text color. Used for e.g. disabled buttons, footers, table headings, captions and placeholder texts.</div>
+                            </summary>
+                            <div>Weaker text color. Used for e.g. disabled buttons, footers, table headings, captions and placeholder texts.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-text-weakest))"></div></div>
+                                <div>color-text-weakest</div>
+                                <div>Weakest text color. Used for e.g. disabled input text and placeholder text in focused inputs.</div>
+                            </summary>
+                            <div>Weakest text color. Used for e.g. disabled input text and placeholder text in focused inputs.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-text-on-accent))"></div></div>
+                                <div>color-text-on-accent</div>
+                                <div>Default text on accent color. Used when text sits on the accent color or a dark background.</div>
+                            </summary>
+                            <div>Default text on accent color. Used when text sits on the accent color or a dark background.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-text-danger))"></div></div>
+                                <div>color-text-danger</div>
+                                <div>Default text color for danger messages. Also used for the danger badge text.</div>
+                            </summary>
+                            <div>Default text color for danger messages. Also used for the danger badge text.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-text-success))"></div></div>
+                                <div>color-text-success</div>
+                                <div>Default text color for success messages. Also used for the success badge text.</div>
+                            </summary>
+                            <div>Default text color for success messages. Also used for the success badge text.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-text-neutral))"></div></div>
+                                <div>color-text-neutral</div>
+                                <div>Neutral text color. Used for the neutral badge text.</div>
+                            </summary>
+                            <div>Neutral text color. Used for the neutral badge text.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-text-info))"></div></div>
+                                <div>color-text-info</div>
+                                <div>Info text color. Used for the info badge text.</div>
+                            </summary>
+                            <div>Info text color. Used for the info badge text.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-text-warning))"></div></div>
+                                <div>color-text-warning</div>
+                                <div>Warning text color. Used for the warning badge text.</div>
+                            </summary>
+                            <div>Warning text color. Used for the warning badge text.</div>
+                        </details>
+                    </div>
                 </div>
             </section>
 
@@ -223,37 +251,45 @@
                 </div>
 
                 <div class="example">
-                    <table class="color-table">
-                        <thead>
-                            <tr>
-                                <th>Color</th>
-                                <th>Name</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-background))"></div></td>
-                                <td>color-background</td>
-                                <td>Default application background color. Should be set to either html or body element.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-surface))"></div></td>
-                                <td>color-surface</td>
-                                <td>Default application surface color. Use this for e.g. card backgrounds.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-surface-raised))"></div></td>
-                                <td>color-surface-raised</td>
-                                <td>Default raised surface color. Use this when you need to separate a specific layer from the surface color, e.g. table headers.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-surface-lowered))"></div></td>
-                                <td>color-surface-lowered</td>
-                                <td>Default lowered surface color. Use this when you need to make a specific layer to appear lower than the surface color, e.g. progress bar.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="color-table">
+                        <div class="header">
+                            <div>Color</div>
+                            <div>Name</div>
+                            <div>Description</div>
+                        </div>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-background))"></div></div>
+                                <div>color-background</div>
+                                <div>Default application background color. Should be set to either html or body element.</div>
+                            </summary>
+                            <div>Default application background color. Should be set to either html or body element.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-surface))"></div></div>
+                                <div>color-surface</div>
+                                <div>Default application surface color. Use this for e.g. card backgrounds.</div>
+                            </summary>
+                            <div>Default application surface color. Use this for e.g. card backgrounds.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-surface-raised))"></div></div>
+                                <div>color-surface-raised</div>
+                                <div>Default raised surface color. Use this when you need to separate a specific layer from the surface color, e.g. table headers.</div>
+                            </summary>
+                            <div>Default raised surface color. Use this when you need to separate a specific layer from the surface color, e.g. table headers.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-surface-lowered))"></div></div>
+                                <div>color-surface-lowered</div>
+                                <div>Default lowered surface color. Use this when you need to make a specific layer to appear lower than the surface color, e.g. progress bar.</div>
+                            </summary>
+                            <div>Default lowered surface color. Use this when you need to make a specific layer to appear lower than the surface color, e.g. progress bar.</div>
+                        </details>
+                    </div>
                 </div>
             </section>
 
@@ -264,57 +300,77 @@
                 </div>
 
                 <div class="example">
-                    <table class="color-table">
-                        <thead>
-                            <tr>
-                                <th>Color</th>
-                                <th>Name</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-border))"></div></td>
-                                <td>color-border</td>
-                                <td>Default border color</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-border-strong))"></div></td>
-                                <td>color-border-strong</td>
-                                <td>Strong border color for highlighting specific parts in the user interface.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-border-hover))"></div></td>
-                                <td>color-border-hover</td>
-                                <td>Default border hover color.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-border-danger))"></div></td>
-                                <td>color-border-danger</td>
-                                <td>Danger border color. Used for the danger badge border style.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-border-success))"></div></td>
-                                <td>color-border-success</td>
-                                <td>Success border color. Used for the success badge border style.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-border-neutral))"></div></td>
-                                <td>color-border-neutral</td>
-                                <td>Neutral border color. Used for the neutral badge border style.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-border-info))"></div></td>
-                                <td>color-border-info</td>
-                                <td>Info border color. Used for the info badge border style.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-border-warning))"></div></td>
-                                <td>color-border-warning</td>
-                                <td>Warning border color. Used for the warning badge border style.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="color-table">
+                        <div class="header">
+                            <div>Color</div>
+                            <div>Name</div>
+                            <div>Description</div>
+                        </div>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-border))"></div></div>
+                                <div>color-border</div>
+                                <div>Default border color</div>
+                            </summary>
+                            <div>Default border color</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-border-strong))"></div></div>
+                                <div>color-border-strong</div>
+                                <div>Strong border color for highlighting specific parts in the user interface.</div>
+                            </summary>
+                            <div>Strong border color for highlighting specific parts in the user interface.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-border-hover))"></div></div>
+                                <div>color-border-hover</div>
+                                <div>Default border hover color.</div>
+                            </summary>
+                            <div>Default border hover color.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-border-danger))"></div></div>
+                                <div>color-border-danger</div>
+                                <div>Danger border color. Used for the danger badge border style.</div>
+                            </summary>
+                            <div>Danger border color. Used for the danger badge border style.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-border-success))"></div></div>
+                                <div>color-border-success</div>
+                                <div>Success border color. Used for the success badge border style.</div>
+                            </summary>
+                            <div>Success border color. Used for the success badge border style.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-border-neutral))"></div></div>
+                                <div>color-border-neutral</div>
+                                <div>Neutral border color. Used for the neutral badge border style.</div>
+                            </summary>
+                            <div>Neutral border color. Used for the neutral badge border style.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-border-info))"></div></div>
+                                <div>color-border-info</div>
+                                <div>Info border color. Used for the info badge border style.</div>
+                            </summary>
+                            <div>Info border color. Used for the info badge border style.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-border-warning))"></div></div>
+                                <div>color-border-warning</div>
+                                <div>Warning border color. Used for the warning badge border style.</div>
+                            </summary>
+                            <div>Warning border color. Used for the warning badge border style.</div>
+                        </details>
+                    </div>
                 </div>
             </section>
 
@@ -325,67 +381,93 @@
                 </div>
 
                 <div class="example">
-                    <table class="color-table">
-                        <thead>
-                            <tr>
-                                <th>Color</th>
-                                <th>Name</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-status-danger))"></div></td>
-                                <td>color-status-danger</td>
-                                <td>Default danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-status-success))"></div></td>
-                                <td>color-status-success</td>
-                                <td>Default success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-status-neutral))"></div></td>
-                                <td>color-status-neutral</td>
-                                <td>Default neutral status color.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-status-info))"></div></td>
-                                <td>color-status-info</td>
-                                <td>Default info status color. Used to convey something informal.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-status-warning))"></div></td>
-                                <td>color-status-warning</td>
-                                <td>Default warning status color. Used to display information that needs user’s attention and may require further steps.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-status-danger-weak))"></div></td>
-                                <td>color-status-danger-weak</td>
-                                <td>Weak danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-status-success-weak))"></div></td>
-                                <td>color-status-success-weak</td>
-                                <td>Weak success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-status-neutral-weak))"></div></td>
-                                <td>color-status-neutral-weak</td>
-                                <td>Weak neutral status color. Used for the badge default state.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-status-info-weak))"></div></td>
-                                <td>color-status-info-weak</td>
-                                <td>Weak info status color. Used to convey something informal.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-status-warning-weak))"></div></td>
-                                <td>color-status-warning-weak</td>
-                                <td>Weak warning status color. Used to display information that needs a user’s attention and may require further steps.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="color-table">
+                        <div class="header">
+                            <div>Color</div>
+                            <div>Name</div>
+                            <div>Description</div>
+                        </div>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-status-danger))"></div></div>
+                                <div>color-status-danger</div>
+                                <div>Default danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.</div>
+                            </summary>
+                            <div>Default danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-status-success))"></div></div>
+                                <div>color-status-success</div>
+                                <div>Default success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.</div>
+                            </summary>
+                            <div>Default success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-status-neutral))"></div></div>
+                                <div>color-status-neutral</div>
+                                <div>Default neutral status color.</div>
+                            </summary>
+                            <div>Default neutral status color.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-status-info))"></div></div>
+                                <div>color-status-info</div>
+                                <div>Default info status color. Used to convey something informal.</div>
+                            </summary>
+                            <div>Default info status color. Used to convey something informal.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-status-warning))"></div></div>
+                                <div>color-status-warning</div>
+                                <div>Default warning status color. Used to display information that needs user’s attention and may require further steps.</div>
+                            </summary>
+                            <div>Default warning status color. Used to display information that needs user’s attention and may require further steps.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-status-danger-weak))"></div></div>
+                                <div>color-status-danger-weak</div>
+                                <div>Weak danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.</div>
+                            </summary>
+                            <div>Weak danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-status-success-weak))"></div></div>
+                                <div>color-status-success-weak</div>
+                                <div>Weak success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.</div>
+                            </summary>
+                            <div>Weak success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-status-neutral-weak))"></div></div>
+                                <div>color-status-neutral-weak</div>
+                                <div>Weak neutral status color. Used for the badge default state.</div>
+                            </summary>
+                            <div>Weak neutral status color. Used for the badge default state.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-status-info-weak))"></div></div>
+                                <div>color-status-info-weak</div>
+                                <div>Weak info status color. Used to convey something informal.</div>
+                            </summary>
+                            <div>Weak info status color. Used to convey something informal.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-status-warning-weak))"></div></div>
+                                <div>color-status-warning-weak</div>
+                                <div>Weak warning status color. Used to display information that needs a user’s attention and may require further steps.</div>
+                            </summary>
+                            <div>Weak warning status color. Used to display information that needs a user’s attention and may require further steps.</div>
+                        </details>
+                    </div>
                 </div>
             </section>
 
@@ -396,32 +478,37 @@
                 </div>
 
                 <div class="example">
-                    <table class="color-table">
-                        <thead>
-                            <tr>
-                                <th>Color</th>
-                                <th>Name</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-button-hover))"></div></td>
-                                <td>color-button-hover</td>
-                                <td>Default button hover background color.</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-icon))"></div></td>
-                                <td>color-icon</td>
-                                <td>Default icon color</td>
-                            </tr>
-                            <tr>
-                                <td><div class="swatch" style="background: hsl(var(--color-icon-hover))"></div></td>
-                                <td>color-icon-hover</td>
-                                <td>Default icon hover color</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="color-table">
+                        <div class="header">
+                            <div>Color</div>
+                            <div>Name</div>
+                            <div>Description</div>
+                        </div>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-button-hover))"></div></div>
+                                <div>color-button-hover</div>
+                                <div>Default button hover background color.</div>
+                            </summary>
+                            <div>Default button hover background color.</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-icon))"></div></div>
+                                <div>color-icon</div>
+                                <div>Default icon color</div>
+                            </summary>
+                            <div>Default icon color</div>
+                        </details>
+                        <details class="row">
+                            <summary>
+                                <div><div class="swatch" style="background: hsl(var(--color-icon-hover))"></div></div>
+                                <div>color-icon-hover</div>
+                                <div>Default icon hover color</div>
+                            </summary>
+                            <div>Default icon hover color</div>
+                        </details>
+                    </div>
                 </div>
             </section>
         </section>
