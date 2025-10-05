@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <title>Document</title>
+
+    <link rel="preload" href="/assets/fonts/optimized/IBMPlexMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/optimized/DepartureMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/style/style.css" />
 
     <script>
@@ -22,7 +25,7 @@
     <nav>
         <ul>
             <li><a href="/">/Home</a></li>
-            <li><a href="/">/Design system</a></li>
+            <li><a href="/">/Design-system</a></li>
         </ul>
         <form class="theme-switcher">
             <label>
@@ -425,19 +428,16 @@
 
         <section class="exposed-grid">
             <div class="category-title">
-                <h2>Components</h2>
-                <p>Describes components.</p>
+                <h2>Visual elements</h2>
+                <p>Elements used for stylistic purpose.</p>
             </div>
 
             <section class="part exposed-grid">
                 <div class="documentation">
-                    <h3 class="h2">Grid</h3>
-                    <p>Documentation... todo</p>
+                    <h3 class="h2">Exposed grid</h3>
+                    <p>Use this to show grid lines, works with both css grid and flexbox. Built using shadows and gap.</p>
                 </div>
-
-
-                <div class="example Paragraphs">
-                    
+                <div class="example">
                     <div class="exposed-grid example-grid">
                         <div>Cell 1</div>
                         <div>Cell 2</div>
@@ -448,40 +448,60 @@
                         <div>Cell 7</div>
                         <div>Cell 8</div>
                     </div>
-
                 </div>
+            </section>
 
+            <section class="part exposed-grid">
+                <div class="documentation">
+                    <h3 class="h2">Obsidian</h3>
+                    <p>Interesting shape, good for putting images inside. Works both horizontally and vertically</p>
+                </div>
+                <div class="example">
+                    <div class="obsidian-image">
+                        <!-- https://unsplash.com/photos/abstract-wavy-lines-on-a-black-background--kG_ZPTn5cQ -->
+                        <img src="/assets/photo-1759266097947-397b6b7e7440.jpg"  />
+                    </div>
+
+                    <div class="obsidian-image" data-variant="horizontal">
+                        <!-- https://unsplash.com/photos/abstract-wavy-lines-in-various-colors-create-a-pattern-NmS_4j4FYr8 -->
+                        <img src="/assets/premium_photo-1751343381917-3cdca2b6801f.jpg"  />
+                    </div>
+                </div>
             </section>
         </section>
 
-        <section>
-            <h2>Section 3</h2>
-        <div class="obsidian-image">
-            <!-- https://unsplash.com/photos/abstract-wavy-lines-on-a-black-background--kG_ZPTn5cQ -->
-            <img src="/assets/photo-1759266097947-397b6b7e7440.jpg"  />
-        </div>
 
-        <div class="obsidian-image" data-variant="horizontal">
-            <!-- https://unsplash.com/photos/abstract-wavy-lines-in-various-colors-create-a-pattern-NmS_4j4FYr8 -->
-            <img src="/assets/premium_photo-1751343381917-3cdca2b6801f.jpg"  />
-        </div>
+        <section class="exposed-grid">
+            <div class="category-title">
+                <h2>Components</h2>
+                <p>Building blocks</p>
+            </div>
+
+            <section class="part exposed-grid">
+                <div class="documentation">
+                    <h3 class="h2">Box</h3>
+                    <p>A real workhorse, Boxes are everywhere.</p>
+                    <p>Options.</p>
+                    <ul>
+                        <li>data-padded=true|false(default)</li>
+                        <li>data-rounded=true(default)|false</li>
+                    </ul>
+
+                </div>
+                <div class="example">
+                    <div class="box">
+                        Box
+                    </div>
+                    <div class="box" data-padded="true">
+                        Padded box
+                    </div>
+                    <div class="box" data-padded="true" data-rounded="false">
+                        Padded and not rounded box
+                    </div>
+                </div>
+            </section>
         </section>
-        <section>
-            <h2>Section 3</h2>
-            <p>Maecenas vel euismod enim. Morbi eget turpis sem. Vestibulum eget lectus neque. Nunc consectetur viverra mattis. Quisque nec justo at velit ullamcorper tristique id at nibh. In id eros ac nibh tempus dapibus. Donec malesuada eu mi quis sodales. Phasellus a lacus quis eros eleifend pretium. Vestibulum pharetra mattis posuere. Fusce malesuada consectetur dictum.</p>
-        </section>
-        <section>
-            <h2>Section 3</h2>
-            <p>Maecenas vel euismod enim. Morbi eget turpis sem. Vestibulum eget lectus neque. Nunc consectetur viverra mattis. Quisque nec justo at velit ullamcorper tristique id at nibh. In id eros ac nibh tempus dapibus. Donec malesuada eu mi quis sodales. Phasellus a lacus quis eros eleifend pretium. Vestibulum pharetra mattis posuere. Fusce malesuada consectetur dictum.</p>
-        </section>
-        <section>
-            <h2>Section 3</h2>
-            <p>Maecenas vel euismod enim. Morbi eget turpis sem. Vestibulum eget lectus neque. Nunc consectetur viverra mattis. Quisque nec justo at velit ullamcorper tristique id at nibh. In id eros ac nibh tempus dapibus. Donec malesuada eu mi quis sodales. Phasellus a lacus quis eros eleifend pretium. Vestibulum pharetra mattis posuere. Fusce malesuada consectetur dictum.</p>
-        </section>
-        <section>
-            <h2>Section 3</h2>
-            <p>Maecenas vel euismod enim. Morbi eget turpis sem. Vestibulum eget lectus neque. Nunc consectetur viverra mattis. Quisque nec justo at velit ullamcorper tristique id at nibh. In id eros ac nibh tempus dapibus. Donec malesuada eu mi quis sodales. Phasellus a lacus quis eros eleifend pretium. Vestibulum pharetra mattis posuere. Fusce malesuada consectetur dictum.</p>
-        </section>
+
     </main>
 
        <script>

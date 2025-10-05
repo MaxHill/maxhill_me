@@ -73,14 +73,17 @@
         width: 100%;
         border-collapse: collapse;
 
-        th, td {
+        th,
+        td {
             padding: var(--size-2);
             text-align: left;
             word-break: break-word;
         }
+
         tr {
             border-bottom: var(--border-width) solid hsl(var(--color-border));
         }
+
         tr:last-child {
             border-bottom: none;
         }
@@ -95,6 +98,30 @@
         td:nth-child(3) {
             color: hsl(var(--color-text-weaker));
         }
+    }
+
+    .box {
+        text-decoration: none;
+        color: hsl(var(--color-text));
+        display: flex;
+        background-color: hsl(var(--bg));
+        flex-direction: column;
+        box-shadow: var(--shadow);
+        border: var(--border-width) solid hsl(var(--color-border));
+        overflow: hidden;
+        border-radius: var(--radius-3);
+        max-width: 100%;
+        height: min-content;
+
+
+        &[data-rounded="false"] {
+            border-radius: 0;
+        }
+
+        &[data-padded="true"] {
+            padding: var(--size-fluid-1);
+        }
+
 
     }
 }

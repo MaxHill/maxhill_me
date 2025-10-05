@@ -35,14 +35,14 @@
         .page-title {
             grid-area: title;
             padding: var(--size-fluid-1);
-            height: var(--size-content-1);
+            min-height: var(--size-content-1);
             display: flex;
             flex-direction: column;
             justify-content: center;
 
 
             h1 {
-                font: var(--h1);
+                font: bold 5rem/1.4 var(--ff-display);
             }
 
             p {
