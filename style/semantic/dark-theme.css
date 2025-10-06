@@ -104,7 +104,7 @@
          * Strong border color for highlighting
          * specific parts in the user interface.
          */
-        --color-border-strong: var(--f-color-gray), 0%;
+        --color-border-strong: var(--f-color-gray), 25%;
         /** Default border hover color. */
         --color-border-hover: var(--f-color-gray), 0%;
         /** Danger border color. Used for the danger badge border style. */

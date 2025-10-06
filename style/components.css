@@ -1,19 +1,5 @@
 @layer components {
 
-    .exposed-grid {
-        /* space between cells */
-        --_grid-gap: var(--border-width);
-        /* cell border color */
-        --_cell-border: hsl(var(--color-border));
-
-        display: grid;
-        gap: var(--_grid-gap);
-        overflow: clip;
-
-        &>*:not(script) {
-            box-shadow: 0 0 0 var(--_grid-gap) var(--_cell-border);
-        }
-    }
 
     .content-grid {
         --_padding-inline: var(--size-1);
@@ -79,7 +65,7 @@
             border-bottom: var(--border-width) solid hsl(var(--color-border));
         }
 
-        .header > div {
+        .header>div {
             padding-block: 0;
             text-align: left;
             word-break: break-word;
@@ -105,26 +91,26 @@
             cursor: pointer;
         }
 
-        .row summary > div {
+        .row summary>div {
             padding-block: 0;
             text-align: left;
             word-break: break-word;
         }
 
-        .row summary > div:nth-child(3) {
+        .row summary>div:nth-child(3) {
             color: hsl(var(--color-text-weaker));
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .row > div {
+        .row>div {
             padding-block: var(--size-1);
             color: hsl(var(--color-text-weaker));
         }
 
         .swatch {
-            width: var(--size-7);
+            width: var(--size-9);
             height: 100%;
         }
     }
@@ -133,7 +119,7 @@
         text-decoration: none;
         color: hsl(var(--color-text));
         display: flex;
-        background-color: hsl(var(--bg));
+        background-color: hsl(var(--color-background));
         flex-direction: column;
         box-shadow: var(--shadow);
         border: var(--border-width) solid hsl(var(--color-border));
@@ -141,16 +127,137 @@
         border-radius: var(--radius-3);
         max-width: 100%;
         height: min-content;
+        padding: var(--size-fluid-1);
 
 
         &[data-rounded="false"] {
             border-radius: 0;
         }
 
-        &[data-padded="true"] {
-            padding: var(--size-fluid-1);
+        &[data-padded="false"] {
+            padding: 0;
         }
 
+        &[data-elevated="surface"] {
+            background-color: hsl(var(--color-surface));
+        }
 
+        &[data-elevated="surface-raised"] {
+            background-color: hsl(var(--color-surface-raised));
+        }
+
+        &[data-elevated="surface-lowered"] {
+            background-color: hsl(var(--color-surface-lowered));
+        }
+    }
+
+
+    /*  ------------------------------------------------------------------------
+    /*  Layout                                                                     
+    /*  ------------------------------------------------------------------------ */
+    .collection {
+        --_card-width: var(--size-fluid-8);
+        --_gap: var(--size-fluid-1);
+
+        display: grid;
+        gap: var(--_gap);
+        grid-template-columns: repeat(var(--grid-type, auto-fill),
+                minmax(min(var(--_card-width), 100%), 1fr));
+
+        &[data-size="1"] {
+            --_card-width: var(--size-fluid-1);
+        }
+
+        &[data-size="2"] {
+            --_card-width: var(--size-fluid-2);
+        }
+
+        &[data-size="3"] {
+            --_card-width: var(--size-fluid-3);
+        }
+
+        &[data-size="4"] {
+            --_card-width: var(--size-fluid-4);
+        }
+
+        &[data-size="5"] {
+            --_card-width: var(--size-fluid-5);
+        }
+
+        &[data-size="6"] {
+            --_card-width: var(--size-fluid-6);
+        }
+
+        &[data-size="7"] {
+            --_card-width: var(--size-fluid-7);
+        }
+
+        &[data-size="8"] {
+            --_card-width: var(--size-fluid-8);
+        }
+
+        &[data-size="9"] {
+            --_card-width: var(--size-fluid-9);
+        }
+
+        &[data-size="10"] {
+            --_card-width: var(--size-fluid-10);
+        }
+
+        &[data-gap="0"] {
+            --_gap: 0;
+        }
+
+        &[data-gap="2"] {
+            --_gap: var(--size-fluid-2);
+        }
+
+        &[data-gap="3"] {
+            --_gap: var(--size-fluid-3);
+        }
+
+        &[data-gap="4"] {
+            --_gap: var(--size-fluid-4);
+        }
+
+        &[data-gap="5"] {
+            --_gap: var(--size-fluid-5);
+        }
+
+        &[data-gap="6"] {
+            --_gap: var(--size-fluid-6);
+        }
+
+        &[data-gap="7"] {
+            --_gap: var(--size-fluid-7);
+        }
+
+        &[data-gap="8"] {
+            --_gap: var(--size-fluid-8);
+        }
+
+        &[data-gap="9"] {
+            --_gap: var(--size-fluid-9);
+        }
+
+        &[data-gap="10"] {
+            --_gap: var(--size-fluid-10);
+        }
+    }
+
+    /* Needs to be below collection */
+    .exposed-grid {
+        /* space between cells */
+        --_grid-gap: var(--border-width);
+        /* cell border color */
+        --_cell-border: hsl(var(--color-border));
+
+        display: grid;
+        gap: var(--_grid-gap);
+        overflow: clip;
+
+        &>*:not(script) {
+            box-shadow: 0 0 0 var(--_grid-gap) var(--_cell-border);
+        }
     }
 }

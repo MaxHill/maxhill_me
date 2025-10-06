@@ -1,57 +1,160 @@
 @layer utils {
-    .h1 {
-        font: var(--h1);
-    }
+    .h1 { font: var(--h1); }
+    .h2 { font: var(--h2); } 
+    .p { font: var(--p); }
+    .p2 { font: var(--p2); }
 
-    .h2 {
-        font: var(--h2);
-    }
+    .ff-display { font-family: var(--ff-display); }
 
-    .p {
-        font: var(--p);
-    }
+    .color-text { color: hsl(var(--color-text)); }
+    .color-text-weak { color: hsl(var(--color-text-weak)); }
+    .color-text-weaker { color: hsl(var(--color-text-weaker)); }
+    .color-text-weakest { color: hsl(var(--color-text-weakest)); }
+    .color-text-link { color: hsl(var(--color-text-link)); }
+    .color-text-on-accent { color: hsl(var(--color-text-on-accent)); }
+    .color-text-danger { color: hsl(var(--color-text-danger)); }
+    .color-text-success { color: hsl(var(--color-text-success)); }
+    .color-text-warning { color: hsl(var(--color-text-warning)); }
+    .color-text-neutral { color: hsl(var(--color-text-neutral)); }
 
-    .p2 {
-        font: var(--p2);
-    }
+    .bg { background-color: hsl(var(--color-background)); }
+    .bg-accent { background-color: hsl(var(--color-accent)); }
 
-    .color-text {
-        color: hsl(var(--color-text));
-    }
-    .color-text-weak {
-        color: hsl(var(--color-text-weak));
-    }
-    .color-text-weaker {
-        color: hsl(var(--color-text-weaker));
-    }
-    .color-text-weakest {
-        color: hsl(var(--color-text-weakest));
-    }
-
-    .color-text-link {
-        color: hsl(var(--color-text-link));
-    }
-    .color-text-on-accent {
-        color: hsl(var(--color-text-on-accent));
-    }
-    .color-text-danger {
-        color: hsl(var(--color-text-danger));
-    }
-    .color-text-success {
-        color: hsl(var(--color-text-success));
-    }
-    .color-text-warning {
-        color: hsl(var(--color-text-warning));
-    }
-    .color-text-neutral {
-        color: hsl(var(--color-text-neutral));
-    }
-
-    .bg-accent {
-        background-color: hsl(var(--color-accent));
-    }
 
     .width-content-1 { max-width: var(--size-content-1); }
     .width-content-2 { max-width: var(--size-content-2); }
     .width-content-3 { max-width: var(--size-content-3); }
+    .width-full { width: 100%; }
+
+    .flex { display: flex; }
+    .gap-1 { gap: var(--size-1); }
+    .gap-fluid-1 { gap: var(--size-1); }
+    .gap-fluid-2 { gap: var(--size-2); }
+    .gap-fluid-3 { gap: var(--size-3); }
+    .padding-fluid-1 { padding: var(--size-fluid-1) }
+    .text-center {text-align: center;}
+    .border { border: var(--border-width) solid hsl(var(--color-border)); }
+
+
+    /*  ------------------------------------------------------------------------
+    /*  Background patterns                                                                     
+    /*  ------------------------------------------------------------------------ */
+    .background-pattern {
+        --_color-fg: hsl(var(--color-border));
+        --_color-bg: transparent;
+        --_size: 10px 10px;
+
+        --_pattern-lines: repeating-linear-gradient(to right, var(--_color-fg), var(--_color-fg) 1px, var(--_color-bg) 1px, var(--_color-bg));
+        --_pattern-dots: radial-gradient(var(--_color-fg) 1px, var(--_color-bg) 1px);
+        --_pattern-diagonal: repeating-linear-gradient(45deg, var(--_color-fg) 0, var(--_color-fg) 1px, var(--_color-bg) 0, var(--_color-bg) 50%);
+        --_pattern-grid: linear-gradient(var(--_color-fg) 1px, transparent 1px), linear-gradient(to right, var(--_color-fg) 1px, var(--_color-bg) 1px);
+
+
+        &[data-size="large"] { --_size: 20px 20px; }
+
+        &[data-variant="strong"] { --_color-fg: hsl(var(--color-border-strong)); }
+
+        &[data-variant="danger"] { --_color-fg: hsl(var(--color-status-danger-weak)); }
+        &[data-variant="success"] { --_color-fg: hsl(var(--color-status-success-weak)); }
+        &[data-variant="neutral"] { --_color-fg: hsl(var(--color-status-neutral-weak)); }
+        &[data-variant="info"] { --_color-fg: hsl(var(--color-status-info-weak)); }
+        &[data-variant="warning"] { --_color-fg: hsl(var(--color-status-warning-weak)); }
+
+        background-size: var(--_size);
+
+        &[data-pattern="lines"] { background-image: var(--_pattern-lines); }
+        &[data-pattern="dots"] { background-image: var(--_pattern-dots); }
+        &[data-pattern="diagonal"] { background-image: var(--_pattern-diagonal); }
+        &[data-pattern="grid"] { background-image: var(--_pattern-grid); }
+    }
+
+
+    /*  ------------------------------------------------------------------------
+    /*  glitch                                                                     
+    /*  ------------------------------------------------------------------------ */
+    .text-glitch {
+        position: relative;
+
+
+        &[data-autoplay="true"],
+        &:hover,
+        .glitch-parent:has(> &):hover > & {
+            position: relative;
+            animation: glitch 1.4s linear infinite;
+
+            &:before,
+            &:after {
+                content: attr(title);
+                position: absolute;
+                left: 0;
+            }
+        }
+
+        &[data-autoplay="true"]:before,
+        &:hover:before,
+        .glitch-parent:has(> &):hover > &:before {
+            animation: glitchTop 1s linear infinite;
+            clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+            -webkit-clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+        }
+
+        &[data-autoplay="true"]:after,
+        &:hover:after,
+        .glitch-parent:has(> &):hover > &:after {
+            animation: glitchBotom 1.5s linear infinite;
+            clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
+            -webkit-clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
+        }
+    }
+
+    @keyframes glitch {
+
+        2%,
+        64% {
+            transform: translate(2px, 0) skew(0deg);
+        }
+
+        4%,
+        60% {
+            transform: translate(-2px, 0) skew(0deg);
+        }
+
+        62% {
+            transform: translate(0, 0) skew(5deg);
+        }
+    }
+
+    @keyframes glitchTop {
+
+        2%,
+        64% {
+            transform: translate(2px, -2px);
+        }
+
+        4%,
+        60% {
+            transform: translate(-2px, 2px);
+        }
+
+        62% {
+            transform: translate(13px, -1px) skew(-13deg);
+        }
+    }
+
+    @keyframes glitchBotom {
+
+        2%,
+        64% {
+            transform: translate(-2px, 0);
+        }
+
+        4%,
+        60% {
+            transform: translate(-2px, 0);
+        }
+
+        62% {
+            transform: translate(-22px, 5px) skew(21deg);
+        }
+    }
 }

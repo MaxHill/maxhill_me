@@ -1,633 +1,890 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <title>Document</title>
+	<head>
+		<meta charset="UTF-8">
+		<title>Document</title>
 
-    <link rel="preload" href="/assets/fonts/optimized/IBMPlexMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/assets/fonts/optimized/DepartureMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/style/style.css" />
+		<link rel="preload" href="/assets/fonts/optimized/IBMPlexMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/assets/fonts/optimized/DepartureMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="stylesheet" href="/style/style.css">
 
-    <script>
-        (function() {
-            const theme = localStorage.getItem('theme');
-            if (theme) {
-                document.documentElement.setAttribute('data-theme', theme);
-            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
-        })();
-    </script>
-</head>
-<body class="component-system-page">
-    <nav>
-        <ul>
-            <li><a href="/">/Home</a></li>
-            <li><a href="/">/Design-system</a></li>
-        </ul>
-        <form class="theme-switcher">
-            <label>
-                <input type="radio" name="theme" value="system" checked>
-                System
-            </label>
-            <label>
-                <input type="radio" name="theme" value="light">
-                Light
-            </label>
-            <label>
-                <input type="radio" name="theme" value="dark">
-                Dark
-            </label>
-        </form>
-    </nav>
-    <div class="page-title">
-        <h1>Component system</h1>
-        <p>Below is a description of the design system that powers this site</p>
-    </div>
-    <main class="exposed-grid">
-        <section class="exposed-grid">
-            <div class="category-title">
-                <h2>Text & Type</h2>
-                <p>Describes different parts about text and typesetting.</p>
-            </div>
-            <section class="part exposed-grid">
-                <div class="documentation">
-                    <h3 class="h2">Text sizes</h3>
-                    <p>Documentation... todo</p>
-                </div>
+		<script>
+			(function() {
+				const theme = localStorage.getItem('theme');
+				if (theme) {
+					document.documentElement.setAttribute('data-theme', theme);
+					} else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+						document.documentElement.setAttribute('data-theme', 'dark');
+						} else {
+							document.documentElement.setAttribute('data-theme', 'light');
+						}
+						})();
+		</script>
+	</head>
+	<body class="component-system-page">
+		<nav>
+			<ul>
+				<li><a href="/" class="current">/index.html</a></li>
+				<li><a href="/">/design-system.html</a></li>
+			</ul>
+			<form class="theme-switcher form">
 
-                <div class="example">
-                    <div> 
-                        <p class="h1">Heading 1</p>
-                        <p class="h2">Heading 2</p>
-                        <p class="p">Paragraph</p>
-                        <p class="p2">Paragraph 2</p>
-                    </div>
-                </div>
-            </section>
+				<fieldset class="radio-group">
+					<label class="radio-input">
+						<input type="radio" name="theme" value="system">
+						System
+					</label>
+					<label class="radio-input">
+						<input type="radio" name="theme" value="light">
+						Light
+					</label>
+					<label class="radio-input">
+						<input type="radio" name="theme" value="dark">
+						Dark
+					</label>
+				</fieldset>
+			</form>
+		</nav>
+		<div class="page-title glitch-parent">
+			<h1 class="text-glitch" title="Component system">Component system</h1>
+			<p>Below is a description of the design system that powers this site</p>
+		</div>
+		<main class="exposed-grid">
+			<section class="exposed-grid">
+				<div class="category-title">
+					<h2>Text & Type</h2>
+					<p>Describes different parts about text and typesetting.</p>
+				</div>
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Text sizes</h3>
+						<p>Documentation... todo</p>
+					</div>
 
+					<div class="example">
+						<div>
+							<p class="h1">Heading 1</p>
+							<p class="h2">Heading 2</p>
+							<p class="p">Paragraph</p>
+							<p class="p2">Paragraph 2</p>
+						</div>
+					</div>
+				</section>
 
-            <section class="part exposed-grid">
-                <div class="documentation">
-                    <h3 class="h2">Text colors</h3>
-                    <p>Documentation... todo</p>
-                </div>
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Text colors</h3>
+						<p>Documentation... todo</p>
+					</div>
 
-                <div class="example">
-                    <div> 
-                        <p class="color-text">Color text</p>
-                        <p class="color-text-weak">Color text weak</p>
-                        <p class="color-text-weaker">Color text weaker</p>
-                        <p class="color-text-weakest">Color text weakest</p>
-                        <p class="color-text-link">Color text link</p>
-                        <p class="color-text-on-accent bg-accent">Color text on-accent</p>
-                        <p class="color-text-danger">Color text danger</p>
-                        <p class="color-text-success">Color text success</p>
-                        <p class="color-text-warning">Color text warning</p>
-                        <p class="color-text-neutral">Color text neutral</p>
+					<div class="example">
+						<div>
+							<p class="color-text">Color text</p>
+							<p class="color-text-weak">Color text weak</p>
+							<p class="color-text-weaker">Color text weaker</p>
+							<p class="color-text-weakest">Color text weakest</p>
+							<p class="color-text-link">Color text link</p>
+							<p class="color-text-on-accent bg-accent">Color text on-accent</p>
+							<p class="color-text-danger">Color text danger</p>
+							<p class="color-text-success">Color text success</p>
+							<p class="color-text-warning">Color text warning</p>
+							<p class="color-text-neutral">Color text neutral</p>
+						</div>
+					</div>
+				</section>
 
-                    </div>
-                </div>
-            </section>
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Paragraphs</h3>
+						<p>Documentation... todo</p>
+					</div>
 
+					<div class="example Paragraphs">
+						<p class="width-content-1">
+							Maecenas vel euismod enim. Morbi eget turpis sem. Vestibulum eget lectus neque. Nunc consectetur viverra mattis. Quisque nec justo at velit ullamcorper tristique id at nibh. In id eros ac nibh tempus dapibus. Donec malesuada eu mi quis sodales. Phasellus a lacus quis eros eleifend pretium. Vestibulum pharetra mattis posuere. Fusce malesuada consectetur dictum.
+						</p>
+						<p class="width-content-2">
+							Maecenas vel euismod enim. Morbi eget turpis sem. Vestibulum eget lectus neque. Nunc consectetur viverra mattis. Quisque nec justo at velit ullamcorper tristique id at nibh. In id eros ac nibh tempus dapibus. Donec malesuada eu mi quis sodales. Phasellus a lacus quis eros eleifend pretium. Vestibulum pharetra mattis posuere. Fusce malesuada consectetur dictum.
+						</p>
+						<p class="width-content-3">
+							Maecenas vel euismod enim. Morbi eget turpis sem. Vestibulum eget lectus neque. Nunc consectetur viverra mattis. Quisque nec justo at velit ullamcorper tristique id at nibh. In id eros ac nibh tempus dapibus. Donec malesuada eu mi quis sodales. Phasellus a lacus quis eros eleifend pretium. Vestibulum pharetra mattis posuere. Fusce malesuada consectetur dictum.
+						</p>
+					</div>
+				</section>
+			</section>
 
-            <section class="part exposed-grid">
-                <div class="documentation">
-                    <h3 class="h2">Paragraphs</h3>
-                    <p>Documentation... todo</p>
-                </div>
+			<section class="exposed-grid">
+				<div class="category-title">
+					<h2>Colors</h2>
+					<p>Describes the color system used in the design.</p>
+				</div>
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Accent Colors</h3>
+						<p>Documentation... todo</p>
+					</div>
 
+					<div class="example">
+						<div class="color-table">
+							<div class="header">
+								<div>Color</div>
+								<div>Name</div>
+								<div>Description</div>
+							</div>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-accent))"></div></div>
+									<div>color-accent</div>
+									<div>Accent color. Used as primary button background, hero area background, and as a link color. This color provides accessible contrast when used for text on light background.</div>
+								</summary>
+								<div>Accent color. Used as primary button background, hero area background, and as a link color. This color provides accessible contrast when used for text on light background.</div>
+							</details>
+						</div>
+					</div>
+				</section>
 
-                <div class="example Paragraphs">
-                    <p class="width-content-1"> Maecenas vel euismod enim. Morbi eget turpis sem. Vestibulum eget lectus neque. Nunc consectetur viverra mattis. Quisque nec justo at velit ullamcorper tristique id at nibh. In id eros ac nibh tempus dapibus. Donec malesuada eu mi quis sodales. Phasellus a lacus quis eros eleifend pretium. Vestibulum pharetra mattis posuere. Fusce malesuada consectetur dictum.</p>
-                    <p class="width-content-2"> Maecenas vel euismod enim. Morbi eget turpis sem. Vestibulum eget lectus neque. Nunc consectetur viverra mattis. Quisque nec justo at velit ullamcorper tristique id at nibh. In id eros ac nibh tempus dapibus. Donec malesuada eu mi quis sodales. Phasellus a lacus quis eros eleifend pretium. Vestibulum pharetra mattis posuere. Fusce malesuada consectetur dictum.</p>
-                    <p class="width-content-3"> Maecenas vel euismod enim. Morbi eget turpis sem. Vestibulum eget lectus neque. Nunc consectetur viverra mattis. Quisque nec justo at velit ullamcorper tristique id at nibh. In id eros ac nibh tempus dapibus. Donec malesuada eu mi quis sodales. Phasellus a lacus quis eros eleifend pretium. Vestibulum pharetra mattis posuere. Fusce malesuada consectetur dictum.</p>
-                </div>
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Text Colors</h3>
+						<p>Documentation... todo</p>
+					</div>
 
-            </section>
-        </section>
+					<div class="example">
+						<div class="color-table">
+							<div class="header">
+								<div>Color</div>
+								<div>Name</div>
+								<div>Description</div>
+							</div>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-text))"></div></div>
+									<div>color-text</div>
+									<div>Default text color. Used as the main text color throughout the UI. Provides good and legible contrast for our content.</div>
+								</summary>
+								<div>Default text color. Used as the main text color throughout the UI. Provides good and legible contrast for our content.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-text-link))"></div></div>
+									<div>color-text-link</div>
+									<div>Default link text color. Used for all paragraph level links in an user interface.</div>
+								</summary>
+								<div>Default link text color. Used for all paragraph level links in an user interface.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-text-weak))"></div></div>
+									<div>color-text-weak</div>
+									<div>Weak text color. Used for e.g. introduction paragraphs and help texts that are coupled with form elements.</div>
+								</summary>
+								<div>Weak text color. Used for e.g. introduction paragraphs and help texts that are coupled with form elements.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-text-weaker))"></div></div>
+									<div>color-text-weaker</div>
+									<div>Weaker text color. Used for e.g. disabled buttons, footers, table headings, captions and placeholder texts.</div>
+								</summary>
+								<div>Weaker text color. Used for e.g. disabled buttons, footers, table headings, captions and placeholder texts.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-text-weakest))"></div></div>
+									<div>color-text-weakest</div>
+									<div>Weakest text color. Used for e.g. disabled input text and placeholder text in focused inputs.</div>
+								</summary>
+								<div>Weakest text color. Used for e.g. disabled input text and placeholder text in focused inputs.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-text-on-accent))"></div></div>
+									<div>color-text-on-accent</div>
+									<div>Default text on accent color. Used when text sits on the accent color or a dark background.</div>
+								</summary>
+								<div>Default text on accent color. Used when text sits on the accent color or a dark background.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-text-danger))"></div></div>
+									<div>color-text-danger</div>
+									<div>Default text color for danger messages. Also used for the danger badge text.</div>
+								</summary>
+								<div>Default text color for danger messages. Also used for the danger badge text.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-text-success))"></div></div>
+									<div>color-text-success</div>
+									<div>Default text color for success messages. Also used for the success badge text.</div>
+								</summary>
+								<div>Default text color for success messages. Also used for the success badge text.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-text-neutral))"></div></div>
+									<div>color-text-neutral</div>
+									<div>Neutral text color. Used for the neutral badge text.</div>
+								</summary>
+								<div>Neutral text color. Used for the neutral badge text.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-text-info))"></div></div>
+									<div>color-text-info</div>
+									<div>Info text color. Used for the info badge text.</div>
+								</summary>
+								<div>Info text color. Used for the info badge text.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-text-warning))"></div></div>
+									<div>color-text-warning</div>
+									<div>Warning text color. Used for the warning badge text.</div>
+								</summary>
+								<div>Warning text color. Used for the warning badge text.</div>
+							</details>
+						</div>
+					</div>
+				</section>
 
-        <section class="exposed-grid">
-            <div class="category-title">
-                <h2>Colors</h2>
-                <p>Describes the color system used in the design.</p>
-            </div>
-            <section class="part exposed-grid">
-                <div class="documentation">
-                    <h3 class="h2">Accent Colors</h3>
-                    <p>Documentation... todo</p>
-                </div>
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Background & Surface Colors</h3>
+						<p>Documentation... todo</p>
+					</div>
 
-                <div class="example">
-                    <div class="color-table">
-                        <div class="header">
-                            <div>Color</div>
-                            <div>Name</div>
-                            <div>Description</div>
-                        </div>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-accent))"></div></div>
-                                <div>color-accent</div>
-                                <div>Accent color. Used as primary button background, hero area background, and as a link color. This color provides accessible contrast when used for text on light background.</div>
-                            </summary>
-                            <div>Accent color. Used as primary button background, hero area background, and as a link color. This color provides accessible contrast when used for text on light background.</div>
-                        </details>
-                    </div>
-                </div>
-            </section>
+					<div class="example">
+						<div class="color-table">
+							<div class="header">
+								<div>Color</div>
+								<div>Name</div>
+								<div>Description</div>
+							</div>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-background))"></div></div>
+									<div>color-background</div>
+									<div>Default application background color. Should be set to either html or body element.</div>
+								</summary>
+								<div>Default application background color. Should be set to either html or body element.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-surface))"></div></div>
+									<div>color-surface</div>
+									<div>Default application surface color. Use this for e.g. card backgrounds.</div>
+								</summary>
+								<div>Default application surface color. Use this for e.g. card backgrounds.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-surface-raised))"></div></div>
+									<div>color-surface-raised</div>
+									<div>Default raised surface color. Use this when you need to separate a specific layer from the surface color, e.g. table headers.</div>
+								</summary>
+								<div>Default raised surface color. Use this when you need to separate a specific layer from the surface color, e.g. table headers.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-surface-lowered))"></div></div>
+									<div>color-surface-lowered</div>
+									<div>Default lowered surface color. Use this when you need to make a specific layer to appear lower than the surface color, e.g. progress bar.</div>
+								</summary>
+								<div>Default lowered surface color. Use this when you need to make a specific layer to appear lower than the surface color, e.g. progress bar.</div>
+							</details>
+						</div>
+					</div>
+				</section>
 
-            <section class="part exposed-grid">
-                <div class="documentation">
-                    <h3 class="h2">Text Colors</h3>
-                    <p>Documentation... todo</p>
-                </div>
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Border Colors</h3>
+						<p>Documentation... todo</p>
+					</div>
 
-                <div class="example">
-                    <div class="color-table">
-                        <div class="header">
-                            <div>Color</div>
-                            <div>Name</div>
-                            <div>Description</div>
-                        </div>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-text))"></div></div>
-                                <div>color-text</div>
-                                <div>Default text color. Used as the main text color throughout the UI. Provides good and legible contrast for our content.</div>
-                            </summary>
-                            <div>Default text color. Used as the main text color throughout the UI. Provides good and legible contrast for our content.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-text-link))"></div></div>
-                                <div>color-text-link</div>
-                                <div>Default link text color. Used for all paragraph level links in an user interface.</div>
-                            </summary>
-                            <div>Default link text color. Used for all paragraph level links in an user interface.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-text-weak))"></div></div>
-                                <div>color-text-weak</div>
-                                <div>Weak text color. Used for e.g. introduction paragraphs and help texts that are coupled with form elements.</div>
-                            </summary>
-                            <div>Weak text color. Used for e.g. introduction paragraphs and help texts that are coupled with form elements.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-text-weaker))"></div></div>
-                                <div>color-text-weaker</div>
-                                <div>Weaker text color. Used for e.g. disabled buttons, footers, table headings, captions and placeholder texts.</div>
-                            </summary>
-                            <div>Weaker text color. Used for e.g. disabled buttons, footers, table headings, captions and placeholder texts.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-text-weakest))"></div></div>
-                                <div>color-text-weakest</div>
-                                <div>Weakest text color. Used for e.g. disabled input text and placeholder text in focused inputs.</div>
-                            </summary>
-                            <div>Weakest text color. Used for e.g. disabled input text and placeholder text in focused inputs.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-text-on-accent))"></div></div>
-                                <div>color-text-on-accent</div>
-                                <div>Default text on accent color. Used when text sits on the accent color or a dark background.</div>
-                            </summary>
-                            <div>Default text on accent color. Used when text sits on the accent color or a dark background.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-text-danger))"></div></div>
-                                <div>color-text-danger</div>
-                                <div>Default text color for danger messages. Also used for the danger badge text.</div>
-                            </summary>
-                            <div>Default text color for danger messages. Also used for the danger badge text.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-text-success))"></div></div>
-                                <div>color-text-success</div>
-                                <div>Default text color for success messages. Also used for the success badge text.</div>
-                            </summary>
-                            <div>Default text color for success messages. Also used for the success badge text.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-text-neutral))"></div></div>
-                                <div>color-text-neutral</div>
-                                <div>Neutral text color. Used for the neutral badge text.</div>
-                            </summary>
-                            <div>Neutral text color. Used for the neutral badge text.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-text-info))"></div></div>
-                                <div>color-text-info</div>
-                                <div>Info text color. Used for the info badge text.</div>
-                            </summary>
-                            <div>Info text color. Used for the info badge text.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-text-warning))"></div></div>
-                                <div>color-text-warning</div>
-                                <div>Warning text color. Used for the warning badge text.</div>
-                            </summary>
-                            <div>Warning text color. Used for the warning badge text.</div>
-                        </details>
-                    </div>
-                </div>
-            </section>
+					<div class="example">
+						<div class="color-table">
+							<div class="header">
+								<div>Color</div>
+								<div>Name</div>
+								<div>Description</div>
+							</div>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-border))"></div></div>
+									<div>color-border</div>
+									<div>Default border color</div>
+								</summary>
+								<div>Default border color</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-border-strong))"></div></div>
+									<div>color-border-strong</div>
+									<div>Strong border color for highlighting specific parts in the user interface.</div>
+								</summary>
+								<div>Strong border color for highlighting specific parts in the user interface.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-border-hover))"></div></div>
+									<div>color-border-hover</div>
+									<div>Default border hover color.</div>
+								</summary>
+								<div>Default border hover color.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-border-danger))"></div></div>
+									<div>color-border-danger</div>
+									<div>Danger border color. Used for the danger badge border style.</div>
+								</summary>
+								<div>Danger border color. Used for the danger badge border style.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-border-success))"></div></div>
+									<div>color-border-success</div>
+									<div>Success border color. Used for the success badge border style.</div>
+								</summary>
+								<div>Success border color. Used for the success badge border style.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-border-neutral))"></div></div>
+									<div>color-border-neutral</div>
+									<div>Neutral border color. Used for the neutral badge border style.</div>
+								</summary>
+								<div>Neutral border color. Used for the neutral badge border style.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-border-info))"></div></div>
+									<div>color-border-info</div>
+									<div>Info border color. Used for the info badge border style.</div>
+								</summary>
+								<div>Info border color. Used for the info badge border style.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-border-warning))"></div></div>
+									<div>color-border-warning</div>
+									<div>Warning border color. Used for the warning badge border style.</div>
+								</summary>
+								<div>Warning border color. Used for the warning badge border style.</div>
+							</details>
+						</div>
+					</div>
+				</section>
 
-            <section class="part exposed-grid">
-                <div class="documentation">
-                    <h3 class="h2">Background & Surface Colors</h3>
-                    <p>Documentation... todo</p>
-                </div>
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Status Colors</h3>
+						<p>Documentation... todo</p>
+					</div>
 
-                <div class="example">
-                    <div class="color-table">
-                        <div class="header">
-                            <div>Color</div>
-                            <div>Name</div>
-                            <div>Description</div>
-                        </div>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-background))"></div></div>
-                                <div>color-background</div>
-                                <div>Default application background color. Should be set to either html or body element.</div>
-                            </summary>
-                            <div>Default application background color. Should be set to either html or body element.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-surface))"></div></div>
-                                <div>color-surface</div>
-                                <div>Default application surface color. Use this for e.g. card backgrounds.</div>
-                            </summary>
-                            <div>Default application surface color. Use this for e.g. card backgrounds.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-surface-raised))"></div></div>
-                                <div>color-surface-raised</div>
-                                <div>Default raised surface color. Use this when you need to separate a specific layer from the surface color, e.g. table headers.</div>
-                            </summary>
-                            <div>Default raised surface color. Use this when you need to separate a specific layer from the surface color, e.g. table headers.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-surface-lowered))"></div></div>
-                                <div>color-surface-lowered</div>
-                                <div>Default lowered surface color. Use this when you need to make a specific layer to appear lower than the surface color, e.g. progress bar.</div>
-                            </summary>
-                            <div>Default lowered surface color. Use this when you need to make a specific layer to appear lower than the surface color, e.g. progress bar.</div>
-                        </details>
-                    </div>
-                </div>
-            </section>
+					<div class="example">
+						<div class="color-table">
+							<div class="header">
+								<div>Color</div>
+								<div>Name</div>
+								<div>Description</div>
+							</div>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-status-danger))"></div></div>
+									<div>color-status-danger</div>
+									<div>Default danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.</div>
+								</summary>
+								<div>Default danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-status-success))"></div></div>
+									<div>color-status-success</div>
+									<div>Default success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.</div>
+								</summary>
+								<div>Default success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-status-neutral))"></div></div>
+									<div>color-status-neutral</div>
+									<div>Default neutral status color.</div>
+								</summary>
+								<div>Default neutral status color.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-status-info))"></div></div>
+									<div>color-status-info</div>
+									<div>Default info status color. Used to convey something informal.</div>
+								</summary>
+								<div>Default info status color. Used to convey something informal.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-status-warning))"></div></div>
+									<div>color-status-warning</div>
+									<div>Default warning status color. Used to display information that needs user’s attention and may require further steps.</div>
+								</summary>
+								<div>Default warning status color. Used to display information that needs user’s attention and may require further steps.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-status-danger-weak))"></div></div>
+									<div>color-status-danger-weak</div>
+									<div>Weak danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.</div>
+								</summary>
+								<div>Weak danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-status-success-weak))"></div></div>
+									<div>color-status-success-weak</div>
+									<div>Weak success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.</div>
+								</summary>
+								<div>Weak success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-status-neutral-weak))"></div></div>
+									<div>color-status-neutral-weak</div>
+									<div>Weak neutral status color. Used for the badge default state.</div>
+								</summary>
+								<div>Weak neutral status color. Used for the badge default state.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-status-info-weak))"></div></div>
+									<div>color-status-info-weak</div>
+									<div>Weak info status color. Used to convey something informal.</div>
+								</summary>
+								<div>Weak info status color. Used to convey something informal.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-status-warning-weak))"></div></div>
+									<div>color-status-warning-weak</div>
+									<div>Weak warning status color. Used to display information that needs a user’s attention and may require further steps.</div>
+								</summary>
+								<div>Weak warning status color. Used to display information that needs a user’s attention and may require further steps.</div>
+							</details>
+						</div>
+					</div>
+				</section>
 
-            <section class="part exposed-grid">
-                <div class="documentation">
-                    <h3 class="h2">Border Colors</h3>
-                    <p>Documentation... todo</p>
-                </div>
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Interactive Colors</h3>
+						<p>Documentation... todo</p>
+					</div>
 
-                <div class="example">
-                    <div class="color-table">
-                        <div class="header">
-                            <div>Color</div>
-                            <div>Name</div>
-                            <div>Description</div>
-                        </div>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-border))"></div></div>
-                                <div>color-border</div>
-                                <div>Default border color</div>
-                            </summary>
-                            <div>Default border color</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-border-strong))"></div></div>
-                                <div>color-border-strong</div>
-                                <div>Strong border color for highlighting specific parts in the user interface.</div>
-                            </summary>
-                            <div>Strong border color for highlighting specific parts in the user interface.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-border-hover))"></div></div>
-                                <div>color-border-hover</div>
-                                <div>Default border hover color.</div>
-                            </summary>
-                            <div>Default border hover color.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-border-danger))"></div></div>
-                                <div>color-border-danger</div>
-                                <div>Danger border color. Used for the danger badge border style.</div>
-                            </summary>
-                            <div>Danger border color. Used for the danger badge border style.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-border-success))"></div></div>
-                                <div>color-border-success</div>
-                                <div>Success border color. Used for the success badge border style.</div>
-                            </summary>
-                            <div>Success border color. Used for the success badge border style.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-border-neutral))"></div></div>
-                                <div>color-border-neutral</div>
-                                <div>Neutral border color. Used for the neutral badge border style.</div>
-                            </summary>
-                            <div>Neutral border color. Used for the neutral badge border style.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-border-info))"></div></div>
-                                <div>color-border-info</div>
-                                <div>Info border color. Used for the info badge border style.</div>
-                            </summary>
-                            <div>Info border color. Used for the info badge border style.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-border-warning))"></div></div>
-                                <div>color-border-warning</div>
-                                <div>Warning border color. Used for the warning badge border style.</div>
-                            </summary>
-                            <div>Warning border color. Used for the warning badge border style.</div>
-                        </details>
-                    </div>
-                </div>
-            </section>
+					<div class="example">
+						<div class="color-table">
+							<div class="header">
+								<div>Color</div>
+								<div>Name</div>
+								<div>Description</div>
+							</div>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-button-hover))"></div></div>
+									<div>color-button-hover</div>
+									<div>Default button hover background color.</div>
+								</summary>
+								<div>Default button hover background color.</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-icon))"></div></div>
+									<div>color-icon</div>
+									<div>Default icon color</div>
+								</summary>
+								<div>Default icon color</div>
+							</details>
+							<details class="row">
+								<summary>
+									<div><div class="swatch" style="background: hsl(var(--color-icon-hover))"></div></div>
+									<div>color-icon-hover</div>
+									<div>Default icon hover color</div>
+								</summary>
+								<div>Default icon hover color</div>
+							</details>
+						</div>
+					</div>
+				</section>
+			</section>
 
-            <section class="part exposed-grid">
-                <div class="documentation">
-                    <h3 class="h2">Status Colors</h3>
-                    <p>Documentation... todo</p>
-                </div>
+			<section class="exposed-grid">
+				<div class="category-title">
+					<h2>Visual elements</h2>
+					<p>Elements used for stylistic purpose.</p>
+				</div>
 
-                <div class="example">
-                    <div class="color-table">
-                        <div class="header">
-                            <div>Color</div>
-                            <div>Name</div>
-                            <div>Description</div>
-                        </div>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-status-danger))"></div></div>
-                                <div>color-status-danger</div>
-                                <div>Default danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.</div>
-                            </summary>
-                            <div>Default danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-status-success))"></div></div>
-                                <div>color-status-success</div>
-                                <div>Default success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.</div>
-                            </summary>
-                            <div>Default success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-status-neutral))"></div></div>
-                                <div>color-status-neutral</div>
-                                <div>Default neutral status color.</div>
-                            </summary>
-                            <div>Default neutral status color.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-status-info))"></div></div>
-                                <div>color-status-info</div>
-                                <div>Default info status color. Used to convey something informal.</div>
-                            </summary>
-                            <div>Default info status color. Used to convey something informal.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-status-warning))"></div></div>
-                                <div>color-status-warning</div>
-                                <div>Default warning status color. Used to display information that needs user’s attention and may require further steps.</div>
-                            </summary>
-                            <div>Default warning status color. Used to display information that needs user’s attention and may require further steps.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-status-danger-weak))"></div></div>
-                                <div>color-status-danger-weak</div>
-                                <div>Weak danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.</div>
-                            </summary>
-                            <div>Weak danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-status-success-weak))"></div></div>
-                                <div>color-status-success-weak</div>
-                                <div>Weak success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.</div>
-                            </summary>
-                            <div>Weak success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-status-neutral-weak))"></div></div>
-                                <div>color-status-neutral-weak</div>
-                                <div>Weak neutral status color. Used for the badge default state.</div>
-                            </summary>
-                            <div>Weak neutral status color. Used for the badge default state.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-status-info-weak))"></div></div>
-                                <div>color-status-info-weak</div>
-                                <div>Weak info status color. Used to convey something informal.</div>
-                            </summary>
-                            <div>Weak info status color. Used to convey something informal.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-status-warning-weak))"></div></div>
-                                <div>color-status-warning-weak</div>
-                                <div>Weak warning status color. Used to display information that needs a user’s attention and may require further steps.</div>
-                            </summary>
-                            <div>Weak warning status color. Used to display information that needs a user’s attention and may require further steps.</div>
-                        </details>
-                    </div>
-                </div>
-            </section>
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Exposed grid</h3>
+						<p>Use this to show grid lines, works with both css grid and flexbox. Built using shadows and gap.</p>
+					</div>
+					<div class="example">
+						<div class="exposed-grid example-grid">
+							<div>Cell 1</div>
+							<div>Cell 2</div>
+							<div>Cell 3</div>
+							<div>Cell 4</div>
+							<div>Cell 5</div>
+							<div>Cell 6</div>
+							<div>Cell 7</div>
+							<div>Cell 8</div>
+						</div>
+					</div>
+				</section>
 
-            <section class="part exposed-grid">
-                <div class="documentation">
-                    <h3 class="h2">Interactive Colors</h3>
-                    <p>Documentation... todo</p>
-                </div>
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Background patterns</h3>
+						<p>Adds interest, and highlight</p>
+					</div>
+					<div class="example background-patterns-section">
+						<h3>Default</h3>
+						<div class="flex gap-1">
+							<div class="background-pattern" data-pattern="lines">
+							</div>
+							<div class="background-pattern" data-pattern="dots">
+							</div>
+							<div class="background-pattern" data-pattern="diagonal">
+							</div>
+							<div class="background-pattern" data-pattern="grid">
+							</div>
+						</div>
 
-                <div class="example">
-                    <div class="color-table">
-                        <div class="header">
-                            <div>Color</div>
-                            <div>Name</div>
-                            <div>Description</div>
-                        </div>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-button-hover))"></div></div>
-                                <div>color-button-hover</div>
-                                <div>Default button hover background color.</div>
-                            </summary>
-                            <div>Default button hover background color.</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-icon))"></div></div>
-                                <div>color-icon</div>
-                                <div>Default icon color</div>
-                            </summary>
-                            <div>Default icon color</div>
-                        </details>
-                        <details class="row">
-                            <summary>
-                                <div><div class="swatch" style="background: hsl(var(--color-icon-hover))"></div></div>
-                                <div>color-icon-hover</div>
-                                <div>Default icon hover color</div>
-                            </summary>
-                            <div>Default icon hover color</div>
-                        </details>
-                    </div>
-                </div>
-            </section>
-        </section>
+						<h3>Large</h3>
+						<div class="flex gap-1">
+							<div class="background-pattern"
+							     data-pattern="lines"
+							     data-size="large"
+							>
+							</div>
+							<div class="background-pattern"
+							     data-pattern="dots"
+							     data-size="large"
+							>
+							</div>
+							<div class="background-pattern"
+							     data-pattern="diagonal"
+							     data-size="large"
+							>
+							</div>
+							<div class="background-pattern"
+							     data-pattern="grid"
+							     data-size="large"
+							>
+							</div>
+						</div>
 
-        <section class="exposed-grid">
-            <div class="category-title">
-                <h2>Visual elements</h2>
-                <p>Elements used for stylistic purpose.</p>
-            </div>
+						<h3>Strong variations</h3>
+						<div class="flex gap-1">
+							<div class="background-pattern" data-pattern="lines" data-variant="strong">
+							</div>
+							<div class="background-pattern" data-pattern="dots" data-variant="strong">
+							</div>
+							<div class="background-pattern" data-pattern="diagonal" data-variant="strong">
+							</div>
+							<div class="background-pattern" data-pattern="grid" data-variant="strong">
+							</div>
+						</div>
 
-            <section class="part exposed-grid">
-                <div class="documentation">
-                    <h3 class="h2">Exposed grid</h3>
-                    <p>Use this to show grid lines, works with both css grid and flexbox. Built using shadows and gap.</p>
-                </div>
-                <div class="example">
-                    <div class="exposed-grid example-grid">
-                        <div>Cell 1</div>
-                        <div>Cell 2</div>
-                        <div>Cell 3</div>
-                        <div>Cell 4</div>
-                        <div>Cell 5</div>
-                        <div>Cell 6</div>
-                        <div>Cell 7</div>
-                        <div>Cell 8</div>
-                    </div>
-                </div>
-            </section>
+						<h3>Danger variations</h3>
+						<div class="flex gap-1">
+							<div class="background-pattern" data-pattern="lines" data-variant="danger">
+							</div>
+							<div class="background-pattern" data-pattern="dots" data-variant="danger">
+							</div>
+							<div class="background-pattern" data-pattern="diagonal" data-variant="danger">
+							</div>
+							<div class="background-pattern" data-pattern="grid" data-variant="danger">
+							</div>
+						</div>
 
-            <section class="part exposed-grid">
-                <div class="documentation">
-                    <h3 class="h2">Obsidian</h3>
-                    <p>Interesting shape, good for putting images inside. Works both horizontally and vertically</p>
-                </div>
-                <div class="example">
-                    <div class="obsidian-image">
-                        <!-- https://unsplash.com/photos/abstract-wavy-lines-on-a-black-background--kG_ZPTn5cQ -->
-                        <img src="/assets/photo-1759266097947-397b6b7e7440.jpg"  />
-                    </div>
+						<h3>Success variations</h3>
+						<div class="flex gap-1">
+							<div class="background-pattern" data-pattern="lines" data-variant="success">
+							</div>
+							<div class="background-pattern" data-pattern="dots" data-variant="success">
+							</div>
+							<div class="background-pattern" data-pattern="diagonal" data-variant="success">
+							</div>
+							<div class="background-pattern" data-pattern="grid" data-variant="success">
+							</div>
+						</div>
 
-                    <div class="obsidian-image" data-variant="horizontal">
-                        <!-- https://unsplash.com/photos/abstract-wavy-lines-in-various-colors-create-a-pattern-NmS_4j4FYr8 -->
-                        <img src="/assets/premium_photo-1751343381917-3cdca2b6801f.jpg"  />
-                    </div>
-                </div>
-            </section>
-        </section>
+						<h3>Neutral variations</h3>
+						<div class="flex gap-1">
+							<div class="background-pattern" data-pattern="lines" data-variant="neutral">
+							</div>
+							<div class="background-pattern" data-pattern="dots" data-variant="neutral">
+							</div>
+							<div class="background-pattern" data-pattern="diagonal" data-variant="neutral">
+							</div>
+							<div class="background-pattern" data-pattern="grid" data-variant="neutral">
+							</div>
+						</div>
 
+						<h3>Info variations</h3>
+						<div class="flex gap-1">
+							<div class="background-pattern" data-pattern="lines" data-variant="info">
+							</div>
+							<div class="background-pattern" data-pattern="dots" data-variant="info">
+							</div>
+							<div class="background-pattern" data-pattern="diagonal" data-variant="info">
+							</div>
+							<div class="background-pattern" data-pattern="grid" data-variant="info">
+							</div>
+						</div>
 
-        <section class="exposed-grid">
-            <div class="category-title">
-                <h2>Components</h2>
-                <p>Building blocks</p>
-            </div>
+						<h3>Warning variations</h3>
+						<div class="flex gap-1">
+							<div class="background-pattern" data-pattern="lines" data-variant="warning">
+							</div>
+							<div class="background-pattern" data-pattern="dots" data-variant="warning">
+							</div>
+							<div class="background-pattern" data-pattern="diagonal" data-variant="warning">
+							</div>
+							<div class="background-pattern" data-pattern="grid" data-variant="warning">
+							</div>
+						</div>
+					</div>
+				</section>
 
-            <section class="part exposed-grid">
-                <div class="documentation">
-                    <h3 class="h2">Box</h3>
-                    <p>A real workhorse, Boxes are everywhere.</p>
-                    <p>Options.</p>
-                    <ul>
-                        <li>data-padded=true|false(default)</li>
-                        <li>data-rounded=true(default)|false</li>
-                    </ul>
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Glitch text</h3>
+						<p>Glitchy text for display purpose</p>
+					</div>
+					<div class="example">
+						<p class="h1 text-glitch"
+						   title="I will glitch on hover"
+						>I will glitch on hover</p>
+						<p class="h1 text-glitch"
+						   data-autoplay="true"
+						   title="I will always glitch"
+						>I will always glitch</p>
+					</div>
+				</section>
 
-                </div>
-                <div class="example">
-                    <div class="box">
-                        Box
-                    </div>
-                    <div class="box" data-padded="true">
-                        Padded box
-                    </div>
-                    <div class="box" data-padded="true" data-rounded="false">
-                        Padded and not rounded box
-                    </div>
-                </div>
-            </section>
-        </section>
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Obsidian</h3>
+						<p>Interesting shape, good for putting images inside. Works both horizontally and vertically</p>
+					</div>
+					<div class="example" data-layout="row">
+						<div class="obsidian-image">
+							<!-- https://unsplash.com/photos/abstract-wavy-lines-on-a-black-background--kG_ZPTn5cQ -->
+							<img alt="Abstract black and white lines" src="/assets/photo-1759266097947-397b6b7e7440.jpg">
+						</div>
 
-    </main>
+						<div class="obsidian-image" data-variant="horizontal">
+							<!-- https://unsplash.com/photos/abstract-wavy-lines-in-various-colors-create-a-pattern-NmS_4j4FYr8 -->
+							<img alt="Abstract colored lines" src="/assets/premium_photo-1751343381917-3cdca2b6801f.jpg">
+						</div>
+					</div>
+				</section>
+			</section>
 
-       <script>
-        const form = document.querySelector('.theme-switcher');
-        const html = document.documentElement;
-        
-        // Set initial radio state
-        const savedTheme = localStorage.getItem('theme') || 'system';
-        document.querySelector(`input[value="${savedTheme}"]`).checked = true;
-        
-        // Function to update theme with view transition
-        function updateTheme(theme) {
-            if (theme === 'system') {
-                localStorage.removeItem('theme');
-                // Apply system preference
-                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    html.setAttribute('data-theme', 'dark');
-                } else {
-                    html.setAttribute('data-theme', 'light');
-                }
-            } else {
-                localStorage.setItem('theme', theme);
-                html.setAttribute('data-theme', theme);
-            }
-        }
-        
-        // Handle theme changes with view transition
-        form.addEventListener('change', (e) => {
-            if (e.target.name === 'theme') {
-                const theme = e.target.value;
-                
-                // Check if View Transitions API is supported
-                if (document.startViewTransition) {
-                    document.startViewTransition(() => updateTheme(theme));
-                } else {
-                    updateTheme(theme);
-                }
-            }
-        });
-    </script>
-</body>
+			<section class="exposed-grid">
+				<div class="category-title">
+					<h2>Components</h2>
+					<p>Building blocks</p>
+				</div>
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Form</h3>
+						<p>Form elements plain and simple</p>
+					</div>
+					<div class="example">
+						<div class="form">
+							<label>
+								<span>Text input</span>
+								<input type="text" placeholder="Do use placehoders">
+							</label>
+
+							<label>
+								<span>Textarea</span>
+								<textarea placeholder="Ex. like this"></textarea>
+							</label>
+
+							<div class="label">
+								<span>Radio buttons</span>
+								<fieldset class="radio-group">
+									<label class="radio-input">
+										<input type="radio"
+										       name="example"
+										       value="1"
+										       checked
+										>
+										Option 1
+									</label>
+									<label class="radio-input">
+										<input type="radio" name="example" value="2">
+										Option 2
+									</label>
+									<label class="radio-input">
+										<input type="radio" name="example" value="3">
+										Option 3
+									</label>
+								</fieldset>
+							</div>
+							<div class="label">
+								<button class="button" type="submit">Submit</button>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Box</h3>
+						<p>A real workhorse, Boxes are everywhere.</p>
+						<p>Options:</p>
+						<ul>
+							<li>data-padded=true|false(default)</li>
+							<li>data-rounded=true(default)|false</li>
+
+							<li>data-elevated="surface"</li>
+							<li>data-elevated="surface-raised"</li>
+							<li>data-elevated="surface-lowered"</li>
+						</ul>
+					</div>
+					<div class="box-example">
+						<h3>Defaults</h3>
+						<div class="flex gap-fluid-3">
+							<div class="box">
+								class="box"
+							</div>
+							<div class="box flex gap-fluid-1"
+							     data-elevated="surface"
+							>
+								<span>data-elevated="surface"</span>
+								<div class="box"
+								     data-elevated="surface-raised"
+								>
+									data-elevated="surface-raised"
+								</div>
+								<div class="box"
+								     data-elevated="surface-lowered"
+								>
+									data-elevated="surface-lowered"
+								</div>
+							</div>
+						</div>
+
+						<h3>Options</h3>
+						<div class="flex gap-fluid-3">
+							<div class="box" data-rounded="false">
+								class="box" data-rounded="false"
+							</div>
+							<div class="box" data-rounded="false" data-padded="false">
+								class="box" data-rounded="false" data-padded="false"
+							</div>
+						</div>
+
+						<h3>On patterns</h3>
+						<div class="padding-fluid-1 flex gap-fluid-3 background-pattern" data-pattern="diagonal">
+							<div class="box">class="box"</div>
+							<div class="box box-elevation-example"
+							     data-elevated="surface"
+							>
+								data-elevated="surface"
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<section class="part exposed-grid">
+					<div class="documentation">
+						<h3 class="h2">Collection</h3>
+						<p>Use this to layout collections of data in a grid. Handles uneven grids and breaking</p>
+					</div>
+					<div class="example">
+						<h3>Collection</h3>
+						<div class="collection width-full">
+							<div class="box text-center">Cell 1</div>
+							<div class="box text-center">Cell 2</div>
+							<div class="box text-center">Cell 3</div>
+							<div class="box text-center">Cell 4</div>
+							<div class="box text-center">Cell 5</div>
+						</div>
+						<h3>Width</h3>
+						<div class="collection width-full" data-size="6">
+							<div class="box text-center">Cell 1</div>
+							<div class="box text-center">Cell 2</div>
+							<div class="box text-center">Cell 3</div>
+							<div class="box text-center">Cell 4</div>
+							<div class="box text-center">Cell 5</div>
+						</div>
+						<h3>Gap</h3>
+						<div class="collection width-full"
+						     data-gap="5"
+						>
+							<div class="box text-center">Cell 1</div>
+							<div class="box text-center">Cell 2</div>
+							<div class="box text-center">Cell 3</div>
+							<div class="box text-center">Cell 4</div>
+							<div class="box text-center">Cell 5</div>
+						</div>
+
+						<h3>Combined with exposed grid</h3>
+						<div class="exposed-grid collection width-full border background-pattern" data-pattern="dots">
+							<div class="bg text-center">Cell 1</div>
+							<div class="bg text-center">Cell 2</div>
+							<div class="bg text-center">Cell 3</div>
+							<div class="bg text-center">Cell 4</div>
+							<div class="bg text-center">Cell 5</div>
+						</div>
+					</div>
+				</section>
+			</section>
+		</main>
+
+		<script>
+			const form = document.querySelector('.theme-switcher');
+			const html = document.documentElement;
+			
+			// Set initial radio state
+			const savedTheme = localStorage.getItem('theme') || 'system';
+			document.querySelector(`input[value="${savedTheme}"]`).checked = true;
+			
+			// Function to update theme with view transition
+			function updateTheme(theme) {
+				if (theme === 'system') {
+					localStorage.removeItem('theme');
+					// Apply system preference
+					if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+						html.setAttribute('data-theme', 'dark');
+						} else {
+							html.setAttribute('data-theme', 'light');
+						}
+						} else {
+							localStorage.setItem('theme', theme);
+							html.setAttribute('data-theme', theme);
+						}
+					}
+					
+					// Handle theme changes with view transition
+					form.addEventListener('change', (e) => {
+						if (e.target.name === 'theme') {
+							const theme = e.target.value;
+							
+							// Check if View Transitions API is supported
+							if (document.startViewTransition) {
+								document.startViewTransition(() => updateTheme(theme));
+								} else {
+									updateTheme(theme);
+								}
+							}
+							});
+		</script>
+	</body>
 </html>

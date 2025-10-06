@@ -1,5 +1,6 @@
 @layer layouts {
     .component-system-page {
+        overflow-x: hidden;
         display: grid;
         grid-template-columns: 1fr;
         grid-template-rows: auto auto 1fr;
@@ -10,39 +11,70 @@
         min-height: 100vh;
 
         nav {
-            padding: var(--size-fluid-1);
+            padding-top: var(--size-fluid-1);
             grid-area: nav;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            width: 100%;
+            position: fixed;
+            z-index: var(--layer-3);
 
             ul {
+                left: 0;
                 list-style: none;
                 margin: 0;
-                padding: 0;
                 display: flex;
                 gap: var(--size-fluid-1);
+                padding: 0 var(--size-4);
 
                 li {
                     a {
+                        display: inline-flex;
+                        gap: var(--size-1);
                         color: hsl(var(--color-text));
                         text-decoration: none;
+
+                        &:before {
+                            content: "(";
+                        }
+
+                        &:after {
+                            content: ")";
+                        }
+
+                        &:hover {
+                            color: hsl(var(--color-accent));
+
+                            &:before {
+                                content: "[";
+                            }
+
+                            &:after {
+                                content: "]";
+                            }
+                        }
                     }
                 }
+            }
+
+            .form {
+                right: 0;
             }
         }
 
         .page-title {
             grid-area: title;
-            padding: var(--size-fluid-1);
-            min-height: var(--size-content-1);
+            padding-inline: var(--size-fluid-2);
+            padding-block: var(--size-fluid-4);
+            min-height: var(--size-content-2);
             display: flex;
             flex-direction: column;
             justify-content: center;
 
 
             h1 {
-                font: bold 5rem/1.4 var(--ff-display);
+                font: bold 7rem/1.4 var(--ff-display);
             }
 
             p {
@@ -66,7 +98,7 @@
                     top: 0;
                     padding: var(--size-fluid-3);
                     background: hsl(var(--color-background));
-                    z-index: var(--layer-1);
+                    z-index: var(--layer-2);
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
@@ -85,8 +117,8 @@
                 }
 
                 .part {
-                    display: flex;
-                    flex-direction: column;
+                    display: grid;
+                    grid-template-columns: 1fr;
 
                     .documentation,
                     .example {
@@ -97,18 +129,20 @@
                         position: sticky;
                         /* TODO: Should not be static */
                         top: 6.3rem;
-                        width: 100%;
                         background: hsl(var(--color-surface));
+                        z-index: var(--layer-1);
                     }
 
                     .example {
-                        flex: 1;
+                        display: flex;
                         justify-content: center;
                         align-items: center;
-
-                        display: flex;
                         flex-direction: column;
                         gap: var(--size-fluid-1);
+
+                        &[data-layout="row"] {
+                            flex-direction: row;
+                        }
 
                         .example-grid {
                             display: grid;
@@ -118,23 +152,51 @@
                                 padding: var(--size-fluid-1);
                             }
                         }
+
+
+                        &.background-patterns-section {
+                            .background-pattern {
+                                width: var(--size-fluid-7);
+                                aspect-ratio: 2/1;
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
+
+
+    .box-example {
+        display: flex;
+        flex-direction: column;
+        padding: var(--size-fluid-1);
+        gap: var(--size-fluid-1);
+        align-items: center;
+    }
+
+    .box-elevation-example {
+        display: flex;
+        gap: var(--size-fluid-1);
+    }
+
 }
 
 @media (min-width: 768px) {
     .part {
-        flex-direction: row;
+        grid-template-columns: var(--size-14) 1fr;
     }
 
     .documentation {
         position: sticky;
         top: 7.3rem;
-        width: var(--size-content-2);
         align-self: flex-start;
+    }
+}
+
+@media (min-width: 1000px) {
+    .part {
+        grid-template-columns: var(--size-content-2) 1fr;
     }
 }
