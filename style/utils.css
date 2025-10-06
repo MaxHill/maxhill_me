@@ -27,6 +27,7 @@
     .width-full { width: 100%; }
 
     .flex { display: flex; }
+    .flex-column { display: flex; flex-direction: column;}
     .gap-1 { gap: var(--size-1); }
     .gap-fluid-1 { gap: var(--size-1); }
     .gap-fluid-2 { gap: var(--size-2); }

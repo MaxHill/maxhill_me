@@ -31,8 +31,11 @@
             display: grid;
             grid-column: 1 / -1;
             grid-template-columns: subgrid;
-            border-bottom: var(--_border-input);
             padding: var(--size-1);
+            
+            &:not(:last-child) {
+                border-bottom: var(--_border-input);
+            }
 
             &:has(*:focus) {
                 background: var(--_color-input-background);

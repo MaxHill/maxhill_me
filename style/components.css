@@ -112,9 +112,7 @@
     .box {
         text-decoration: none;
         color: hsl(var(--color-text));
-        display: flex;
         background-color: hsl(var(--color-background));
-        flex-direction: column;
         box-shadow: var(--shadow);
         border: var(--border-width) solid hsl(var(--color-border));
         overflow: hidden;
@@ -288,5 +286,22 @@
         border-radius: 99999px;
         font: var(--p2);
 
+    }
+
+    pre {
+        background: hsl(var(--bg));
+        padding: var(--size-2);
+        border-radius: var(--radius-2);
+        overflow-x: auto;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    code {
+        font-size: var(--size-0);
+    }
+
+    .code-toggle {
+        margin-top: var(--size-1);
     }
 }

@@ -8,7 +8,8 @@
          * contrast when used for text on light
          * background.
          */
-        --color-accent: var(--f-color-blue), 50%;
+        /* --color-accent: var(--f-color-blue), 50%; */
+        --color-accent: 356.7, 94.8%, 35%;
 
         /**
          * Default text color. Used as the main
@@ -22,7 +23,7 @@
          * paragraph level links in an user
          * interface.
          */
-        --color-text-link: var(--f-color-blue), 50%;
+        --color-text-link: var(--color-accent);
         /**
          * Weak text color. Used for e.g. introduction
          * paragraphs and help texts that are
