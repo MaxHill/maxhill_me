@@ -1,6 +1,4 @@
 @layer components {
-
-
     .content-grid {
         --_padding-inline: var(--size-1);
         --_content-max-width: 1600px;
@@ -26,10 +24,6 @@
     .content-grid>.full-width {
         grid-column: full-width;
     }
-
-
-
-
 
     .obsidian-image {
         border: var(--border-width) solid hsl(var(--color-border));
@@ -259,5 +253,40 @@
         &>*:not(script) {
             box-shadow: 0 0 0 var(--_grid-gap) var(--_cell-border);
         }
+    }
+
+    .badge {
+        --_color-background: hsl(var(--color-status-neutral-weak));
+        --_color-border: hsl(var(--color-border-neutral));
+        --_color-text: hsl(var(--color-text-neutral));
+
+        &[data-variant="danger"] {
+            --_color-background: hsl(var(--color-status-danger-weak));
+            --_color-border: hsl(var(--color-border-danger));
+            --_color-text: hsl(var(--color-text-danger));
+        }
+        &[data-variant="success"] {
+            --_color-background: hsl(var(--color-status-success-weak));
+            --_color-border: hsl(var(--color-border-success));
+            --_color-text: hsl(var(--color-text-success));
+        }
+        &[data-variant="info"] {
+            --_color-background: hsl(var(--color-status-info-weak));
+            --_color-border: hsl(var(--color-border-info));
+            --_color-text: hsl(var(--color-text-info));
+        }
+        &[data-variant="warning"] {
+            --_color-background: hsl(var(--color-status-warning-weak));
+            --_color-border: hsl(var(--color-border-warning));
+            --_color-text: hsl(var(--color-text-warning));
+        }
+
+        background: var(--_color-background);
+        border: var(--border-width) solid var(--_color-border);
+        color: var(--_color-text);
+        padding-inline: var(--size-2);
+        border-radius: 99999px;
+        font: var(--p2);
+
     }
 }

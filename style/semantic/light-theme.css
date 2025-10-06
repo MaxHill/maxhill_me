@@ -131,17 +131,17 @@
         /**
          * Weak danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.
          */
-        --color-status-danger-weak: var(--f-color-red), 64%;
+        --color-status-danger-weak: var(--f-color-red), 85%;
         /**
          * Weak success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.
          */
-        --color-status-success-weak: var(--f-color-green), 50%;
+        --color-status-success-weak: var(--f-color-green), 85%;
         /** Weak neutral status color. Used for the badge default state. */
-        --color-status-neutral-weak: var(--f-color-gray), 50%;
+        --color-status-neutral-weak: var(--f-color-gray), 85%;
         /** Weak info status color. Used to convey something informal. */
-        --color-status-info-weak: var(--f-color-blue), 50%;
+        --color-status-info-weak: var(--f-color-blue), 85%;
         /** Weak warning status color. Used to display information that needs a user’s attention and may require further steps. */
-        --color-status-warning-weak: var(--f-color-orange), 50%;
+        --color-status-warning-weak: var(--f-color-orange), 85%;
 
         /** Default button hover background color. */
         --color-button-hover: var(--f-color-gray), 100%;
