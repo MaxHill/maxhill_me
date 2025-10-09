@@ -1,9 +1,0 @@
----
-.title = "HOME",
-.date = @date("1990-01-01T00:00:00"),
-.author = "Sample Author",
-.layout = "page.shtml",
-.draft = false,
---- 
-
-# This is a title
