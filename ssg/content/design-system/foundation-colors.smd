@@ -1,0 +1,18 @@
+---
+.title = "Foundation - Colors",
+.date = @date("1990-01-01T00:00:00"),
+.author = "Max Hill",
+.layout = "page.shtml",
+.draft = false,
+.tags = ["foundation", "colors"]
+--- 
+
+Hello
+
+
+>[]($block.attrs('breakout'))
+>This is now a block note. and im looooooong and booring because i need to take up space even more space more more more
+>Lorem ipsum.
+
+[Look at me!]($image.siteAsset("example-image-2.jpg"))
+[Look at me!]($image.asset("example-image-1.jpg"))
