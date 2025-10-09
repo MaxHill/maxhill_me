@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+	<head id="head">
+		<meta charset="utf-8">
+		<meta name="viewport" content="initial-scale=1">
+		<title>maxhill.me</title>
+
+		<link rel="preload" href="/fonts/optimized/IBMPlexMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/fonts/optimized/DepartureMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
+
+		<link type="text/css" rel="stylesheet" href="/style/style.css">
+
+		<script>
+			(function() {
+				const theme = localStorage.getItem('theme');
+				if (theme) {
+					document.documentElement.setAttribute('data-theme', theme);
+					} else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+						document.documentElement.setAttribute('data-theme', 'dark');
+						} else {
+							document.documentElement.setAttribute('data-theme', 'light');
+						}
+						})();
+		</script>
+
+		
+	</head>
+	<body id="body">
+		<nav class="main-menu">
+			<h1 class="site-title">maxhill.me</h1>
+            <div>
+                <a href="/">Home</a>
+                <a href="/design-system/">Design system</a>
+            </div>
+
+			<form class="theme-switcher">
+                <label class="radio-input">
+                    <input type="radio" name="theme" value="system">
+                    System
+                </label>
+                <label class="radio-input">
+                    <input type="radio" name="theme" value="light">
+                    Light
+                </label>
+                <label class="radio-input">
+                    <input type="radio" name="theme" value="dark">
+                    Dark
+                </label>
+			</form>
+		</nav>
+		
+	<div class="document-listing-page">
+		<nav class="anchor-menu exposed-grid">
+			<a href="#hero" class="nav-link small">~</a>
+			<a href="#document1" class="nav-link">Section 1</a>
+			<a href="#document2" class="nav-link">Section 2</a>
+			<a href="#document3" class="nav-link">Section 3</a>
+			<a href="#document4" class="nav-link">Section 4</a>
+			<a href="#document5" class="nav-link">Section 5</a>
+		</nav>
+		<div class="main">
+			<div id="hero" class="hero glitch-parent">
+				<h1 class="h1 text-glitch" title="Design system">Design system</h1>
+				<div><p>Hello <figure><img src="/example-image-1.jpg">
+<figcaption>Look at me!</figcaption></figure> <figure><img src="/design-system/example-image-3.jpg">
+<figcaption>Look at me!</figcaption></figure></p></div>
+			</div>
+
+			
+
+				<!-- TODO: set id more inteligently -->
+				<div id="document11" class="document">
+					<div class="content-grid">
+						<ul class="full-width document-metadata">
+							<li><span class="label">Title:</span>
+							Foundation - Colors</li>
+							<li><span class="label">Author:</span>
+							Max Hill</li>
+							<li><span class="label">Date:</span>
+							January 01, 1990</li>
+							<li><span class="label">Layout:</span>
+							/design-system/foundation-colors/.html</li>
+							<li>
+								<span class="label">Tags:</span>
+								
+									foundation,
+								
+									colors
+								
+							</li>
+						</ul>
+						<h2 class="h2">Foundation - Colors</h2>
+						<p>Hello</p><div class="block breakout"><p> This is now a block note. and im looooooong and booring because i need to take up space even more space more more more Lorem ipsum.</p></div><p><figure><img src="https://maxhill.me/design-system/foundation-colors/example-image-3.jpg">
+<figcaption>Look at me!</figcaption></figure></p>
+					</div>
+				</div>
+			
+
+			<div id="document1" class="document">
+				<div class="content-grid">
+					<ul class="full-width document-metadata">
+						<li><span class="title">Title:</span>
+						Design system</li>
+						<li><span class="title">Author:</span>
+						Sample Author</li>
+						<li><span class="title">Date:</span>
+						January 01, 1990</li>
+						<li><span class="title">Layout:</span>
+						index.shtml</li>
+					</ul>
+					<section>
+						<h2 class="h2">Section 1</h2>
+						<p>Welcome to section 1</p>
+					</section>
+				</div>
+			</div>
+
+			<div id="document2" class="document">
+				<div class="content-grid">
+					<ul class="full-width document-metadata">
+						<li><span class="title">Title:</span>
+						Design system</li>
+						<li><span class="title">Author:</span>
+						Sample Author</li>
+						<li><span class="title">Date:</span>
+						January 01, 1990</li>
+						<li><span class="title">Layout:</span>
+						index.shtml</li>
+					</ul>
+					<section>
+						<h2 class="h2">Section 2</h2>
+						<p>This is section 2</p>
+					</section>
+				</div>
+			</div>
+
+			<div id="document3" class="document">
+				<div class="content-grid">
+					<ul class="full-width document-metadata">
+						<li><span class="title">Title:</span>
+						Design system</li>
+						<li><span class="title">Author:</span>
+						Sample Author</li>
+						<li><span class="title">Date:</span>
+						January 01, 1990</li>
+						<li><span class="title">Layout:</span>
+						index.shtml</li>
+					</ul>
+					<section>
+						<h2 class="h2">Section 3</h2>
+						<p>This section has a lot of content that requires scrolling. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+						<p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+						<p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.</p>
+					</section>
+					<section class="breakout">
+						<p>Totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit.</p>
+						<p>Sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.</p>
+					</section>
+
+					<section class="full-width">
+						<!-- https://unsplash.com/photos/abstract-wavy-lines-in-various-colors-create-a-pattern-NmS_4j4FYr8 -->
+						<img alt="Abstract colored lines" src="/design-system/example-image-3.jpg">
+					</section>
+
+					<section>
+						<p>
+							Sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam.
+						</p>
+						<p>Nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?</p>
+						<p>At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident.</p>
+						<p>Similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi.</p>
+						<p>Scroll down to see more content! This demonstrates the vertical scrolling within a horizontally scrolling section. Pretty neat, right?</p>
+					</section>
+				</div>
+			</div>
+
+			<div id="document4" class="document">
+				<div class="content-grid">
+					<ul class="full-width document-metadata">
+						<li><span class="title">Title:</span>
+						Design system</li>
+						<li><span class="title">Author:</span>
+						Sample Author</li>
+						<li><span class="title">Date:</span>
+						January 01, 1990</li>
+						<li><span class="title">Layout:</span>
+						index.shtml</li>
+					</ul>
+					<section>
+						<h2 class="h2">Section 4</h2>
+						<p>Almost there!</p>
+					</section>
+				</div>
+			</div>
+
+			<div id="document5" class="document">
+				<div class="content-grid">
+					<ul class="full-width document-metadata">
+						<li><span class="title">Title:</span>
+						Design system</li>
+						<li><span class="title">Author:</span>
+						Sample Author</li>
+						<li><span class="title">Date:</span>
+						January 01, 1990</li>
+						<li><span class="title">Layout:</span>
+						index.shtml</li>
+					</ul>
+					<section>
+						<h2 class="h2">Section 5</h2>
+						<p>You've reached the final section</p>
+					</section>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		const parent = document.querySelector('.main');
+		const children = document.querySelectorAll('.document, .hero');
+		const navLinks = document.querySelectorAll('.nav-link');
+		
+		navLinks.forEach(link => {
+			link.addEventListener('click', (e) => {
+				e.preventDefault();
+				const targetId = link.getAttribute('href').substring(1);
+				const targetElement = document.getElementById(targetId);
+				
+				targetElement.scrollIntoView({
+					behavior: 'smooth',
+					inline: 'start',
+					block: 'nearest'
+					});
+					});
+					});
+					
+					// Intersection Observer to detect active section
+					const observerOptions = {
+						root: parent,
+						rootMargin: '0px',
+						threshold: 0.5 // Element is considered active when 50% visible
+						};
+						
+						const observer = new IntersectionObserver((entries) => {
+							entries.forEach(entry => {
+								if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+									// Remove active class from all
+									children.forEach(child => child.classList.remove('active'));
+									navLinks.forEach(link => link.classList.remove('active'));
+									
+									// Add active class to current
+									entry.target.classList.add('active');
+									const targetId = entry.target.id;
+									const correspondingLink = document.querySelector(`a[href="#${targetId}"]`);
+									if (correspondingLink) {
+										correspondingLink.classList.add('active');
+									}
+								}
+								});
+								}, observerOptions);
+								
+								// Observe all children
+								children.forEach(child => observer.observe(child));
+	</script>
+
+
+		<script>
+			const form = document.querySelector('.theme-switcher');
+			const html = document.documentElement;
+			
+			// Set initial radio state
+			const savedTheme = localStorage.getItem('theme') || 'system';
+			document.querySelector(`input[value="${savedTheme}"]`).checked = true;
+			
+			// Function to update theme with view transition
+			function updateTheme(theme) {
+				if (theme === 'system') {
+					localStorage.removeItem('theme');
+					// Apply system preference
+					if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+						html.setAttribute('data-theme', 'dark');
+						} else {
+							html.setAttribute('data-theme', 'light');
+						}
+						} else {
+							localStorage.setItem('theme', theme);
+							html.setAttribute('data-theme', theme);
+						}
+					}
+					
+					// Handle theme changes with view transition
+					form.addEventListener('change', (e) => {
+						if (e.target.name === 'theme') {
+							const theme = e.target.value;
+							
+							// Check if View Transitions API is supported
+							if (document.startViewTransition) {
+								document.startViewTransition(() => updateTheme(theme));
+							} else {
+								updateTheme(theme);
+							}
+						}
+					});
+		</script>
+	</body>
+</html>
