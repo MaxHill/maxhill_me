@@ -114,4 +114,32 @@ const sortedDocs = docs.sort((a, b) => a.id.localeCompare(b.id));
     }, observerOptions);
 
     children.forEach((child) => observer.observe(child));
+
+    document.addEventListener("keydown", (e) => {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+            return;
+        }
+
+        const activeChild = document.querySelector(".document.active, .hero.active") as HTMLElement;
+        if (!activeChild) return;
+
+        const childrenArray = Array.from(children);
+        const currentIndex = childrenArray.indexOf(activeChild);
+
+        if ((e.key === "ArrowLeft" || e.key === "h") && currentIndex > 0) {
+            e.preventDefault();
+            childrenArray[currentIndex - 1].scrollIntoView({
+                behavior: "smooth",
+                inline: "start",
+                block: "nearest",
+            });
+        } else if ((e.key === "ArrowRight" || e.key === "l") && currentIndex < childrenArray.length - 1) {
+            e.preventDefault();
+            childrenArray[currentIndex + 1].scrollIntoView({
+                behavior: "smooth",
+                inline: "start",
+                block: "nearest",
+            });
+        }
+    });
 </script>
