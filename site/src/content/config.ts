@@ -5,7 +5,7 @@ const documentation = defineCollection({
   schema: z.object({
     title: z.string(),
     author: z.string(),
-    date: z.date(),
+    date: z.coerce.date(),
     tags: z.array(z.string()),
   }),
 });

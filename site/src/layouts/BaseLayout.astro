@@ -86,16 +86,15 @@ const { title, bodyClass } = Astro.props;
             const form = document.querySelector(".theme-switcher");
             const html = document.documentElement;
 
-            // Set initial radio state
             const savedTheme = localStorage.getItem("theme") || "system";
-            document.querySelector(`input[value="${savedTheme}"]`).checked =
-                true;
+            const savedThemeInput = document.querySelector(`input[value="${savedTheme}"]`);
+            if (savedThemeInput instanceof HTMLInputElement) {
+                savedThemeInput.checked = true;
+            }
 
-            // Function to update theme with view transition
-            function updateTheme(theme) {
+            function updateTheme(theme: string): void {
                 if (theme === "system") {
                     localStorage.removeItem("theme");
-                    // Apply system preference
                     if (
                         window.matchMedia("(prefers-color-scheme: dark)")
                             .matches
@@ -110,19 +109,20 @@ const { title, bodyClass } = Astro.props;
                 }
             }
 
-            // Handle theme changes with view transition
-            form.addEventListener("change", (e) => {
-                if (e.target.name === "theme") {
-                    const theme = e.target.value;
+            if (form) {
+                form.addEventListener("change", (e) => {
+                    const target = e.target;
+                    if (target instanceof HTMLInputElement && target.name === "theme") {
+                        const theme = target.value;
 
-                    // Check if View Transitions API is supported
-                    if (document.startViewTransition) {
-                        document.startViewTransition(() => updateTheme(theme));
-                    } else {
-                        updateTheme(theme);
+                        if (document.startViewTransition) {
+                            document.startViewTransition(() => updateTheme(theme));
+                        } else {
+                            updateTheme(theme);
+                        }
                     }
-                }
-            });
+                });
+            }
         </script>
     </body>
 </html>
