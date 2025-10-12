@@ -1,0 +1,117 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+
+const title = "Design System";
+const docs = await getCollection("documentation");
+const sortedDocs = docs.sort((a, b) => a.id.localeCompare(b.id));
+---
+
+<BaseLayout title={title} bodyClass="design-system-page">
+    <nav class="anchor-menu exposed-grid">
+        <a href="#hero" class="nav-link small">~</a>
+        {
+            sortedDocs.map((doc, index) => (
+                <a href={`#${doc.slug}`} class={index === 0 ? "nav-link" : "nav-link small"}>
+                    {doc.data.title}
+                </a>
+            ))
+        }
+    </nav>
+    <div class="main">
+        <div id="hero" class="hero glitch-parent">
+            <h1 class="h1 text-glitch" title={title}>{title}</h1>
+        </div>
+        {
+            sortedDocs.map(async (doc) => {
+                const { Content } = await doc.render();
+                return (
+                    <div id={doc.slug} class="document">
+                        <div class="content-grid">
+                            <ul class="full-width document-metadata">
+                                <li>
+                                    <span class="label">Title:</span>{" "}
+                                    {doc.data.title}
+                                </li>
+                                <li>
+                                    <span class="label">Author:</span>{" "}
+                                    {doc.data.author}
+                                </li>
+                                <li>
+                                    <span class="label">Date:</span>{" "}
+                                    {doc.data.date.toLocaleDateString("en-US", {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "2-digit",
+                                    })}
+                                </li>
+                                <li>
+                                    <span class="label">File:</span>{" "}
+                                    /content/documentation/{doc.id}
+                                </li>
+                                <li>
+                                    <span class="label">Tags:</span>{" "}
+                                    {doc.data.tags.join(", ")}
+                                </li>
+                            </ul>
+                            <h2 class="h2">{doc.data.title}</h2>
+                            <Content />
+                        </div>
+                    </div>
+                );
+            })
+        }
+    </div>
+</BaseLayout>
+
+<script>
+    const parent = document.querySelector(".main");
+    const children = document.querySelectorAll(".document, .hero");
+    const navLinks = document.querySelectorAll(".nav-link");
+
+    navLinks.forEach((link) => {
+        link.addEventListener("click", (e) => {
+            e.preventDefault();
+            const href = link.getAttribute("href");
+            if (!href) return;
+            
+            const targetId = href.substring(1);
+            const targetElement = document.getElementById(targetId);
+            if (!targetElement) return;
+
+            targetElement.scrollIntoView({
+                behavior: "smooth",
+                inline: "start",
+                block: "nearest",
+            });
+        });
+    });
+
+    const observerOptions = {
+        root: parent,
+        rootMargin: "0px",
+        threshold: 0.5,
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+                children.forEach((child) => child.classList.remove("active"));
+                navLinks.forEach((link) => link.classList.remove("active"));
+
+                entry.target.classList.add("active");
+                const targetId = entry.target.id;
+                const correspondingLink = document.querySelector(
+                    `a[href="#${targetId}"]`,
+                );
+                if (correspondingLink) {
+                    correspondingLink.classList.add("active");
+                }
+                
+                history.replaceState(null, "", `#${targetId}`);
+            }
+        });
+    }, observerOptions);
+
+    children.forEach((child) => observer.observe(child));
+</script>

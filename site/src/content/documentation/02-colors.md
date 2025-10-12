@@ -1,0 +1,25 @@
+---
+title: Colors
+author: Max Hill
+date: 2025-10-12
+tags: [colors, tokens, theming]
+---
+
+# Colors
+
+Our color system is built on semantic color tokens that adapt to light and dark themes.
+
+## Primary Colors
+
+The primary color palette includes our brand colors used for key interface elements.
+
+## Semantic Colors
+
+- **Success**: Used for positive actions and confirmations
+- **Warning**: Used for cautionary messages
+- **Error**: Used for error states and destructive actions
+- **Info**: Used for informational messages
+
+## Theme Support
+
+All colors automatically adjust for light and dark themes using CSS custom properties.
