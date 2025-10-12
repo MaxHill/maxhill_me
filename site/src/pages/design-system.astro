@@ -5,6 +5,13 @@ import { getCollection } from "astro:content";
 const title = "Design System";
 const docs = await getCollection("documentation");
 const sortedDocs = docs.sort((a, b) => a.id.localeCompare(b.id));
+
+const renderedDocs = await Promise.all(
+    sortedDocs.map(async (doc) => {
+        const { Content } = await doc.render();
+        return { doc, Content };
+    })
+);
 ---
 
 <BaseLayout title={title} bodyClass="design-system-page">
@@ -23,50 +30,51 @@ const sortedDocs = docs.sort((a, b) => a.id.localeCompare(b.id));
             <h1 class="h1 text-glitch" title={title}>{title}</h1>
         </div>
         {
-            sortedDocs.map(async (doc) => {
-                const { Content } = await doc.render();
-                return (
-                    <div id={doc.slug} class="document">
-                        <div class="content-grid">
-                            <ul class="full-width document-metadata">
-                                <li>
-                                    <span class="label">Title:</span>{" "}
-                                    {doc.data.title}
-                                </li>
-                                <li>
-                                    <span class="label">Author:</span>{" "}
-                                    {doc.data.author}
-                                </li>
-                                <li>
-                                    <span class="label">Date:</span>{" "}
-                                    {doc.data.date.toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "2-digit",
-                                    })}
-                                </li>
-                                <li>
-                                    <span class="label">File:</span>{" "}
-                                    /content/documentation/{doc.id}
-                                </li>
-                                <li>
-                                    <span class="label">Tags:</span>{" "}
-                                    {doc.data.tags.join(", ")}
-                                </li>
-                            </ul>
-                            <h2 class="h2">{doc.data.title}</h2>
-                            <Content />
-                        </div>
+            renderedDocs.map(({ doc, Content }) => (
+                <div id={doc.slug} class="document">
+                    <div class="content-grid">
+                        <ul class="document-metadata" data-width="full">
+                            <li>
+                                <span class="label">Title:</span>{" "}
+                                {doc.data.title}
+                            </li>
+                            <li>
+                                <span class="label">Author:</span>{" "}
+                                {doc.data.author}
+                            </li>
+                            <li>
+                                <span class="label">Date:</span>{" "}
+                                {doc.data.date.toLocaleDateString("en-US", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "2-digit",
+                                })}
+                            </li>
+                            <li>
+                                <span class="label">File:</span>{" "}
+                                /content/documentation/{doc.id}
+                            </li>
+                            <li>
+                                <span class="label">Tags:</span>{" "}
+                                {doc.data.tags.join(", ")}
+                            </li>
+                        </ul>
+                        <h2 class="h2">{doc.data.title}</h2>
+                        <Content />
                     </div>
-                );
-            })
+                </div>
+            ))
         }
     </div>
 </BaseLayout>
 
 <script>
     const parent = document.querySelector(".main");
+    if (!parent) throw new Error("Parent element .main not found");
+    
     const children = document.querySelectorAll(".document, .hero");
+    if (children.length === 0) throw new Error("No document or hero elements found");
+    
     const navLinks = document.querySelectorAll(".nav-link");
 
     navLinks.forEach((link) => {
@@ -101,6 +109,8 @@ const sortedDocs = docs.sort((a, b) => a.id.localeCompare(b.id));
 
                 entry.target.classList.add("active");
                 const targetId = entry.target.id;
+                if (!targetId) return;
+                
                 const correspondingLink = document.querySelector(
                     `a[href="#${targetId}"]`,
                 );
@@ -116,6 +126,8 @@ const sortedDocs = docs.sort((a, b) => a.id.localeCompare(b.id));
     children.forEach((child) => observer.observe(child));
 
     document.addEventListener("keydown", (e) => {
+        if (!e.target) return;
+        
         if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
             return;
         }
@@ -125,21 +137,28 @@ const sortedDocs = docs.sort((a, b) => a.id.localeCompare(b.id));
 
         const childrenArray = Array.from(children);
         const currentIndex = childrenArray.indexOf(activeChild);
+        if (currentIndex === -1) return;
 
         if ((e.key === "ArrowLeft" || e.key === "h") && currentIndex > 0) {
             e.preventDefault();
-            childrenArray[currentIndex - 1].scrollIntoView({
-                behavior: "smooth",
-                inline: "start",
-                block: "nearest",
-            });
+            const targetElement = childrenArray[currentIndex - 1];
+            if (targetElement) {
+                targetElement.scrollIntoView({
+                    behavior: "smooth",
+                    inline: "start",
+                    block: "nearest",
+                });
+            }
         } else if ((e.key === "ArrowRight" || e.key === "l") && currentIndex < childrenArray.length - 1) {
             e.preventDefault();
-            childrenArray[currentIndex + 1].scrollIntoView({
-                behavior: "smooth",
-                inline: "start",
-                block: "nearest",
-            });
+            const targetElement = childrenArray[currentIndex + 1];
+            if (targetElement) {
+                targetElement.scrollIntoView({
+                    behavior: "smooth",
+                    inline: "start",
+                    block: "nearest",
+                });
+            }
         }
     });
 </script>

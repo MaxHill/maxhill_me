@@ -1,0 +1,139 @@
+@layer components {
+  :where(.form) {
+    --_color-input-background: hsl(var(--color-surface));
+    --_color-input-background-active: hsl(var(--color-surface-lowered));
+    --_color-input-background-focused: hsl(var(--color-surface-raised));
+    --_color-input-text: hsl(var(--color-text));
+    --_color-input-placeholder-text: hsla(var(--color-text), 0.2);
+    --_border-input: var(--border-width) solid hsl(var(--color-border));
+    --_border-input-focus: var(--border-width) solid
+      hsl(var(--color-border-strong));
+    --_radius-input: var(--radius-2);
+    --_height-input: var(--size-7);
+
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0 var(--size-4);
+    align-items: start;
+
+    > label,
+    > .label {
+      display: grid;
+      grid-column: 1 / -1;
+      grid-template-columns: subgrid;
+      padding: var(--size-1);
+
+      &:not(:last-child) {
+        border-bottom: var(--_border-input);
+      }
+
+      &:has(*:focus) {
+        background: var(--_color-input-background);
+      }
+    }
+
+    input[type="text"],
+    input[type="search"],
+    input[type="number"],
+    textarea {
+      font: var(--p1);
+      border: var(--_border-input);
+      border-radius: var(--radius-2);
+      background: var(--_color-input-background);
+      color: var(--_color-input-text);
+      padding: var(--size-1) var(--size-3);
+      outline: none;
+      transition: all 0.07s ease;
+
+      width: var(--size-fluid-10);
+      resize: vertical;
+      height: var(--_height-input);
+
+      &::placeholder {
+        color: var(--_color-input-placeholder-text);
+        font-family: var(--ff-display);
+      }
+
+      &:active {
+        scale: 0.99;
+        background: var(--_color-input-background-active);
+      }
+
+      &:focus-visible:not(:active) {
+        border: var(--_border-input-focus);
+        background: var(--_color-input-background-focused);
+      }
+    }
+
+    .radio-group {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--size-2);
+
+      .radio-input {
+        font-family: var(--ff-display);
+        color: var(--_color-input-text);
+        background-color: var(--_color-input-background);
+        border: var(--_border-input);
+        border-radius: var(--_radius-input);
+        padding-inline: var(--size-2);
+        height: var(--_height-input);
+        gap: var(--size-1);
+        white-space: nowrap;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.05s linear;
+
+        input[type="radio"] {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          margin: -1px;
+          padding: 0;
+          border: 0;
+          overflow: hidden;
+          clip: rect(0 0 0 0);
+          white-space: nowrap;
+          clip-path: inset(100%);
+        }
+
+        &:before {
+          content: "";
+          display: inline-block;
+          box-shadow: inset 0 0 0 2px var(--_color-input-text);
+          border-radius: 50%;
+          width: 0.8em;
+          height: 0.8em;
+          transition: all 0.05s linear;
+        }
+
+        &:active:not(:has(input:checked)) {
+          scale: 0.95;
+          background: var(--_color-input-background-active);
+        }
+
+        &:has(input:checked) {
+          border: var(--_border-input-focus);
+          box-shadow: none;
+          background-color: var(--_color-input-background-focused);
+
+          &:before {
+            box-shadow: inset 0 0 0 4px hsl(var(--color-accent));
+            border-color: hsl(var(--color-accent));
+          }
+        }
+
+        &:has(input:focus-visible) {
+          border: var(--_border-input-focus);
+          outline: none;
+        }
+      }
+    }
+
+    fieldset {
+      border: 0;
+      padding: 0;
+    }
+  }
+}
