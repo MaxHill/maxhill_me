@@ -10,7 +10,7 @@ const renderedDocs = await Promise.all(
     sortedDocs.map(async (doc) => {
         const { Content } = await doc.render();
         return { doc, Content };
-    })
+    }),
 );
 ---
 
@@ -19,7 +19,10 @@ const renderedDocs = await Promise.all(
         <a href="#hero" class="nav-link small">~</a>
         {
             sortedDocs.map((doc, index) => (
-                <a href={`#${doc.slug}`} class={index === 0 ? "nav-link" : "nav-link small"}>
+                <a
+                    href={`#${doc.slug}`}
+                    class={index === 0 ? "nav-link" : "nav-link small"}
+                >
                     {doc.data.title}
                 </a>
             ))
@@ -71,10 +74,11 @@ const renderedDocs = await Promise.all(
 <script>
     const parent = document.querySelector(".main");
     if (!parent) throw new Error("Parent element .main not found");
-    
+
     const children = document.querySelectorAll(".document, .hero");
-    if (children.length === 0) throw new Error("No document or hero elements found");
-    
+    if (children.length === 0)
+        throw new Error("No document or hero elements found");
+
     const navLinks = document.querySelectorAll(".nav-link");
 
     navLinks.forEach((link) => {
@@ -89,7 +93,7 @@ const renderedDocs = await Promise.all(
 
             targetElement.scrollIntoView({
                 behavior: "smooth",
-                inline: "start",
+                inline: "end",
                 block: "nearest",
             });
         });
@@ -98,54 +102,72 @@ const renderedDocs = await Promise.all(
     const observerOptions = {
         root: parent,
         rootMargin: "0px",
-        threshold: 0.5,
+        threshold: [0.5, 0.75, 0.99, 1.0],
     };
 
     const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-                children.forEach((child) => child.classList.remove("active"));
-                navLinks.forEach((link) => link.classList.remove("active"));
+        const fullyVisibleElements = Array.from(children)
+            .map(child => {
+                const rect = child.getBoundingClientRect();
+                const rootRect = parent.getBoundingClientRect();
+                const visibleWidth = Math.min(rect.right, rootRect.right) - Math.max(rect.left, rootRect.left);
+                const ratio = visibleWidth / rect.width;
+                return { element: child, ratio };
+            })
+            .filter(({ ratio }) => ratio >= 0.99);
 
-                entry.target.classList.add("active");
-                const targetId = entry.target.id;
-                if (!targetId) return;
-                
-                const correspondingLink = document.querySelector(
-                    `a[href="#${targetId}"]`,
-                );
-                if (correspondingLink) {
-                    correspondingLink.classList.add("active");
-                }
-                
-                history.replaceState(null, "", `#${targetId}`);
-            }
-        });
+        if (fullyVisibleElements.length === 0) return;
+
+        const rightmostElement = fullyVisibleElements[fullyVisibleElements.length - 1].element;
+
+        children.forEach((child) => child.classList.remove("active"));
+        navLinks.forEach((link) => link.classList.remove("active"));
+
+        rightmostElement.classList.add("active");
+        const targetId = rightmostElement.id;
+        if (!targetId) return;
+
+        const correspondingLink = document.querySelector(
+            `a[href="#${targetId}"]`,
+        );
+        if (correspondingLink) {
+            correspondingLink.classList.add("active");
+        }
+
+        history.replaceState(null, "", `#${targetId}`);
     }, observerOptions);
 
     children.forEach((child) => observer.observe(child));
 
     document.addEventListener("keydown", (e) => {
         if (!e.target) return;
-        
-        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+
+        if (
+            e.target instanceof HTMLInputElement ||
+            e.target instanceof HTMLTextAreaElement
+        ) {
             return;
         }
 
-        const activeChild = document.querySelector(".document.active, .hero.active") as HTMLElement;
-        if (!activeChild) return;
+        const currentHash = window.location.hash.substring(1);
+        const currentElement = currentHash
+            ? document.getElementById(currentHash)
+            : null;
+
+        if (!currentElement) return;
 
         const childrenArray = Array.from(children);
-        const currentIndex = childrenArray.indexOf(activeChild);
+        const currentIndex = childrenArray.indexOf(currentElement);
         if (currentIndex === -1) return;
 
+        let targetElement;
         if ((e.key === "ArrowLeft" || e.key === "h") && currentIndex > 0) {
             e.preventDefault();
             const targetElement = childrenArray[currentIndex - 1];
             if (targetElement) {
                 targetElement.scrollIntoView({
                     behavior: "smooth",
-                    inline: "start",
+                    inline: "end",
                     block: "nearest",
                 });
             }
@@ -155,10 +177,18 @@ const renderedDocs = await Promise.all(
             if (targetElement) {
                 targetElement.scrollIntoView({
                     behavior: "smooth",
-                    inline: "start",
+                    inline: "end",
                     block: "nearest",
                 });
             }
+        }
+
+        if (targetElement) {
+            targetElement.scrollIntoView({
+                behavior: "smooth",
+                inline: "start",
+                block: "nearest",
+            });
         }
     });
 </script>
