@@ -109,6 +109,14 @@ const { title, bodyClass } = Astro.props;
                 }
             }
 
+            const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+            mediaQuery.addEventListener("change", () => {
+                const currentTheme = localStorage.getItem("theme");
+                if (!currentTheme) {
+                    updateTheme("system");
+                }
+            });
+
             if (form) {
                 form.addEventListener("change", (e) => {
                     const target = e.target;
