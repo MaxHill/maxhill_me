@@ -1,223 +1,178 @@
 @layer layouts {
-    .main-menu {
-        display: flex;
-        justify-content: space-between;
-        padding-inline: var(--size-2);
-        position: fixed;
-        width: 100%;
-        top: 0;
-        height: var(--menu-height);
+  .main-menu {
+    display: flex;
+    justify-content: space-between;
+    padding-inline: var(--size-2);
+    position: fixed;
+    width: 100%;
+    top: 0;
+    height: var(--menu-height);
 
-        &>nav {
-            a {
-                text-decoration: none;
-            }
-        }
+    & > nav {
+      a {
+        text-decoration: none;
+      }
+    }
+  }
 
+  .design-system-page {
+    height: 100dvh;
+    overflow: hidden;
+    padding-top: var(--menu-height);
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--size-10) auto;
+
+    > .anchor-menu {
+      /* Layout */
+      display: flex;
+      justify-content: flex-start;
+      overflow-x: scroll;
+
+      /* Style  */
+      border-bottom: var(--border-width) solid hsl(var(--color-border));
+      border-top: var(--border-width) solid hsl(var(--color-border));
+
+      > .nav-link {
+        width: max-content;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        padding-inline: var(--size-6);
+        text-decoration: none;
+
+        font-family: var(--font-display);
+        color: hsl(var(--color-text));
+        background: hsl(var(--color-background));
+      }
+
+      > .nav-link.small {
+        min-width: min-content;
+        aspect-ratio: 1/1;
+      }
+
+      > .nav-link.active {
+        background: hsl(var(--color-surface));
+      }
     }
 
-    .design-system-page {
-        height: 100dvh;
-        overflow: hidden;
-        padding-top: var(--menu-height);
+    > .main {
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline-end: 5vw;
+      display: flex;
+      scroll-behavior: smooth;
+
+      > .document,
+      > .hero {
+        /* 100% of main height */
+        height: 100%;
+        scroll-snap-align: end;
+        scroll-behavior: smooth;
+      }
+
+      > .hero {
+        min-width: 80%;
         display: grid;
-        grid-template-columns: 1fr;
-        grid-template-rows: var(--size-10) auto;
+        justify-content: flex-start;
+        align-items: center;
+        grid-template-areas: "stack";
+        position: relative;
+        padding-inline: var(--size-2);
 
-        >.anchor-menu {
-            /* Layout */
-            display: flex;
-            justify-content: flex-start;
-            overflow-x: scroll;
-
-            /* Style  */
-            border-bottom: var(--border-width) solid hsl(var(--color-border));
-            border-top: var(--border-width) solid hsl(var(--color-border));
-
-            >.nav-link {
-                width: max-content;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-
-                padding-inline: var(--size-6);
-                text-decoration: none;
-
-                font-family: var(--font-display);
-                color: hsl(var(--color-text));
-                background: hsl(var(--color-background));
-            }
-
-            >.nav-link.small {
-                min-width: min-content;
-                aspect-ratio: 1/1;
-            }
-
-            >.nav-link.active {
-                background: hsl(var(--color-surface));
-            }
+        > .h1 {
+          grid-area: stack;
+          font-size: clamp(5rem, 10vw, 10rem);
+          letter-spacing: -12%;
+          max-width: 100%;
+          width: 100%;
+          overflow-wrap: break-word;
+          text-wrap: balance;
         }
 
-        >.main {
-            overflow-x: auto;
-            overflow-y: hidden;
-            scroll-snap-type: x mandatory;
-            scroll-padding-inline-end: 5vw;
-            display: flex;
-            scroll-behavior: smooth;
+        > .circle {
+          grid-area: stack;
+          aspect-ratio: 1;
+          border-radius: 50%;
+          margin-left: -15%;
+          justify-self: start;
+          border: var(--border-width) solid hsl(var(--color-border));
+          position: absolute;
 
-            >.hero,
-            >.document {
-                /* 100% of main height */
-                height: 100%;
-                scroll-snap-align: end;
-                scroll-behavior: smooth;
+          animation: rotate 30s linear infinite;
+
+          &::after,
+          &::before {
+            --_size: var(--size-2);
+            content: "";
+            position: absolute;
+            width: var(--_size);
+            aspect-ratio: 1;
+            background: hsl(var(--color-border));
+            border-radius: 50%;
+          }
+
+          &.circle-1 {
+            background: hsl(var(--color-surface));
+            height: 110%;
+            animation-duration: 25s;
+
+            &::before {
+              right: calc(var(--_size) / 2 * -1);
+              bottom: calc(50% - calc(var(--_size) / 2));
             }
 
-            >.hero {
-                min-width: 80%;
-                display: grid;
-                justify-content: flex-start;
-                align-items: center;
-                grid-template-areas: "stack";
-                position: relative;
-                padding-inline: var(--size-2);
+            &::after {
+              top: calc(var(--_size) / 2 * -1);
+              right: calc(50% - calc(var(--_size) / 2));
+            }
+          }
 
-                >.h1 {
-                    grid-area: stack;
-                    font-size: clamp(5rem, 10vw, 10rem);
-                    letter-spacing: -12%;
-                    max-width: 100%;
-                    width: 100%;
-                    overflow-wrap: break-word;
-                    text-wrap: balance;
-                }
+          &.circle-2 {
+            background: hsl(var(--color-background));
+            height: 70%;
+            animation-duration: 30s;
 
-                >.circle {
-                    grid-area: stack;
-                    aspect-ratio: 1;
-                    border-radius: 50%;
-                    margin-left: -15%;
-                    justify-self: start;
-                    border: var(--border-width) solid hsl(var(--color-border));
-                    position: absolute;
-
-                    animation: rotate 30s linear infinite;
-
-                    &::after,
-                    &::before {
-                        --_size: var(--size-2);
-                        content: "";
-                        position: absolute;
-                        width: var(--_size);
-                        aspect-ratio: 1;
-                        background: hsl(var(--color-border));
-                        border-radius: 50%;
-
-                    }
-
-
-                    &.circle-1 {
-                        background: hsl(var(--color-surface));
-                        height: 110%;
-                        animation-duration: 25s;
-
-                        &::before {
-                            right: calc(var(--_size)/2 * -1);
-                            bottom: calc(50% - calc(var(--_size)/2));
-                        }
-
-                        &::after {
-                            top: calc(var(--_size)/2 * -1);
-                            right: calc(50% - calc(var(--_size)/2));
-                        }
-                    }
-
-                    &.circle-2 {
-                        background: hsl(var(--color-background));
-                        height: 70%;
-                        animation-duration: 30s;
-
-                        &::before {
-                            left: calc(var(--_size)/2 * -1);
-                            top: calc(50% - calc(var(--_size)/2));
-                        }
-
-                        &::after {
-                            right: calc(var(--_size)/2 * -1);
-                            top: calc(50% - calc(var(--_size)/2));
-                        }
-                    }
-
-                    &.circle-3 {
-                        background: hsl(var(--color-surface));
-                        height: 40%;
-                        animation-duration: 35s;
-
-                        &::before {
-                            top: calc(var(--_size)/2 * -1);
-                            left: calc(50% - calc(var(--_size)/2));
-                        }
-
-                        &::after {
-                            bottom: calc(var(--_size)/2 * -1);
-                            left: calc(50% - calc(var(--_size)/2));
-                        }
-                    }
-                }
+            &::before {
+              left: calc(var(--_size) / 2 * -1);
+              top: calc(50% - calc(var(--_size) / 2));
             }
 
-            >.document {
-                display: flex;
-                justify-content: center;
+            &::after {
+              right: calc(var(--_size) / 2 * -1);
+              top: calc(50% - calc(var(--_size) / 2));
+            }
+          }
 
-                transition: all 0.4s ease;
-                z-index: var(--layer-1);
-                background: hsl(var(--color-background));
+          &.circle-3 {
+            background: hsl(var(--color-surface));
+            height: 40%;
+            animation-duration: 35s;
 
-                &>.content-grid {
-                    opacity: 0.4;
-                    transition: all 0.4s ease;
-                }
-
-                &.active>.content-grid {
-                    opacity: 1;
-                }
-
-                .content-grid {
-                    overflow-x: hidden;
-                    overflow-y: scroll;
-                    --_content-max-width: 700px;
-                    --_breakout-max-width: 800px;
-                    /* border-left: var(--border-width) solid hsl(var(--color-border)); */
-                    /* border-right: var(--border-width) solid hsl(var(--color-border)); */
-                    width: 960px;
-                    max-width: 90vw;
-                    background: hsl(var(--color-background));
-                }
+            &::before {
+              top: calc(var(--_size) / 2 * -1);
+              left: calc(50% - calc(var(--_size) / 2));
             }
 
+            &::after {
+              bottom: calc(var(--_size) / 2 * -1);
+              left: calc(50% - calc(var(--_size) / 2));
+            }
+          }
         }
+      }
+    }
+  }
+
+  @keyframes rotate {
+    from {
+      transform: rotate(0);
     }
 
-    .document-metadata {
-        border-bottom: var(--border-width) solid hsl(var(--color-border));
-        list-style: none;
-        margin: 0;
-        padding: var(--size-fluid-2);
-
-        .label {
-            font-weight: var(--font-weight-bold);
-        }
+    to {
+      transform: rotate(360deg);
     }
-
-    @keyframes rotate {
-        from {
-            transform: rotate(0);
-        }
-
-        to {
-            transform: rotate(360deg);
-        }
-    }
+  }
 }
