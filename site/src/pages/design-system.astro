@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../components/layouts/BaseLayout.astro";
 import Document from "../components/sections/Document.astro";
+import HeroOrbit from "../components/sections/HeroOrbit.astro";
 import { getCollection } from "astro:content";
 
 const title = "Design System";
@@ -18,7 +19,7 @@ const renderedDocs = await Promise.all(
                 month: "long",
                 day: "2-digit",
             }),
-            File: `/content/documentation/${doc.id}`,
+            Link: `#${doc.slug}`,
             Tags: doc.data.tags.join(", "),
         };
         return { doc, Content, metadata };
@@ -41,12 +42,9 @@ const renderedDocs = await Promise.all(
         }
     </nav>
     <div class="main exposed-grid">
-        <div id="hero" class="hero glitch-parent">
-            <div class="circle circle-1"/>
-            <div class="circle circle-2"/>
-            <div class="circle circle-3"/>
+        <HeroOrbit id="hero" class="glitch-parent">
             <h1 class="h1 text-glitch" title={title}>{title}</h1>
-        </div>
+        </HeroOrbit>
         {
             renderedDocs.map(({ doc, Content, metadata }) => (
                 <Document id={doc.slug} metadata={metadata}>
