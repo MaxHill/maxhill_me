@@ -156,6 +156,26 @@ const renderedDocs = await Promise.all(
             return;
         }
 
+        const activeDocument = document.querySelector(".document.active > .content-grid");
+
+        if (e.key === "ArrowDown" || e.key === "j") {
+            e.preventDefault();
+            if (activeDocument) {
+                activeDocument.scrollBy({
+                    top: 100,
+                    behavior: "smooth",
+                });
+            }
+        } else if (e.key === "ArrowUp" || e.key === "k") {
+            e.preventDefault();
+            if (activeDocument) {
+                activeDocument.scrollBy({
+                    top: -100,
+                    behavior: "smooth",
+                });
+            }
+        }
+
         const currentHash = window.location.hash.substring(1);
         const currentElement = currentHash
             ? document.getElementById(currentHash)

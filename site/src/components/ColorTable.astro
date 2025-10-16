@@ -32,9 +32,11 @@ const categories = [...new Set(colorData.colors.map((c) => c.category))];
 </div>
 
 <style>
+    .color-table {
+        padding-inline: var(--size-fluid-2);
+    }
     ul {
         list-style: none;
-        padding: var(--size-fluid-2);
         margin: 0;
         /* background-color: hsl(var(--color-surface)); */
     }
