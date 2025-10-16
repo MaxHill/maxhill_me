@@ -84,6 +84,16 @@ const renderedDocs = await Promise.all(
         });
     });
 
+    children.forEach((child) => {
+        child.addEventListener("click", () => {
+            child.scrollIntoView({
+                behavior: "smooth",
+                inline: "end",
+                block: "nearest",
+            });
+        });
+    });
+
     const observerOptions = {
         root: parent,
         rootMargin: "0px",
@@ -143,16 +153,16 @@ const renderedDocs = await Promise.all(
             e.preventDefault();
             if (activeDocument) {
                 activeDocument.scrollBy({
-                    top: 100,
-                    behavior: "smooth",
+                    top: 30,
+                    behavior: "instant",
                 });
             }
         } else if (e.key === "ArrowUp" || e.key === "k") {
             e.preventDefault();
             if (activeDocument) {
                 activeDocument.scrollBy({
-                    top: -100,
-                    behavior: "smooth",
+                    top: -30,
+                    behavior: "instant",
                 });
             }
         }

@@ -4,25 +4,36 @@ author: Max Hill
 date: 2025-10-12
 tags: [colors, tokens, theming]
 ---
-import ColorTable from "../../components/ColorTable.astro"
+
+import ColorTable from "../../components/ColorTable.astro";
 
 # Colors
 
-Our color system is built on semantic color tokens that adapt to light and dark themes.
+Our color system uses a three-layer architecture: foundation colors, semantic tokens, and theme-specific values.
 
-## Primary Colors
+## Foundation Colors
 
-The primary color palette includes our brand colors used for key interface elements.
+Foundation colors are base color values defined as HSL hue and saturation pairs:
 
-## Semantic Colors
+- **Burgundy** (`--f-color-burgundy`): Accent color at 356.7° hue, 94.8% saturation
+- **Gray** (`--f-color-gray`): Neutral grays at 0° hue, 0% saturation
+- **Orange** (`--f-color-orange`): Warm tones at 38° hue, 100% saturation
+- **Red** (`--f-color-red`): Danger states
+- **Green** (`--f-color-green`): Success states
+- **Blue** (`--f-color-blue`): Info states
 
-- **Success**: Used for positive actions and confirmations
-- **Warning**: Used for cautionary messages
-- **Error**: Used for error states and destructive actions
-- **Info**: Used for informational messages
+## Semantic Tokens
+
+Semantic tokens reference foundation colors and adjust lightness for specific UI purposes:
+
+- **Text**: `--color-text`, `--color-text-weak`, `--color-text-weaker`, `--color-text-weakest`
+- **Surfaces**: `--color-background`, `--color-surface`, `--color-surface-raised`, `--color-surface-lowered`
+- **Borders**: `--color-border`, `--color-border-strong`, `--color-border-hover`
+- **Status**: `--color-status-danger`, `--color-status-success`, `--color-status-warning`, `--color-status-info`, `--color-status-neutral`
+- **Accent**: `--color-accent` (burgundy at 35% lightness)
 
 ## Theme Support
 
-All colors automatically adjust for light and dark themes using CSS custom properties.
+All semantic tokens automatically adapt to light and dark themes by adjusting their lightness values while maintaining the same foundation colors.
 
-<ColorTable/>
+<ColorTable />

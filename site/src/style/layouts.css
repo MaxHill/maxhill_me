@@ -30,8 +30,8 @@
       overflow-x: scroll;
 
       /* Style  */
-      border-bottom: var(--border-width) solid hsl(var(--color-border));
-      border-top: var(--border-width) solid hsl(var(--color-border));
+      border-bottom: var(--border);
+      border-top: var(--border);
 
       > .nav-link {
         width: max-content;
@@ -65,28 +65,27 @@
       display: flex;
       scroll-behavior: smooth;
 
-
       > .document,
       > .hero {
         scroll-snap-align: end;
         scroll-behavior: smooth;
       }
 
-      >.hero {
+      > .hero {
         min-width: 80%;
+        max-width: 1000px;
       }
 
       /* Fade out inactive documents */
-      >.document {
-            >.content-grid {
-                opacity: .4;
-                transition: opacity 0.4s ease;
-            }
-            &.active >.content-grid {
-                opacity: 1;
-            }
+      > .document {
+        > .content-grid {
+          opacity: 0.4;
+          transition: opacity 0.4s ease;
+        }
+        &.active > .content-grid {
+          opacity: 1;
+        }
       }
-    
     }
   }
 }
