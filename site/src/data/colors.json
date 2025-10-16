@@ -1,0 +1,263 @@
+{
+  "colors": [
+    {
+      "category": "Text",
+      "name": "color-text",
+      "description": "Default text color. Used as the main text color throughout the UI. Provides good and legible contrast for our content.",
+      "light": "var(--f-color-gray), 0%",
+      "dark": "var(--f-color-orange), 98%"
+    },
+    {
+      "category": "Text",
+      "name": "color-text-link",
+      "description": "Default link text color. Used for all paragraph level links in an user interface.",
+      "light": "var(--color-accent)",
+      "dark": "var(--color-accent)"
+    },
+    {
+      "category": "Text",
+      "name": "color-text-weak",
+      "description": "Weak text color. Used for e.g. introduction paragraphs and help texts that are coupled with form elements.",
+      "light": "var(--f-color-gray), 20%",
+      "dark": "38, 50%, 85%"
+    },
+    {
+      "category": "Text",
+      "name": "color-text-weaker",
+      "description": "Weaker text color. Used for e.g. disabled buttons, footers, table headings, captions and placeholder texts.",
+      "light": "var(--f-color-gray), 50%",
+      "dark": "38, 30%, 70%"
+    },
+    {
+      "category": "Text",
+      "name": "color-text-weakest",
+      "description": "Weakest text color. Used for e.g. disabled input text and placeholder text in focused inputs.",
+      "light": "var(--f-color-gray), 50%",
+      "dark": "38, 10%, 55%"
+    },
+    {
+      "category": "Text",
+      "name": "color-text-on-accent",
+      "description": "Default text on accent color. Used when text sits on the acccent color or a dark background.",
+      "light": "var(--f-color-gray), 100%",
+      "dark": "var(--f-color-gray), 100%"
+    },
+    {
+      "category": "Text",
+      "name": "color-text-danger",
+      "description": "Default text color for danger messages. Also used for the danger badge text.",
+      "light": "var(--f-color-red), 64%",
+      "dark": "var(--f-color-red), 64%"
+    },
+    {
+      "category": "Text",
+      "name": "color-text-success",
+      "description": "Default text color for success messages. Also used for the success badge text.",
+      "light": "var(--f-color-green), 50%",
+      "dark": "var(--f-color-green), 50%"
+    },
+    {
+      "category": "Text",
+      "name": "color-text-neutral",
+      "description": "Neutral text color. Used for the neutral badge text.",
+      "light": "var(--f-color-gray), 50%",
+      "dark": "var(--f-color-gray), 50%"
+    },
+    {
+      "category": "Text",
+      "name": "color-text-info",
+      "description": "Info text color. Used for the info badge text.",
+      "light": "var(--f-color-blue), 50%",
+      "dark": "var(--f-color-blue), 50%"
+    },
+    {
+      "category": "Text",
+      "name": "color-text-warning",
+      "description": "Warning text color. Used for the warning badge text.",
+      "light": "var(--f-color-orange), 50%",
+      "dark": "var(--f-color-orange), 50%"
+    },
+    {
+      "category": "Background",
+      "name": "color-accent",
+      "description": "Accent color. Used as primary button background, hero area background, and as a link color. This color provides accessible contrast when used for text on light background.",
+      "light": "356.7, 94.8%, 35%",
+      "dark": "356.7, 94.8%, 35%"
+    },
+    {
+      "category": "Background",
+      "name": "color-background",
+      "description": "Default application background color. Should be set to either html or body element.",
+      "light": "var(--f-color-orange), 98%",
+      "dark": "var(--f-color-gray), 2%"
+    },
+    {
+      "category": "Surface",
+      "name": "color-surface",
+      "description": "Default application surface color. Use this for e.g. card backgrounds.",
+      "light": "var(--f-color-orange), 95%",
+      "dark": "var(--f-color-gray), 5%"
+    },
+    {
+      "category": "Surface",
+      "name": "color-surface-raised",
+      "description": "Default raised surface color. Use this when you need to separate a specific layer from the surface color, e.g. table headers.",
+      "light": "var(--f-color-orange), 100%",
+      "dark": "var(--f-color-gray), 10%"
+    },
+    {
+      "category": "Surface",
+      "name": "color-surface-lowered",
+      "description": "Default lowered surface color. Use this when you need to make a specific layer to appear lower than the surface color, e.g. progress bar.",
+      "light": "var(--f-color-orange), 90%",
+      "dark": "var(--f-color-gray), 1%"
+    },
+    {
+      "category": "Border",
+      "name": "color-border",
+      "description": "Default border color",
+      "light": "var(--f-color-gray), 85%",
+      "dark": "var(--f-color-gray), 15%"
+    },
+    {
+      "category": "Border",
+      "name": "color-border-strong",
+      "description": "Strong border color for highlighting specific parts in the user interface.",
+      "light": "var(--f-color-gray), 75%",
+      "dark": "var(--f-color-gray), 25%"
+    },
+    {
+      "category": "Border",
+      "name": "color-border-hover",
+      "description": "Default border hover color.",
+      "light": "var(--f-color-gray), 0%",
+      "dark": "var(--f-color-gray), 0%"
+    },
+    {
+      "category": "Border",
+      "name": "color-border-danger",
+      "description": "Danger border color. Used for the danger badge border style.",
+      "light": "var(--f-color-red), 64%",
+      "dark": "var(--f-color-red), 64%"
+    },
+    {
+      "category": "Border",
+      "name": "color-border-success",
+      "description": "Success border color. Used for the success badge border style.",
+      "light": "var(--f-color-green), 50%",
+      "dark": "var(--f-color-green), 50%"
+    },
+    {
+      "category": "Border",
+      "name": "color-border-neutral",
+      "description": "Neutral border color. Used for the neutral badge border style.",
+      "light": "var(--f-color-gray), 50%",
+      "dark": "var(--f-color-gray), 50%"
+    },
+    {
+      "category": "Border",
+      "name": "color-border-info",
+      "description": "Info border color. Used for the info badge border style.",
+      "light": "var(--f-color-blue), 50%",
+      "dark": "var(--f-color-blue), 50%"
+    },
+    {
+      "category": "Border",
+      "name": "color-border-warning",
+      "description": "Warning border color. Used for the warning badge border style.",
+      "light": "var(--f-color-orange), 50%",
+      "dark": "var(--f-color-orange), 50%"
+    },
+    {
+      "category": "Status",
+      "name": "color-status-danger",
+      "description": "Default danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.",
+      "light": "var(--f-color-red), 64%",
+      "dark": "var(--f-color-red), 64%"
+    },
+    {
+      "category": "Status",
+      "name": "color-status-success",
+      "description": "Default success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.",
+      "light": "var(--f-color-green), 50%",
+      "dark": "var(--f-color-green), 50%"
+    },
+    {
+      "category": "Status",
+      "name": "color-status-neutral",
+      "description": "Default neutral status color.",
+      "light": "var(--f-color-gray), 50%",
+      "dark": "var(--f-color-gray), 50%"
+    },
+    {
+      "category": "Status",
+      "name": "color-status-info",
+      "description": "Default info status color. Used to convey something informal.",
+      "light": "var(--f-color-blue), 50%",
+      "dark": "var(--f-color-blue), 50%"
+    },
+    {
+      "category": "Status",
+      "name": "color-status-warning",
+      "description": "Default warning status color. Used to display information that needs user's attention and may require further steps.",
+      "light": "var(--f-color-orange), 50%",
+      "dark": "var(--f-color-orange), 50%"
+    },
+    {
+      "category": "Status",
+      "name": "color-status-danger-weak",
+      "description": "Weak danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.",
+      "light": "var(--f-color-red), 85%",
+      "dark": "var(--f-color-red), 15%"
+    },
+    {
+      "category": "Status",
+      "name": "color-status-success-weak",
+      "description": "Weak success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.",
+      "light": "var(--f-color-green), 85%",
+      "dark": "var(--f-color-green), 15%"
+    },
+    {
+      "category": "Status",
+      "name": "color-status-neutral-weak",
+      "description": "Weak neutral status color. Used for the badge default state.",
+      "light": "var(--f-color-gray), 85%",
+      "dark": "var(--f-color-gray), 15%"
+    },
+    {
+      "category": "Status",
+      "name": "color-status-info-weak",
+      "description": "Weak info status color. Used to convey something informal.",
+      "light": "var(--f-color-blue), 85%",
+      "dark": "var(--f-color-blue), 15%"
+    },
+    {
+      "category": "Status",
+      "name": "color-status-warning-weak",
+      "description": "Weak warning status color. Used to display information that needs a user's attention and may require further steps.",
+      "light": "var(--f-color-orange), 85%",
+      "dark": "var(--f-color-orange), 15%"
+    },
+    {
+      "category": "Button",
+      "name": "color-button-hover",
+      "description": "Default button hover background color.",
+      "light": "var(--f-color-gray), 100%",
+      "dark": "var(--f-color-gray), 100%"
+    },
+    {
+      "category": "Icon",
+      "name": "color-icon",
+      "description": "Default icon color",
+      "light": "var(--f-color-gray), 0%",
+      "dark": "var(--f-color-gray), 0%"
+    },
+    {
+      "category": "Icon",
+      "name": "color-icon-hover",
+      "description": "Default icon hover color",
+      "light": "var(--f-color-gray), 0%",
+      "dark": "var(--f-color-gray), 0%"
+    }
+  ]
+}

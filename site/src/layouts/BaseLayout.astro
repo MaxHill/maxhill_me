@@ -1,5 +1,6 @@
 ---
 import "../style/style.css";
+import ThemeSwitcher from "../components/ThemeSwitcher.astro";
 
 interface Props {
     title: string;
@@ -63,73 +64,9 @@ const { title, bodyClass } = Astro.props;
                 <a href="/design-system">/design-system.html</a>
             </nav>
 
-            <form class="theme-switcher">
-                <label class="radio-input">
-                    <input type="radio" name="theme" value="system" />
-                    System
-                </label>
-                <label class="radio-input">
-                    <input type="radio" name="theme" value="light" />
-                    Light
-                </label>
-                <label class="radio-input">
-                    <input type="radio" name="theme" value="dark" />
-                    Dark
-                </label>
-            </form>
+            <ThemeSwitcher />
         </div>
 
         <slot />
-
-        <script>
-            const form = document.querySelector(".theme-switcher");
-            const html = document.documentElement;
-
-            const savedTheme = localStorage.getItem("theme") || "system";
-            const savedThemeInput = document.querySelector(`input[value="${savedTheme}"]`);
-            if (savedThemeInput instanceof HTMLInputElement) {
-                savedThemeInput.checked = true;
-            }
-
-            function updateTheme(theme: string): void {
-                if (theme === "system") {
-                    localStorage.removeItem("theme");
-                    if (
-                        window.matchMedia("(prefers-color-scheme: dark)")
-                            .matches
-                    ) {
-                        html.setAttribute("data-theme", "dark");
-                    } else {
-                        html.setAttribute("data-theme", "light");
-                    }
-                } else {
-                    localStorage.setItem("theme", theme);
-                    html.setAttribute("data-theme", theme);
-                }
-            }
-
-            const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-            mediaQuery.addEventListener("change", () => {
-                const currentTheme = localStorage.getItem("theme");
-                if (!currentTheme) {
-                    updateTheme("system");
-                }
-            });
-
-            if (form) {
-                form.addEventListener("change", (e) => {
-                    const target = e.target;
-                    if (target instanceof HTMLInputElement && target.name === "theme") {
-                        const theme = target.value;
-
-                        if (document.startViewTransition) {
-                            document.startViewTransition(() => updateTheme(theme));
-                        } else {
-                            updateTheme(theme);
-                        }
-                    }
-                });
-            }
-        </script>
     </body>
 </html>

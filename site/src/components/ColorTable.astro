@@ -1,0 +1,74 @@
+---
+import colorData from "../data/colors.json";
+
+const categories = [...new Set(colorData.colors.map((c) => c.category))];
+---
+
+<div class="color-table" data-width="full">
+    {
+        categories.map((category) => (
+            <section class="category content-grid">
+                <h3 class="h2">{category}</h3>
+                <div data-width="full">
+                <ul class="color-grid">
+                    {colorData.colors
+                        .filter((c) => c.category === category)
+                        .map((c) => (
+                            <li>
+                                <span
+                                    class="swatch"
+                                    style={`background-color: hsl(var(--${c.name}))`}
+                                />
+                                <code>--{c.name}</code>
+                                <div class="details">{c.description}</div>
+                            </li>
+                        ))}
+
+                </ul>
+                </div>
+            </section>
+        ))
+    }
+</div>
+
+<style>
+    ul {
+        list-style: none;
+        padding: var(--size-fluid-2);
+        margin: 0;
+        /* background-color: hsl(var(--color-surface)); */
+    }
+    li {
+        display: grid;
+        grid-template-areas: "swatch name"
+                            "swatch description";
+        gap: var(--size-2);
+        justify-content: start;
+        align-items: start;
+        padding-block: var(--size-2);
+
+        &:not(:last-child) {
+            border-bottom: var(--border-width) solid hsl(var(--color-border));
+        }
+
+        span {
+            height: var(--size-10);
+            width: var(--size-10);
+            grid-area: swatch;
+            border: var(--border-width) solid hsl(var(--color-border));
+            border-radius: var(--radius-2);
+        }
+        code {
+            grid-area: name;
+            padding: var(--size-1);
+            background-color: hsl(var(--color-surface));
+            border: var(--border-width) solid hsl(var(--color-border));
+            border-radius: var(--radius-2);
+            max-width: max-content;
+        }
+        div {
+            grid-area: description;
+            max-inline-size: var(--size-content-3);
+        }
+    }
+</style>

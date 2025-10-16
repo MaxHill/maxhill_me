@@ -28,8 +28,11 @@ const renderedDocs = await Promise.all(
             ))
         }
     </nav>
-    <div class="main">
+    <div class="main exposed-grid">
         <div id="hero" class="hero glitch-parent">
+            <div class="circle circle-1"/>
+            <div class="circle circle-2"/>
+            <div class="circle circle-3"/>
             <h1 class="h1 text-glitch" title={title}>{title}</h1>
         </div>
         {
@@ -71,6 +74,7 @@ const renderedDocs = await Promise.all(
     </div>
 </BaseLayout>
 
+
 <script>
     const parent = document.querySelector(".main");
     if (!parent) throw new Error("Parent element .main not found");
@@ -86,7 +90,7 @@ const renderedDocs = await Promise.all(
             e.preventDefault();
             const href = link.getAttribute("href");
             if (!href) return;
-            
+
             const targetId = href.substring(1);
             const targetElement = document.getElementById(targetId);
             if (!targetElement) return;
@@ -107,10 +111,12 @@ const renderedDocs = await Promise.all(
 
     const observer = new IntersectionObserver((_entries) => {
         const fullyVisibleElements = Array.from(children)
-            .map(child => {
+            .map((child) => {
                 const rect = child.getBoundingClientRect();
                 const rootRect = parent.getBoundingClientRect();
-                const visibleWidth = Math.min(rect.right, rootRect.right) - Math.max(rect.left, rootRect.left);
+                const visibleWidth =
+                    Math.min(rect.right, rootRect.right) -
+                    Math.max(rect.left, rootRect.left);
                 const ratio = visibleWidth / rect.width;
                 return { element: child, ratio };
             })
@@ -118,7 +124,8 @@ const renderedDocs = await Promise.all(
 
         if (fullyVisibleElements.length === 0) return;
 
-        const rightmostElement = fullyVisibleElements[fullyVisibleElements.length - 1].element;
+        const rightmostElement =
+            fullyVisibleElements[fullyVisibleElements.length - 1].element;
 
         children.forEach((child) => child.classList.remove("active"));
         navLinks.forEach((link) => link.classList.remove("active"));
@@ -170,7 +177,10 @@ const renderedDocs = await Promise.all(
                     block: "nearest",
                 });
             }
-        } else if ((e.key === "ArrowRight" || e.key === "l") && currentIndex < childrenArray.length - 1) {
+        } else if (
+            (e.key === "ArrowRight" || e.key === "l") &&
+            currentIndex < childrenArray.length - 1
+        ) {
             e.preventDefault();
             const targetElement = childrenArray[currentIndex + 1];
             if (targetElement) {
