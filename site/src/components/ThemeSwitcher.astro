@@ -24,47 +24,72 @@ const { target = "html", ...attrs } = Astro.props;
 </form>
 
 <script>
-    const form = document.querySelector(".theme-switcher");
-    const targetSelector = form?.getAttribute("data-target") || "html";
-    const targetElement = targetSelector === "html" 
-        ? document.documentElement 
-        : document.querySelector(targetSelector);
+    try {
+        const form = document.querySelector(".theme-switcher");
+        if (!form) {
+            console.error("ThemeSwitcher: form element not found");
+            throw new Error("ThemeSwitcher form not found");
+        }
 
-    if (!targetElement) {
-        console.error(`ThemeSwitcher: target element "${targetSelector}" not found`);
-    }
+        const targetSelector = form.getAttribute("data-target") || "html";
+        const targetElement = targetSelector === "html" 
+            ? document.documentElement 
+            : document.querySelector(targetSelector);
 
-    const savedTheme = localStorage.getItem("theme") || "system";
-    const savedThemeInput = form?.querySelector(`input[value="${savedTheme}"]`);
-    if (savedThemeInput instanceof HTMLInputElement) {
-        savedThemeInput.checked = true;
-    }
+        if (!targetElement) {
+            console.error(`ThemeSwitcher: target element "${targetSelector}" not found`);
+            throw new Error(`ThemeSwitcher target element "${targetSelector}" not found`);
+        }
 
-    function updateTheme(theme: string): void {
-        if (!targetElement) return;
-        
-        if (theme === "system") {
-            localStorage.removeItem("theme");
-            if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-                targetElement.setAttribute("data-theme", "dark");
+        let savedTheme = "system";
+        try {
+            savedTheme = localStorage.getItem("theme") || "system";
+        } catch (error) {
+            console.error("ThemeSwitcher: localStorage access failed", error);
+        }
+
+        const savedThemeInput = form.querySelector(`input[value="${savedTheme}"]`);
+        if (savedThemeInput instanceof HTMLInputElement) {
+            savedThemeInput.checked = true;
+        }
+
+        function updateTheme(theme: string): void {
+            if (!targetElement) return;
+            
+            if (theme === "system") {
+                try {
+                    localStorage.removeItem("theme");
+                } catch (error) {
+                    console.error("ThemeSwitcher: localStorage.removeItem failed", error);
+                }
+                if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+                    targetElement.setAttribute("data-theme", "dark");
+                } else {
+                    targetElement.setAttribute("data-theme", "light");
+                }
             } else {
-                targetElement.setAttribute("data-theme", "light");
+                try {
+                    localStorage.setItem("theme", theme);
+                } catch (error) {
+                    console.error("ThemeSwitcher: localStorage.setItem failed", error);
+                }
+                targetElement.setAttribute("data-theme", theme);
             }
-        } else {
-            localStorage.setItem("theme", theme);
-            targetElement.setAttribute("data-theme", theme);
         }
-    }
 
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    mediaQuery.addEventListener("change", () => {
-        const currentTheme = localStorage.getItem("theme");
-        if (!currentTheme) {
-            updateTheme("system");
-        }
-    });
+        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        mediaQuery.addEventListener("change", () => {
+            let currentTheme: string | null = null;
+            try {
+                currentTheme = localStorage.getItem("theme");
+            } catch (error) {
+                console.error("ThemeSwitcher: localStorage.getItem failed", error);
+            }
+            if (!currentTheme) {
+                updateTheme("system");
+            }
+        });
 
-    if (form) {
         form.addEventListener("change", (e) => {
             const target = e.target;
             if (target instanceof HTMLInputElement && target.name === "theme") {
@@ -77,5 +102,7 @@ const { target = "html", ...attrs } = Astro.props;
                 }
             }
         });
+    } catch (error) {
+        console.error("ThemeSwitcher: initialization failed", error);
     }
 </script>
