@@ -1,0 +1,116 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"div"> {}
+
+const { class: className, ...rest } = Astro.props;
+---
+
+<div class:list={["hero", className]} {...rest}>
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+    <div class="circle circle-3"></div>
+    <slot />
+</div>
+
+<style>
+    .hero {
+        display: grid;
+        justify-content: flex-start;
+        align-items: center;
+        grid-template-areas: "stack";
+        position: relative;
+        padding-inline: var(--size-2);
+
+        & > :global(.h1) {
+            grid-area: stack;
+            font-size: clamp(5rem, 10vw, 10rem);
+            letter-spacing: -12%;
+            max-width: 100%;
+            width: 100%;
+            overflow-wrap: break-word;
+            text-wrap: balance;
+        }
+
+        & > .circle {
+            grid-area: stack;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            margin-left: -15%;
+            justify-self: start;
+            border: var(--border-width) solid hsl(var(--color-border));
+            position: absolute;
+
+            animation: rotate 30s linear infinite;
+
+            &::after,
+            &::before {
+                --_size: var(--size-2);
+                content: "";
+                position: absolute;
+                width: var(--_size);
+                aspect-ratio: 1;
+                background: hsl(var(--color-border));
+                border-radius: 50%;
+            }
+
+            &.circle-1 {
+                background: hsl(var(--color-surface));
+                height: 110%;
+                animation-duration: 25s;
+
+                &::before {
+                    right: calc(var(--_size) / 2 * -1);
+                    bottom: calc(50% - calc(var(--_size) / 2));
+                }
+
+                &::after {
+                    top: calc(var(--_size) / 2 * -1);
+                    right: calc(50% - calc(var(--_size) / 2));
+                }
+            }
+
+            &.circle-2 {
+                background: hsl(var(--color-background));
+                height: 70%;
+                animation-duration: 30s;
+
+                &::before {
+                    left: calc(var(--_size) / 2 * -1);
+                    top: calc(50% - calc(var(--_size) / 2));
+                }
+
+                &::after {
+                    right: calc(var(--_size) / 2 * -1);
+                    top: calc(50% - calc(var(--_size) / 2));
+                }
+            }
+
+            &.circle-3 {
+                background: hsl(var(--color-surface));
+                height: 40%;
+                animation-duration: 35s;
+
+                &::before {
+                    top: calc(var(--_size) / 2 * -1);
+                    left: calc(50% - calc(var(--_size) / 2));
+                }
+
+                &::after {
+                    bottom: calc(var(--_size) / 2 * -1);
+                    left: calc(50% - calc(var(--_size) / 2));
+                }
+            }
+        }
+    }
+
+    @keyframes rotate {
+        from {
+            transform: rotate(0);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+</style>
