@@ -76,6 +76,7 @@
         min-width: 80%;
       }
 
+      /* Fade out inactive documents */
       >.document {
             >.content-grid {
                 opacity: .4;
