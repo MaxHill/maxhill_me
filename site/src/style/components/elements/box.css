@@ -6,7 +6,7 @@
     color: hsl(var(--color-text));
     background-color: var(--_color-background);
     box-shadow: var(--shadow);
-    border: var(--border-width) solid hsl(var(--color-border));
+    border: var(--border);
     overflow: hidden;
     border-radius: var(--radius-3);
     max-width: 100%;
