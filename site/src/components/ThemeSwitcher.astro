@@ -1,0 +1,81 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'form'> {
+    target?: string;
+}
+
+const { target = "html", ...attrs } = Astro.props;
+---
+
+<form class="theme-switcher" data-target={target} {...attrs}>
+    <label class="radio-input">
+        <input type="radio" name="theme" value="system" />
+        System
+    </label>
+    <label class="radio-input">
+        <input type="radio" name="theme" value="light" />
+        Light
+    </label>
+    <label class="radio-input">
+        <input type="radio" name="theme" value="dark" />
+        Dark
+    </label>
+</form>
+
+<script>
+    const form = document.querySelector(".theme-switcher");
+    const targetSelector = form?.getAttribute("data-target") || "html";
+    const targetElement = targetSelector === "html" 
+        ? document.documentElement 
+        : document.querySelector(targetSelector);
+
+    if (!targetElement) {
+        console.error(`ThemeSwitcher: target element "${targetSelector}" not found`);
+    }
+
+    const savedTheme = localStorage.getItem("theme") || "system";
+    const savedThemeInput = form?.querySelector(`input[value="${savedTheme}"]`);
+    if (savedThemeInput instanceof HTMLInputElement) {
+        savedThemeInput.checked = true;
+    }
+
+    function updateTheme(theme: string): void {
+        if (!targetElement) return;
+        
+        if (theme === "system") {
+            localStorage.removeItem("theme");
+            if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+                targetElement.setAttribute("data-theme", "dark");
+            } else {
+                targetElement.setAttribute("data-theme", "light");
+            }
+        } else {
+            localStorage.setItem("theme", theme);
+            targetElement.setAttribute("data-theme", theme);
+        }
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    mediaQuery.addEventListener("change", () => {
+        const currentTheme = localStorage.getItem("theme");
+        if (!currentTheme) {
+            updateTheme("system");
+        }
+    });
+
+    if (form) {
+        form.addEventListener("change", (e) => {
+            const target = e.target;
+            if (target instanceof HTMLInputElement && target.name === "theme") {
+                const theme = target.value;
+
+                if (document.startViewTransition) {
+                    document.startViewTransition(() => updateTheme(theme));
+                } else {
+                    updateTheme(theme);
+                }
+            }
+        });
+    }
+</script>
