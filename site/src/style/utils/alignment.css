@@ -1,0 +1,36 @@
+@layer layouts {
+  .justify-center {
+    justify-content: center;
+  }
+  .justify-start {
+    justify-content: start;
+  }
+  .justify-end {
+    justify-content: end;
+  }
+  .justify-between {
+    justify-content: space-between;
+  }
+  .justify-evenly {
+    justify-content: space-evenly;
+  }
+  .justify-around {
+    justify-content: space-around;
+  }
+
+  .items-center {
+    align-items: center;
+  }
+  .items-start {
+    align-items: start;
+  }
+  .items-end {
+    align-items: end;
+  }
+  .items-baseline {
+    align-items: baseline;
+  }
+  .items-stretch {
+    align-items: stretch;
+  }
+}

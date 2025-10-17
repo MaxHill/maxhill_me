@@ -1,6 +1,7 @@
 @import "./components/layouts/content-grid.css";
 @import "./components/layouts/collection.css";
 @import "./components/layouts/exposed-grid.css";
+@import "./components/layouts/stack.css";
 @import "./components/elements/badge.css";
 @import "./components/elements/box.css";
 @import "./components/elements/form.css";

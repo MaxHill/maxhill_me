@@ -1,0 +1,15 @@
+@layer components {
+  .stack {
+    display: flex;
+    flex-flow: column wrap;
+
+    &[data-direction="row"] {
+      align-items: center;
+      flex-direction: row;
+    }
+  }
+
+  .stack-example-box {
+    max-width: 45%;
+  }
+}
