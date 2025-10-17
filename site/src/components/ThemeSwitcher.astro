@@ -3,16 +3,26 @@ import type { HTMLAttributes } from 'astro/types';
 
 interface Props extends HTMLAttributes<'form'> {
     target?: string;
+    persist?: boolean;
+    unsetOption?: "none" | "system";
 }
 
-const { target = "html", ...attrs } = Astro.props;
+const { target = "html", persist = false, unsetOption = "system", ...attrs } = Astro.props;
 ---
 
-<form class="theme-switcher" data-target={target} {...attrs}>
-    <label class="radio-input">
-        <input type="radio" name="theme" value="system" />
-        System
-    </label>
+<form class="theme-switcher" data-target={target} data-persist={persist} data-unset-option={unsetOption} {...attrs}>
+    {unsetOption === "system" && (
+        <label class="radio-input">
+            <input type="radio" name="theme" value="system" />
+            System
+        </label>
+    )}
+    {unsetOption === "none" && (
+        <label class="radio-input">
+            <input type="radio" name="theme" value="none" />
+            None
+        </label>
+    )}
     <label class="radio-input">
         <input type="radio" name="theme" value="light" />
         Light
@@ -25,82 +35,100 @@ const { target = "html", ...attrs } = Astro.props;
 
 <script>
     try {
-        const form = document.querySelector(".theme-switcher");
-        if (!form) {
-            console.error("ThemeSwitcher: form element not found");
-            throw new Error("ThemeSwitcher form not found");
-        }
-
-        const targetSelector = form.getAttribute("data-target") || "html";
-        const targetElement = targetSelector === "html" 
-            ? document.documentElement 
-            : document.querySelector(targetSelector);
-
-        if (!targetElement) {
-            console.error(`ThemeSwitcher: target element "${targetSelector}" not found`);
-            throw new Error(`ThemeSwitcher target element "${targetSelector}" not found`);
-        }
-
-        let savedTheme = "system";
-        try {
-            savedTheme = localStorage.getItem("theme") || "system";
-        } catch (error) {
-            console.error("ThemeSwitcher: localStorage access failed", error);
-        }
-
-        const savedThemeInput = form.querySelector(`input[value="${savedTheme}"]`);
-        if (savedThemeInput instanceof HTMLInputElement) {
-            savedThemeInput.checked = true;
-        }
-
-        function updateTheme(theme: string): void {
-            if (!targetElement) return;
+        const forms = document.querySelectorAll(".theme-switcher");
+        
+        forms.forEach((form) => {
+            const targetSelector = form.getAttribute("data-target") || "html";
+            const shouldPersist = form.getAttribute("data-persist") === "true";
+            const unsetOption = form.getAttribute("data-unset-option") || "system";
             
-            if (theme === "system") {
+            const targetElement = targetSelector === "html" 
+                ? document.documentElement 
+                : document.querySelector(targetSelector);
+
+            if (!targetElement) {
+                console.error(`ThemeSwitcher: target element "${targetSelector}" not found`);
+                return;
+            }
+
+            let savedTheme = unsetOption === "system" ? "system" : "none";
+            if (shouldPersist) {
                 try {
-                    localStorage.removeItem("theme");
+                    savedTheme = localStorage.getItem("theme") || (unsetOption === "system" ? "system" : "none");
                 } catch (error) {
-                    console.error("ThemeSwitcher: localStorage.removeItem failed", error);
+                    console.error("ThemeSwitcher: localStorage access failed", error);
                 }
-                if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-                    targetElement.setAttribute("data-theme", "dark");
+            }
+
+            const savedThemeInput = form.querySelector(`input[value="${savedTheme}"]`);
+            if (savedThemeInput instanceof HTMLInputElement) {
+                savedThemeInput.checked = true;
+            }
+
+            function updateTheme(theme: string): void {
+                if (!targetElement) return;
+                
+                if (theme === "system") {
+                    if (shouldPersist) {
+                        try {
+                            localStorage.removeItem("theme");
+                        } catch (error) {
+                            console.error("ThemeSwitcher: localStorage.removeItem failed", error);
+                        }
+                    }
+                    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+                        targetElement.setAttribute("data-theme", "dark");
+                    } else {
+                        targetElement.setAttribute("data-theme", "light");
+                    }
+                } else if (theme === "none") {
+                    if (shouldPersist) {
+                        try {
+                            localStorage.removeItem("theme");
+                        } catch (error) {
+                            console.error("ThemeSwitcher: localStorage.removeItem failed", error);
+                        }
+                    }
+                    targetElement.removeAttribute("data-theme");
                 } else {
-                    targetElement.setAttribute("data-theme", "light");
-                }
-            } else {
-                try {
-                    localStorage.setItem("theme", theme);
-                } catch (error) {
-                    console.error("ThemeSwitcher: localStorage.setItem failed", error);
-                }
-                targetElement.setAttribute("data-theme", theme);
-            }
-        }
-
-        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-        mediaQuery.addEventListener("change", () => {
-            let currentTheme: string | null = null;
-            try {
-                currentTheme = localStorage.getItem("theme");
-            } catch (error) {
-                console.error("ThemeSwitcher: localStorage.getItem failed", error);
-            }
-            if (!currentTheme) {
-                updateTheme("system");
-            }
-        });
-
-        form.addEventListener("change", (e) => {
-            const target = e.target;
-            if (target instanceof HTMLInputElement && target.name === "theme") {
-                const theme = target.value;
-
-                if (document.startViewTransition) {
-                    document.startViewTransition(() => updateTheme(theme));
-                } else {
-                    updateTheme(theme);
+                    if (shouldPersist) {
+                        try {
+                            localStorage.setItem("theme", theme);
+                        } catch (error) {
+                            console.error("ThemeSwitcher: localStorage.setItem failed", error);
+                        }
+                    }
+                    targetElement.setAttribute("data-theme", theme);
                 }
             }
+
+            if (shouldPersist) {
+                const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+                mediaQuery.addEventListener("change", () => {
+                    let currentTheme: string | null = null;
+                    try {
+                        currentTheme = localStorage.getItem("theme");
+                    } catch (error) {
+                        console.error("ThemeSwitcher: localStorage.getItem failed", error);
+                    }
+                    if (!currentTheme) {
+                        updateTheme("system");
+                    }
+                });
+            }
+
+            form.addEventListener("change", (e) => {
+                const target = e.target;
+                if (target instanceof HTMLInputElement && target.name === "theme") {
+                    const theme = target.value;
+
+                    if (document.startViewTransition) {
+                        document.startViewTransition(() => updateTheme(theme));
+                    } else {
+                        updateTheme(theme);
+                    }
+                }
+            });
         });
     } catch (error) {
         console.error("ThemeSwitcher: initialization failed", error);

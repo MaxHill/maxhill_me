@@ -27,7 +27,7 @@
       /* Layout */
       display: flex;
       justify-content: flex-start;
-      overflow-x: scroll;
+      overflow-x: auto;
 
       /* Style  */
       border-bottom: var(--border);
@@ -45,6 +45,7 @@
         font-family: var(--font-display);
         color: hsl(var(--color-text));
         background: hsl(var(--color-background));
+        white-space: nowrap;
       }
 
       > .nav-link.small {

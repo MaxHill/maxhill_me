@@ -1,0 +1,68 @@
+---
+title: Colors
+author: Max Hill
+date: 2025-10-12
+tags: [colors, tokens, theming]
+---
+
+import ColorTable from "./ColorTable.astro";
+
+# Colors
+
+Our color system uses a three-layer architecture that separates foundation colors from semantic meaning, enabling consistent theming across light and dark modes.
+
+## Color Architecture
+
+The system is built on three layers:
+
+**Foundation Layer** - Base HSL values (hue, saturation) without lightness:
+
+- `--f-color-burgundy` (356.7°, 94.8%) - Brand accent
+- `--f-color-gray` (0°, 0%) - Neutrals
+- `--f-color-orange` (38°, 100%) - Warm tones
+- `--f-color-red`, `--f-color-green`, `--f-color-blue` - Status colors
+
+**Semantic Layer** - Purpose-driven tokens that reference foundation colors:
+
+- Text tokens for hierarchy (`--color-text`, `--color-text-weak`, etc.)
+- Surface tokens for depth (`--color-surface`, `--color-surface-raised`, etc.)
+- Border tokens for boundaries
+- Status tokens for feedback
+
+**Theme Layer** - Lightness values that change between light and dark modes. Each theme adjusts only the lightness value while maintaining the same hue and saturation from the foundation layer.
+
+## Color Reference
+
+All color tokens are available as CSS custom properties. Click any token name to copy it to your clipboard.
+
+### Text
+
+Text colors provide hierarchy through strength levels (default, weak, weaker, weakest) and semantic meaning for links and status messages.
+
+<ColorTable category="Text" />
+
+### Backgrounds & Surfaces
+
+Background colors define the base canvas, while surface colors create layered depth through raised and lowered variants.
+
+<ColorTable category="Background" />
+<ColorTable category="Surface" />
+
+### Borders
+
+Border colors define boundaries and interactive states. Use the default border for most cases, strong borders for emphasis, and semantic borders for status indicators.
+
+<ColorTable category="Border" />
+
+### Status
+
+Status colors communicate feedback through danger, success, warning, info, and neutral states. Each status has both default and weak variants for different levels of emphasis.
+
+<ColorTable category="Status" />
+
+### Interactive Elements
+
+Specialized colors for buttons and icons ensure consistent interactive states.
+
+<ColorTable category="Button" />
+<ColorTable category="Icon" />

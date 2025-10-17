@@ -10,7 +10,6 @@
     overflow: hidden;
     border-radius: var(--radius-3);
     max-width: 100%;
-    height: min-content;
     padding: var(--size-fluid-1);
 
     &[data-rounded="false"] {
