@@ -74,14 +74,14 @@
           * Default application surface color.
           * Use this for e.g. card backgrounds.
           */
-    --color-surface: var(--f-color-orange), 95%;
+    --color-surface: var(--f-color-orange), 96%;
     /**
           * Default raised surface color.
           * Use this when you need to separate a
           * specific layer from the surface color,
           * e.g. table headers.
           */
-    --color-surface-raised: var(--f-color-orange), 100%;
+    --color-surface-raised: var(--f-color-orange), 99%;
     /**
           * Default lowered surface color.
           * Use this when you need to make
@@ -89,7 +89,7 @@
           * than the surface color, e.g.
           * progress bar.
           */
-    --color-surface-lowered: var(--f-color-orange), 90%;
+    --color-surface-lowered: var(--f-color-orange), 93%;
 
     /** Default border color */
     --color-border: var(--f-color-gray), 85%;
