@@ -19,5 +19,13 @@
             border: 0;
             border-block-end: var(--border);
         }
+
+        code {
+            padding-inline: var(--size-1);
+            padding-block: .1ch;
+            background: hsl(var(--color-surface-lowered));
+            border: var(--border);
+            border-radius: var(--radius-2);
+        }
     }
 }

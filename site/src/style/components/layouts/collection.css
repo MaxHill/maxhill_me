@@ -49,45 +49,5 @@
     &[data-size="10"] {
       --_card-width: var(--size-fluid-10);
     }
-
-    &[data-gap="0"] {
-      --_gap: 0;
-    }
-
-    &[data-gap="2"] {
-      --_gap: var(--size-fluid-2);
-    }
-
-    &[data-gap="3"] {
-      --_gap: var(--size-fluid-3);
-    }
-
-    &[data-gap="4"] {
-      --_gap: var(--size-fluid-4);
-    }
-
-    &[data-gap="5"] {
-      --_gap: var(--size-fluid-5);
-    }
-
-    &[data-gap="6"] {
-      --_gap: var(--size-fluid-6);
-    }
-
-    &[data-gap="7"] {
-      --_gap: var(--size-fluid-7);
-    }
-
-    &[data-gap="8"] {
-      --_gap: var(--size-fluid-8);
-    }
-
-    &[data-gap="9"] {
-      --_gap: var(--size-fluid-9);
-    }
-
-    &[data-gap="10"] {
-      --_gap: var(--size-fluid-10);
-    }
   }
 }
