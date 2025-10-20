@@ -16,7 +16,7 @@ const filteredColors = category
 const id = `color-table-${Math.random().toString(36).substring(7)}`;
 ---
 
-<div class="color-table-container" id={id} data-width="full">
+<div class="color-table-container box" id={id} data-width="breakout" data-variant="surface">
     <ThemeSwitcher target={`#${id}`} unsetOption="none" />
     <ul class="color-table" data-width="full">
         {filteredColors.map((c) => (
@@ -25,7 +25,11 @@ const id = `color-table-${Math.random().toString(36).substring(7)}`;
                     class="swatch"
                     style={`background-color: hsl(var(--${c.name}))`}
                 />
-                <code class="color-name" data-color-name={`var(--${c.name})`}>
+                    <code 
+                        class="color-name box" 
+                        data-gap="1"
+                        data-color-name={`var(--${c.name})`}
+                        >
                     var(--{c.name})
                     <Copy size={16} />
                 </code>
@@ -62,9 +66,8 @@ const id = `color-table-${Math.random().toString(36).substring(7)}`;
     .color-table-container {
         display: flex;
         flex-direction: column;
-        background-color: hsl(var(--color-background));
         color: hsl(var(--color-text));
-        padding-inline: var(--size-fluid-2);
+        padding: var(--size-fluid-2);
     }
 
     .color-table {
@@ -96,15 +99,11 @@ const id = `color-table-${Math.random().toString(36).substring(7)}`;
         code {
             grid-area: name;
             padding: var(--size-1);
-            background-color: hsl(var(--color-surface));
-            border: var(--border);
-            border-radius: var(--radius-2);
             max-width: max-content;
             cursor: pointer;
             transition: all 0.1s ease;
             display: inline-flex;
             align-items: center;
-            gap: var(--size-1);
             position: relative;
 
             &::before {
@@ -145,6 +144,7 @@ const id = `color-table-${Math.random().toString(36).substring(7)}`;
 
             &:active {
                 scale: 0.98;
+                background-color: hsl(var(--color-surface-lowered));
             }
         }
 

@@ -66,6 +66,7 @@ optimize_plex() {
 FONTS_TO_OPTIMIZE=(
   "DepartureMono-1.500/DepartureMono-Regular.otf"
   "ibm-plex-mono/fonts/complete/otf/IBMPlexMono-Regular.otf"
+  "ibm-plex-mono/fonts/complete/otf/IBMPlexMono-Medium.otf"
   "ibm-plex-mono/fonts/complete/otf/IBMPlexMono-Bold.otf"
 )
 

@@ -1,0 +1,92 @@
+---
+title: Typography
+author: Max Hill
+date: 2025-10-12
+tags: [typography, fonts, text]
+---
+
+import FontFamilyDisplay from "./FontFamilyDisplay.astro";
+
+# Typography
+
+Our typography system uses monospace fonts for a technical, precise aesthetic.
+
+## Font Families
+
+<div class="box" data-width="breakout">
+  ### IBM Plex Mono 
+  Primary font for body text and UI elements
+  <FontFamilyDisplay />
+</div>
+
+<div class="box" data-width="breakout">
+  ### Departure Mono 
+  Display font for headings and emphasis
+  <FontFamilyDisplay class="ff-display" weights={["Regular", "Bold"]} />
+</div>
+
+## Type Scale
+
+The type scale provides consistent sizing across all text elements:
+
+<div
+  class="box stack2"
+  data-variant="surface"
+  data-width="breakout"
+  data-gap="5"
+>
+  <div>
+    <h1>Heading 1</h1>
+    <code>2rem bold / 1.1 (Departure Mono)</code>
+  </div>
+  <div>
+    <h2>Heading 2</h2>
+    <code>1.5rem medium / 1.1 (IBM Plex Mono)</code>
+  </div>
+  <div>
+    <p>Body text for paragraphs and general content.</p>
+    <code>1rem regular / 1.4 (IBM Plex Mono)</code>
+  </div>
+  <div>
+    <p class="text-small">Small text for captions and secondary information.</p>
+    <code>0.875rem regular / 1.4 (IBM Plex Mono)</code>
+  </div>
+</div>
+
+## Typesetting container
+
+The `.typesetting` class is used for long-form written content like articles, blog posts, and documentation. It automatically manages vertical rhythm and spacing between text elements.
+
+**Without .typesetting**
+<div class="box" data-variant="surface">
+  <h1>Article Title</h1>
+  <h2>Introduction</h2>
+  <p>
+    This is a paragraph without the typesetting class. Notice how the
+    spacing feels inconsistent and elements appear cramped together.
+  </p>
+  <h2>Main Content</h2>
+  <p>
+    Another paragraph here to show the spacing issues when not using the
+    typesetting utility.
+  </p>
+</div>
+<div>
+
+**With .typesetting**
+
+<div class="box typesetting" data-variant="surface" data-width="breakout">
+  <h1>Article Title</h1>
+  <h2>Introduction</h2>
+  <p>
+    This is a paragraph with the typesetting class applied. The spacing is
+    consistent and creates a natural reading rhythm.
+  </p>
+  <h2>Main Content</h2>
+  <p>
+    Another paragraph demonstrating the improved vertical rhythm and
+    breathing room between elements.
+  </p>
+</div>
+</div>
+

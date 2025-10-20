@@ -7,8 +7,7 @@
     background-color: var(--_color-background);
     box-shadow: var(--shadow);
     border: var(--border);
-    overflow: hidden;
-    border-radius: var(--radius-3);
+    border-radius: var(--radius-2);
     max-width: 100%;
     padding: var(--size-fluid-1);
 

@@ -3,6 +3,8 @@
 @import "utils/gap.css";
 @import "utils/margin.css";
 @import "utils/padding.css";
+@import "utils/typesetting.css";
+
 @layer utils {
   .screenreader-only:not(:focus):not(:active) {
     clip: rect(0 0 0 0);

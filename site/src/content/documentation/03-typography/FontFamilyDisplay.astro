@@ -1,0 +1,39 @@
+---
+interface Props {
+    weights?: string[];
+    class?: string;
+}
+
+const { weights = ['Regular', 'Medium', 'Bold'], class: className, ...attrs } = Astro.props;
+const sampleText = 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Xx Yy Zz Åå Ää Öö';
+---
+
+<div class:list={["stack2", className]} data-direction="row" data-gap="fluid-2" {...attrs}>
+    <span class="huge">Aa</span>
+    {weights.map((weight) => (
+        <div class="stack2">
+            <h3>{weight}</h3>
+            <span data-weight={weight.toLowerCase()}>
+                {sampleText}
+            </span>
+        </div>
+    ))}
+</div>
+
+<style>
+    .huge {
+        font-size: var(--size-13);
+        line-height: 90%;
+        min-width: max-content;
+    }
+
+    span[data-weight="bold"] {
+        font-weight: var(--font-weight-bold);
+    }
+    span[data-weight="medium"] {
+        font-weight: var(--font-weight-medium);
+    }
+    span[data-weight="regular"] {
+        font-weight: var(--font-weight-regular);
+    }
+</style>
