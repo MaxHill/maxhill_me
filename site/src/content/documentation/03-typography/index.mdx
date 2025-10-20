@@ -6,6 +6,7 @@ tags: [typography, fonts, text]
 ---
 
 import FontFamilyDisplay from "./FontFamilyDisplay.astro";
+import Card from "../../../components/Card.astro";
 
 # Typography
 
@@ -13,13 +14,17 @@ Our typography system uses monospace fonts for a technical, precise aesthetic.
 
 ## Font Families
 
-<div class="box" data-width="breakout">
+<div class="box" data-width="breakout"
+  data-variant="surface"
+>
   ### IBM Plex Mono 
   Primary font for body text and UI elements
   <FontFamilyDisplay />
 </div>
 
-<div class="box" data-width="breakout">
+<div class="box" data-width="breakout"
+  data-variant="surface"
+>
   ### Departure Mono 
   Display font for headings and emphasis
   <FontFamilyDisplay class="ff-display" weights={["Regular", "Bold"]} />
@@ -31,8 +36,8 @@ The type scale provides consistent sizing across all text elements:
 
 <div
   class="box stack2"
-  data-variant="surface"
   data-width="breakout"
+  data-variant="surface"
   data-gap="5"
 >
   <div>
@@ -57,34 +62,25 @@ The type scale provides consistent sizing across all text elements:
 
 The `.typesetting` class is used for long-form written content like articles, blog posts, and documentation. It automatically manages vertical rhythm and spacing between text elements.
 
-**Without .typesetting**
-<div class="box" data-variant="surface">
-  <h1>Article Title</h1>
-  <h2>Introduction</h2>
-  <p>
-    This is a paragraph without the typesetting class. Notice how the
-    spacing feels inconsistent and elements appear cramped together.
-  </p>
-  <h2>Main Content</h2>
-  <p>
-    Another paragraph here to show the spacing issues when not using the
-    typesetting utility.
-  </p>
-</div>
+<Card>
+    <strong slot="title">Without .typesetting</strong>
+    <div>
+      # Article Title
+      ## Introduction
+      This is a paragraph without the typesetting class. Notice how the spacing feels inconsistent and elements appear cramped together.
+      ## Main Content
+      Another paragraph here to show the spacing issues when not using the typesetting utility.
+    </div>
+</Card>
 
-**With .typesetting**
-
-<div class="box typesetting" data-variant="surface">
-  <h1>Article Title</h1>
-  <h2>Introduction</h2>
-  <p>
-    This is a paragraph with the typesetting class applied. The spacing is
-    consistent and creates a natural reading rhythm.
-  </p>
-  <h2>Main Content</h2>
-  <p>
-    Another paragraph demonstrating the improved vertical rhythm and
-    breathing room between elements.
-  </p>
-</div>
+<Card>
+    <strong slot="title">With .typesetting</strong>
+    <div class="typesetting">
+      # Article Title
+      ## Introduction
+      This is a paragraph with the typesetting class applied. The spacing is consistent and creates a natural reading rhythm.
+      ## Main Content
+      Another paragraph demonstrating the improved vertical rhythm and breathing room between elements.
+    </div>
+</Card>
 

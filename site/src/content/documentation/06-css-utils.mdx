@@ -4,6 +4,7 @@ author: Max Hill
 date: 2025-10-12
 tags: [typography, fonts, text]
 ---
+import Card from "../../components/Card.astro";
 
 # CSS Utilities
 
@@ -515,33 +516,25 @@ Apply `.typesetting` to containers with:
 - Long-form written content
 - Any content requiring consistent vertical rhythm
 
-**Without .typesetting**
-<div class="box" data-variant="surface">
-  <h1>Article Title</h1>
-  <h2>Introduction</h2>
-  <p>
-    This is a paragraph without the typesetting class. Notice how the
-    spacing feels inconsistent and elements appear cramped together.
-  </p>
-  <h2>Main Content</h2>
-  <p>
-    Another paragraph here to show the spacing issues when not using the
-    typesetting utility.
-  </p>
-</div>
+<Card>
+    <strong slot="title">Without .typesetting</strong>
+    <div>
+      # Article Title
+      ## Introduction
+      This is a paragraph without the typesetting class. Notice how the spacing feels inconsistent and elements appear cramped together.
+      ## Main Content
+      Another paragraph here to show the spacing issues when not using the typesetting utility.
+    </div>
+</Card>
 
-**With .typesetting**
+<Card>
+    <strong slot="title">With .typesetting</strong>
+    <div class="typesetting">
+      # Article Title
+      ## Introduction
+      This is a paragraph with the typesetting class applied. The spacing is consistent and creates a natural reading rhythm.
+      ## Main Content
+      Another paragraph demonstrating the improved vertical rhythm and breathing room between elements.
+    </div>
+</Card>
 
-<div class="box typesetting" data-variant="surface">
-  <h1>Article Title</h1>
-  <h2>Introduction</h2>
-  <p>
-    This is a paragraph with the typesetting class applied. The spacing is
-    consistent and creates a natural reading rhythm.
-  </p>
-  <h2>Main Content</h2>
-  <p>
-    Another paragraph demonstrating the improved vertical rhythm and
-    breathing room between elements.
-  </p>
-</div>

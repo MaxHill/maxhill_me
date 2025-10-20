@@ -2,6 +2,7 @@
 import colorData from "../../../data/colors.json";
 import { Copy } from "@lucide/astro";
 import ThemeSwitcher from "../../../components/ThemeSwitcher.astro";
+import Card from "../../../components/Card.astro";
 
 interface Props {
     category?: string;
@@ -16,8 +17,8 @@ const filteredColors = category
 const id = `color-table-${Math.random().toString(36).substring(7)}`;
 ---
 
-<div class="color-table-container box" id={id} data-width="breakout" data-variant="surface">
-    <ThemeSwitcher target={`#${id}`} unsetOption="none" />
+<Card id={id} data-width="breakout" data-variant="surface">
+    <ThemeSwitcher slot="title" target={`#${id}`} unsetOption="none" />
     <ul class="color-table" data-width="full">
         {filteredColors.map((c) => (
             <li>
@@ -37,7 +38,7 @@ const id = `color-table-${Math.random().toString(36).substring(7)}`;
             </li>
         ))}
     </ul>
-</div>
+</Card>
 
 <script>
     const colorNames = document.querySelectorAll('.color-name');
@@ -63,19 +64,12 @@ const id = `color-table-${Math.random().toString(36).substring(7)}`;
 </script>
 
 <style>
-    .color-table-container {
-        display: flex;
-        flex-direction: column;
-        color: hsl(var(--color-text));
-        padding: var(--size-fluid-2);
-    }
-
-    .color-table {
-    }
     ul {
         list-style: none;
         margin: 0;
+        color: hsl(var(--color-text));
     }
+
     li {
         display: grid;
         grid-template-areas: "swatch name"
