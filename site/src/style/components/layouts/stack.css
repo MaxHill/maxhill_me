@@ -9,6 +9,16 @@
     }
   }
 
+  .stack2 {
+    display: grid;
+    grid-auto-flow: row;
+
+    &[data-direction="row"] {
+      grid-auto-flow: column;
+      align-items: center;
+    }
+  }
+
   .stack-example-box {
     max-width: 45%;
   }

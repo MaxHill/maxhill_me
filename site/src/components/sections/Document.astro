@@ -9,7 +9,7 @@ const { metadata, class: className, ...rest } = Astro.props;
 ---
 
 <div class:list={["document", className]} {...rest}>
-    <div class="content-grid">
+    <div class="content-grid typesetting">
         <ul class="document-metadata" data-width="full">
             {
                 Object.entries(metadata).map(([key, value]) => (
@@ -33,13 +33,13 @@ const { metadata, class: className, ...rest } = Astro.props;
 
         .content-grid {
             --_content-max-width: 700px;
-            --_breakout-max-width: 800px;
+            --_breakout-max-width: 850px;
             overflow-x: hidden;
             overflow-y: auto;
             width: 1000px;
             max-width: 90vw;
             background: hsl(var(--color-background));
-            gap: var(--size-fluid-1);
+            padding-block-end: var(--size-fluid-3);
         }
     }
 

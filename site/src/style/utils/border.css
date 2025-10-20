@@ -1,22 +1,56 @@
 @layer utils {
-    .border { border: var(--border); }
-    .border-strong { border: var(--border); }
+  [data-border]:not([data-border="i"]):not([data-border="is"]):not(
+      [data-border="ie"]
+    ):not([data-border="b"]):not([data-border="bs"]):not([data-border="be"]),
+  [data-border="true"] {
+    border: var(--border);
+  }
+  [data-border="i"] {
+    border-inline: var(--border);
+  }
+  [data-border="is"] {
+    border-inline-start: var(--border);
+  }
+  [data-border="ie"] {
+    border-inline-end: var(--border);
+  }
+  [data-border="b"] {
+    border-block: var(--border);
+  }
+  [data-border="bs"] {
+    border-block-start: var(--border);
+  }
+  [data-border="be"] {
+    border-block-end: var(--border);
+  }
 
-    .border-i { border-inline: var(--border); }
-    .border-i-strong { border-inline: var(--border-strong); }
-
-    .border-is { border-inline-start: var(--border); }
-    .border-is-strong { border-inline-start: var(--border-strong); }
-
-    .border-ie { border-inline-end: var(--border); }
-    .border-ie-strong { border-inline-end: var(--border-strong); }
-
-    .border-b { border-block: var(--border); }
-    .border-b-strong { border-block: var(--border-strong); }
-
-    .border-bs { border-block-start: var(--border); }
-    .border-bs-strong { border-block-start: var(--border-strong); }
-
-    .border-be { border-block-end: var(--border); }
-    .border-b-strong { border-block-end: var(--border-strong); }
+  [data-border]:not([data-border="i"]):not([data-border="is"]):not(
+      [data-border="ie"]
+    ):not([data-border="b"]):not([data-border="bs"]):not([data-border="be"]),
+  [data-border="true"],
+  [data-border="i"],
+  [data-border="is"],
+  [data-border="ie"],
+  [data-border="b"],
+  [data-border="bs"],
+  [data-border="be"] {
+    &[data-variant="strong"] {
+      border-color: hsl(var(--border-strong));
+    }
+    &[data-variant="danger"] {
+      border-color: hsl(var(--color-border-danger));
+    }
+    &[data-variant="success"] {
+      border-color: hsl(var(--color-border-success));
+    }
+    &[data-variant="neutral"] {
+      border-color: hsl(var(--color-border-neutral));
+    }
+    &[data-variant="info"] {
+      border-color: hsl(var(--color-border-info));
+    }
+    &[data-variant="warning"] {
+      border-color: hsl(var(--color-border-warning));
+    }
+  }
 }

@@ -5,5 +5,12 @@
   :root {
     --menu-height: var(--size-6);
 
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+
+    --h1: var(--font-weight-bold) 2rem/1.1 var(--ff-display);
+    --h2: var(--font-weight-medium) 1.5rem/1.1 var(--ff);
+    --p: 400 1rem/1.4 var(--ff);
+    --p2: 400 0.875rem/1.4 var(--ff);
   }
 }

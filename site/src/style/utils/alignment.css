@@ -1,36 +1,48 @@
-@layer layouts {
-  .justify-center {
+@layer utils {
+  [data-justify="center"] {
     justify-content: center;
   }
-  .justify-start {
+  [data-justify="start"] {
     justify-content: start;
   }
-  .justify-end {
+  [data-justify="end"] {
     justify-content: end;
   }
-  .justify-between {
+  [data-justify="between"] {
     justify-content: space-between;
   }
-  .justify-evenly {
+  [data-justify="evenly"] {
     justify-content: space-evenly;
   }
-  .justify-around {
+  [data-justify="around"] {
     justify-content: space-around;
   }
 
-  .items-center {
+  [data-items="center"] {
     align-items: center;
   }
-  .items-start {
+  [data-align="start"] {
     align-items: start;
   }
-  .items-end {
+  [data-align="center"] {
+    align-items: center;
+  }
+  [data-align="end"] {
     align-items: end;
   }
-  .items-baseline {
+  [data-align="baseline"] {
     align-items: baseline;
   }
-  .items-stretch {
+  [data-align="stretch"] {
+    align-items: stretch;
+  }
+  [data-items="end"] {
+    align-items: end;
+  }
+  [data-items="baseline"] {
+    align-items: baseline;
+  }
+  [data-items="stretch"] {
     align-items: stretch;
   }
 }
