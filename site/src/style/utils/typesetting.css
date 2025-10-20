@@ -1,7 +1,7 @@
 @layer utils {
     .typesetting {
         display: grid;
-        gap: var(--size-2);
+        gap: var(--size-3);
 
         >h1{
             margin-top: var(--size-fluid-2);

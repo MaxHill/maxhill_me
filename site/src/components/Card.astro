@@ -1,0 +1,70 @@
+---
+interface Props {
+    rounded?: string | boolean;
+    padded?: string | boolean;
+    variant?: string;
+    class?: string;
+    [key: string]: any;
+}
+
+const { 
+    rounded, 
+    padded, 
+    variant, 
+    class: className,
+    ...rest 
+} = Astro.props;
+
+const dataAttrs: Record<string, any> = {
+};
+const htmlAttrs: Record<string, any> = {};
+
+for (const [key, value] of Object.entries(rest)) {
+    if (key.startsWith('data-')) {
+        dataAttrs[key] = value;
+    } else {
+        htmlAttrs[key] = value;
+    }
+}
+---
+
+<div class:list={["card exposed-grid", className]} data-border {...dataAttrs} {...htmlAttrs}>
+    {Astro.slots.has('title') && (
+    <div class="title">
+        <slot name="title"/>
+    </div>
+    )}
+    <div class="stack2 content">
+        <slot/>
+    </div>
+    {Astro.slots.has('footer') && (
+        <div class="footer">
+            <slot name="footer"/>
+        </div>
+    )}
+</div>
+
+<style>
+    .card {
+        --_padding: var(--size-1);
+
+        background-color: hsl(var(--color-surface));
+        overflow: clip;
+        border-radius: var(--radius-2);
+    }
+    .title {
+        background-color: hsl(var(--color-surface-raised));
+        padding: var(--_padding);
+        color: hsl(var(--color-text-weak));
+    }
+
+    .content {
+        padding: var(--_padding);
+    }
+
+    .footer {
+        padding: var(--_padding);
+        color: hsl(var(--color-text-weaker));
+        font: var(--p2);
+    }
+</style>
