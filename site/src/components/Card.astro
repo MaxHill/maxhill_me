@@ -15,7 +15,9 @@ const {
     ...rest 
 } = Astro.props;
 
-const dataAttrs: Record<string, any> = {};
+const dataAttrs: Record<string, any> = { 
+ "data-variant": "surface" 
+};
 const htmlAttrs: Record<string, any> = {};
 
 if (rounded !== undefined) dataAttrs['data-rounded'] = rounded;
@@ -35,13 +37,13 @@ const hasFooter = Astro.slots.has('footer');
 const rowCount = 1 + (hasTitle ? 1 : 0) + (hasFooter ? 1 : 0);
 ---
 
-<div class:list={["card exposed-grid", className]} data-border style={`--row-count: ${rowCount}`} {...dataAttrs} {...htmlAttrs}>
+<div class:list={["card", className]} style={`--row-count: ${rowCount}`} {...dataAttrs} {...htmlAttrs}>
     {hasTitle && (
     <div class="title">
         <slot name="title"/>
     </div>
     )}
-    <div class="stack2 content">
+    <div>
         <slot/>
     </div>
     {hasFooter && (
@@ -53,29 +55,7 @@ const rowCount = 1 + (hasTitle ? 1 : 0) + (hasFooter ? 1 : 0);
 
 <style>
     .card {
-        --_padding: var(--size-1) var(--size-2);
-
-        background-color: hsl(var(--color-surface));
-        overflow: clip;
-        border-radius: var(--radius-2);
-
-        display: grid;
         grid-template-rows: subgrid; 
         grid-row: span var(--row-count, 3);
-    }
-    .title {
-        background-color: hsl(var(--color-surface-raised));
-        padding: var(--_padding);
-        color: hsl(var(--color-text-weak));
-    }
-
-    .content {
-        padding: var(--_padding);
-    }
-
-    .footer {
-        padding: var(--_padding);
-        color: hsl(var(--color-text-weaker));
-        font: var(--p2);
     }
 </style>
