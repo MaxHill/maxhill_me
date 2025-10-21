@@ -1,34 +1,78 @@
 @layer components {
-  :where(.box) {
-    --_color-background: hsl(var(--color-background));
 
-    text-decoration: none;
-    color: hsl(var(--color-text));
-    background-color: var(--_color-background);
-    box-shadow: var(--shadow);
-    border: var(--border);
-    border-radius: var(--radius-2);
-    max-width: 100%;
-    padding: var(--size-fluid-1);
+    :where(.box),
+    :where(.card) {
+        --_color-background: hsl(var(--color-background));
 
-    &[data-rounded="false"] {
-      border-radius: 0;
+        text-decoration: none;
+        color: hsl(var(--color-text));
+        background-color: var(--_color-background);
+        box-shadow: var(--shadow);
+        border: var(--border);
+        border-radius: var(--radius-2);
+        max-width: 100%;
+        padding: var(--size-fluid-1);
+
+        &[data-rounded="false"] {
+            border-radius: 0;
+        }
+
+        &[data-padded="false"] {
+            padding: 0;
+        }
+
+        &[data-variant="surface"] {
+            --_color-background: hsl(var(--color-surface));
+        }
+
+        &[data-variant="surface-raised"] {
+            --_color-background: hsl(var(--color-surface-raised));
+        }
+
+        &[data-variant="surface-lowered"] {
+            --_color-background: hsl(var(--color-surface-lowered));
+        }
     }
 
-    &[data-padded="false"] {
-      padding: 0;
-    }
+    :where(.card) {
+        --_padding-inline: var(--size-fluid-1);
+        --_padding-block: var(--size-1);
 
-    &[data-variant="surface"] {
-      --_color-background: hsl(var(--color-surface));
-    }
+        overflow: clip;
+        padding: 0;
+        display: grid;
+        grid-template-columns:
+            [full-width-start] minmax(var(--_padding-inline), 1fr) [content-start] min(100% - (var(--_padding-inline) * 2), var(--_content-max-width)) [content-end] minmax(var(--_padding-inline), 1fr) [full-width-end];
 
-    &[data-variant="surface-raised"] {
-      --_color-background: hsl(var(--color-surface-raised));
-    }
 
-    &[data-variant="surface-lowered"] {
-      --_color-background: hsl(var(--color-surface-lowered));
+        &> :not([data-width="full"]) {
+            grid-column: content;
+        }
+
+        .title {
+            padding: var(--_padding-block) var(--_padding-inline);
+            grid-column: full-width;
+            background-color: hsl(var(--color-surface));
+            border-block-end: var(--border);
+            color: hsl(var(--color-text-weak));
+        }
+
+        .footer {
+            padding: var(--_padding-block) var(--_padding-inline);
+            grid-column: full-width;
+            font: var(--p2);
+            color: hsl(var(--color-text-weaker));
+            border-block-start: var(--border);
+        }
+
+        /* Only allow variant surface*/
+        &[data-variant="surface"],
+        &[data-variant="surface-raised"],
+        &[data-variant="surface-lowered"] {
+            --_color-background: hsl(var(--color-surface));
+            .title {
+                background-color: hsl(var(--color-surface-raised));
+            }
+        }
     }
-  }
 }
