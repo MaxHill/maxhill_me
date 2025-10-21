@@ -1,5 +1,4 @@
 @layer components {
-
     :where(.box),
     :where(.card) {
         --_color-background: hsl(var(--color-background));
@@ -34,6 +33,7 @@
         }
     }
 
+    /* Card builds ontop of box but adds title and footer*/
     :where(.card) {
         --_padding-inline: var(--size-fluid-1);
         --_padding-block: var(--size-1);
