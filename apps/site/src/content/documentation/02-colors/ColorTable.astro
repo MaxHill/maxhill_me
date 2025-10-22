@@ -1,0 +1,165 @@
+---
+import colorData from "../../../data/colors.json";
+import { Copy } from "@lucide/astro";
+import ThemeSwitcher from "../../../components/ThemeSwitcher.astro";
+
+interface Props {
+    category?: string;
+}
+
+const { category } = Astro.props;
+
+const filteredColors = category 
+    ? colorData.colors.filter((c) => c.category === category)
+    : colorData.colors;
+
+const id = `color-table-${Math.random().toString(36).substring(7)}`;
+---
+
+<card-element id={id} data-width="breakout" data-variant="surface">
+    <ThemeSwitcher slot="title" target={`#${id}`} unsetOption="none" />
+    <ul class="color-table">
+        {filteredColors.map((c) => (
+            <li>
+                <span
+                    class="swatch"
+                    style={`background-color: hsl(var(--${c.name}))`}
+                />
+                    <code 
+                        class="color-name box" 
+                        data-gap="1"
+                        data-color-name={`var(--${c.name})`}
+                        >
+                    var(--{c.name})
+                    <Copy size={16} />
+                </code>
+                <div class="details">{c.description}</div>
+            </li>
+        ))}
+    </ul>
+</card-element>
+
+<script>
+    const colorNames = document.querySelectorAll('.color-name');
+    
+    colorNames.forEach((colorName) => {
+        colorName.addEventListener('click', async () => {
+            const name = colorName.getAttribute('data-color-name');
+            if (!name) return;
+            
+            try {
+                await navigator.clipboard.writeText(name);
+                
+                colorName.classList.add('copied');
+                
+                colorName.addEventListener('animationend', () => {
+                    colorName.classList.remove('copied');
+                }, { once: true });
+            } catch (err) {
+                console.error('Failed to copy:', err);
+            }
+        });
+    });
+</script>
+
+<style>
+    ul {
+        list-style: none;
+        margin: 0;
+        color: hsl(var(--color-text));
+        width: 100%;
+    }
+
+    li {
+        display: grid;
+        grid-template-areas: "swatch name"
+                            "swatch description";
+        gap: var(--size-2);
+        justify-content: start;
+        align-items: start;
+        padding-block: var(--size-2);
+
+        &:not(:last-child) {
+            border-bottom: var(--border-width) solid hsl(var(--color-border));
+        }
+
+        span {
+            height: var(--size-10);
+            width: var(--size-10);
+            grid-area: swatch;
+            border: var(--border-width) solid hsl(var(--color-border));
+            border-radius: var(--radius-2);
+        }
+        code {
+            grid-area: name;
+            padding: var(--size-1);
+            max-width: max-content;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            display: inline-flex;
+            align-items: center;
+            position: relative;
+
+            &::before {
+                content: "Copied!";
+                position: absolute;
+                top: -2rem;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: hsl(var(--color-surface-raised));
+                border: var(--border);
+                border-radius: var(--radius-2);
+                padding: var(--size-1) var(--size-2);
+                font-size: 0.875rem;
+                white-space: nowrap;
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+            }
+
+            &.copied::before {
+                visibility: visible;
+                animation: copyFeedback 1.5s ease forwards;
+            }
+
+            svg {
+                opacity: 0.5;
+                transition: opacity 0.1s ease;
+            }
+
+            &:hover {
+                background-color: hsl(var(--color-surface-raised));
+                border-color: hsl(var(--color-border-strong));
+
+                svg {
+                    opacity: 1;
+                }
+            }
+
+            &:active {
+                scale: 0.98;
+                background-color: hsl(var(--color-surface-lowered));
+            }
+        }
+
+        div {
+            grid-area: description;
+            max-inline-size: var(--size-content-3);
+        }
+    }
+
+    @keyframes copyFeedback {
+        0% {
+            opacity: 0;
+            transform: translateX(-50%) translateY(0);
+        }
+        10%, 90% {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-4px);
+        }
+        100% {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-8px);
+        }
+    }
+</style>

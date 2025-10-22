@@ -1,0 +1,22 @@
+{
+    "name": "@maxhill/css",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "main": "./dist/style.css",
+    "exports": {
+        ".": "./dist/style.css",
+        "./*": "./dist/*"
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite build --watch",
+        "clean": "rm -rf dist"
+    },
+    "devDependencies": {
+        "vite": "^6.0.11"
+    }
+}

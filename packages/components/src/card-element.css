@@ -1,0 +1,54 @@
+:host {
+    --_color-background: hsl(var(--color-surface));
+    --_title-background: hsl(var(--color-surface-raised));
+    --_padding-inline: var(--size-fluid-1);
+    --_padding-block: var(--size-1);
+
+    text-decoration: none;
+    color: hsl(var(--color-text));
+    background-color: var(--_color-background);
+    box-shadow: var(--shadow);
+    border: var(--border);
+    border-radius: var(--radius-2);
+    max-width: 100%;
+    overflow: clip;
+    padding: 0;
+    display: grid;
+    gap: 0;
+    grid-template-columns: [full-width-start] var(--_padding-inline) [content-start] 1fr [content-end] var(--_padding-inline) [full-width-end];
+}
+
+:host([data-rounded="false"]) {
+    border-radius: 0;
+}
+
+:host([data-padded="false"]) {
+    --_padding-inline: 0;
+}
+
+:host([data-variant="outline"]) {
+    --_color-background: hsl(var(--color-background));
+    --_title-background: hsl(var(--color-surface));
+}
+
+.title,
+.footer {
+    padding: var(--_padding-block) var(--_padding-inline);
+    grid-column: full-width;
+}
+
+.title {
+    background-color: var(--_title-background);
+    border-block-end: var(--border);
+    color: hsl(var(--color-text-weak));
+}
+
+.content-wrapper {
+    grid-column: content;
+}
+
+.footer {
+    font: var(--p2);
+    color: hsl(var(--color-text-weaker));
+    border-block-start: var(--border);
+}
