@@ -93,7 +93,7 @@
           * than the surface color, e.g.
           * progress bar.
           */
-    --color-surface-lowered: var(--f-color-gray), 7%;
+    --color-surface-lowered: var(--f-color-gray), 4%;
 
     /** Default border color */
     --color-border: var(--f-color-gray), 20%;
