@@ -1,0 +1,19 @@
+{
+  "name": "maxhill.me",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "check": "turbo check",
+    "clean": "turbo clean"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.19.0",
+  "devDependencies": {
+    "turbo": "^2.5.8"
+  }
+}
