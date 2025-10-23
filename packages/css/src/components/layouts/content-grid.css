@@ -4,43 +4,20 @@
     --_content-max-width: 1600px;
     --_breakout-max-width: 1800px;
 
-    --breakout-size: calc(
-      (var(--_breakout-max-width) - var(--_content-max-width)) / 2
-    );
-
     display: grid;
-    align-items: start;
-    grid-auto-rows: min-content;
-    grid-template-columns:
-      [full-width-start] minmax(var(--_padding-inline), 1fr)
-      [breakout-start] minmax(0, var(--breakout-size)) [content-start] min(
-        100% - (var(--_padding-inline) * 2),
-        var(--_content-max-width)
-      )
-      [content-end] minmax(0, var(--breakout-size)) [breakout-end] minmax(
-        var(--_padding-inline),
-        1fr
-      )
-      [full-width-end];
+    grid-template-columns: 1fr;
+    justify-items: center;
 
     & > * {
-        min-width: 0;
-    }
-
-    & > :not([data-width="breakout"], [data-width="full"]) {
-      grid-column: content;
+      width: min(var(--_content-max-width), calc(100% - (var(--_padding-inline) * 2)));
     }
 
     & > [data-width="breakout"] {
-      grid-column: breakout;
+      width: min(var(--_breakout-max-width), calc(100% - (var(--_padding-inline) * 2)));
     }
 
     & > [data-width="full"] {
-      grid-column: full-width;
-
-      & > :not([data-width="breakout"], [data-width="full"]) {
-        grid-column: content;
-      }
+      width: 100%;
     }
   }
 }
