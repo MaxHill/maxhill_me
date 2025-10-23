@@ -23,6 +23,10 @@
       )
       [full-width-end];
 
+    & > * {
+        min-width: 0;
+    }
+
     & > :not([data-width="breakout"], [data-width="full"]) {
       grid-column: content;
     }

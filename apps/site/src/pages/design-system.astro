@@ -154,7 +154,7 @@ const renderedDocs = await Promise.all(
             return;
         }
 
-        const activeDocument = document.querySelector(".document.active > .content-grid");
+        const activeDocument = document.querySelector(".document.active");
 
         if (e.key === "ArrowDown" || e.key === "j") {
             e.preventDefault();
