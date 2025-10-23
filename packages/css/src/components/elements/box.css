@@ -9,7 +9,6 @@
         box-shadow: var(--shadow);
         border: var(--border);
         border-radius: var(--radius-2);
-        max-width: 100%;
         padding: var(--size-fluid-1);
         gap: 0;
 
