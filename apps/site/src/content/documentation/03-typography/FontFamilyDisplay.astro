@@ -8,10 +8,14 @@ const { weights = ['Regular', 'Medium', 'Bold'], class: className, ...attrs } = 
 const sampleText = 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Xx Yy Zz Åå Ää Öö';
 ---
 
-<div class:list={["stack2", className]} data-direction="row" data-gap="fluid-2" {...attrs}>
+<div 
+    class:list={["collection typesetting wrapper", className]} 
+    data-direction="row" 
+    data-gap="fluid-2" 
+    {...attrs}>
     <span class="huge">Aa</span>
     {weights.map((weight) => (
-        <div class="stack2">
+        <div class="stack">
             <h3>{weight}</h3>
             <span data-weight={weight.toLowerCase()}>
                 {sampleText}
@@ -21,10 +25,16 @@ const sampleText = 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt 
 </div>
 
 <style>
+    .wrapper {
+        margin-top: var(--size-fluid-2);
+        container: inline-size;
+    }
     .huge {
         font-size: var(--size-13);
+        font-size: max(8rem, 17cqi);
         line-height: 90%;
         min-width: max-content;
+        text-align: center;
     }
 
     span[data-weight="bold"] {
