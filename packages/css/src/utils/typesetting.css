@@ -1,6 +1,5 @@
 @layer utils {
     .typesetting {
-        display: grid;
         gap: var(--size-3);
 
         >h1 {
@@ -19,7 +18,6 @@
             margin-top: var(--size-fluid-3);
             margin-bottom: calc(var(--size-fluid-1) * -1);
             width: 100%;
-            grid-column: full-width;
             border: 0;
             border-block-end: var(--border);
         }
