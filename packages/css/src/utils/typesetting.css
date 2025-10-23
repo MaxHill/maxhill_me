@@ -26,7 +26,8 @@
             background: hsl(var(--color-surface-lowered));
             border: var(--border);
             border-radius: var(--radius-2);
-            color: hsl(var(--color-text-weaker));
+            color: hsl(var(--color-accent));
+            font-weight: var(--font-weight-medium);
         }
     }
 }

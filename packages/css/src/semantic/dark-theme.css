@@ -8,7 +8,7 @@
          * contrast when used for text on light
          * background.
          */
-    --color-accent: var(--f-color-burgundy), 35%;
+    --color-accent: var(--f-color-burgundy), 65%;
 
     /**
  * Default text color. Used as the main
