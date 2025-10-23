@@ -4,37 +4,51 @@ interface Props {
     class?: string;
 }
 
-const { weights = ['Regular', 'Medium', 'Bold'], class: className, ...attrs } = Astro.props;
-const sampleText = 'Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Xx Yy Zz Åå Ää Öö';
+const {
+    weights = ["Regular", "Medium", "Bold"],
+    class: className,
+    ...attrs
+} = Astro.props;
+const sampleText =
+    "Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Xx Yy Zz Åå Ää Öö";
 ---
 
-<div 
-    class:list={["collection typesetting wrapper", className]} 
-    data-direction="row" 
-    data-gap="fluid-2" 
-    {...attrs}>
-    <span class="huge">Aa</span>
-    {weights.map((weight) => (
-        <div class="stack">
-            <h3>{weight}</h3>
-            <span data-weight={weight.toLowerCase()}>
-                {sampleText}
-            </span>
-        </div>
-    ))}
+<div
+    class:list={["typesetting wrapper", className]}
+    data-direction="row"
+    data-gap="fluid-3"
+    {...attrs}
+>
+    <div class="huge">Aa</div>
+    {
+        weights.map((weight) => (
+            <div class="stack2">
+                <h3>{weight}</h3>
+                <span data-weight={weight.toLowerCase()}>{sampleText}</span>
+            </div>
+        ))
+    }
 </div>
 
 <style>
     .wrapper {
         margin-top: var(--size-fluid-2);
         container: inline-size;
+
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+
+        @container (width < 800px) {
+        grid-template-columns: repeat(2, 1fr);
+        }
     }
     .huge {
-        font-size: var(--size-13);
-        font-size: max(8rem, 17cqi);
-        line-height: 90%;
-        min-width: max-content;
-        text-align: center;
+            line-height: 90%;
+            min-width: max-content;
+            text-align: center;
+            font-size: max(6rem, 15cqi);
+            display: inline-flex;
+            align-items: center;
     }
 
     span[data-weight="bold"] {
