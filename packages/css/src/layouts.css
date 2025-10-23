@@ -1,93 +1,110 @@
 @layer layouts {
-  .main-menu {
-    display: flex;
-    justify-content: space-between;
-    padding-inline: var(--size-2);
-    position: fixed;
-    width: 100%;
-    top: 0;
-    height: var(--menu-height);
-
-    & > nav {
-      a {
-        text-decoration: none;
-      }
-    }
-  }
-
-  .design-system-page {
-    height: 100dvh;
-    overflow: hidden;
-    padding-top: var(--menu-height);
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: var(--size-10) auto;
-
-    > .anchor-menu {
-      /* Layout */
-      display: flex;
-      justify-content: flex-start;
-      overflow-x: auto;
-
-      /* Style  */
-      border-bottom: var(--border);
-      border-top: var(--border);
-
-      > .nav-link {
-        width: max-content;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-
-        padding-inline: var(--size-6);
-        text-decoration: none;
-
-        font-family: var(--font-display);
-        color: hsl(var(--color-text));
-        background: hsl(var(--color-background));
-        white-space: nowrap;
-      }
-
-      > .nav-link.small {
-        min-width: min-content;
-        aspect-ratio: 1/1;
-      }
-
-      > .nav-link.active {
-        background: hsl(var(--color-surface));
-      }
-    }
-
-    > .main {
-      overflow-x: auto;
-      overflow-y: hidden;
-      scroll-snap-type: x mandatory;
-      scroll-padding-inline-end: 5vw;
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: max-content;
-      scroll-behavior: smooth;
-
-      > .document,
-      > .hero {
-        scroll-snap-align: end;
+    .main-menu {
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        scroll-padding-inline-end: 5vw;
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: max-content;
         scroll-behavior: smooth;
-      }
 
-      > .hero {
-        min-width: 80%;
-        max-width: 1000px;
-      }
+        justify-content: space-between;
+        padding-inline: var(--size-2);
+        position: fixed;
+        width: 100%;
+        top: 0;
+        height: var(--menu-height);
 
-      /* Fade out inactive documents */
-      > .document {
-        opacity: 0.4;
-        transition: opacity 0.4s ease;
-        
-        &.visible {
-          opacity: 1;
+
+
+        &>nav {
+            a {
+                text-decoration: none;
+            }
         }
-      }
     }
-  }
+
+    .design-system-page {
+        height: 100dvh;
+        overflow: hidden;
+        padding-top: var(--menu-height);
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: var(--size-10) auto;
+
+        @media (width < 800px) {
+            grid-template-rows: var(--size-7) auto;
+        }
+
+        >.anchor-menu {
+            /* Layout */
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x mandatory;
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: max-content;
+            scroll-behavior: smooth;
+
+            /* Style  */
+            border-bottom: var(--border);
+            border-top: var(--border);
+
+            >.nav-link {
+                width: max-content;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+
+                padding-inline: var(--size-6);
+                text-decoration: none;
+
+                font-family: var(--font-display);
+                color: hsl(var(--color-text));
+                background: hsl(var(--color-background));
+                white-space: nowrap;
+            }
+
+            >.nav-link.small {
+                min-width: min-content;
+            }
+
+            >.nav-link.active {
+                background: hsl(var(--color-surface));
+            }
+        }
+
+        >.main {
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x mandatory;
+            scroll-padding-inline-end: 5vw;
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: max-content;
+            scroll-behavior: smooth;
+
+            >.document,
+            >.hero {
+                scroll-snap-align: end;
+                scroll-behavior: smooth;
+            }
+
+            >.hero {
+                min-width: 80%;
+                max-width: 1000px;
+            }
+
+            /* Fade out inactive documents */
+            >.document {
+                opacity: 0.4;
+                transition: opacity 0.4s ease;
+
+                &.visible {
+                    opacity: 1;
+                }
+            }
+        }
+    }
 }
