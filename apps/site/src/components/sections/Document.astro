@@ -8,44 +8,36 @@ interface Props extends HTMLAttributes<"div"> {
 const { metadata, class: className, ...rest } = Astro.props;
 ---
 
-<div class:list={["document", className]} {...rest}>
-    <div class="content-grid typesetting">
-        <ul class="document-metadata" data-width="full">
-            {
-                Object.entries(metadata).map(([key, value]) => (
-                    <li>
-                        <span class="label">{key}:</span> {value}
-                    </li>
-                ))
-            }
-        </ul>
-        <slot />
-    </div>
+<div class:list={["document", "content-grid", "typesetting", className]} {...rest}>
+    <ul class="document-metadata" data-width="full">
+        {
+            Object.entries(metadata).map(([key, value]) => (
+                <li>
+                    <span class="label">{key}:</span> {value}
+                </li>
+            ))
+        }
+    </ul>
+    <slot />
 </div>
 
 <style>
     .document {
-        display: flex;
-        justify-content: center;
-
+        --_content-max-width: 700px;
+        --_breakout-max-width: 850px;
+        
         z-index: var(--layer-1);
         background: hsl(var(--color-background));
         opacity: 0.3;
         transition: opacity 0.3s ease;
+        overflow-x: hidden;
+        overflow-y: auto;
+        width: 1000px;
+        max-width: 90vw;
+        padding-block-end: var(--size-fluid-3);
 
         &.visible {
             opacity: 1;
-        }
-
-        .content-grid {
-            --_content-max-width: 700px;
-            --_breakout-max-width: 850px;
-            overflow-x: hidden;
-            overflow-y: auto;
-            width: 1000px;
-            max-width: 90vw;
-            background: hsl(var(--color-background));
-            padding-block-end: var(--size-fluid-3);
         }
     }
 
