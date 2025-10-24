@@ -5,7 +5,6 @@
     --tint-soft: black;
     --accent-seed: var(--green-seed);
 
-    --color-accent: color-mix( in oklch, var(--accent-seed) 50%,  var(--tint-loud) 50% );
 
     /*  ------------------------------------------------------------------------
     /*  Colors - Text                                                                     
@@ -17,8 +16,6 @@
 
     --color-text-link: color-mix( in oklch, var(--accent-seed) 100%,  var(--tint-loud) 50% );
 
-    --color-text-on-accent: color-mix( in oklch, var(--accent-seed) 100%,  var(--tint-soft) 70% );
-
     /*  ------------------------------------------------------------------------
     /*  Colors - Backgrounds                                                                    
     /*  ------------------------------------------------------------------------ */
@@ -27,28 +24,27 @@
     --color-surface-raised: color-mix(in oklch, var(--gray-seed) 50%, var(--tint-soft) 70%);
 
     /*  ------------------------------------------------------------------------
-    /*  Borders                                                                     
+    /*  Strokes                                                                     
     /*  ------------------------------------------------------------------------ */
-    --color-border: color-mix(in oklch, var(--gray-seed) 20%, var(--tint-loud) 10%);
-    --color-border-strong: color-mix(in oklch, var(--gray-seed) 20%, var(--tint-loud) 30%);
-    --color-border-hover: color-mix(in oklch, var(--accent-seed) 20%, var(--tint-loud) 45%);
+    --color-stroke: color-mix(in oklch, var(--gray-seed) 20%, var(--tint-loud) 10%);
+    --color-stroke-strong: color-mix(in oklch, var(--gray-seed) 20%, var(--tint-loud) 30%);
+    --color-stroke-hover: color-mix(in oklch, var(--accent-seed) 20%, var(--tint-loud) 45%);
 
 
 
     /*  ------------------------------------------------------------------------
     /*  Special colors                                                                     
     /*  ------------------------------------------------------------------------ */
-    --color-button-hover: color-mix( in oklch, var(--accent-seed) 30%,  var(--tint-loud) 70% );
-    --color-button-active: color-mix( in oklch, var(--accent-seed) 60%,  var(--tint-loud) 40% );
+    --color-button-hover: var(--color-accent-fill-softer);
+    --color-button-active: var(--color-accent-fill-loud);
 
     --color-icon: var(--color-text-weak);
     --color-icon-hover: var(--color-text);
 
-    /* TODO: how do i make opacity*/
-    --focus-shadow: 0 0 0 var(--size-1) hsla(var(--color-accent), 0.5);
+    --focus-shadow: 0 0 0 var(--size-1) var(--color-accent-stroke-mid);
 
     --border-width: 1px;
-    --border: var(--border-width) solid var(--color-border);
-    --border-strong: var(--border-width) solid var(--color-border-strong);
+    --border: var(--border-width) solid var(--color-stroke);
+    --border-strong: var(--border-width) solid var(--color-stroke-strong);
   }
 }

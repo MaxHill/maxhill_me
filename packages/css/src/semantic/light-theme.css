@@ -5,166 +5,44 @@
     --tint-soft: white;
     --accent-seed: var(--green-seed);
 
-    /**
-         * Accent color.
-         * Used as primary button background,
-         * hero area background, and as a link
-         * color. This color provides accessible
-         * contrast when used for text on light
-         * background.
-         */
-    --color-accent: color-mix(
-        in oklch, 
-        var(--accent-seed) 50%,  
-        var(--tint-loud) 50% 
-    );
+    /*  ------------------------------------------------------------------------
+    /*  Colors - Text                                                                     
+    /*  ------------------------------------------------------------------------ */
+    --color-text: color-mix( in oklch, var(--gray-seed) 50%,  var(--tint-loud) 100%  );
+    --color-text-weak: color-mix( in oklch, var(--gray-seed) 50%,  var(--tint-loud) 50% );
+    --color-text-weaker: color-mix( in oklch, var(--gray-seed) 30%,  var(--tint-loud) 50% );
+    --color-text-weakest: color-mix( in oklch, var(--gray-seed) 10%,  var(--tint-loud) 30% );
 
-    /**
-         * Default text color. Used as the main
-         * text color throughout the UI. Provides
-         * good and legible contrast for our
-         * content.
-         */
-    --color-text: color-mix(
-        in oklch, 
-        var(--gray-seed) 50%,  
-        var(--tint-loud) 100% 
-    );
-    /**
-         * Weak text color. Used for e.g. introduction
-         * paragraphs and help texts that are
-         * coupled with form elements.
-         */
-    --color-text-weak: color-mix(
-        in oklch, 
-        var(--gray-seed) 50%,  
-        var(--tint-loud) 50% 
-    );
+    --color-text-link: color-mix( in oklch, var(--accent-seed) 100%,  var(--tint-loud) 50% );
 
-    /**
-         * Weaker text color. Used for e.g. disabled
-         * buttons, footers, table headings,
-         * captions and placeholder texts.
-         */
-    --color-text-weaker: color-mix(
-        in oklch, 
-        var(--gray-seed) 30%,  
-        var(--tint-loud) 50% 
-    );
-    /**
-         * Weakest text color. Used for e.g. disabled
-         * input text and placeholder text in
-         * focused inputs.
-         */
-    --color-text-weakest: color-mix(
-        in oklch, 
-        var(--gray-seed) 10%,  
-        var(--tint-loud) 30% 
-    );
-    /**
-         * Default link text color. Used for all
-         * paragraph level links in an user
-         * interface.
-         */
-    --color-text-link: color-mix(
-        in oklch, 
-        var(--accent-seed) 100%,  
-        var(--tint-loud) 50% 
-    );
-    /**
-         * Default text on accent color.
-         * Used when text sits on the acccent
-         * color or a dark background.
-         */
-    --color-text-on-accent: color-mix(
-        in oklch, 
-        var(--accent-seed) 100%,  
-        var(--tint-soft) 70% 
-    );
+    /*  ------------------------------------------------------------------------
+    /*  Colors - Backgrounds                                                                    
+    /*  ------------------------------------------------------------------------ */
+    --color-background: color-mix(in oklch, var(--amber-seed) 8%, var(--tint-soft) 88%);
+    --color-surface: color-mix(in oklch, var(--amber-seed) 5%, var(--tint-soft) 92%);
+    --color-surface-raised: color-mix(in oklch, var(--amber-seed) 3%, var(--tint-soft) 95%);
 
-    /* TODO: rename these */
-    /**
-         * Default text color for danger messages.
-         * Also used for the danger badge text.
-         */
-    --color-text-danger: var(--f-color-red), 64%;
-    /**
-         * Default text color for success messages.
-         * Also used for the success badge text.
-         */
-    --color-text-success: var(--f-color-green), 50%;
-    /** Neutral text color. Used for the neutral badge text. */
-    --color-text-neutral: var(--f-color-gray), 50%;
-    /** Info text color. Used for the info badge text. */
-    --color-text-info: var(--f-color-blue), 50%;
-    /** Warning text color. Used for the warning badge text. */
-    --color-text-warning: var(--f-color-orange), 50%;
+    /*  ------------------------------------------------------------------------
+    /*  Strokes                                                                     
+    /*  ------------------------------------------------------------------------ */
+    --color-stroke: color-mix(in oklch, var(--gray-seed) 20%, var(--tint-loud) 10%);
+    --color-stroke-strong: color-mix(in oklch, var(--gray-seed) 20%, var(--tint-loud) 30%);
+    --color-stroke-hover: color-mix(in oklch, var(--accent-seed) 20%, var(--tint-loud) 45%);
 
 
-  --color-background: color-mix( in oklch, var(--amber-seed) 8%, var(--tint-soft) 88%);
-  --color-surface: color-mix( in oklch, var(--amber-seed) 5%, var(--tint-soft) 92%);
-  --color-surface-raised: color-mix( in oklch, var(--amber-seed) 3%, var(--tint-soft) 95%);
+    /*  ------------------------------------------------------------------------
+    /*  Special colors                                                                     
+    /*  ------------------------------------------------------------------------ */
+    --color-button-hover: var(--color-accent-fill-softer);
+    --color-button-active: var(--color-accent-fill-loud);
 
-    /** Default border color */
-    --color-border: color-mix(in oklch, var(--gray-seed) 20%, var(--tint-loud) 10%);
-    --color-border-strong: color-mix(in oklch, var(--gray-seed) 20%, var(--tint-loud) 50%);
-    --color-border-hover: color-mix(in oklch, var(--gray-seed) 20%, var(--tint-loud) 80%);
+    --color-icon: var(--color-text-weak);
+    --color-icon-hover: var(--color-text);
 
-    /** Danger border color. Used for the danger badge border style. */
-    --color-border-danger: var(--f-color-red), 64%;
-    /** Success border color. Used for the success badge border style. */
-    --color-border-success: var(--f-color-green), 50%;
-    /** Neutral border color. Used for the neutral badge border style. */
-    --color-border-neutral: var(--f-color-gray), 50%;
-    /** Info border color. Used for the info badge border style. */
-    --color-border-info: var(--f-color-blue), 50%;
-    /** Warning border color. Used for the warning badge border style. */
-    --color-border-warning: var(--f-color-orange), 50%;
-
-    /**
-         * Default danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.
-         */
-    --color-status-danger: var(--f-color-red), 64%;
-    /**
-         * Default success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.
-         */
-    --color-status-success: var(--f-color-green), 50%;
-    /** Default neutral status color. */
-    --color-status-neutral: var(--f-color-gray), 50%;
-    /** Default info status color. Used to convey something informal. */
-    --color-status-info: var(--f-color-blue), 50%;
-    /** Default warning status color. Used to display information that needs user’s attention and may require further steps. */
-    --color-status-warning: var(--f-color-orange), 50%;
-
-    /**
-         * Weak danger status color. Used to communicate problems that have to be resolved so that user can continue forward. This color should be always used for e.g. highlighting errors.
-         */
-    --color-status-danger-weak: var(--f-color-red), 85%;
-    /**
-         * Weak success status color. Used to convey success states. For example, you might show a success message that tells the user that changes were saved or something was completed.
-         */
-    --color-status-success-weak: var(--f-color-green), 85%;
-    /** Weak neutral status color. Used for the badge default state. */
-    --color-status-neutral-weak: var(--f-color-gray), 85%;
-    /** Weak info status color. Used to convey something informal. */
-    --color-status-info-weak: var(--f-color-blue), 85%;
-    /** Weak warning status color. Used to display information that needs a user’s attention and may require further steps. */
-    --color-status-warning-weak: var(--f-color-orange), 85%;
-
-    /** Default button hover background color. */
-    --color-button-hover: var(--f-color-gray), 100%;
-
-    /** Default icon color */
-    --color-icon: var(--f-color-gray), 0%;
-    /** Default icon hover color */
-    --color-icon-hover: var(--f-color-gray), 0%;
+    --focus-shadow: 0 0 0 var(--size-1) var(--color-accent-stroke-soft);
 
     --border-width: 1px;
-    /*TODO: how do i make opacity?*/
-    --focus-shadow: 0 0 0 var(--size-1) hsla(var(--color-accent), 0.3);
-
-    --border-width: 1px;
-    --border: var(--border-width) solid var(--color-border);
-    --border-strong: var(--border-width) solid var(--color-border-strong);
+    --border: var(--border-width) solid var(--color-stroke);
+    --border-strong: var(--border-width) solid var(--color-stroke-strong);
   }
 }

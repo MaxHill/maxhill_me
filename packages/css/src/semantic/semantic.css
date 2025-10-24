@@ -12,5 +12,22 @@
     --h2: var(--font-weight-medium) 1.5rem/1.1 var(--ff);
     --p: 400 1rem/1.4 var(--ff);
     --p2: 400 0.875rem/1.4 var(--ff);
-  }
+
+
+  /* Fill colors: softer → louder */
+  --color-accent-fill-softer: color-mix(in oklch, var(--accent-seed) 30%, var(--tint-loud) 10%);
+  --color-accent-fill-soft:   color-mix(in oklch, var(--accent-seed) 40%, var(--tint-loud) 20%);
+  --color-accent-fill-mid:    color-mix(in oklch, var(--accent-seed) 50%, var(--tint-loud) 30%);
+  --color-accent-fill-loud:   color-mix(in oklch, var(--accent-seed) 60%, var(--tint-loud) 40%);
+  --color-accent-fill-louder: color-mix(in oklch, var(--accent-seed) 70%, var(--tint-loud) 50%);
+
+  /* Stroke colors: softer, soft, mid (no loud variants by design) */
+  --color-accent-stroke-softer: color-mix(in oklch, var(--accent-seed) 60%, var(--tint-loud) 40%);
+  --color-accent-stroke-soft:   color-mix(in oklch, var(--accent-seed) 80%, var(--tint-loud) 60%);
+  --color-accent-stroke-mid:    color-mix(in oklch, var(--accent-seed) 100%, var(--tint-loud) 70%);
+
+  /* Text-on colors: soft works on soft/softer fills, loud works on loud/louder fills */
+  --color-accent-text-on-soft: color-mix(in oklch, var(--accent-seed) 100%, var(--tint-soft) 60%);
+  --color-accent-text-on-mid:  color-mix(in oklch, var(--accent-seed) 100%, var(--tint-soft) 70%);
+  --color-accent-text-on-loud: color-mix(in oklch, var(--accent-seed) 100%, var(--tint-soft) 80%);  }
 }

@@ -6,8 +6,9 @@ export class Compo extends HTMLElement {
     this.#styles.replaceSync(`
       :host {
         display: block;
-        background: var(--color-accent);
-        color: var(--color-text-on-accent);
+        background: var(--color-accent-fill-mid);
+        color: var(--color-accent-text-on-loud);
+        border: 3px solid var(--color-accent-stroke-mid);
       }
     `);
   }

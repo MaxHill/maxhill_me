@@ -1,7 +1,7 @@
 @layer components {
   :where(.badge) {
     --_color-background: hsl(var(--color-status-neutral-weak));
-    --_color-border: hsl(var(--color-border-neutral));
+    --_color-border: hsl(var(--color-stroke-neutral));
     --_color-text: hsl(var(--color-text-neutral));
 
     background: var(--_color-background);
@@ -13,25 +13,25 @@
 
     &[data-variant="danger"] {
       --_color-background: hsl(var(--color-status-danger-weak));
-      --_color-border: hsl(var(--color-border-danger));
+      --_color-border: hsl(var(--color-stroke-danger));
       --_color-text: hsl(var(--color-text-danger));
     }
 
     &[data-variant="success"] {
       --_color-background: hsl(var(--color-status-success-weak));
-      --_color-border: hsl(var(--color-border-success));
+      --_color-border: hsl(var(--color-stroke-success));
       --_color-text: hsl(var(--color-text-success));
     }
 
     &[data-variant="info"] {
       --_color-background: hsl(var(--color-status-info-weak));
-      --_color-border: hsl(var(--color-border-info));
+      --_color-border: hsl(var(--color-stroke-info));
       --_color-text: hsl(var(--color-text-info));
     }
 
     &[data-variant="warning"] {
       --_color-background: hsl(var(--color-status-warning-weak));
-      --_color-border: hsl(var(--color-border-warning));
+      --_color-border: hsl(var(--color-stroke-warning));
       --_color-text: hsl(var(--color-text-warning));
     }
   }

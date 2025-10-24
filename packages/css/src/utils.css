@@ -60,7 +60,7 @@
   }
 
   .color-text-on-accent {
-    color: var(--color-text-on-accent);
+    color: var(--color-accent-text-on-loud);
   }
 
   .color-text-danger {
@@ -84,7 +84,7 @@
   }
 
   .bg-accent {
-    background-color: var(--color-accent);
+    background-color: var(--color-accent-fill-mid);
   }
 
   .width-content-1 {
@@ -140,7 +140,7 @@
     /*  Background patterns                                                                     
     /*  ------------------------------------------------------------------------ */
   .background-pattern {
-    --_color-fg: var(--color-border);
+    --_color-fg: var(--color-stroke);
     --_color-bg: transparent;
     --_size: 10px 10px;
 
@@ -171,7 +171,7 @@
     }
 
     &[data-variant="strong"] {
-      --_color-fg: var(--color-border-strong);
+      --_color-fg: var(--color-stroke-strong);
     }
 
     &[data-variant="danger"] {
