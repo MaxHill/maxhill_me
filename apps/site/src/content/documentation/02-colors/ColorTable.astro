@@ -93,14 +93,14 @@ const id = `color-table-${Math.random().toString(36).substring(7)}`;
         }
 
         &:not(:last-child) {
-            border-bottom: var(--border-width) solid var(--color-border);
+            border-bottom: var(--border);
         }
 
         span {
             height: var(--size-10);
             width: var(--size-10);
             grid-area: swatch;
-            border: var(--border-width) solid var(--color-border);
+            border: var(--border);
             border-radius: var(--radius-2);
         }
         code {

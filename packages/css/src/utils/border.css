@@ -35,22 +35,25 @@
   [data-border="bs"],
   [data-border="be"] {
     &[data-variant="strong"] {
-      border-color: var(--color-border-strong);
+      border-color: var(--color-stroke-strong);
+    }
+    &[data-variant="accent"] {
+      border-color: var(--color-accent-stroke-mid);
     }
     &[data-variant="danger"] {
-      border-color: hsl(var(--color-border-danger));
+      border-color: hsl(var(--color-stroke-danger));
     }
     &[data-variant="success"] {
-      border-color: hsl(var(--color-border-success));
+      border-color: hsl(var(--color-stroke-success));
     }
     &[data-variant="neutral"] {
-      border-color: hsl(var(--color-border-neutral));
+      border-color: hsl(var(--color-stroke-neutral));
     }
     &[data-variant="info"] {
-      border-color: hsl(var(--color-border-info));
+      border-color: hsl(var(--color-stroke-info));
     }
     &[data-variant="warning"] {
-      border-color: hsl(var(--color-border-warning));
+      border-color: hsl(var(--color-stroke-warning));
     }
   }
 }
