@@ -27,7 +27,7 @@ const { metadata, class: className, ...rest } = Astro.props;
         --_breakout-max-width: 850px;
         
         z-index: var(--layer-1);
-        background: hsl(var(--color-background));
+        background: var(--color-background);
         opacity: 0.3;
         transition: opacity 0.3s ease;
         overflow-x: hidden;
@@ -44,7 +44,7 @@ const { metadata, class: className, ...rest } = Astro.props;
     }
 
     .document-metadata {
-        border-bottom: var(--border-width) solid hsl(var(--color-border));
+        border-bottom: var(--border-width) solid var(--color-border);
         list-style: none;
         margin: 0;
         padding: var(--size-fluid-2);

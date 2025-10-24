@@ -44,23 +44,23 @@
   }
 
   .color-text-weak {
-    color: hsl(var(--color-text-weak));
+    color: var(--color-text-weak);
   }
 
   .color-text-weaker {
-    color: hsl(var(--color-text-weaker));
+    color: var(--color-text-weaker);
   }
 
   .color-text-weakest {
-    color: hsl(var(--color-text-weakest));
+    color: var(--color-text-weakest);
   }
 
   .color-text-link {
-    color: hsl(var(--color-text-link));
+    color: var(--color-text-link);
   }
 
   .color-text-on-accent {
-    color: hsl(var(--color-text-on-accent));
+    color: var(--color-text-on-accent);
   }
 
   .color-text-danger {
@@ -80,11 +80,11 @@
   }
 
   .bg {
-    background-color: hsl(var(--color-background));
+    background-color: var(--color-background);
   }
 
   .bg-accent {
-    background-color: hsl(var(--color-accent));
+    background-color: var(--color-accent);
   }
 
   .width-content-1 {
@@ -140,7 +140,7 @@
     /*  Background patterns                                                                     
     /*  ------------------------------------------------------------------------ */
   .background-pattern {
-    --_color-fg: hsl(var(--color-border));
+    --_color-fg: var(--color-border);
     --_color-bg: transparent;
     --_size: 10px 10px;
 
@@ -171,7 +171,7 @@
     }
 
     &[data-variant="strong"] {
-      --_color-fg: hsl(var(--color-border-strong));
+      --_color-fg: var(--color-border-strong);
     }
 
     &[data-variant="danger"] {

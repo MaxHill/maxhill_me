@@ -1,13 +1,13 @@
 @layer components {
   :where(.form) {
-    --_color-input-background: hsl(var(--color-surface));
-    --_color-input-background-active: hsl(var(--color-surface-lowered));
-    --_color-input-background-focused: hsl(var(--color-surface-raised));
+    --_color-input-background: var(--color-surface);
+    --_color-input-background-active: var(--color-background);
+    --_color-input-background-focused: var(--color-surface-raised);
     --_color-input-text: hsl(var(--color-text));
     --_color-input-placeholder-text: hsla(var(--color-text), 0.2);
     --_border-input: var(--border);
     --_border-input-focus: var(--border-width) solid
-      hsl(var(--color-border-strong));
+      var(--color-border-strong);
     --_radius-input: var(--radius-2);
     --_height-input: var(--size-7);
 
@@ -119,8 +119,8 @@
           background-color: var(--_color-input-background-focused);
 
           &:before {
-            box-shadow: inset 0 0 0 4px hsl(var(--color-accent));
-            border-color: hsl(var(--color-accent));
+            box-shadow: inset 0 0 0 4px var(--color-accent);
+            border-color: var(--color-accent);
           }
         }
 

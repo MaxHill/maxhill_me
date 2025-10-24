@@ -1,9 +1,8 @@
 @layer components {
   .exposed-grid {
     --_grid-gap: var(--border-width);
-    --_cell-border: hsl(var(--color-border));
+    --_cell-border: var(--color-border);
 
-    display: grid;
     gap: var(--_grid-gap);
     overflow: clip;
 

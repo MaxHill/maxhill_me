@@ -35,7 +35,7 @@
   [data-border="bs"],
   [data-border="be"] {
     &[data-variant="strong"] {
-      border-color: hsl(var(--border-strong));
+      border-color: var(--color-border-strong);
     }
     &[data-variant="danger"] {
       border-color: hsl(var(--color-border-danger));

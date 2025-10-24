@@ -1,6 +1,6 @@
 :host {
-    --_color-background: hsl(var(--color-surface));
-    --_title-background: hsl(var(--color-surface-raised));
+    --_color-background: var(--color-surface);
+    --_title-background: var(--color-surface-raised);
     --_padding-inline: var(--size-fluid-1);
     --_padding-block: var(--size-1);
 
@@ -28,8 +28,8 @@
 }
 
 :host([data-variant="outline"]) {
-    --_color-background: hsl(var(--color-background));
-    --_title-background: hsl(var(--color-surface));
+    --_color-background: var(--color-background);
+    --_title-background: var(--color-surface);
 }
 
 .title,
@@ -41,7 +41,7 @@
 .title {
     background-color: var(--_title-background);
     border-block-end: var(--border);
-    color: hsl(var(--color-text-weak));
+    color: var(--color-text-weak);
 }
 
 .content-wrapper {
@@ -50,6 +50,6 @@
 
 .footer {
     font: var(--p2);
-    color: hsl(var(--color-text-weaker));
+    color: var(--color-text-weaker);
     border-block-start: var(--border);
 }
