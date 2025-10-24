@@ -1,5 +1,10 @@
 @layer semantics {
   [data-theme="light"] {
+
+    --tint-loud: black;
+    --tint-soft: white;
+    --accent-seed: var(--green-seed);
+
     /**
          * Accent color.
          * Used as primary button background,
@@ -8,7 +13,11 @@
          * contrast when used for text on light
          * background.
          */
-    --color-accent: var(--f-color-burgundy), 35%;
+    --color-accent: color-mix(
+        in oklch, 
+        var(--accent-seed) 50%,  
+        var(--tint-loud) 50% 
+    );
 
     /**
          * Default text color. Used as the main
@@ -16,38 +25,64 @@
          * good and legible contrast for our
          * content.
          */
-    --color-text: var(--f-color-gray), 0%;
-    /**
-         * Default link text color. Used for all
-         * paragraph level links in an user
-         * interface.
-         */
-    --color-text-link: var(--color-accent);
+    --color-text: color-mix(
+        in oklch, 
+        var(--gray-seed) 50%,  
+        var(--tint-loud) 100% 
+    );
     /**
          * Weak text color. Used for e.g. introduction
          * paragraphs and help texts that are
          * coupled with form elements.
          */
-    --color-text-weak: var(--f-color-gray), 20%;
+    --color-text-weak: color-mix(
+        in oklch, 
+        var(--gray-seed) 50%,  
+        var(--tint-loud) 50% 
+    );
 
     /**
          * Weaker text color. Used for e.g. disabled
          * buttons, footers, table headings,
          * captions and placeholder texts.
          */
-    --color-text-weaker: var(--f-color-gray), 50%;
+    --color-text-weaker: color-mix(
+        in oklch, 
+        var(--gray-seed) 30%,  
+        var(--tint-loud) 50% 
+    );
     /**
          * Weakest text color. Used for e.g. disabled
          * input text and placeholder text in
          * focused inputs.
          */
-    --color-text-weakest: var(--f-color-gray), 50%;
+    --color-text-weakest: color-mix(
+        in oklch, 
+        var(--gray-seed) 10%,  
+        var(--tint-loud) 30% 
+    );
+    /**
+         * Default link text color. Used for all
+         * paragraph level links in an user
+         * interface.
+         */
+    --color-text-link: color-mix(
+        in oklch, 
+        var(--accent-seed) 100%,  
+        var(--tint-loud) 50% 
+    );
     /**
          * Default text on accent color.
          * Used when text sits on the acccent
          * color or a dark background.
          */
-    --color-text-on-accent: var(--f-color-gray), 100%;
+    --color-text-on-accent: color-mix(
+        in oklch, 
+        var(--accent-seed) 100%,  
+        var(--tint-soft) 70% 
+    );
+
+    /* TODO: rename these */
     /**
          * Default text color for danger messages.
          * Also used for the danger badge text.
@@ -65,42 +100,16 @@
     /** Warning text color. Used for the warning badge text. */
     --color-text-warning: var(--f-color-orange), 50%;
 
-    /**
-          * Default application background color.
-          * Should be set to either html or body element.
-          */
-    --color-background: var(--f-color-orange), 96%;
-    /**
-          * Default application surface color.
-          * Use this for e.g. card backgrounds.
-          */
-    --color-surface: var(--f-color-orange), 98%;
-    /**
-          * Default raised surface color.
-          * Use this when you need to separate a
-          * specific layer from the surface color,
-          * e.g. table headers.
-          */
-    --color-surface-raised: var(--f-color-orange), 100%;
-    /**
-          * Default lowered surface color.
-          * Use this when you need to make
-          * a specific layer to appear lower
-          * than the surface color, e.g.
-          * progress bar.
-          */
-    --color-surface-lowered: var(--f-color-orange), 92%;
+
+  --color-background: color-mix( in oklch, var(--amber-seed) 8%, var(--tint-soft) 88%);
+  --color-surface: color-mix( in oklch, var(--amber-seed) 5%, var(--tint-soft) 92%);
+  --color-surface-raised: color-mix( in oklch, var(--amber-seed) 3%, var(--tint-soft) 95%);
 
     /** Default border color */
-    --color-border: var(--f-color-gray), 85%;
+    --color-border: color-mix(in oklch, var(--gray-seed) 20%, var(--tint-loud) 10%);
+    --color-border-strong: color-mix(in oklch, var(--gray-seed) 20%, var(--tint-loud) 50%);
+    --color-border-hover: color-mix(in oklch, var(--gray-seed) 20%, var(--tint-loud) 80%);
 
-    /**
-         * Strong border color for highlighting
-         * specific parts in the user interface.
-         */
-    --color-border-strong: var(--f-color-gray), 75%;
-    /** Default border hover color. */
-    --color-border-hover: var(--f-color-gray), 0%;
     /** Danger border color. Used for the danger badge border style. */
     --color-border-danger: var(--f-color-red), 64%;
     /** Success border color. Used for the success badge border style. */
@@ -151,10 +160,11 @@
     --color-icon-hover: var(--f-color-gray), 0%;
 
     --border-width: 1px;
+    /*TODO: how do i make opacity?*/
     --focus-shadow: 0 0 0 var(--size-1) hsla(var(--color-accent), 0.3);
 
     --border-width: 1px;
-    --border: var(--border-width) solid hsl(var(--color-border));
-    --border-strong: var(--border-width) solid hsl(var(--color-border-strong));
+    --border: var(--border-width) solid var(--color-border);
+    --border-strong: var(--border-width) solid var(--color-border-strong);
   }
 }

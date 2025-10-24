@@ -44,7 +44,7 @@ const { class: className, ...rest } = Astro.props;
             border-radius: 50%;
             margin-left: -15%;
             justify-self: start;
-            border: var(--border-width) solid hsl(var(--color-border));
+            border: var(--border-width) solid var(--color-border);
             position: absolute;
 
             animation: rotate 30s linear infinite;
@@ -56,12 +56,12 @@ const { class: className, ...rest } = Astro.props;
                 position: absolute;
                 width: var(--_size);
                 aspect-ratio: 1;
-                background: hsl(var(--color-border));
+                background: var(--color-border);
                 border-radius: 50%;
             }
 
             &.circle-1 {
-                background: hsl(var(--color-surface));
+                background: var(--color-surface);
                 height: 110%;
                 animation-duration: 25s;
 
@@ -77,7 +77,7 @@ const { class: className, ...rest } = Astro.props;
             }
 
             &.circle-2 {
-                background: hsl(var(--color-background));
+                background: var(--color-background);
                 height: 70%;
                 animation-duration: 30s;
 
@@ -93,7 +93,7 @@ const { class: className, ...rest } = Astro.props;
             }
 
             &.circle-3 {
-                background: hsl(var(--color-surface));
+                background: var(--color-surface);
                 height: 40%;
                 animation-duration: 35s;
 

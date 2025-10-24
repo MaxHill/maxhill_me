@@ -62,7 +62,7 @@
 
                 font-family: var(--font-display);
                 color: hsl(var(--color-text));
-                background: hsl(var(--color-background));
+                background: var(--color-background);
                 white-space: nowrap;
             }
 
@@ -71,7 +71,7 @@
             }
 
             >.nav-link.active {
-                background: hsl(var(--color-surface));
+                background: var(--color-surface);
             }
         }
 

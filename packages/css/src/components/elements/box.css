@@ -1,7 +1,7 @@
 @layer components {
     :where(.box)
     {
-        --_color-background: hsl(var(--color-background));
+        --_color-background: var(--color-background);
 
         text-decoration: none;
         color: hsl(var(--color-text));
@@ -21,15 +21,11 @@
         }
 
         &[data-variant="surface"] {
-            --_color-background: hsl(var(--color-surface));
+            --_color-background: var(--color-surface);
         }
 
         &[data-variant="surface-raised"] {
-            --_color-background: hsl(var(--color-surface-raised));
-        }
-
-        &[data-variant="surface-lowered"] {
-            --_color-background: hsl(var(--color-surface-lowered));
+            --_color-background: var(--color-surface-raised);
         }
     }
 }

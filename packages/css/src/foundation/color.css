@@ -1,5 +1,10 @@
 @layer foundations {
   :root {
+    --amber-seed: #db9640; 
+    --gray-seed: #737373;
+    --red-seed: #f43f5e;
+    --green-seed: #10b981;
+
     --f-color-blue: 220, 85%;
     --f-color-red: 9, 85%;
     --f-color-green: 145, 70%;
@@ -7,4 +12,22 @@
     --f-color-orange: 38, 90%;
     --f-color-burgundy: 356.7, 94.8%;
   }
+}
+
+.thing {
+  --color-background: color-mix(
+    in oklch,
+    var(--gray-seed) 10%,
+    var(--tint-soft) 90%
+  );
+  --color-surface: color-mix(
+    in oklch,
+    var(--gray-seed) 18%,
+    var(--tint-soft) 82%
+  );
+  --color-surface-raised: color-mix(
+    in oklch,
+    var(--gray-seed) 25%,
+    var(--tint-soft) 75%
+  );
 }

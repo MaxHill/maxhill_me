@@ -23,11 +23,6 @@
         }
     }
 
-    body {
-        background: hsl(var(--color-background));
-        color: hsl(var(--color-text));
-    }
-
     ::view-transition-old(root),
     ::view-transition-new(root) {
         animation-duration: 0.1s;
@@ -36,8 +31,8 @@
     body {
         font-size: 17px;
         font-family: var(--ff);
-        background-color: hsl(var(--color-background));
-        color: hsl(var(--color-text));
+        background-color: var(--color-background);
+        color: var(--color-text);
     }
 
     /* TODO: this cannot only be on the element. 
@@ -48,7 +43,6 @@
     h4,
     h5,
     h6 {
-        color: hsl(var(--color-text));
         font: var(--h2);
         letter-spacing: -0.03rem;
     }
@@ -67,7 +61,7 @@
 
     a,
     a:active {
-        color: hsl(var(--color-text-link));
+        color: var(--color-text-link);
         text-underline-offset: 2px;
 
         &:not(:is(:hover, :focus)) {

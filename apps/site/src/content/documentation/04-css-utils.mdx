@@ -57,23 +57,8 @@ Use `[data-variant]` to apply different border styles:
 <div data-border data-variant="strong">
   [data-border] [data-variant="strong"]
 </div>
-<div data-border data-variant="danger">
-  [data-border] [data-variant="danger"]
-</div>
-<div data-border data-variant="success">
-  [data-border] [data-variant="success"]
-</div>
-<div data-border data-variant="neutral">
-  [data-border] [data-variant="neutral"]
-</div>
-<div data-border data-variant="info">
-  [data-border] [data-variant="info"]
-</div>
-<div data-border data-variant="warning">
-  [data-border] [data-variant="warning"]
-</div>
 
-Available variants: `strong`, `danger`, `success`, `neutral`, `info`, `warning`
+Available variants: `strong`
 
 ---
 # Gaps
@@ -516,7 +501,7 @@ Apply `.typesetting` to containers with:
 - Long-form written content
 - Any content requiring consistent vertical rhythm
 
-<Card>
+<card-element>
     <strong slot="title">Without .typesetting</strong>
     <div>
       # Article Title
@@ -525,9 +510,9 @@ Apply `.typesetting` to containers with:
       ## Main Content
       Another paragraph here to show the spacing issues when not using the typesetting utility.
     </div>
-</Card>
+</card-element>
 
-<Card>
+<card-element>
     <strong slot="title">With .typesetting</strong>
     <div class="typesetting">
       # Article Title
@@ -536,5 +521,5 @@ Apply `.typesetting` to containers with:
       ## Main Content
       Another paragraph demonstrating the improved vertical rhythm and breathing room between elements.
     </div>
-</Card>
+</card-element>
 
