@@ -1,10 +1,8 @@
 @layer components {
   .collection {
     --_card-width: var(--size-fluid-8);
-    --_gap: var(--size-fluid-1);
 
     display: grid;
-    gap: var(--_gap);
     grid-template-columns: repeat(
       var(--grid-type, auto-fill),
       minmax(min(var(--_card-width), 100%), 1fr)

@@ -1,6 +1,7 @@
 @layer utils {
   [data-gap="000"] { gap: var(--size-000); }
   [data-gap="00"] { gap: var(--size-00); }
+  [data-gap="0"] { gap: 0; }
   [data-gap="1"] { gap: var(--size-1); }
   [data-gap="2"] { gap: var(--size-2); }
   [data-gap="3"] { gap: var(--size-3); }

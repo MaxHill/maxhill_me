@@ -1,0 +1,15 @@
+@layer utils {
+  [data-background] { background-color: var(--color-background); }
+  [data-background="surface"] { background-color: var(--color-surface); }
+  [data-background="surface-raised"] { background-color: var(--color-surface-raised); }
+
+  [data-background="accent-softer"] { background-color: var(--color-accent-fill-softer); }
+  [data-background="accent-soft"] { background-color: var(--color-accent-fill-soft); }
+  [data-background="accent-mid"] { background-color: var(--color-accent-fill-mid); }
+  [data-background="accent-loud"] { background-color: var(--color-accent-fill-loud); }
+  [data-background="accent-louder"] { background-color: var(--color-accent-fill-louder); }
+
+  [data-text="on-accent-soft"] { color: var(--color-accent-text-on-soft); }
+  [data-text="on-accent-mid"] { color: var(--color-accent-text-on-mid); }
+  [data-text="on-accent-loud"] { color: var(--color-accent-text-on-loud); }
+}
