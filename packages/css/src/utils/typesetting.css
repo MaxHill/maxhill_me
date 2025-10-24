@@ -28,7 +28,7 @@
             background: var(--color-surface);
             border: var(--border);
             border-radius: var(--radius-2);
-            color: var(--color-accent-text-on-loud);
+            color: var(--color-accent-text-on-mid);
             font-weight: var(--font-weight-medium);
             overflow-wrap: break-word;
             word-break: break-word;

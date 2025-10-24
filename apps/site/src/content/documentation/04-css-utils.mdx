@@ -65,6 +65,22 @@ Use `[data-variant]` to apply different border styles:
 Available variants: `strong`, `accent`, `danger`, `success`, `neutral`, `info`, `warning`
 
 ---
+# Backgrounds
+
+Background utilities apply background colors using the `[data-background]` attribute. Use `[data-text]` for text colors on accent fills.
+
+<card-element class="stack" data-gap="0" data-padding="0">
+  <p data-background data-padding="2">[data-background]</p>
+  <p data-background="surface" data-padding="2">[data-background="surface"]</p>
+  <p data-background="surface-raised" data-padding="2">[data-background="surface-raised"]</p>
+  <p data-background="accent-softer" data-padding="2" data-text="on-accent-soft">[data-background="accent-softer"] [data-text="on-accent-soft"]</p>
+  <p data-background="accent-soft" data-padding="2" data-text="on-accent-soft">[data-background="accent-soft"] [data-text="on-accent-soft"]</p>
+  <p data-background="accent-mid" data-padding="2" data-text="on-accent-mid">[data-background="accent-mid"] [data-text="on-accent-mid"]</p>
+  <p data-background="accent-loud" data-padding="2" data-text="on-accent-loud">[data-background="accent-loud"] [data-text="on-accent-loud"]</p>
+  <p data-background="accent-louder" data-padding="2" data-text="on-accent-loud">[data-background="accent-louder"] [data-text="on-accent-loud"]</p>
+</card-element>
+
+---
 # Gaps
 
 Gap utilities control spacing between flex or grid items. Works with any layout container that supports the `gap` property.
