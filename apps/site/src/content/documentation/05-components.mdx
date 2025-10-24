@@ -52,7 +52,7 @@ Cards group related content and actions in a contained, scannable format.
 
 **Card Elements in a `.collection`**
 
-<div class="collection">
+<div class="collection" data-gap="2">
   <card-element data-subgrid="true">
     <div slot="title">Card Element 1</div>
     <div class="stack2">
@@ -85,6 +85,29 @@ Cards group related content and actions in a contained, scannable format.
     <div slot="footer">Footer info</div>
   </card-element>
 </div>
+
+## Tabs
+
+Tab containers provide accessible navigation between related content panels.
+
+<tab-container>
+  <div role="tablist">
+    <button type="button" role="tab" aria-selected="true">Tab 1</button>
+    <button type="button" role="tab">Tab 2</button>
+    <button type="button" role="tab">Tab 3</button>
+  </div>
+  <div role="tabpanel">
+    <p>Content for tab 1</p>
+  </div>
+  <div role="tabpanel" hidden>
+    <p>Content for tab 2</p>
+  </div>
+  <div role="tabpanel" hidden>
+    <p>Content for tab 3</p>
+  </div>
+</tab-container>
+
+For full documentation, see the [official tab-container-element docs](https://github.github.com/tab-container-element/examples/).
 
 ## Documentation
 

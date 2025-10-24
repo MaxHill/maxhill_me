@@ -56,6 +56,8 @@ class CardElement extends HTMLElement {
   }
 }
 
-customElements.define("card-element", CardElement);
+if (!customElements.get("card-element")) {
+  customElements.define("card-element", CardElement);
+}
 
 export default CardElement;

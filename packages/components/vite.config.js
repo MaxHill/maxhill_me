@@ -6,7 +6,9 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
-        'card-element': resolve(__dirname, 'src/card-element.ts')
+        'card-element': resolve(__dirname, 'src/card-element.ts'),
+        'vendored/index': resolve(__dirname, 'src/vendored/index.ts'),
+        'vendored/tab-container-element/index': resolve(__dirname, 'src/vendored/tab-container-element/index.ts')
       },
       formats: ['es']
     },
