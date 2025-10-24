@@ -13,6 +13,14 @@
     "./card-element": {
       "types": "./dist/card-element.d.ts",
       "default": "./dist/card-element.js"
+    },
+    "./vendored": {
+      "types": "./dist/vendored/index.d.ts",
+      "default": "./dist/vendored/index.js"
+    },
+    "./vendored/tab-container-element": {
+      "types": "./dist/vendored/tab-container-element/index.d.ts",
+      "default": "./dist/vendored/tab-container-element/index.js"
     }
   },
   "files": [
