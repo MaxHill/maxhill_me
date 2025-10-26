@@ -1,6 +1,6 @@
 @layer components {
   :where(.content-grid) {
-    --_padding-inline: var(--size-2);
+    --_padding-inline: var(--body-margin);
     --_content-max-width: 1600px;
     --_breakout-max-width: 1800px;
 

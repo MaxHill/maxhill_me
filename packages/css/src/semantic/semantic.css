@@ -2,32 +2,81 @@
 @import "./dark-theme.css";
 
 @layer semantic {
-  :root {
-    --menu-height: var(--size-6);
+    [data-theme="light"],
+    [data-theme="dark"],
+    :root {
+        --menu-height: var(--size-6);
 
-    --font-weight-medium: 500;
-    --font-weight-bold: 700;
+        --font-weight-medium: 500;
+        --font-weight-bold: 700;
 
-    --h1: var(--font-weight-bold) 2rem/1.1 var(--ff-display);
-    --h2: var(--font-weight-medium) 1.5rem/1.1 var(--ff);
-    --p: 400 1rem/1.4 var(--ff);
-    --p2: 400 0.875rem/1.4 var(--ff);
+        --h1: var(--font-weight-bold) 2rem/1.1 var(--ff-display);
+        --h2: var(--font-weight-medium) 1.5rem/1.1 var(--ff);
+        --p: 400 1rem/1.4 var(--ff);
+        --p2: 400 0.875rem/1.4 var(--ff);
+
+        /*  ------------------------------------------------------------------------
+        /*  Sizing                                                                     
+        /*  ------------------------------------------------------------------------ */
+        --body-margin: var(--size-fluid-2);
+
+        /*  ------------------------------------------------------------------------
+        /*  Colors                                                                     
+        /*  ------------------------------------------------------------------------ */
+        --color-primary-seed: var(--green-seed);
+        --color-neutral-seed: #8b8c93;
+        --color-constructive-seed: #5dbb55;
+        --color-destructive-seed: #ef5655;
 
 
-  /* Fill colors: softer → louder */
-  --color-accent-fill-softer: color-mix(in oklch, var(--accent-seed) 15%, var(--tint-soft) 80%);
-  --color-accent-fill-soft:   color-mix(in oklch, var(--accent-seed) 30%, var(--tint-soft) 65%);
-  --color-accent-fill-mid:    color-mix(in oklch, var(--accent-seed) 60%, var(--tint-soft) 35%);
-  --color-accent-fill-loud:   color-mix(in oklch, var(--accent-seed) 80%, var(--tint-loud) 20%);
-  --color-accent-fill-louder: color-mix(in oklch, var(--accent-seed) 90%, var(--tint-loud) 50%);
+        --color-primary-50: color-mix(in oklab, var(--color-primary-seed), white 95%);
+        --color-primary-100: color-mix(in oklab, var(--color-primary-seed), white 87%);
+        --color-primary-200: color-mix(in oklab, var(--color-primary-seed), white 70%);
+        --color-primary-300: color-mix(in oklab, var(--color-primary-seed), white 47%);
+        --color-primary-400: color-mix(in oklab, var(--color-primary-seed), white 23%);
+        --color-primary-500: var(--color-primary-seed);
+        --color-primary-600: color-mix(in oklab, var(--color-primary-seed), black 15.5%);
+        --color-primary-700: color-mix(in oklab, var(--color-primary-seed), black 28.25%);
+        --color-primary-800: color-mix(in oklab, var(--color-primary-seed), black 43.5%);
+        --color-primary-900: color-mix(in oklab, var(--color-primary-seed), black 58.5%);
+        --color-primary-950: color-mix(in oklab, var(--color-primary-seed), black 73.75%);
 
-  /* Stroke colors: softer, soft, mid (no loud variants by design) */
-  --color-accent-stroke-softer: color-mix(in oklch, var(--accent-seed) 50%, var(--tint-loud) 30%);
-  --color-accent-stroke-soft:   color-mix(in oklch, var(--accent-seed) 70%, var(--tint-loud) 50%);
-  --color-accent-stroke-mid:    color-mix(in oklch, var(--accent-seed) 90%, var(--tint-loud) 70%);
+        --color-neutral-50: color-mix(in oklab, var(--color-neutral-seed), white 95%);
+        --color-neutral-100: color-mix(in oklab, var(--color-neutral-seed), white 87%);
+        --color-neutral-200: color-mix(in oklab, var(--color-neutral-seed), white 70%);
+        --color-neutral-300: color-mix(in oklab, var(--color-neutral-seed), white 47%);
+        --color-neutral-400: color-mix(in oklab, var(--color-neutral-seed), white 23%);
+        --color-neutral-500: var(--color-neutral-seed);
+        --color-neutral-600: color-mix(in oklab, var(--color-neutral-seed), black 15.5%);
+        --color-neutral-700: color-mix(in oklab, var(--color-neutral-seed), black 28.25%);
+        --color-neutral-800: color-mix(in oklab, var(--color-neutral-seed), black 43.5%);
+        --color-neutral-900: color-mix(in oklab, var(--color-neutral-seed), black 58.5%);
+        --color-neutral-950: color-mix(in oklab, var(--color-neutral-seed), black 73.75%);
 
-  /* Text-on colors: soft works on soft/softer fills, loud works on loud/louder fills */
-  --color-accent-text-on-soft: color-mix(in oklch, var(--accent-seed) 70%, var(--tint-loud) 70%);
-  --color-accent-text-on-mid:  color-mix(in oklch, var(--accent-seed) 80%, var(--tint-loud) 80%);
-  --color-accent-text-on-loud: color-mix(in oklch, var(--accent-seed) 30%, var(--tint-soft) 85%);  }
+        --color-constructive-50: color-mix(in oklab, var(--color-constructive-seed), white 95%);
+        --color-constructive-100: color-mix(in oklab, var(--color-constructive-seed), white 87%);
+        --color-constructive-200: color-mix(in oklab, var(--color-constructive-seed), white 70%);
+        --color-constructive-300: color-mix(in oklab, var(--color-constructive-seed), white 47%);
+        --color-constructive-400: color-mix(in oklab, var(--color-constructive-seed), white 23%);
+        --color-constructive-500: var(--color-constructive-seed);
+        --color-constructive-600: color-mix(in oklab, var(--color-constructive-seed), black 15.5%);
+        --color-constructive-700: color-mix(in oklab, var(--color-constructive-seed), black 28.25%);
+        --color-constructive-800: color-mix(in oklab, var(--color-constructive-seed), black 43.5%);
+        --color-constructive-900: color-mix(in oklab, var(--color-constructive-seed), black 58.5%);
+        --color-constructive-950: color-mix(in oklab, var(--color-constructive-seed), black 73.75%);
+
+        --color-destructive-50: color-mix(in oklab, var(--color-destructive-seed), white 95%);
+        --color-destructive-100: color-mix(in oklab, var(--color-destructive-seed), white 87%);
+        --color-destructive-200: color-mix(in oklab, var(--color-destructive-seed), white 70%);
+        --color-destructive-300: color-mix(in oklab, var(--color-destructive-seed), white 47%);
+        --color-destructive-400: color-mix(in oklab, var(--color-destructive-seed), white 23%);
+        --color-destructive-500: var(--color-destructive-seed);
+        --color-destructive-600: color-mix(in oklab, var(--color-destructive-seed), black 15.5%);
+        --color-destructive-700: color-mix(in oklab, var(--color-destructive-seed), black 28.25%);
+        --color-destructive-800: color-mix(in oklab, var(--color-destructive-seed), black 43.5%);
+        --color-destructive-900: color-mix(in oklab, var(--color-destructive-seed), black 58.5%);
+        --color-destructive-950: color-mix(in oklab, var(--color-destructive-seed), black 73.75%);
+    }
 }
+
+
