@@ -40,20 +40,14 @@
     &[data-variant="accent"] {
       border-color: var(--color-accent-stroke-mid);
     }
-    &[data-variant="danger"] {
-      border-color: hsl(var(--color-stroke-danger));
-    }
-    &[data-variant="success"] {
-      border-color: hsl(var(--color-stroke-success));
-    }
     &[data-variant="neutral"] {
-      border-color: hsl(var(--color-stroke-neutral));
+      border-color: var(--color-neutral-stroke-mid);
     }
-    &[data-variant="info"] {
-      border-color: hsl(var(--color-stroke-info));
+    &[data-variant="constructive"] {
+      border-color: var(--color-constructive-stroke-mid);
     }
-    &[data-variant="warning"] {
-      border-color: hsl(var(--color-stroke-warning));
+    &[data-variant="destructive"] {
+      border-color: var(--color-destructive-stroke-mid);
     }
   }
 }

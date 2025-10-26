@@ -54,30 +54,77 @@ Border utilities add borders to elements using the `[data-border]` attribute. Co
 
 Use `[data-variant]` to apply different border styles:
 
-<div data-border data-variant="strong">
+<div data-border data-variant="strong" data-padding="2">
   [data-border] [data-variant="strong"]
 </div>
 
-<div data-border data-variant="accent">
+<div data-border data-variant="accent" data-padding="2">
   [data-border] [data-variant="accent"]
 </div>
 
-Available variants: `strong`, `accent`, `danger`, `success`, `neutral`, `info`, `warning`
+<div data-border data-variant="neutral" data-padding="2">
+  [data-border] [data-variant="neutral"]
+</div>
+
+<div data-border data-variant="constructive" data-padding="2">
+  [data-border] [data-variant="constructive"]
+</div>
+
+<div data-border data-variant="destructive" data-padding="2">
+  [data-border] [data-variant="destructive"]
+</div>
 
 ---
 # Backgrounds
 
 Background utilities apply background colors using the `[data-background]` attribute. Use `[data-text]` for text colors on accent fills.
 
+## Surface Colors
+
 <card-element class="stack" data-gap="0" data-padding="0">
   <p data-background data-padding="2">[data-background]</p>
   <p data-background="surface" data-padding="2">[data-background="surface"]</p>
   <p data-background="surface-raised" data-padding="2">[data-background="surface-raised"]</p>
+</card-element>
+
+## Accent Colors
+
+<card-element class="stack" data-gap="0" data-padding="0">
   <p data-background="accent-softer" data-padding="2" data-text="on-accent-soft">[data-background="accent-softer"] [data-text="on-accent-soft"]</p>
   <p data-background="accent-soft" data-padding="2" data-text="on-accent-soft">[data-background="accent-soft"] [data-text="on-accent-soft"]</p>
   <p data-background="accent-mid" data-padding="2" data-text="on-accent-mid">[data-background="accent-mid"] [data-text="on-accent-mid"]</p>
   <p data-background="accent-loud" data-padding="2" data-text="on-accent-loud">[data-background="accent-loud"] [data-text="on-accent-loud"]</p>
   <p data-background="accent-louder" data-padding="2" data-text="on-accent-loud">[data-background="accent-louder"] [data-text="on-accent-loud"]</p>
+</card-element>
+
+## Neutral Colors
+
+<card-element class="stack" data-gap="0" data-padding="0">
+  <p data-background="neutral-softer" data-padding="2" data-text="on-neutral-soft">[data-background="neutral-softer"] [data-text="on-neutral-soft"]</p>
+  <p data-background="neutral-soft" data-padding="2" data-text="on-neutral-soft">[data-background="neutral-soft"] [data-text="on-neutral-soft"]</p>
+  <p data-background="neutral-mid" data-padding="2" data-text="on-neutral-mid">[data-background="neutral-mid"] [data-text="on-neutral-mid"]</p>
+  <p data-background="neutral-loud" data-padding="2" data-text="on-neutral-loud">[data-background="neutral-loud"] [data-text="on-neutral-loud"]</p>
+  <p data-background="neutral-louder" data-padding="2" data-text="on-neutral-loud">[data-background="neutral-louder"] [data-text="on-neutral-loud"]</p>
+</card-element>
+
+## Constructive Colors
+
+<card-element class="stack" data-gap="0" data-padding="0">
+  <p data-background="constructive-softer" data-padding="2" data-text="on-constructive-soft">[data-background="constructive-softer"] [data-text="on-constructive-soft"]</p>
+  <p data-background="constructive-soft" data-padding="2" data-text="on-constructive-soft">[data-background="constructive-soft"] [data-text="on-constructive-soft"]</p>
+  <p data-background="constructive-mid" data-padding="2" data-text="on-constructive-mid">[data-background="constructive-mid"] [data-text="on-constructive-mid"]</p>
+  <p data-background="constructive-loud" data-padding="2" data-text="on-constructive-loud">[data-background="constructive-loud"] [data-text="on-constructive-loud"]</p>
+  <p data-background="constructive-louder" data-padding="2" data-text="on-constructive-loud">[data-background="constructive-louder"] [data-text="on-constructive-loud"]</p>
+</card-element>
+
+## Destructive Colors
+
+<card-element class="stack" data-gap="0" data-padding="0">
+  <p data-background="destructive-softer" data-padding="2" data-text="on-destructive-soft">[data-background="destructive-softer"] [data-text="on-destructive-soft"]</p>
+  <p data-background="destructive-soft" data-padding="2" data-text="on-destructive-soft">[data-background="destructive-soft"] [data-text="on-destructive-soft"]</p>
+  <p data-background="destructive-mid" data-padding="2" data-text="on-destructive-mid">[data-background="destructive-mid"] [data-text="on-destructive-mid"]</p>
+  <p data-background="destructive-loud" data-padding="2" data-text="on-destructive-loud">[data-background="destructive-loud"] [data-text="on-destructive-loud"]</p>
+  <p data-background="destructive-louder" data-padding="2" data-text="on-destructive-loud">[data-background="destructive-louder"] [data-text="on-destructive-loud"]</p>
 </card-element>
 
 ---
