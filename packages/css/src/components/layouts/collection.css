@@ -1,6 +1,7 @@
 @layer components {
   .collection {
     --_card-width: var(--size-fluid-8);
+    gap: var(--body-margin);
 
     display: grid;
     grid-template-columns: repeat(
