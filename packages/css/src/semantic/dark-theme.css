@@ -13,8 +13,8 @@
         --color-accent-fill-loud: var(--color-primary-200);
         --color-accent-fill-louder: var(--color-primary-100);
         --color-accent-text-on-soft: var(--color-primary-100);
-        --color-accent-text-on-mid: white;
-        --color-accent-text-on-loud: black;
+        --color-accent-text-on-mid: var(--color-primary-100);
+        --color-accent-text-on-loud: var(--color-primary-900);
         --color-accent-text-colorful: var(--color-primary-500);
         --color-accent-stroke-softer: color-mix(in oklab, var(--color-primary-900), white 7.5%);
         --color-accent-stroke-soft: var(--color-primary-800);
@@ -27,8 +27,8 @@
         --color-neutral-fill-loud: var(--color-neutral-200);
         --color-neutral-fill-louder: var(--color-neutral-100);
         --color-neutral-text-on-soft: var(--color-neutral-100);
-        --color-neutral-text-on-mid: white;
-        --color-neutral-text-on-loud: black;
+        --color-neutral-text-on-mid: var(--color-neutral-100);
+        --color-neutral-text-on-loud: var(--color-neutral-900);
         --color-neutral-text-colorful: var(--color-neutral-500);
         --color-neutral-stroke-softer: color-mix(in oklab, var(--color-neutral-900), white 7.5%);
         --color-neutral-stroke-soft: var(--color-neutral-800);
@@ -41,8 +41,8 @@
         --color-constructive-fill-loud: var(--color-constructive-200);
         --color-constructive-fill-louder: var(--color-constructive-100);
         --color-constructive-text-on-soft: var(--color-constructive-100);
-        --color-constructive-text-on-mid: white;
-        --color-constructive-text-on-loud: black;
+        --color-constructive-text-on-mid: var(--color-constructive-100);
+        --color-constructive-text-on-loud: var(--color-constructive-900);
         --color-constructive-text-colorful: var(--color-constructive-500);
         --color-constructive-stroke-softer: color-mix(in oklab, var(--color-constructive-900), white 7.5%);
         --color-constructive-stroke-soft: var(--color-constructive-800);
@@ -55,8 +55,8 @@
         --color-destructive-fill-loud: var(--color-destructive-200);
         --color-destructive-fill-louder: var(--color-destructive-100);
         --color-destructive-text-on-soft: var(--color-destructive-100);
-        --color-destructive-text-on-mid: white;
-        --color-destructive-text-on-loud: black;
+        --color-destructive-text-on-mid: var(--color-destructive-100);
+        --color-destructive-text-on-loud: var(--color-destructive-900);
         --color-destructive-text-colorful: var(--color-destructive-500);
         --color-destructive-stroke-softer: color-mix(in oklab, var(--color-destructive-900), white 7.5%);
         --color-destructive-stroke-soft: var(--color-destructive-800);
@@ -66,19 +66,19 @@
         /*  ------------------------------------------------------------------------
         /*  Colors - Text                                                                     
         /*  ------------------------------------------------------------------------ */
-        --color-text: color-mix(in oklch, var(--gray-seed) 40%, var(--tint-loud) 100%);
-        --color-text-weak: color-mix(in oklch, var(--gray-seed) 50%, var(--tint-loud) 50%);
-        --color-text-weaker: color-mix(in oklch, var(--gray-seed) 30%, var(--tint-loud) 50%);
-        --color-text-weakest: color-mix(in oklch, var(--gray-seed) 10%, var(--tint-loud) 30%);
+        --color-text: color-mix(in oklch, var(--gray-seed), var(--tint-loud) 60%);
+        --color-text-weak: color-mix(in oklch, var(--gray-seed), var(--tint-loud) 50%);
+        --color-text-weaker: color-mix(in oklch, var(--gray-seed), var(--tint-loud) 30%);
+        --color-text-weakest: color-mix(in oklch, var(--gray-seed), var(--tint-soft) 10%);
 
-        --color-text-link: color-mix(in oklch, var(--accent-seed) 100%, var(--tint-loud) 50%);
+        --color-text-link: color-mix(in oklch, var(--color-primary-seed), var(--tint-loud) 50%);
 
         /*  ------------------------------------------------------------------------
         /*  Colors - Backgrounds                                                                    
         /*  ------------------------------------------------------------------------ */
-        --color-background: color-mix(in oklch, var(--gray-seed) 10%, var(--tint-soft) 90%);
-        --color-surface: color-mix(in oklch, var(--gray-seed) 40%, var(--tint-soft) 85%);
-        --color-surface-raised: color-mix(in oklch, var(--gray-seed) 50%, var(--tint-soft) 70%);
+        --color-background: color-mix(in oklch, var(--gray-seed), var(--tint-soft) 96%);
+        --color-surface: color-mix(in oklch, var(--gray-seed), var(--tint-soft) 70%);
+        --color-surface-raised: color-mix(in oklch, var(--gray-seed), var(--tint-soft) 65%);
 
         /*  ------------------------------------------------------------------------
         /*  Strokes                                                                     

@@ -9,7 +9,37 @@
   [data-background="accent-loud"] { background-color: var(--color-accent-fill-loud); }
   [data-background="accent-louder"] { background-color: var(--color-accent-fill-louder); }
 
+  [data-background="neutral-softer"] { background-color: var(--color-neutral-fill-softer); }
+  [data-background="neutral-soft"] { background-color: var(--color-neutral-fill-soft); }
+  [data-background="neutral-mid"] { background-color: var(--color-neutral-fill-mid); }
+  [data-background="neutral-loud"] { background-color: var(--color-neutral-fill-loud); }
+  [data-background="neutral-louder"] { background-color: var(--color-neutral-fill-louder); }
+
+  [data-background="constructive-softer"] { background-color: var(--color-constructive-fill-softer); }
+  [data-background="constructive-soft"] { background-color: var(--color-constructive-fill-soft); }
+  [data-background="constructive-mid"] { background-color: var(--color-constructive-fill-mid); }
+  [data-background="constructive-loud"] { background-color: var(--color-constructive-fill-loud); }
+  [data-background="constructive-louder"] { background-color: var(--color-constructive-fill-louder); }
+
+  [data-background="destructive-softer"] { background-color: var(--color-destructive-fill-softer); }
+  [data-background="destructive-soft"] { background-color: var(--color-destructive-fill-soft); }
+  [data-background="destructive-mid"] { background-color: var(--color-destructive-fill-mid); }
+  [data-background="destructive-loud"] { background-color: var(--color-destructive-fill-loud); }
+  [data-background="destructive-louder"] { background-color: var(--color-destructive-fill-louder); }
+
   [data-text="on-accent-soft"] { color: var(--color-accent-text-on-soft); }
   [data-text="on-accent-mid"] { color: var(--color-accent-text-on-mid); }
   [data-text="on-accent-loud"] { color: var(--color-accent-text-on-loud); }
+
+  [data-text="on-neutral-soft"] { color: var(--color-neutral-text-on-soft); }
+  [data-text="on-neutral-mid"] { color: var(--color-neutral-text-on-mid); }
+  [data-text="on-neutral-loud"] { color: var(--color-neutral-text-on-loud); }
+
+  [data-text="on-constructive-soft"] { color: var(--color-constructive-text-on-soft); }
+  [data-text="on-constructive-mid"] { color: var(--color-constructive-text-on-mid); }
+  [data-text="on-constructive-loud"] { color: var(--color-constructive-text-on-loud); }
+
+  [data-text="on-destructive-soft"] { color: var(--color-destructive-text-on-soft); }
+  [data-text="on-destructive-mid"] { color: var(--color-destructive-text-on-mid); }
+  [data-text="on-destructive-loud"] { color: var(--color-destructive-text-on-loud); }
 }
