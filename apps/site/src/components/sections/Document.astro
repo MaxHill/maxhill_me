@@ -8,16 +8,22 @@ interface Props extends HTMLAttributes<"div"> {
 const { metadata, class: className, ...rest } = Astro.props;
 ---
 
-<div class:list={["document", "content-grid", "typesetting", className]} {...rest}>
-    <ul class="document-metadata" data-width="full">
-        {
-            Object.entries(metadata).map(([key, value]) => (
-                <li>
-                    <span class="label">{key}:</span> {value}
-                </li>
-            ))
-        }
-    </ul>
+<div
+    class:list={["document", "content-grid", "typesetting", className]}
+    {...rest}
+>
+    <div class="document-metadata content-grid" data-width="full">
+        <dl>
+            {
+                Object.entries(metadata).map(([key, value]) => (
+                    <>
+                        <dt>{key}:</dt>
+                        <dd>{value}</dd>
+                    </>
+                ))
+            }
+        </dl>
+    </div>
     <slot />
 </div>
 
@@ -25,7 +31,7 @@ const { metadata, class: className, ...rest } = Astro.props;
     .document {
         --_content-max-width: 700px;
         --_breakout-max-width: 850px;
-        
+
         z-index: var(--layer-1);
         background: var(--color-background);
         opacity: 0.3;
@@ -33,7 +39,7 @@ const { metadata, class: className, ...rest } = Astro.props;
         overflow-x: hidden;
         overflow-y: auto;
         width: 1000px;
-        max-width: 90vw;
+        max-width: calc(100vw - var(--body-margin) * 2);
         padding-block-end: var(--size-fluid-3);
 
         container-type: inline-size;
@@ -44,13 +50,21 @@ const { metadata, class: className, ...rest } = Astro.props;
     }
 
     .document-metadata {
-        border-bottom: var(--border-width) solid var(--color-border);
-        list-style: none;
-        margin: 0;
-        padding: var(--size-fluid-2);
-
-        .label {
-            font-weight: var(--font-weight-bold);
+        --_content-max-width: 700px;
+        --_breakout-max-width: 850px;
+        border-bottom: var(--border);
+        dl {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            column-gap: var(--size-1);
+            padding-block: 1lh;
+            align-items: center;
+            dt {
+                font: var(--p2);
+                text-transform: uppercase;
+                color: var(--color-text-weaker);
+                text-align: end;
+            }
         }
     }
 </style>
