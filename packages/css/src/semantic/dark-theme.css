@@ -71,7 +71,8 @@
         --color-text-weaker: color-mix(in oklch, var(--gray-seed), var(--tint-loud) 30%);
         --color-text-weakest: color-mix(in oklch, var(--gray-seed), var(--tint-soft) 10%);
 
-        --color-text-link: color-mix(in oklch, var(--color-primary-seed), var(--tint-loud) 50%);
+        --color-text-link: var(--color-primary-text-colorful);
+        
 
         /*  ------------------------------------------------------------------------
         /*  Colors - Backgrounds                                                                    

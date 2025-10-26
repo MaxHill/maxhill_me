@@ -14,9 +14,9 @@
         text-size-adjust: none;
         tab-size: 2;
         word-break: break-word;
+
         /* Allow transition to height auto */
         interpolate-size: allow-keywords;
-
         /* Don't smooth scroll if cmd+f search */
         &:focus-within {
             scroll-behavior: smooth;
@@ -44,19 +44,13 @@
     h5,
     h6 {
         font: var(--h2);
-        letter-spacing: -0.03rem;
-    }
-
-    .h1,
-    h1 {
-        font: var(--h1);
+        letter-spacing: var(--font-letterspacing-0);
     }
 
     p,
     li,
     dd {
         text-wrap: pretty;
-        max-inline-size: 88ch;
     }
 
     a,

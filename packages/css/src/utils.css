@@ -19,12 +19,12 @@
 
   .h1 {
     font: var(--h1);
-    letter-spacing: -0.03rem;
+    letter-spacing: var(--font-letterspacing-0);
   }
 
   .h2 {
     font: var(--h2);
-    letter-spacing: -0.03rem;
+    letter-spacing: var(--font-letterspacing-0);
   }
 
   .p {
@@ -37,7 +37,7 @@
 
   .ff-display {
     font-family: var(--ff-display);
-    letter-spacing: -0.03rem;
+    letter-spacing: var(--font-letterspacing-0);
   }
 
   /*  ------------------------------------------------------------------------
