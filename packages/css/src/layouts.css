@@ -93,7 +93,7 @@
 
             >.hero {
                 min-width: 80%;
-                max-width: 1000px;
+                max-width: 90vw;
             }
 
             /* Fade out inactive documents */
