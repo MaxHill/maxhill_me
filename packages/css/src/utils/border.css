@@ -37,8 +37,8 @@
     &[data-variant="strong"] {
       border-color: var(--color-stroke-strong);
     }
-    &[data-variant="accent"] {
-      border-color: var(--color-accent-stroke-mid);
+    &[data-variant="primary"] {
+      border-color: var(--color-primary-stroke-mid);
     }
     &[data-variant="neutral"] {
       border-color: var(--color-neutral-stroke-mid);

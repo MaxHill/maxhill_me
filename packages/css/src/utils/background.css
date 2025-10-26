@@ -3,11 +3,11 @@
   [data-background="surface"] { background-color: var(--color-surface); }
   [data-background="surface-raised"] { background-color: var(--color-surface-raised); }
 
-  [data-background="accent-softer"] { background-color: var(--color-accent-fill-softer); }
-  [data-background="accent-soft"] { background-color: var(--color-accent-fill-soft); }
-  [data-background="accent-mid"] { background-color: var(--color-accent-fill-mid); }
-  [data-background="accent-loud"] { background-color: var(--color-accent-fill-loud); }
-  [data-background="accent-louder"] { background-color: var(--color-accent-fill-louder); }
+  [data-background="primary-softer"] { background-color: var(--color-primary-fill-softer); }
+  [data-background="primary-soft"] { background-color: var(--color-primary-fill-soft); }
+  [data-background="primary-mid"] { background-color: var(--color-primary-fill-mid); }
+  [data-background="primary-loud"] { background-color: var(--color-primary-fill-loud); }
+  [data-background="primary-louder"] { background-color: var(--color-primary-fill-louder); }
 
   [data-background="neutral-softer"] { background-color: var(--color-neutral-fill-softer); }
   [data-background="neutral-soft"] { background-color: var(--color-neutral-fill-soft); }
@@ -27,9 +27,9 @@
   [data-background="destructive-loud"] { background-color: var(--color-destructive-fill-loud); }
   [data-background="destructive-louder"] { background-color: var(--color-destructive-fill-louder); }
 
-  [data-text="on-accent-soft"] { color: var(--color-accent-text-on-soft); }
-  [data-text="on-accent-mid"] { color: var(--color-accent-text-on-mid); }
-  [data-text="on-accent-loud"] { color: var(--color-accent-text-on-loud); }
+  [data-text="on-primary-soft"] { color: var(--color-primary-text-on-soft); }
+  [data-text="on-primary-mid"] { color: var(--color-primary-text-on-mid); }
+  [data-text="on-primary-loud"] { color: var(--color-primary-text-on-loud); }
 
   [data-text="on-neutral-soft"] { color: var(--color-neutral-text-on-soft); }
   [data-text="on-neutral-mid"] { color: var(--color-neutral-text-on-mid); }

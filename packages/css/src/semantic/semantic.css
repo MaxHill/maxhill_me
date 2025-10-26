@@ -2,6 +2,7 @@
 @import "./dark-theme.css";
 
 @layer semantic {
+
     [data-theme="light"],
     [data-theme="dark"],
     :root {
@@ -77,6 +78,9 @@
         --color-destructive-900: color-mix(in oklab, var(--color-destructive-seed), black 58.5%);
         --color-destructive-950: color-mix(in oklab, var(--color-destructive-seed), black 73.75%);
     }
+
+    [data-theme="dark"],
+    [data-theme="light"] {
+        color: var(--color-text);
+    }
 }
-
-
