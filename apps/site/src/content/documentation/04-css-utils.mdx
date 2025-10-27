@@ -4,7 +4,6 @@ author: Max Hill
 date: 2025-10-12
 tags: [typography, fonts, text]
 ---
-import Card from "../../components/Card.astro";
 
 # CSS Utilities
 
@@ -81,51 +80,51 @@ Background utilities apply background colors using the `[data-background]` attri
 
 ## Surface Colors
 
-<card-element class="stack" data-gap="0" data-padding="0">
+<m-card class="stack" data-gap="0" data-padding="0">
   <p data-background data-padding="2">[data-background]</p>
   <p data-background="surface" data-padding="2">[data-background="surface"]</p>
   <p data-background="surface-raised" data-padding="2">[data-background="surface-raised"]</p>
-</card-element>
+</m-card>
 
 ## Primary Colors
 
-<card-element class="stack" data-gap="0" data-padding="0">
+<m-card class="stack" data-gap="0" data-padding="0">
   <p data-background="primary-softer" data-padding="2" data-text="on-primary-soft">[data-background="primary-softer"] [data-text="on-primary-soft"]</p>
   <p data-background="primary-soft" data-padding="2" data-text="on-primary-soft">[data-background="primary-soft"] [data-text="on-primary-soft"]</p>
   <p data-background="primary-mid" data-padding="2" data-text="on-primary-mid">[data-background="primary-mid"] [data-text="on-primary-mid"]</p>
   <p data-background="primary-loud" data-padding="2" data-text="on-primary-loud">[data-background="primary-loud"] [data-text="on-primary-loud"]</p>
   <p data-background="primary-louder" data-padding="2" data-text="on-primary-loud">[data-background="primary-louder"] [data-text="on-primary-loud"]</p>
-</card-element>
+</m-card>
 
 ## Neutral Colors
 
-<card-element class="stack" data-gap="0" data-padding="0">
+<m-card class="stack" data-gap="0" data-padding="0">
   <p data-background="neutral-softer" data-padding="2" data-text="on-neutral-soft">[data-background="neutral-softer"] [data-text="on-neutral-soft"]</p>
   <p data-background="neutral-soft" data-padding="2" data-text="on-neutral-soft">[data-background="neutral-soft"] [data-text="on-neutral-soft"]</p>
   <p data-background="neutral-mid" data-padding="2" data-text="on-neutral-mid">[data-background="neutral-mid"] [data-text="on-neutral-mid"]</p>
   <p data-background="neutral-loud" data-padding="2" data-text="on-neutral-loud">[data-background="neutral-loud"] [data-text="on-neutral-loud"]</p>
   <p data-background="neutral-louder" data-padding="2" data-text="on-neutral-loud">[data-background="neutral-louder"] [data-text="on-neutral-loud"]</p>
-</card-element>
+</m-card>
 
 ## Constructive Colors
 
-<card-element class="stack" data-gap="0" data-padding="0">
+<m-card class="stack" data-gap="0" data-padding="0">
   <p data-background="constructive-softer" data-padding="2" data-text="on-constructive-soft">[data-background="constructive-softer"] [data-text="on-constructive-soft"]</p>
   <p data-background="constructive-soft" data-padding="2" data-text="on-constructive-soft">[data-background="constructive-soft"] [data-text="on-constructive-soft"]</p>
   <p data-background="constructive-mid" data-padding="2" data-text="on-constructive-mid">[data-background="constructive-mid"] [data-text="on-constructive-mid"]</p>
   <p data-background="constructive-loud" data-padding="2" data-text="on-constructive-loud">[data-background="constructive-loud"] [data-text="on-constructive-loud"]</p>
   <p data-background="constructive-louder" data-padding="2" data-text="on-constructive-loud">[data-background="constructive-louder"] [data-text="on-constructive-loud"]</p>
-</card-element>
+</m-card>
 
 ## Destructive Colors
 
-<card-element class="stack" data-gap="0" data-padding="0">
+<m-card class="stack" data-gap="0" data-padding="0">
   <p data-background="destructive-softer" data-padding="2" data-text="on-destructive-soft">[data-background="destructive-softer"] [data-text="on-destructive-soft"]</p>
   <p data-background="destructive-soft" data-padding="2" data-text="on-destructive-soft">[data-background="destructive-soft"] [data-text="on-destructive-soft"]</p>
   <p data-background="destructive-mid" data-padding="2" data-text="on-destructive-mid">[data-background="destructive-mid"] [data-text="on-destructive-mid"]</p>
   <p data-background="destructive-loud" data-padding="2" data-text="on-destructive-loud">[data-background="destructive-loud"] [data-text="on-destructive-loud"]</p>
   <p data-background="destructive-louder" data-padding="2" data-text="on-destructive-loud">[data-background="destructive-louder"] [data-text="on-destructive-loud"]</p>
-</card-element>
+</m-card>
 
 ---
 # Gaps
@@ -568,7 +567,7 @@ Apply `.typesetting` to containers with:
 - Long-form written content
 - Any content requiring consistent vertical rhythm
 
-<card-element>
+<m-card>
     <strong slot="title">Without .typesetting</strong>
     <div>
       # Article Title
@@ -577,9 +576,9 @@ Apply `.typesetting` to containers with:
       ## Main Content
       Another paragraph here to show the spacing issues when not using the typesetting utility.
     </div>
-</card-element>
+</m-card>
 
-<card-element>
+<m-card>
     <strong slot="title">With .typesetting</strong>
     <div class="typesetting">
       # Article Title
@@ -588,5 +587,6 @@ Apply `.typesetting` to containers with:
       ## Main Content
       Another paragraph demonstrating the improved vertical rhythm and breathing room between elements.
     </div>
-</card-element>
+</m-card>
+
 

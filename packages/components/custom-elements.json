@@ -1,0 +1,523 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "src/m-card/index.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A card component with support for title, content, and footer sections.",
+          "name": "MCard",
+          "slots": [
+            {
+              "description": "Default slot for card content",
+              "name": ""
+            },
+            {
+              "description": "Optional slot for card title",
+              "name": "title"
+            },
+            {
+              "description": "Optional slot for card footer",
+              "name": "footer"
+            }
+          ],
+          "members": [
+            {
+              "kind": "method",
+              "name": "render"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "data-rounded",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Applies rounded corners to the card"
+            },
+            {
+              "name": "data-padded",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Applies padding to the card"
+            },
+            {
+              "name": "data-variant",
+              "type": {
+                "text": "string"
+              },
+              "description": "The visual variant of the card"
+            },
+            {
+              "name": "data-subgrid",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Enables CSS subgrid layout for the card"
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "tagName": "m-card",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "custom-element-definition",
+          "name": "m-card",
+          "declaration": {
+            "name": "MCard",
+            "module": "src/m-card/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "MCard",
+            "module": "src/m-card/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/vendored/tab-container-element/index.ts",
+      "declarations": [],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "TabContainerElement",
+          "declaration": {
+            "name": "TabContainerElement",
+            "module": "./tab-container-element"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "TabContainerChangeEvent",
+          "declaration": {
+            "name": "TabContainerChangeEvent",
+            "module": "./tab-container-element"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "TabContainerElement",
+            "module": "src/vendored/tab-container-element/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/vendored/tab-container-element/tab-container-element.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "Event fired when a tab is about to change",
+          "name": "TabContainerChangeEvent",
+          "members": [
+            {
+              "kind": "field",
+              "name": "detail",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "#tabIndex",
+              "privacy": "private",
+              "type": {
+                "text": "number | null"
+              },
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "tabIndex",
+              "type": {
+                "text": "number | null"
+              },
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "#panel",
+              "privacy": "private",
+              "type": {
+                "text": "Element | null"
+              },
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "panel",
+              "type": {
+                "text": "Element | null"
+              },
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "#tab",
+              "privacy": "private",
+              "type": {
+                "text": "Element | null"
+              },
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "tab",
+              "type": {
+                "text": "Element | null"
+              },
+              "readonly": true
+            }
+          ],
+          "events": [
+            {
+              "description": "Fires before tab changes, can be cancelled",
+              "name": "tab-container-change"
+            },
+            {
+              "description": "Fires after tab has changed",
+              "name": "tab-container-changed"
+            }
+          ],
+          "superclass": {
+            "name": "Event",
+            "module": "src/vendored/tab-container-element/tab-container-element.ts"
+          }
+        },
+        {
+          "kind": "class",
+          "description": "A container element for managing tabbed interfaces with keyboard navigation support.",
+          "name": "TabContainerElement",
+          "slots": [
+            {
+              "description": "Elements with role=\"tab\" and role=\"tabpanel\" are automatically distributed",
+              "name": ""
+            },
+            {
+              "description": "Content to appear before the tab list",
+              "name": "before-tabs"
+            },
+            {
+              "description": "Content to appear after the tab list",
+              "name": "after-tabs"
+            },
+            {
+              "description": "Custom wrapper for the entire tablist",
+              "name": "tablist-wrapper"
+            }
+          ],
+          "members": [
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "default": "'tab-container'"
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "onChange"
+            },
+            {
+              "kind": "field",
+              "name": "#onTabContainerChange",
+              "privacy": "private",
+              "type": {
+                "text": "((event: TabContainerChangeEvent) => void) | null"
+              },
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "onTabContainerChange"
+            },
+            {
+              "kind": "field",
+              "name": "#onTabContainerChanged",
+              "privacy": "private",
+              "type": {
+                "text": "((event: TabContainerChangeEvent) => void) | null"
+              },
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "onTabContainerChanged"
+            },
+            {
+              "kind": "field",
+              "name": "onChanged"
+            },
+            {
+              "kind": "field",
+              "name": "#tabList",
+              "privacy": "private",
+              "type": {
+                "text": "HTMLElement"
+              },
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "#tabListWrapper",
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "#tabListTabWrapper",
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "#beforeTabsSlot",
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "#afterTabsSlot",
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "#afterPanelsSlot",
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "#tabListSlot",
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "#panelSlot",
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "#tabs",
+              "privacy": "private",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "activeTab",
+              "readonly": true,
+              "type": {
+                "text": "HTMLElement"
+              },
+              "description": "Gets the currently active tab element"
+            },
+            {
+              "kind": "field",
+              "name": "activePanel",
+              "readonly": true,
+              "type": {
+                "text": "HTMLElement"
+              },
+              "description": "Gets the currently active panel element"
+            },
+            {
+              "kind": "field",
+              "name": "vertical",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Gets or sets whether tabs are displayed vertically"
+            },
+            {
+              "kind": "field",
+              "name": "#setupComplete",
+              "privacy": "private",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "#internals",
+              "privacy": "private",
+              "type": {
+                "text": "ElementInternals | null"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "handleEvent",
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "#handleKeydown",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "KeyboardEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "#handleClick",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "MouseEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "#reflectAttributeToShadow",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "Element"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "selectedTabIndex",
+              "type": {
+                "text": "number"
+              },
+              "description": "Gets or sets the currently selected tab index"
+            },
+            {
+              "kind": "field",
+              "name": "defaultTabIndex",
+              "type": {
+                "text": "number"
+              },
+              "description": "Gets or sets the default tab index"
+            },
+            {
+              "kind": "method",
+              "name": "selectTab",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "index",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "tab-container-change",
+              "type": {
+                "text": "TabContainerChangeEvent"
+              },
+              "description": "Fires before tab selection changes (cancelable)"
+            },
+            {
+              "name": "tab-container-changed",
+              "type": {
+                "text": "TabContainerChangeEvent"
+              },
+              "description": "Fires after tab selection has changed"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "vertical",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Sets the tab orientation to vertical"
+            },
+            {
+              "type": {
+                "text": "number"
+              },
+              "description": "The index of the default selected tab",
+              "name": "default-tab"
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "tagName": "tab-container",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "TabContainerChangeEvent",
+          "declaration": {
+            "name": "TabContainerChangeEvent",
+            "module": "src/vendored/tab-container-element/tab-container-element.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "TabContainerElement",
+          "declaration": {
+            "name": "TabContainerElement",
+            "module": "src/vendored/tab-container-element/tab-container-element.ts"
+          }
+        }
+      ]
+    }
+  ]
+}

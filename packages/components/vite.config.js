@@ -1,15 +1,19 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import { glob } from 'glob';
+
+const entries = Object.fromEntries(
+  glob.sync('src/**/index.ts')
+    .map(file => {
+      const entry = file.replace('src/', '').replace('/index.ts', '');
+      return [entry, resolve(__dirname, file)];
+    })
+);
 
 export default defineConfig({
   build: {
     lib: {
-      entry: {
-        index: resolve(__dirname, 'src/index.ts'),
-        'card-element': resolve(__dirname, 'src/card-element.ts'),
-        'vendored/index': resolve(__dirname, 'src/vendored/index.ts'),
-        'vendored/tab-container-element/index': resolve(__dirname, 'src/vendored/tab-container-element/index.ts')
-      },
+      entry: entries,
       formats: ['es']
     },
     outDir: 'dist',

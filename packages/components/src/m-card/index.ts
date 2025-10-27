@@ -1,8 +1,20 @@
-import cardStyles from "./card-element.css?inline";
+import cardStyles from "./index.css?inline";
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(cardStyles);
 
-class CardElement extends HTMLElement {
+/**
+ * A card component with support for title, content, and footer sections.
+ * 
+ * @slot - Default slot for card content
+ * @slot title - Optional slot for card title
+ * @slot footer - Optional slot for card footer
+ * 
+ * @attr {boolean} data-rounded - Applies rounded corners to the card
+ * @attr {boolean} data-padded - Applies padding to the card
+ * @attr {string} data-variant - The visual variant of the card
+ * @attr {boolean} data-subgrid - Enables CSS subgrid layout for the card
+ */
+class MCard extends HTMLElement {
   static observedAttributes = [
     "data-rounded",
     "data-padded",
@@ -56,8 +68,8 @@ class CardElement extends HTMLElement {
   }
 }
 
-if (!customElements.get("card-element")) {
-  customElements.define("card-element", CardElement);
+if (!customElements.get("m-card")) {
+  customElements.define("m-card", MCard);
 }
 
-export default CardElement;
+export default MCard;

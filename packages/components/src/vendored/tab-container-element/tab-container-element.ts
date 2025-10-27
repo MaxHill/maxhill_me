@@ -15,6 +15,12 @@ const assignSlotWithFallback =
         }
       }
 
+/**
+ * Event fired when a tab is about to change
+ * 
+ * @event tab-container-change - Fires before tab changes, can be cancelled
+ * @event tab-container-changed - Fires after tab has changed
+ */
 export class TabContainerChangeEvent extends Event {
   constructor(
     type: string,
@@ -47,6 +53,28 @@ export class TabContainerChangeEvent extends Event {
   }
 }
 
+/**
+ * A container element for managing tabbed interfaces with keyboard navigation support.
+ * 
+ * @customElement tab-container
+ * 
+ * @slot - Elements with role="tab" and role="tabpanel" are automatically distributed
+ * @slot before-tabs - Content to appear before the tab list
+ * @slot after-tabs - Content to appear after the tab list
+ * @slot tablist-wrapper - Custom wrapper for the entire tablist
+ * 
+ * @attr {boolean} vertical - Sets the tab orientation to vertical
+ * @attr {number} default-tab - The index of the default selected tab
+ * 
+ * @fires {TabContainerChangeEvent} tab-container-change - Fires before tab selection changes (cancelable)
+ * @fires {TabContainerChangeEvent} tab-container-changed - Fires after tab selection has changed
+ * 
+ * @prop {number} selectedTabIndex - Gets or sets the currently selected tab index
+ * @prop {number} defaultTabIndex - Gets or sets the default tab index
+ * @prop {HTMLElement} activeTab - Gets the currently active tab element
+ * @prop {HTMLElement} activePanel - Gets the currently active panel element
+ * @prop {boolean} vertical - Gets or sets whether tabs are displayed vertically
+ */
 export class TabContainerElement extends HTMLElement {
   static define(tag = 'tab-container', registry = customElements) {
     if (!registry.get(tag)) {

@@ -4,8 +4,7 @@ author: Max Hill
 date: 2025-10-12
 tags: [components, ui, patterns]
 ---
-
-import Card from "../../components/Card.astro";
+import ComponentList from './ComponentList.astro';
 
 # Components
 
@@ -27,33 +26,33 @@ Navigation components help users move through the interface efficiently.
 
 Cards group related content and actions in a contained, scannable format.
 
-<card-element>
+<m-card>
   <div slot="title">Card Element Title</div>
   <p>This is the main content of the card element.</p>
   <p>It uses web components with shadow DOM.</p>
   <div slot="footer">Card element footer</div>
-</card-element>
+</m-card>
 
-<card-element data-variant="outline">
+<m-card data-variant="outline">
   <div slot="title">Outline Variant</div>
   <p>This card element has a outline variant.</p>
   <div slot="footer">Footer info</div>
-</card-element>
+</m-card>
 
-<card-element>
+<m-card>
   <div slot="title">Card Element with Title Only</div>
   <p>This card element has a title but no footer.</p>
-</card-element>
+</m-card>
 
-<card-element>
+<m-card>
   <p>Card Element with Content Only</p>
   <p>No title or footer, just content.</p>
-</card-element>
+</m-card>
 
 **Card Elements in a `.collection`**
 
 <div class="collection">
-  <card-element data-subgrid="true">
+  <m-card data-subgrid="true">
     <div slot="title">Card Element 1</div>
     <div class="stack2">
       <p>This is the main content.</p>
@@ -61,29 +60,29 @@ Cards group related content and actions in a contained, scannable format.
       <p>More text</p>
     </div>
     <div slot="footer">Footer info</div>
-  </card-element>
-  <card-element data-subgrid="true">
+  </m-card>
+  <m-card data-subgrid="true">
     <div slot="title">Card Element 2</div>
     <div class="stack2">
       <p>This is the main content.</p>
       <p>Using web components.</p>
     </div>
     <div slot="footer">Footer info</div>
-  </card-element>
-  <card-element data-subgrid="true">
+  </m-card>
+  <m-card data-subgrid="true">
     <div slot="title">Card Element 3</div>
     <div class="stack2">
       <p>Shorter content.</p>
     </div>
     <div slot="footer">Footer info</div>
-  </card-element>
-  <card-element data-subgrid="true">
+  </m-card>
+  <m-card data-subgrid="true">
     <div slot="title">Card Element 4</div>
     <div class="stack2">
       <p>Another card.</p>
     </div>
     <div slot="footer">Footer info</div>
-  </card-element>
+  </m-card>
 </div>
 
 ### Tabs container (vendored)
@@ -113,3 +112,4 @@ This is a vendored dependency (included directly in the codebase)
 
 For full documentation, see the [official tab-container-element docs](https://github.github.com/tab-container-element/examples/).
 
+<ComponentList />
