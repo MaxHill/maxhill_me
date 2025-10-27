@@ -18,11 +18,24 @@
         >h3,
         >h4,
         >h5,
+        >h6 {
+            font-weight: var(--font-weight-bold);
+        }
+
+        >h1,
+        >h2,
+        >h3,
+        >h4,
+        >h5,
         >h6,
         >hr,
         >code {
             margin-top: calc(1lh - 1rlh);
         }
+
+        /* p { */
+        /*     max-inline-size: 65ch; */
+        /* } */
 
         hr {
             margin-bottom: calc(var(--size-fluid-1) * -1);

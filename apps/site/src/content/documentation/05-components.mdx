@@ -86,12 +86,11 @@ Cards group related content and actions in a contained, scannable format.
   </card-element>
 </div>
 
-## Tabs
-
-Tab containers provide accessible navigation between related content panels.
+### Tabs container (vendored)
+Tab containers provide accessible navigation between related content panels. This is a low-level component that can be used to build higher-level abstractions, such as the <tab-card/> component described below.
 
 <tab-container>
-  <div role="tablist">
+  <div data-background="surface" role="tablist">
     <button type="button" role="tab" aria-selected="true">Tab 1</button>
     <button type="button" role="tab">Tab 2</button>
     <button type="button" role="tab">Tab 3</button>
@@ -107,8 +106,10 @@ Tab containers provide accessible navigation between related content panels.
   </div>
 </tab-container>
 
-For full documentation, see the [official tab-container-element docs](https://github.github.com/tab-container-element/examples/).
+#### Notes
+This is a vendored dependency (included directly in the codebase)
+	•	Use this component when you need custom tab styling or behavior
+	•	For standard use cases, consider using <tab-card/> instead
 
-## Documentation
+For full documentation, see the [official tab-container-element docs](https://github.github.com/tab-container-element/examples/).
 
-All components are documented with usage examples, props, and accessibility considerations.
