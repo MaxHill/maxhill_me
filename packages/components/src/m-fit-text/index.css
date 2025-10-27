@@ -1,0 +1,88 @@
+.text-fit {
+  display: flex;
+  container-type: inline-size;
+  line-height: var(--font-lineheight-00);
+
+  --captured-length: initial;
+  --support-sentinel: var(--captured-length, 9999px);
+}
+
+.text-fit > [aria-hidden] {
+  visibility: hidden;
+}
+
+.text-fit > :not([aria-hidden]) {
+  flex-grow: 1;
+  container-type: inline-size;
+
+  --captured-length: 100cqi;
+  --available-space: var(--captured-length);
+}
+
+.text-fit > :not([aria-hidden]) > * {
+  --support-sentinel: inherit;
+  --captured-length: 100cqi;
+  --ratio: tan(atan2(
+    var(--available-space),
+    var(--available-space) - var(--captured-length)
+  ));
+  --font-size: clamp(
+    1em,
+    1em * var(--ratio),
+    var(--max-font-size, infinity * 1px)
+    -
+    var(--support-sentinel)
+  );
+  inline-size: var(--available-space);
+  display: block;
+  font-size: var(--font-size);
+}
+
+.text-fit > :not([aria-hidden]) > * {
+  @container (inline-size > 0) {
+    white-space: nowrap;
+  }
+}
+
+.text-fit > [aria-hidden] {
+  visibility: hidden;
+}
+
+.text-fit > :not([aria-hidden]) {
+  flex-grow: 1;
+  container-type: inline-size;
+
+  --captured-length: 100cqi;
+  --available-space: var(--captured-length);
+}
+
+.text-fit > :not([aria-hidden]) > * {
+  --support-sentinel: inherit;
+  --captured-length: 100cqi;
+  --ratio: tan(atan2(
+    var(--available-space),
+    var(--available-space) - var(--captured-length)
+  ));
+  --font-size: clamp(
+    1em,
+    1em * var(--ratio),
+    var(--max-font-size, infinity * 1px)
+    -
+    var(--support-sentinel)
+  );
+  inline-size: var(--available-space);
+  display: block;
+  font-size: var(--font-size);
+}
+
+.text-fit > :not([aria-hidden]) > * {
+  @container (inline-size > 0) {
+    white-space: nowrap;
+  }
+}
+
+@property --captured-length {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: true;
+}
