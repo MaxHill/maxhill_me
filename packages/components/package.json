@@ -15,7 +15,7 @@
     "custom-elements.json"
   ],
   "scripts": {
-    "build": "vite build && tsc --emitDeclarationOnly",
+    "build": "cem analyze && vite build && tsc --emitDeclarationOnly",
     "dev": "vite build --watch",
     "clean": "rm -rf dist",
     "docs": "cem analyze"
