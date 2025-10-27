@@ -4,8 +4,9 @@ import { glob } from 'glob';
 
 const entries = Object.fromEntries(
   glob.sync('src/**/index.ts')
+    .concat('src/register-all.ts')
     .map(file => {
-      const entry = file.replace('src/', '').replace('/index.ts', '');
+      const entry = file.replace('src/', '').replace('/index.ts', '').replace('.ts', '');
       return [entry, resolve(__dirname, file)];
     })
 );

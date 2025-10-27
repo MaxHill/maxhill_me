@@ -4,84 +4,74 @@
   "modules": [
     {
       "kind": "javascript-module",
-      "path": "src/m-card/index.ts",
+      "path": "src/register-all.ts",
       "declarations": [
         {
-          "kind": "class",
-          "description": "A card component with support for title, content, and footer sections.",
-          "name": "MCard",
-          "slots": [
-            {
-              "description": "Default slot for card content",
-              "name": ""
-            },
-            {
-              "description": "Optional slot for card title",
-              "name": "title"
-            },
-            {
-              "description": "Optional slot for card footer",
-              "name": "footer"
-            }
-          ],
-          "members": [
-            {
-              "kind": "method",
-              "name": "render"
-            }
-          ],
-          "attributes": [
-            {
-              "name": "data-rounded",
-              "type": {
-                "text": "boolean"
-              },
-              "description": "Applies rounded corners to the card"
-            },
-            {
-              "name": "data-padded",
-              "type": {
-                "text": "boolean"
-              },
-              "description": "Applies padding to the card"
-            },
-            {
-              "name": "data-variant",
-              "type": {
-                "text": "string"
-              },
-              "description": "The visual variant of the card"
-            },
-            {
-              "name": "data-subgrid",
-              "type": {
-                "text": "boolean"
-              },
-              "description": "Enables CSS subgrid layout for the card"
-            }
-          ],
-          "superclass": {
-            "name": "HTMLElement"
-          },
-          "tagName": "m-card",
-          "customElement": true
+          "kind": "function",
+          "name": "registerAll"
         }
       ],
       "exports": [
         {
-          "kind": "custom-element-definition",
-          "name": "m-card",
+          "kind": "js",
+          "name": "registerAll",
           "declaration": {
-            "name": "MCard",
-            "module": "src/m-card/index.ts"
+            "name": "registerAll",
+            "module": "src/register-all.ts"
           }
-        },
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/types.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/m-card/index.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "MCardComponent",
+          "type": {
+            "text": "typeof MCard & MComponent"
+          },
+          "default": "MCard"
+        }
+      ],
+      "exports": [
         {
           "kind": "js",
           "name": "default",
           "declaration": {
-            "name": "MCard",
+            "name": "MCardComponent",
             "module": "src/m-card/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/m-fit-text/index.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "MFitTextComponent",
+          "type": {
+            "text": "typeof MFitText & MComponent"
+          },
+          "default": "MFitText"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "MFitTextComponent",
+            "module": "src/m-fit-text/index.ts"
           }
         }
       ]

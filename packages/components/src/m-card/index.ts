@@ -1,6 +1,8 @@
-import cardStyles from "./index.css?inline";
+import styles from "./index.css?inline";
+import type { MComponent } from "../types";
+
 const baseStyleSheet = new CSSStyleSheet();
-baseStyleSheet.replaceSync(cardStyles);
+baseStyleSheet.replaceSync(styles);
 
 /**
  * A card component with support for title, content, and footer sections.
@@ -66,10 +68,15 @@ class MCard extends HTMLElement {
           ${hasFooter ? '<div class="footer"><slot name="footer"></slot></div>' : ""}
         `;
   }
+
+  static define(tag = 'm-card', registry = customElements) {
+    if (!registry.get(tag)) {
+      registry.define(tag, this);
+    }
+    return this;
+  }
 }
 
-if (!customElements.get("m-card")) {
-  customElements.define("m-card", MCard);
-}
+const MCardComponent: typeof MCard & MComponent = MCard;
 
-export default MCard;
+export default MCardComponent;
