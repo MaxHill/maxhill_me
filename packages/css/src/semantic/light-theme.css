@@ -82,7 +82,7 @@
     /*  ------------------------------------------------------------------------
     /*  Strokes                                                                     
     /*  ------------------------------------------------------------------------ */
-        --color-stroke: var(--color-neutral-stroke-softer);
+        --color-stroke: var(--color-neutral-stroke-soft);
         --color-stroke-strong: var(--color-neutral-stroke-mid); 
         --color-stroke-hover: var(--color-primary-stroke-mid); 
 

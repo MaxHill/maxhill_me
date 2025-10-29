@@ -84,10 +84,11 @@
             >.anchor-menu {
                 width: var(--size-fluid-9);
                 z-index: var(--layer-3);
-                    @media (width > 1350px) {
-                        position: sticky;
-                        left: 0;
-                    }
+
+                @media (width > 1350px) {
+                    position: sticky;
+                    left: 0;
+                }
 
                 .inner {
                     position: static;
@@ -99,17 +100,17 @@
                     &:popover-open {
                         left: 0;
                         height: 100%;
+                        border-inline-end: var(--border);
                     }
 
                     width: var(--size-fluid-9);
                     height: 100%;
                     background-color: var(--color-background);
                     overflow: visible;
-                    border: var(--border);
                     z-index: var(--layer-3);
 
                     @media (width > 1350px) {
-                         /* Force popover to always display */
+                        /* Force popover to always display */
                         display: flex !important;
                         /* Keep it positioned statically */
                         position: static !important;
