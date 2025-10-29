@@ -7,199 +7,205 @@
 @import "utils/typesetting.css";
 
 @layer utils {
-  .screenreader-only:not(:focus):not(:active) {
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    height: 1px;
-    overflow: hidden;
-    position: absolute;
-    white-space: nowrap;
-    width: 1px;
-  }
+    .screenreader-only:not(:focus):not(:active) {
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        height: 1px;
+        overflow: hidden;
+        position: absolute;
+        white-space: nowrap;
+        width: 1px;
+    }
 
-  .h1 {
-    font: var(--h1);
-    letter-spacing: var(--font-letterspacing-0);
-  }
+    .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        white-space: nowrap;
+        clip-path: inset(50%);
+    }
 
-  .h2 {
-    font: var(--h2);
-    letter-spacing: var(--font-letterspacing-0);
-  }
+    .h1 {
+        font: var(--h1);
+        letter-spacing: var(--font-letterspacing-0);
+    }
 
-  .p {
-    font: var(--p);
-  }
+    .h2 {
+        font: var(--h2);
+        letter-spacing: var(--font-letterspacing-0);
+    }
 
-  .p2 {
-    font: var(--p2);
-  }
+    .p {
+        font: var(--p);
+    }
 
-  .ff-display {
-    font-family: var(--ff-display);
-    letter-spacing: var(--font-letterspacing-0);
-  }
+    .p2 {
+        font: var(--p2);
+    }
 
-  /*  ------------------------------------------------------------------------
+    .ff-display {
+        font-family: var(--ff-display);
+        letter-spacing: var(--font-letterspacing-0);
+    }
+
+    /*  ------------------------------------------------------------------------
     /*  Background patterns                                                                     
     /*  ------------------------------------------------------------------------ */
-  .background-pattern {
-    --_color-fg: var(--color-stroke);
-    --_color-bg: transparent;
-    --_size: 10px 10px;
+    .background-pattern {
+        --_color-fg: var(--color-stroke);
+        --_color-bg: transparent;
+        --_size: 10px 10px;
 
-    --_pattern-lines: repeating-linear-gradient(
-      to right,
-      var(--_color-fg),
-      var(--_color-fg) 1px,
-      var(--_color-bg) 1px,
-      var(--_color-bg)
-    );
-    --_pattern-dots: radial-gradient(
-      var(--_color-fg) 1px,
-      var(--_color-bg) 1px
-    );
-    --_pattern-diagonal: repeating-linear-gradient(
-      45deg,
-      var(--_color-fg) 0,
-      var(--_color-fg) 1px,
-      var(--_color-bg) 0,
-      var(--_color-bg) 50%
-    );
-    --_pattern-grid:
-      linear-gradient(var(--_color-fg) 1px, transparent 1px),
-      linear-gradient(to right, var(--_color-fg) 1px, var(--_color-bg) 1px);
+        --_pattern-lines: repeating-linear-gradient(to right,
+                var(--_color-fg),
+                var(--_color-fg) 1px,
+                var(--_color-bg) 1px,
+                var(--_color-bg));
+        --_pattern-dots: radial-gradient(var(--_color-fg) 1px,
+                var(--_color-bg) 1px);
+        --_pattern-diagonal: repeating-linear-gradient(45deg,
+                var(--_color-fg) 0,
+                var(--_color-fg) 1px,
+                var(--_color-bg) 0,
+                var(--_color-bg) 50%);
+        --_pattern-grid:
+            linear-gradient(var(--_color-fg) 1px, transparent 1px),
+            linear-gradient(to right, var(--_color-fg) 1px, var(--_color-bg) 1px);
 
-    &[data-size="large"] {
-      --_size: 20px 20px;
+        &[data-size="large"] {
+            --_size: 20px 20px;
+        }
+
+        &[data-variant="strong"] {
+            --_color-fg: var(--color-stroke-strong);
+        }
+
+        &[data-variant="danger"] {
+            --_color-fg: hsl(var(--color-status-danger-weak));
+        }
+
+        &[data-variant="success"] {
+            --_color-fg: hsl(var(--color-status-success-weak));
+        }
+
+        &[data-variant="neutral"] {
+            --_color-fg: hsl(var(--color-status-neutral-weak));
+        }
+
+        &[data-variant="info"] {
+            --_color-fg: hsl(var(--color-status-info-weak));
+        }
+
+        &[data-variant="warning"] {
+            --_color-fg: hsl(var(--color-status-warning-weak));
+        }
+
+        background-size: var(--_size);
+
+        &[data-pattern="lines"] {
+            background-image: var(--_pattern-lines);
+        }
+
+        &[data-pattern="dots"] {
+            background-image: var(--_pattern-dots);
+        }
+
+        &[data-pattern="diagonal"] {
+            background-image: var(--_pattern-diagonal);
+        }
+
+        &[data-pattern="grid"] {
+            background-image: var(--_pattern-grid);
+        }
     }
 
-    &[data-variant="strong"] {
-      --_color-fg: var(--color-stroke-strong);
-    }
-
-    &[data-variant="danger"] {
-      --_color-fg: hsl(var(--color-status-danger-weak));
-    }
-
-    &[data-variant="success"] {
-      --_color-fg: hsl(var(--color-status-success-weak));
-    }
-
-    &[data-variant="neutral"] {
-      --_color-fg: hsl(var(--color-status-neutral-weak));
-    }
-
-    &[data-variant="info"] {
-      --_color-fg: hsl(var(--color-status-info-weak));
-    }
-
-    &[data-variant="warning"] {
-      --_color-fg: hsl(var(--color-status-warning-weak));
-    }
-
-    background-size: var(--_size);
-
-    &[data-pattern="lines"] {
-      background-image: var(--_pattern-lines);
-    }
-
-    &[data-pattern="dots"] {
-      background-image: var(--_pattern-dots);
-    }
-
-    &[data-pattern="diagonal"] {
-      background-image: var(--_pattern-diagonal);
-    }
-
-    &[data-pattern="grid"] {
-      background-image: var(--_pattern-grid);
-    }
-  }
-
-  /*  ------------------------------------------------------------------------
+    /*  ------------------------------------------------------------------------
     /*  glitch                                                                     
     /*  ------------------------------------------------------------------------ */
-  .text-glitch {
-    position: relative;
+    .text-glitch {
+        position: relative;
 
-    &[data-autoplay="true"],
-    &:hover,
-    .glitch-parent:has(> &):hover > & {
-      position: relative;
-      animation: glitch 1.4s linear infinite;
+        &[data-autoplay="true"],
+        &:hover,
+        .glitch-parent:has(> &):hover>& {
+            position: relative;
+            animation: glitch 1.4s linear infinite;
 
-      &:before,
-      &:after {
-        content: attr(title);
-        position: absolute;
-        left: 0;
-        top: 0;
-      }
+            &:before,
+            &:after {
+                content: attr(title);
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+        }
+
+        &[data-autoplay="true"]:before,
+        &:hover:before,
+        .glitch-parent:has(> &):hover>&:before {
+            animation: glitchTop 1s linear infinite;
+            clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+            -webkit-clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+        }
+
+        &[data-autoplay="true"]:after,
+        &:hover:after,
+        .glitch-parent:has(> &):hover>&:after {
+            animation: glitchBotom 1.5s linear infinite;
+            clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
+            -webkit-clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
+        }
     }
 
-    &[data-autoplay="true"]:before,
-    &:hover:before,
-    .glitch-parent:has(> &):hover > &:before {
-      animation: glitchTop 1s linear infinite;
-      clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
-      -webkit-clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+    @keyframes glitch {
+
+        2%,
+        64% {
+            transform: translate(2px, 0) skew(0deg);
+        }
+
+        4%,
+        60% {
+            transform: translate(-2px, 0) skew(0deg);
+        }
+
+        62% {
+            transform: translate(0, 0) skew(5deg);
+        }
     }
 
-    &[data-autoplay="true"]:after,
-    &:hover:after,
-    .glitch-parent:has(> &):hover > &:after {
-      animation: glitchBotom 1.5s linear infinite;
-      clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
-      -webkit-clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
-    }
-  }
+    @keyframes glitchTop {
 
-  @keyframes glitch {
-    2%,
-    64% {
-      transform: translate(2px, 0) skew(0deg);
-    }
+        2%,
+        64% {
+            transform: translate(2px, -2px);
+        }
 
-    4%,
-    60% {
-      transform: translate(-2px, 0) skew(0deg);
+        4%,
+        60% {
+            transform: translate(-2px, 2px);
+        }
+
+        62% {
+            transform: translate(13px, -1px) skew(-13deg);
+        }
     }
 
-    62% {
-      transform: translate(0, 0) skew(5deg);
-    }
-  }
+    @keyframes glitchBotom {
 
-  @keyframes glitchTop {
-    2%,
-    64% {
-      transform: translate(2px, -2px);
-    }
+        2%,
+        64% {
+            transform: translate(-2px, 0);
+        }
 
-    4%,
-    60% {
-      transform: translate(-2px, 2px);
-    }
+        4%,
+        60% {
+            transform: translate(-2px, 0);
+        }
 
-    62% {
-      transform: translate(13px, -1px) skew(-13deg);
+        62% {
+            transform: translate(-22px, 5px) skew(21deg);
+        }
     }
-  }
-
-  @keyframes glitchBotom {
-    2%,
-    64% {
-      transform: translate(-2px, 0);
-    }
-
-    4%,
-    60% {
-      transform: translate(-2px, 0);
-    }
-
-    62% {
-      transform: translate(-22px, 5px) skew(21deg);
-    }
-  }
 }

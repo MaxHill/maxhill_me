@@ -1,7 +1,6 @@
 ---
 import BaseLayout from "../components/layouts/BaseLayout.astro";
 import Document from "../components/sections/Document.astro";
-import HeroOrbit from "../components/sections/HeroOrbit.astro";
 import { getCollection } from "astro:content";
 
 const title = "Design System";
@@ -28,22 +27,23 @@ const renderedDocs = await Promise.all(
 ---
 
 <BaseLayout title={title} bodyClass="design-system-page">
-    <nav class="anchor-menu exposed-grid">
-        <a href="#hero" class="nav-link small">~</a>
-        {
-            sortedDocs.map((doc, index) => (
-                <a
-                    href={`#${doc.slug}`}
-                    class={index === 0 ? "nav-link" : "nav-link small"}
-                >
-                    {doc.data.title}
-                </a>
-            ))
-        }
-    </nav>
     <div class="main exposed-grid">
         <div id="hero" class="hero">
             <m-fit-text font-display>Design<br />system</m-fit-text>
+        </div>
+        <div class="anchor-menu stack exposed-grid">
+            <button class="open-menu" >></button>
+            <a href="#hero" class="nav-link">~</a>
+            {
+                sortedDocs.map((doc, index) => (
+                    <a
+                        href={`#${doc.slug}`}
+                        class={index === 0 ? "nav-link" : "nav-link small"}
+                    >
+                        {doc.data.title}
+                    </a>
+                ))
+            }
         </div>
         {
             renderedDocs.map(({ doc, Content, metadata }) => (
@@ -55,7 +55,6 @@ const renderedDocs = await Promise.all(
     </div>
 </BaseLayout>
 
-
 <script>
     const parent = document.querySelector(".main");
     if (!parent) throw new Error("Parent element .main not found");
@@ -66,33 +65,33 @@ const renderedDocs = await Promise.all(
 
     const navLinks = document.querySelectorAll(".nav-link");
 
-    navLinks.forEach((link) => {
-        link.addEventListener("click", (e) => {
-            e.preventDefault();
-            const href = link.getAttribute("href");
-            if (!href) return;
+    // navLinks.forEach((link) => {
+    //     link.addEventListener("click", (e) => {
+    //         e.preventDefault();
+    //         const href = link.getAttribute("href");
+    //         if (!href) return;
+    //
+    //         const targetId = href.substring(1);
+    //         const targetElement = document.getElementById(targetId);
+    //         if (!targetElement) return;
+    //
+    //         targetElement.scrollIntoView({
+    //             behavior: "smooth",
+    //             inline: "end",
+    //             block: "nearest",
+    //         });
+    //     });
+    // });
 
-            const targetId = href.substring(1);
-            const targetElement = document.getElementById(targetId);
-            if (!targetElement) return;
-
-            targetElement.scrollIntoView({
-                behavior: "smooth",
-                inline: "end",
-                block: "nearest",
-            });
-        });
-    });
-
-    children.forEach((child) => {
-        child.addEventListener("click", () => {
-            child.scrollIntoView({
-                behavior: "smooth",
-                inline: "end",
-                block: "nearest",
-            });
-        });
-    });
+    // children.forEach((child) => {
+    //     child.addEventListener("click", () => {
+    //         child.scrollIntoView({
+    //             behavior: "smooth",
+    //             inline: "end",
+    //             block: "nearest",
+    //         });
+    //     });
+    // });
 
     const observerOptions = {
         root: parent,
