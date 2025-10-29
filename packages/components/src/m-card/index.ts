@@ -15,43 +15,42 @@ baseStyleSheet.replaceSync(styles);
  * 
  * @attr {boolean} data-rounded - Applies rounded corners to the card
  * @attr {boolean} data-padded - Applies padding to the card
- * @attr {string} data-variant - The visual variant of the card
+ * @attr {"outline"} data-variant - The visual variant of the card
  * @attr {boolean} data-subgrid - Enables CSS subgrid layout for the card
  */
 class MCard extends HTMLElement {
-  static observedAttributes = [
-    "data-rounded",
-    "data-padded",
-    "data-variant",
-    "data-subgrid",
-  ];
+    static observedAttributes = [
+        "data-rounded",
+        "data-padded",
+        "data-variant",
+        "data-subgrid",
+    ];
 
-  constructor() {
-    super();
-    this.attachShadow({ mode: "open" });
-  }
+    constructor() {
+        super();
+        this.attachShadow({ mode: "open" });
+    }
 
-  connectedCallback() {
-    this.render();
-  }
+    connectedCallback() {
+        this.render();
+    }
 
-  attributeChangedCallback() {
-    this.render();
-  }
+    attributeChangedCallback() {
+        this.render();
+    }
 
-  render() {
-    if (!this.shadowRoot) return;
+    render() {
+        if (!this.shadowRoot) return;
 
-    const hasTitle = this.querySelector('[slot="title"]');
-    const hasFooter = this.querySelector('[slot="footer"]');
-    const rowCount = 1 + (hasTitle ? 1 : 0) + (hasFooter ? 1 : 0);
-    const useSubgrid = this.getAttribute("data-subgrid") === "true";
+        const hasTitle = this.querySelector('[slot="title"]');
+        const hasFooter = this.querySelector('[slot="footer"]');
+        const rowCount = 1 + (hasTitle ? 1 : 0) + (hasFooter ? 1 : 0);
+        const useSubgrid = this.getAttribute("data-subgrid") === "true";
 
-    const dynamicStyleSheet = new CSSStyleSheet();
-    dynamicStyleSheet.replaceSync(`
+        const dynamicStyleSheet = new CSSStyleSheet();
+        dynamicStyleSheet.replaceSync(`
           :host {
-            ${
-              useSubgrid
+            ${useSubgrid
                 ? `
               grid-template-rows: subgrid; 
               grid-row: span ${rowCount};
@@ -60,23 +59,23 @@ class MCard extends HTMLElement {
             }
           }
         `);
-    this.shadowRoot.adoptedStyleSheets = [baseStyleSheet, dynamicStyleSheet];
+        this.shadowRoot.adoptedStyleSheets = [baseStyleSheet, dynamicStyleSheet];
 
-    this.shadowRoot.innerHTML = `
+        this.shadowRoot.innerHTML = `
           ${hasTitle ? '<div class="title"><slot name="title"></slot></div>' : ""}
           <div class="content-wrapper">
             <slot></slot>
           </div>
           ${hasFooter ? '<div class="footer"><slot name="footer"></slot></div>' : ""}
         `;
-  }
-
-  static define(tag = 'm-card', registry = customElements) {
-    if (!registry.get(tag)) {
-      registry.define(tag, this);
     }
-    return this;
-  }
+
+    static define(tag = 'm-card', registry = customElements) {
+        if (!registry.get(tag)) {
+            registry.define(tag, this);
+        }
+        return this;
+    }
 }
 
 export default MCard;

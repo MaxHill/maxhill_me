@@ -59,6 +59,18 @@ const components = customElements.modules
           </dl>
         </div>
       )}
+      
+      {component.examples && component.examples.length > 0 && (
+        <div class="examples">
+          <h4>Examples</h4>
+          {component.examples.map(example => (
+            <div class="example">
+              {example.description && <h5>{example.description}</h5>}
+              <pre><code>{example.value}</code></pre>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   ))}
 </div>
