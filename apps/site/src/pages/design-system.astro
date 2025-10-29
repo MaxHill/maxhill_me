@@ -27,23 +27,25 @@ const renderedDocs = await Promise.all(
 ---
 
 <BaseLayout title={title} bodyClass="design-system-page">
+    <button class="toggle-menu" popovertarget="anchor-menu">Open</button>
     <div class="main exposed-grid">
         <div id="hero" class="hero">
             <m-fit-text font-display>Design<br />system</m-fit-text>
         </div>
-        <div class="anchor-menu stack exposed-grid">
-            <button class="open-menu" >></button>
-            <a href="#hero" class="nav-link">~</a>
-            {
-                sortedDocs.map((doc, index) => (
-                    <a
-                        href={`#${doc.slug}`}
-                        class={index === 0 ? "nav-link" : "nav-link small"}
-                    >
-                        {doc.data.title}
-                    </a>
-                ))
-            }
+        <div class="anchor-menu">
+            <div id="anchor-menu" class="inner stack exposed-grid" popover>
+                <a href="#hero" class="nav-link">~</a>
+                {
+                    sortedDocs.map((doc, index) => (
+                        <a
+                            href={`#${doc.slug}`}
+                            class={index === 0 ? "nav-link" : "nav-link small"}
+                        >
+                            {doc.data.title}
+                        </a>
+                    ))
+                }
+            </div>
         </div>
         {
             renderedDocs.map(({ doc, Content, metadata }) => (
