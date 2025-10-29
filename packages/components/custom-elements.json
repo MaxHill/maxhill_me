@@ -63,7 +63,7 @@
             {
               "name": "data-variant",
               "type": {
-                "text": "string"
+                "text": "\"outline\""
               },
               "description": "The visual variant of the card"
             },
@@ -99,11 +99,17 @@
       "declarations": [
         {
           "kind": "class",
-          "description": "Fit text to the full width of the element using CSS container queries",
+          "description": "Automatically scales text to fit the full width of its container using CSS container queries.",
           "name": "MFitText",
+          "cssProperties": [
+            {
+              "description": "Maximum font size constraint (default: infinity)",
+              "name": "--max-font-size"
+            }
+          ],
           "slots": [
             {
-              "description": "Default slot for text content",
+              "description": "Default slot for text content to be scaled",
               "name": ""
             }
           ],
@@ -131,7 +137,10 @@
           "attributes": [
             {
               "name": "font-display",
-              "description": "Weather to use display font"
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Whether to use the display font family"
             }
           ],
           "superclass": {

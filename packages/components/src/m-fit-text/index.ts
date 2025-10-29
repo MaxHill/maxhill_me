@@ -24,15 +24,16 @@ try {
 }
 
 /**
- * Fit text to the full width of the element using CSS container queries
+ * Automatically scales text to fit the full width of its container using CSS container queries.
  * 
  * @customElement
  * @tagname m-fit-text
  * 
- * @slot - Default slot for text content
+ * @slot - Default slot for text content to be scaled
  *
- * @attribute font-display - Weather to use display font
- *
+ * @attr {boolean} font-display - Whether to use the display font family
+ * 
+ * @cssprop --max-font-size - Maximum font size constraint (default: infinity)
  */
 class MFitText extends HTMLElement {
     static observedAttributes = ['font-display'];
