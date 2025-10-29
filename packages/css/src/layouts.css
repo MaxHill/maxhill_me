@@ -30,7 +30,24 @@
         overflow: hidden;
         padding-top: var(--menu-height);
         display: grid;
-        grid-template-rows: 100dvh;
+        grid-template-rows: auto;
+
+        >.toggle-menu {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            width: var(--size-fluid-5);
+            height: var(--size-fluid-5);
+            z-index: var(--layer-2);
+            background: var(--color-background);
+            border: var(--border);
+            border-inline-start-width: 0;
+            padding-left: var(--body-margin);
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
         >.main {
             overflow-x: auto;
@@ -56,6 +73,8 @@
                 max-width: 1000px;
                 display: grid;
                 place-items: center;
+                z-index: var(--layer-3);
+                background: var(--color-background);
 
                 m-fit-text {
                     width: 100%;
@@ -63,59 +82,55 @@
             }
 
             >.anchor-menu {
-                position: sticky;
                 width: var(--size-fluid-9);
-                left: calc(var(--size-fluid-9) * -1);
-                z-index: var(--layer-2);
-                background-color: var(--color-background);
-                overflow: visible;
-
-                &:hover,
-                &:focus-within {
-                    left: 0;
-                    .open-menu {
-                        opacity: 0;
-                        top: -999999px;
+                z-index: var(--layer-3);
+                    @media (width > 1000px) {
+                        position: sticky;
+                        left: 0;
                     }
-                }
 
-                .open-menu {
-                    position: absolute;
-                    top: 50%;
-                    right: calc(var(--size-fluid-5) * -1 - var(--border-width));
-                    background: var(--color-background);
-                    border-inline-start-color: var(--color-background);
+                .inner {
+                    position: static;
+                    inset: auto;
+                    margin: 0;
+                    border: none;
+                    padding: inherit;
 
-                    width: var(--size-fluid-5);
-                    aspect-ratio: 1/1;
+                    &:popover-open {
+                        left: 0;
+                        height: 100%;
+                    }
+
+                    width: var(--size-fluid-9);
+                    height: 100%;
+                    background-color: var(--color-background);
+                    overflow: visible;
+                    border: var(--border);
                     z-index: var(--layer-3);
 
-                    display: inline-flex;
-                    justify-content: center;
-                    align-items: center;
-                }
-
-                @media (width > 1000px) {
-                    left: 0;
-
-                    .open-menu {
-                        display: none;
-                    }
-                }
-
-                >.nav-link {
-                    padding: var(--size-fluid-1);
-                    text-decoration: none;
-                    color: var(--color-text);
-                }
-
-                >.nav-link.active {
-                    &::before {
-                        content: "> ";
-                        color: var(--color-text-link);
+                    @media (width > 1000px) {
+                         /* Force popover to always display */
+                        display: flex !important;
+                        /* Keep it positioned statically */
+                        position: static !important;
+                        inset: auto !important;
                     }
 
-                    background: var(--color-surface);
+
+                    >.nav-link {
+                        padding: var(--size-fluid-1);
+                        text-decoration: none;
+                        color: var(--color-text);
+                    }
+
+                    >.nav-link.active {
+                        &::before {
+                            content: "> ";
+                            color: var(--color-text-link);
+                        }
+
+                        background: var(--color-surface);
+                    }
                 }
             }
 
