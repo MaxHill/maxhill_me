@@ -37,10 +37,10 @@ const renderedDocs = await Promise.all(
         </div>
         <div class="anchor-menu">
             <div id="anchor-menu" class="inner stack exposed-grid" popover>
-                <a href="#hero" class="nav-link">~</a>
+                <a href="#hero" class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">~</a>
                 {
                     sortedDocs.map((doc, index) => (
-                        <a href={`#${doc.slug}`} class="nav-link">
+                        <a href={`#${doc.slug}`} class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">
                             {doc.data.title}
                         </a>
                     ))
