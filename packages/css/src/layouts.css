@@ -34,15 +34,14 @@
 
         >.toggle-menu {
             position: fixed;
-            top: 50%;
+            top: 20%;
             left: 0;
-            width: var(--size-fluid-5);
+            width: var(--size-fluid-4);
             height: var(--size-fluid-5);
             z-index: var(--layer-2);
             background: var(--color-background);
             border: var(--border);
             border-inline-start-width: 0;
-            padding-left: var(--body-margin);
 
             display: flex;
             justify-content: center;
