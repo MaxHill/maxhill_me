@@ -4,41 +4,82 @@
   "modules": [
     {
       "kind": "javascript-module",
-      "path": "src/register-all.ts",
-      "declarations": [
-        {
-          "kind": "function",
-          "name": "registerAll"
-        }
-      ],
-      "exports": [
-        {
-          "kind": "js",
-          "name": "registerAll",
-          "declaration": {
-            "name": "registerAll",
-            "module": "src/register-all.ts"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "javascript-module",
-      "path": "src/types.ts",
-      "declarations": [],
-      "exports": []
-    },
-    {
-      "kind": "javascript-module",
       "path": "src/m-card/index.ts",
       "declarations": [
         {
-          "kind": "variable",
-          "name": "MCardComponent",
-          "type": {
-            "text": "typeof MCard & MComponent"
+          "kind": "class",
+          "description": "A card component with support for title, content, and footer sections.",
+          "name": "MCard",
+          "slots": [
+            {
+              "description": "Default slot for card content",
+              "name": ""
+            },
+            {
+              "description": "Optional slot for card title",
+              "name": "title"
+            },
+            {
+              "description": "Optional slot for card footer",
+              "name": "footer"
+            }
+          ],
+          "members": [
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "default": "'m-card'"
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ]
+            }
+          ],
+          "attributes": [
+            {
+              "name": "data-rounded",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Applies rounded corners to the card"
+            },
+            {
+              "name": "data-padded",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Applies padding to the card"
+            },
+            {
+              "name": "data-variant",
+              "type": {
+                "text": "string"
+              },
+              "description": "The visual variant of the card"
+            },
+            {
+              "name": "data-subgrid",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Enables CSS subgrid layout for the card"
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
           },
-          "default": "MCard"
+          "tagName": "m-card",
+          "customElement": true
         }
       ],
       "exports": [
@@ -46,7 +87,7 @@
           "kind": "js",
           "name": "default",
           "declaration": {
-            "name": "MCardComponent",
+            "name": "MCard",
             "module": "src/m-card/index.ts"
           }
         }
@@ -57,12 +98,47 @@
       "path": "src/m-fit-text/index.ts",
       "declarations": [
         {
-          "kind": "variable",
-          "name": "MFitTextComponent",
-          "type": {
-            "text": "typeof MFitText & MComponent"
+          "kind": "class",
+          "description": "Fit text to the full width of the element using CSS container queries",
+          "name": "MFitText",
+          "slots": [
+            {
+              "description": "Default slot for text content",
+              "name": ""
+            }
+          ],
+          "members": [
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "default": "'m-fit-text'"
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ]
+            }
+          ],
+          "attributes": [
+            {
+              "name": "font-display",
+              "description": "Weather to use display font"
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
           },
-          "default": "MFitText"
+          "tagName": "m-fit-text",
+          "customElement": true
         }
       ],
       "exports": [
@@ -70,39 +146,8 @@
           "kind": "js",
           "name": "default",
           "declaration": {
-            "name": "MFitTextComponent",
+            "name": "MFitText",
             "module": "src/m-fit-text/index.ts"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "javascript-module",
-      "path": "src/vendored/tab-container-element/index.ts",
-      "declarations": [],
-      "exports": [
-        {
-          "kind": "js",
-          "name": "TabContainerElement",
-          "declaration": {
-            "name": "TabContainerElement",
-            "module": "./tab-container-element"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "TabContainerChangeEvent",
-          "declaration": {
-            "name": "TabContainerChangeEvent",
-            "module": "./tab-container-element"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "default",
-          "declaration": {
-            "name": "TabContainerElement",
-            "module": "src/vendored/tab-container-element/index.ts"
           }
         }
       ]

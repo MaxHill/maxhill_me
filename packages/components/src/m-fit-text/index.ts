@@ -1,5 +1,4 @@
 import styles from "./index.css?inline";
-import type { MComponent } from "../types";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -27,10 +26,16 @@ try {
 /**
  * Fit text to the full width of the element using CSS container queries
  * 
+ * @customElement
+ * @tagname m-fit-text
+ * 
  * @slot - Default slot for text content
+ *
+ * @attribute font-display - Weather to use display font
+ *
  */
 class MFitText extends HTMLElement {
-    static observedAttributes = [];
+    static observedAttributes = ['font-display'];
 
     constructor() {
         super();
@@ -44,9 +49,11 @@ class MFitText extends HTMLElement {
         this.shadowRoot.adoptedStyleSheets = [baseStyleSheet];
 
         const content = this.innerHTML || "";
+        const fontDisplay = this.hasAttribute('font-display');
+        const className = fontDisplay ? 'text-fit font-display' : 'text-fit';
 
         this.shadowRoot.innerHTML = `
-            <span class="text-fit">
+            <span class="${className}">
                 <span>
                     <span>${content}</span>
                 </span>
@@ -63,6 +70,4 @@ class MFitText extends HTMLElement {
     }
 }
 
-const MFitTextComponent: typeof MFitText & MComponent = MFitText;
-
-export default MFitTextComponent;
+export default MFitText;

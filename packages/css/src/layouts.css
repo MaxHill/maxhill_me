@@ -92,8 +92,14 @@
             }
 
             >.hero {
-                min-width: 80%;
-                max-width: 90vw;
+                min-width: 80vw;
+                width: 90vw;
+                display: grid;
+                place-items: center;
+
+                m-fit-text {
+                    width: 100%;
+                }
             }
 
             /* Fade out inactive documents */

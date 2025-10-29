@@ -7,6 +7,8 @@
   --support-sentinel: var(--captured-length, 9999px);
 }
 
+.font-display { font-family: var(--ff-display); }
+
 .text-fit > [aria-hidden] {
   visibility: hidden;
 }
