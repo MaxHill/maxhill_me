@@ -42,9 +42,9 @@ const renderedDocs = await Promise.all(
         }
     </nav>
     <div class="main exposed-grid">
-        <HeroOrbit id="hero" class="glitch-parent">
-            <h1 class="h1 text-glitch" title={title}>{title}</h1>
-        </HeroOrbit>
+        <div id="hero" class="hero">
+            <m-fit-text font-display>Design<br />system</m-fit-text>
+        </div>
         {
             renderedDocs.map(({ doc, Content, metadata }) => (
                 <Document id={doc.slug} metadata={metadata}>

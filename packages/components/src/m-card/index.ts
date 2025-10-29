@@ -1,11 +1,13 @@
 import styles from "./index.css?inline";
-import type { MComponent } from "../types";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
 /**
  * A card component with support for title, content, and footer sections.
+ * 
+ * @customElement
+ * @tagname m-card
  * 
  * @slot - Default slot for card content
  * @slot title - Optional slot for card title
@@ -77,6 +79,4 @@ class MCard extends HTMLElement {
   }
 }
 
-const MCardComponent: typeof MCard & MComponent = MCard;
-
-export default MCardComponent;
+export default MCard;
