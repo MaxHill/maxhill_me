@@ -84,7 +84,7 @@
             >.anchor-menu {
                 width: var(--size-fluid-9);
                 z-index: var(--layer-3);
-                    @media (width > 1000px) {
+                    @media (width > 1350px) {
                         position: sticky;
                         left: 0;
                     }
@@ -108,7 +108,7 @@
                     border: var(--border);
                     z-index: var(--layer-3);
 
-                    @media (width > 1000px) {
+                    @media (width > 1350px) {
                          /* Force popover to always display */
                         display: flex !important;
                         /* Keep it positioned statically */

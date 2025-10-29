@@ -2,6 +2,7 @@
 import BaseLayout from "../components/layouts/BaseLayout.astro";
 import Document from "../components/sections/Document.astro";
 import { getCollection } from "astro:content";
+import { PanelLeftOpenIcon } from '@lucide/astro';
 
 const title = "Design System";
 const docs = await getCollection("documentation");
@@ -27,7 +28,9 @@ const renderedDocs = await Promise.all(
 ---
 
 <BaseLayout title={title} bodyClass="design-system-page">
-    <button class="toggle-menu" popovertarget="anchor-menu">Open</button>
+<button class="toggle-menu" popovertarget="anchor-menu">
+    <PanelLeftOpenIcon/>
+</button>
     <div class="main exposed-grid">
         <div id="hero" class="hero">
             <m-fit-text font-display>Design<br />system</m-fit-text>
@@ -37,10 +40,7 @@ const renderedDocs = await Promise.all(
                 <a href="#hero" class="nav-link">~</a>
                 {
                     sortedDocs.map((doc, index) => (
-                        <a
-                            href={`#${doc.slug}`}
-                            class={index === 0 ? "nav-link" : "nav-link small"}
-                        >
+                        <a href={`#${doc.slug}`} class="nav-link">
                             {doc.data.title}
                         </a>
                     ))
