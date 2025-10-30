@@ -99,8 +99,50 @@
       "declarations": [
         {
           "kind": "class",
-          "description": "",
+          "description": "A button component that copies text to the clipboard with visual feedback.",
           "name": "MCopyButton",
+          "cssProperties": [
+            {
+              "description": "Gap between content and icon (default: var(--size-1))",
+              "name": "--copy-button-gap"
+            },
+            {
+              "description": "Size of the icon (default: 1rem)",
+              "name": "--copy-button-icon-size"
+            },
+            {
+              "description": "Opacity of icon in normal state (default: 0.5)",
+              "name": "--copy-button-icon-opacity"
+            },
+            {
+              "description": "Opacity of icon on hover (default: 1)",
+              "name": "--copy-button-icon-opacity-hover"
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The button element",
+              "name": "button"
+            },
+            {
+              "description": "Icon wrapper",
+              "name": "icon"
+            },
+            {
+              "description": "Feedback tooltip",
+              "name": "feedback"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Default slot for button label/content",
+              "name": ""
+            },
+            {
+              "description": "Optional slot for custom icon (overrides default copy icon)",
+              "name": "icon"
+            }
+          ],
           "members": [
             {
               "kind": "field",
@@ -146,29 +188,44 @@
               "name": "copy-success",
               "type": {
                 "text": "CustomEvent"
-              }
+              },
+              "description": "Fired when text is successfully copied (detail: { value: string })"
             },
             {
               "name": "copy-error",
               "type": {
                 "text": "CustomEvent"
-              }
+              },
+              "description": "Fired when copy fails (detail: { error: Error })"
             }
           ],
           "attributes": [
             {
-              "name": "value"
+              "name": "value",
+              "type": {
+                "text": "string"
+              },
+              "description": "The text to copy to clipboard (required)"
             },
             {
-              "name": "show-icon"
+              "name": "show-icon",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Show/hide the copy icon (default: true)"
             },
             {
-              "name": "feedback"
+              "name": "feedback",
+              "type": {
+                "text": "string"
+              },
+              "description": "Custom feedback message shown on successful copy (default: \"Copied!\")"
             }
           ],
           "superclass": {
             "name": "HTMLElement"
           },
+          "tagName": "m-copy-button",
           "customElement": true
         }
       ],

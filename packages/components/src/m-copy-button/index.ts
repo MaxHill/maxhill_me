@@ -10,6 +10,31 @@ const DEFAULT_COPY_ICON = `
 </svg>
 `;
 
+/**
+ * A button component that copies text to the clipboard with visual feedback.
+ * 
+ * @customElement
+ * @tagname m-copy-button
+ * 
+ * @slot - Default slot for button label/content
+ * @slot icon - Optional slot for custom icon (overrides default copy icon)
+ * 
+ * @attr {string} value - The text to copy to clipboard (required)
+ * @attr {boolean} show-icon - Show/hide the copy icon (default: true)
+ * @attr {string} feedback - Custom feedback message shown on successful copy (default: "Copied!")
+ * 
+ * @fires copy-success - Fired when text is successfully copied (detail: { value: string })
+ * @fires copy-error - Fired when copy fails (detail: { error: Error })
+ * 
+ * @cssprop --copy-button-gap - Gap between content and icon (default: var(--size-1))
+ * @cssprop --copy-button-icon-size - Size of the icon (default: 1rem)
+ * @cssprop --copy-button-icon-opacity - Opacity of icon in normal state (default: 0.5)
+ * @cssprop --copy-button-icon-opacity-hover - Opacity of icon on hover (default: 1)
+ * 
+ * @csspart button - The button element
+ * @csspart icon - Icon wrapper
+ * @csspart feedback - Feedback tooltip
+ */
 class MCopyButton extends HTMLElement {
     static observedAttributes = ["value", "show-icon", "feedback"];
 
