@@ -29,8 +29,9 @@ const { metadata, class: className, ...rest } = Astro.props;
 
 <style>
     .document {
-        --_content-max-width: 700px;
-        --_breakout-max-width: 850px;
+        --_content-max-width: 500px;
+        --_breakout-max-width: 600px;
+        --_width: 650px;
 
         z-index: var(--layer-1);
         background: var(--color-background);
@@ -38,11 +39,22 @@ const { metadata, class: className, ...rest } = Astro.props;
         transition: opacity 0.3s ease;
         overflow-x: hidden;
         overflow-y: auto;
-        width: 1000px;
+        width: var(--_width);
         max-width: calc(100vw - var(--body-margin) * 2);
         padding-block-end: var(--size-fluid-3);
-
         container-type: inline-size;
+
+        @media screen and (width > 1200px) {
+            --_content-max-width: 600px;
+            --_breakout-max-width: 700px;
+            --_width: 800px;
+        }
+
+        @media screen and (width > 1400px) {
+            --_content-max-width: 700px;
+            --_breakout-max-width: 850px;
+            --_width: 1000px
+        }
 
         &.visible {
             opacity: 1;
@@ -53,6 +65,7 @@ const { metadata, class: className, ...rest } = Astro.props;
         --_content-max-width: 700px;
         --_breakout-max-width: 850px;
         border-bottom: var(--border);
+        font-family: var(--ff-display);
         dl {
             display: grid;
             grid-template-columns: auto 1fr;
@@ -61,6 +74,7 @@ const { metadata, class: className, ...rest } = Astro.props;
             align-items: center;
             dt {
                 font: var(--p2);
+                font-family: var(--ff-display);
                 text-transform: uppercase;
                 color: var(--color-text-weaker);
                 text-align: end;

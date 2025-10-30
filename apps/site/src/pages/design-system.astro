@@ -72,12 +72,10 @@ const renderedDocs = await Promise.all(
     const navLinks = document.querySelectorAll(".nav-link");
 
 
-    function withViewTransition(callback) {
+    function withViewTransition(callback: () => void) {
         if(!document.startViewTransition) {
-            console.log("no transition")
             callback();
         } else {
-            console.log("has transition")
             document.startViewTransition(callback);
         }
     }
