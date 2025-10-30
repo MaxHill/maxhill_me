@@ -28,24 +28,20 @@ const renderedDocs = await Promise.all(
 ---
 
 <BaseLayout title={title} bodyClass="design-system-page">
-<button class="toggle-menu" popovertarget="anchor-menu">
-    <PanelLeftOpenIcon/>
-</button>
+    <button id="toggle-menu-button" class="toggle-menu"><PanelLeftOpenIcon/></button>
     <div class="main exposed-grid">
         <div id="hero" class="hero">
             <m-fit-text font-display>Design<br />system</m-fit-text>
         </div>
-        <div class="anchor-menu">
-            <div id="anchor-menu" class="inner stack exposed-grid" popover>
-                <a href="#hero" class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">~</a>
-                {
-                    sortedDocs.map((doc, index) => (
-                        <a href={`#${doc.slug}`} class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">
-                            {doc.data.title}
-                        </a>
-                    ))
-                }
-            </div>
+        <div id="anchor-menu" class="anchor-menu stack exposed-grid">
+            <a href="#hero" class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">~</a>
+            {
+                sortedDocs.map((doc, index) => (
+                    <a href={`#${doc.slug}`} class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">
+                        {doc.data.title}
+                    </a>
+                ))
+            }
         </div>
         {
             renderedDocs.map(({ doc, Content, metadata }) => (
@@ -65,35 +61,38 @@ const renderedDocs = await Promise.all(
     if (children.length === 0)
         throw new Error("No document or hero elements found");
 
+    const toggleMenuButton = document.querySelector("#toggle-menu-button");
+    if (!toggleMenuButton)
+        throw new Error("No toggle-menu-button found");
+
+    const anchorMenu = document.querySelector("#anchor-menu");
+    if (!anchorMenu)
+        throw new Error("No anchor-menu found");
+
     const navLinks = document.querySelectorAll(".nav-link");
 
-    // navLinks.forEach((link) => {
-    //     link.addEventListener("click", (e) => {
-    //         e.preventDefault();
-    //         const href = link.getAttribute("href");
-    //         if (!href) return;
-    //
-    //         const targetId = href.substring(1);
-    //         const targetElement = document.getElementById(targetId);
-    //         if (!targetElement) return;
-    //
-    //         targetElement.scrollIntoView({
-    //             behavior: "smooth",
-    //             inline: "end",
-    //             block: "nearest",
-    //         });
-    //     });
-    // });
 
-    // children.forEach((child) => {
-    //     child.addEventListener("click", () => {
-    //         child.scrollIntoView({
-    //             behavior: "smooth",
-    //             inline: "end",
-    //             block: "nearest",
-    //         });
-    //     });
-    // });
+    function withViewTransition(callback) {
+        if(!document.startViewTransition) {
+            console.log("no transition")
+            callback();
+        } else {
+            console.log("has transition")
+            document.startViewTransition(callback);
+        }
+    }
+
+    document.addEventListener("click", (e) => {
+        if(toggleMenuButton.contains(e.target)) {
+            withViewTransition(() => {
+                anchorMenu.classList.toggle("open");
+            });
+        } else if (e.target.matches(".nav-link") || !anchorMenu.contains(e.target)) {
+            withViewTransition(() => {
+                anchorMenu.classList.remove("open");
+            });
+        }
+    });
 
     const observerOptions = {
         root: parent,

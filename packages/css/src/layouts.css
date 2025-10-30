@@ -46,6 +46,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            cursor: pointer;
         }
 
         >.main {
@@ -80,56 +81,30 @@
             }
 
             >.anchor-menu {
+                position: sticky;
                 width: var(--size-fluid-9);
                 z-index: var(--layer-3);
+                width: var(--size-fluid-9);
+                background-color: var(--color-background);
+                left: calc(var(--size-fluid-9) * -1);
+                view-transition-name: anchor-menu;
+                animation-duration: 0.2s;
 
-                @media (width > 1350px) {
-                    position: sticky;
-                    left: 0;
+                &.open { left: 0 }
+                @media (width > 1350px) { left: 0; }
+
+                >.nav-link {
+                    padding: var(--size-fluid-1);
+                    text-decoration: none;
+                    color: var(--color-text);
                 }
 
-                .inner {
-                    position: static;
-                    inset: auto;
-                    margin: 0;
-                    border: none;
-                    padding: inherit;
-
-                    &:popover-open {
-                        left: 0;
-                        height: 100%;
-                        border-inline-end: var(--border);
+                >.nav-link.active {
+                    &::before {
+                        content: "> ";
+                        color: var(--color-text-link);
                     }
-
-                    width: var(--size-fluid-9);
-                    height: 100%;
-                    background-color: var(--color-background);
-                    overflow: visible;
-                    z-index: var(--layer-3);
-
-                    @media (width > 1350px) {
-                        /* Force popover to always display */
-                        display: flex !important;
-                        /* Keep it positioned statically */
-                        position: static !important;
-                        inset: auto !important;
-                    }
-
-
-                    >.nav-link {
-                        padding: var(--size-fluid-1);
-                        text-decoration: none;
-                        color: var(--color-text);
-                    }
-
-                    >.nav-link.active {
-                        &::before {
-                            content: "> ";
-                            color: var(--color-text-link);
-                        }
-
-                        background: var(--color-surface);
-                    }
+                    background: var(--color-surface);
                 }
             }
 
@@ -144,4 +119,9 @@
             }
         }
     }
+    ::view-transition-old(anchor-menu),
+    ::view-transition-new(anchor-menu) {
+      animation-duration: 0.3s;
+    }
 }
+
