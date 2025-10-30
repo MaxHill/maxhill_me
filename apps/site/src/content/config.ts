@@ -7,6 +7,7 @@ const documentation = defineCollection({
     author: z.string(),
     date: z.coerce.date(),
     tags: z.array(z.string()),
+    htmlId: z.string(),
   }),
 });
 
