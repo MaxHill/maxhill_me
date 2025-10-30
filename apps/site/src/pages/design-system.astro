@@ -71,24 +71,11 @@ const renderedDocs = await Promise.all(
 
     const navLinks = document.querySelectorAll(".nav-link");
 
-
-    function withViewTransition(callback: () => void) {
-        if(!document.startViewTransition) {
-            callback();
-        } else {
-            document.startViewTransition(callback);
-        }
-    }
-
     document.addEventListener("click", (e) => {
         if(toggleMenuButton.contains(e.target)) {
-            withViewTransition(() => {
-                anchorMenu.classList.toggle("open");
-            });
+            anchorMenu.classList.toggle("open");
         } else if (e.target.matches(".nav-link") || !anchorMenu.contains(e.target)) {
-            withViewTransition(() => {
-                anchorMenu.classList.remove("open");
-            });
+            anchorMenu.classList.remove("open");
         }
     });
 
