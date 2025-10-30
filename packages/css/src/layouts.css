@@ -16,8 +16,6 @@
         top: 0;
         height: var(--menu-height);
 
-
-
         &>nav {
             a {
                 text-decoration: none;
@@ -81,17 +79,16 @@
             }
 
             >.anchor-menu {
+                font-family: var(--ff-display);
                 position: sticky;
-                width: var(--size-fluid-9);
+                width: var(--size-fluid-8);
                 z-index: var(--layer-3);
-                width: var(--size-fluid-9);
                 background-color: var(--color-background);
                 left: calc(var(--size-fluid-9) * -1);
                 view-transition-name: anchor-menu;
-                animation-duration: 0.2s;
 
                 &.open { left: 0 }
-                @media (width > 1350px) { left: 0; }
+                @media (width > 900px) { left: 0; }
 
                 >.nav-link {
                     padding: var(--size-fluid-1);
