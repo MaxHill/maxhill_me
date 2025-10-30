@@ -85,7 +85,6 @@
                 z-index: var(--layer-3);
                 background-color: var(--color-background);
                 left: calc(var(--size-fluid-9) * -1);
-                view-transition-name: anchor-menu;
 
                 &.open { left: 0 }
                 @media (width > 900px) { left: 0; }
@@ -115,10 +114,6 @@
                 }
             }
         }
-    }
-    ::view-transition-old(anchor-menu),
-    ::view-transition-new(anchor-menu) {
-      animation-duration: 0.3s;
     }
 }
 
