@@ -95,6 +95,96 @@
     },
     {
       "kind": "javascript-module",
+      "path": "src/m-copy-button/index.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "MCopyButton",
+          "members": [
+            {
+              "kind": "field",
+              "name": "value",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "showIcon",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "feedback",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "method",
+              "name": "attachEventListeners"
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "default": "\"m-copy-button\""
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "copy-success",
+              "type": {
+                "text": "CustomEvent"
+              }
+            },
+            {
+              "name": "copy-error",
+              "type": {
+                "text": "CustomEvent"
+              }
+            }
+          ],
+          "attributes": [
+            {
+              "name": "value"
+            },
+            {
+              "name": "show-icon"
+            },
+            {
+              "name": "feedback"
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "MCopyButton",
+            "module": "src/m-copy-button/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/m-fit-text/index.ts",
       "declarations": [
         {
