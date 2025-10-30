@@ -2,6 +2,7 @@
     .typesetting {
         gap: 1rlh;
         display: grid;
+        grid-auto-rows: max-content;  
 
         >h1 {
             font: var(--h1);
@@ -44,10 +45,16 @@
             border-block-end: var(--border);
         }
 
-        code {
+        &> pre {
+            padding: var(--size-fluid-2);
+            border: var(--border);
+            border-radius: var(--radius-2);
+            font-weight: var(--font-weight-medium);
+        }
+
+        code:not(pre > code) {
             padding-inline: var(--size-1);
             padding-block: .1ch;
-            background: var(--color-surface);
             border: var(--border);
             border-radius: var(--radius-2);
             color: var(--color-primary-text-colorful);

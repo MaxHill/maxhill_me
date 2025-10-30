@@ -37,7 +37,7 @@ const { metadata, class: className, ...rest } = Astro.props;
         background: var(--color-background);
         opacity: 0.3;
         transition: opacity 0.3s ease;
-        overflow-x: hidden;
+        overflow-x: clip;
         overflow-y: auto;
         width: var(--_width);
         max-width: calc(100vw - var(--body-margin) * 2);
