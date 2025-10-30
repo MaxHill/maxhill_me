@@ -19,7 +19,7 @@ const renderedDocs = await Promise.all(
                 month: "long",
                 day: "2-digit",
             }),
-            Link: `#${doc.slug}`,
+            Link: `#${doc.data.htmlId}`,
             Tags: doc.data.tags.join(", "),
         };
         return { doc, Content, metadata };
@@ -37,7 +37,7 @@ const renderedDocs = await Promise.all(
             <a href="#hero" class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">~</a>
             {
                 sortedDocs.map((doc, index) => (
-                    <a href={`#${doc.slug}`} class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">
+                    <a href={`#${doc.data.htmlId}`} class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">
                         {doc.data.title}
                     </a>
                 ))
@@ -45,7 +45,7 @@ const renderedDocs = await Promise.all(
         </div>
         {
             renderedDocs.map(({ doc, Content, metadata }) => (
-                <Document id={doc.slug} metadata={metadata}>
+                <Document id={doc.data.htmlId} metadata={metadata}>
                     <Content />
                 </Document>
             ))

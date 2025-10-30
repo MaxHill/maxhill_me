@@ -2,7 +2,8 @@
 title: Design tokens
 author: Max Hill
 date: 2025-10-12
-tags: [design-tokens]
+tags: [design-tokens, overview]
+htmlId: doc-design-tokens
 ---
 
 Design tokens are organized in a two-tier system that separates raw values from their intended usage.
@@ -17,7 +18,9 @@ Semantic tokens describe how and where a value should be applied. They map found
 
 **Examples:** `--color-text`, `--color-accent-fill`, `--radius-input`
 
-### Theming and the Semantic Layer
+> **Key Principle:** Don’t create semantic tokens “just because.” Create them when they encode a decision or pattern you want to maintain. The semantic layer should be lighter than you think—it’s not a 1:1 mapping of foundation tokens with different names.
+
+### Theming
 The semantic layer is where theming happens. Any value that should be themable must be defined as a semantic token. This allows you to swap themes by changing semantic token values while keeping your foundation tokens stable.
 
 For example, light and dark themes would redefine semantic 
@@ -25,22 +28,11 @@ tokens like `--color-background` and `--color-text` to
 different foundation values, but the foundation tokens 
 themselves (`--color-gray-seed`, `--color-green-seed`, etc.) remain constant.
 
------
-
-## Extracting Semantic Tokens
-
-Semantic tokens represent reusable intent-driven design decisions (not raw values). Extract one when the value’s role is broader than a
-single ad-hoc use.
-
-### Use Foundation Tokens When:
-- There’s no established semantic pattern (e.g., different buttons use different radii based on context)
-- You need one-off spacing adjustments
-- The scale itself provides sufficient meaning
-
-### Use Semantic Tokens When:
-- Multiple components share the same value for the same purpose
-- You want to enforce consistency (e.g., all interactive elements share the same focus ring style)
-- Component relationships matter (e.g., card padding should always match section gaps)
+## Using Tokens
+When styling UI elements, use both semantic and foundational tokens. 
+Apply semantic tokens to theme-customizable properties like colors, 
+borders, and shadows, while using foundational tokens for fixed 
+values that remain consistent across themes.
 
 ### Example
 ```css
@@ -62,8 +54,6 @@ single ad-hoc use.
   gap: var(--spacing-stack-small); /* Semantic pattern */
 }
 ```
-
-> **Key Principle:** Don’t create semantic tokens “just because.” Create them when they encode a decision or pattern you want to maintain. The semantic layer should be lighter than you think—it’s not a 1:1 mapping of foundation tokens with different names.
 
 -----
 
