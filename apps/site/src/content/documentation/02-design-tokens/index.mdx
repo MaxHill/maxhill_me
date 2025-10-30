@@ -1,0 +1,79 @@
+---
+title: Design tokens
+author: Max Hill
+date: 2025-10-12
+tags: [design-tokens]
+---
+
+Design tokens are organized in a two-tier system that separates raw values from their intended usage.
+
+## Foundation Tokens
+Foundation tokens are the lowest-level building blocks that specify concrete values. They should be named descriptively based on what they are, not how they’re used.
+
+**Examples:** `--shadow-1`, `--size-4`, `--radius-2`
+
+## Semantic Tokens
+Semantic tokens describe how and where a value should be applied. They map foundation tokens to specific use cases and UI patterns.
+
+**Examples:** `--color-text`, `--color-accent-fill`, `--radius-input`
+
+### Theming and the Semantic Layer
+The semantic layer is where theming happens. Any value that should be themable must be defined as a semantic token. This allows you to swap themes by changing semantic token values while keeping your foundation tokens stable.
+
+For example, light and dark themes would redefine semantic 
+tokens like `--color-background` and `--color-text` to 
+different foundation values, but the foundation tokens 
+themselves (`--color-gray-seed`, `--color-green-seed`, etc.) remain constant.
+
+-----
+
+## Extracting Semantic Tokens
+
+Semantic tokens represent reusable intent-driven design decisions (not raw values). Extract one when the value’s role is broader than a
+single ad-hoc use.
+
+### Use Foundation Tokens When:
+- There’s no established semantic pattern (e.g., different buttons use different radii based on context)
+- You need one-off spacing adjustments
+- The scale itself provides sufficient meaning
+
+### Use Semantic Tokens When:
+- Multiple components share the same value for the same purpose
+- You want to enforce consistency (e.g., all interactive elements share the same focus ring style)
+- Component relationships matter (e.g., card padding should always match section gaps)
+
+### Example
+```css
+/* Foundation */
+--size-4: 1rem;
+--size-8: 2rem;
+--radius-2: 0.25rem;
+--radius-3: 0.5rem;
+
+/* Semantic (only where patterns exist) */
+--spacing-stack-small: var(--size-4);
+--spacing-stack-large: var(--size-8);
+--radius-interactive: var(--radius-2);
+
+/* Component */
+.button {
+  padding: var(--size-2) var(--size-4); /* Direct foundation use */
+  border-radius: var(--radius-interactive); /* Semantic pattern */
+  gap: var(--spacing-stack-small); /* Semantic pattern */
+}
+```
+
+> **Key Principle:** Don’t create semantic tokens “just because.” Create them when they encode a decision or pattern you want to maintain. The semantic layer should be lighter than you think—it’s not a 1:1 mapping of foundation tokens with different names.
+
+-----
+
+## Token Categories
+### Foundation
+- **Colors** - [Description]
+- **Typography** - [Description]
+- **Size** - [Description]
+- **Radius** - [Description]
+- **Layer** - [Description]
+- **Shadows** - [Description]
+- **Motion** - [Description]
+
