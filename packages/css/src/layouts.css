@@ -85,6 +85,7 @@
                 z-index: var(--layer-3);
                 background-color: var(--color-background);
                 left: calc(var(--size-fluid-9) * -1);
+                transition: left .2s ease;
 
                 &.open { left: 0 }
                 @media (width > 900px) { left: 0; }
