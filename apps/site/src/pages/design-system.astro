@@ -25,6 +25,65 @@ const renderedDocs = await Promise.all(
         return { doc, Content, metadata };
     }),
 );
+
+type NavItem = 
+    | { type: 'page', id: string, title: string, htmlId: string }
+    | { type: 'folder', name: string, pages: Array<{ id: string, title: string, htmlId: string }> };
+
+function buildNavHierarchy(docs: typeof sortedDocs): NavItem[] {
+    const hierarchy: NavItem[] = [];
+    const folderMap = new Map<string, Array<{ id: string, title: string, htmlId: string }>>();
+
+    for (const doc of docs) {
+        const parts = doc.id.split('/');
+        
+        if (parts.length === 1) {
+            hierarchy.push({
+                type: 'page',
+                id: doc.id,
+                title: doc.data.title,
+                htmlId: doc.data.htmlId,
+            });
+        } else {
+            const folderName = parts[0];
+            if (!folderMap.has(folderName)) {
+                folderMap.set(folderName, []);
+            }
+            folderMap.get(folderName)!.push({
+                id: doc.id,
+                title: doc.data.title,
+                htmlId: doc.data.htmlId,
+            });
+        }
+    }
+
+    for (const [folderName, pages] of folderMap.entries()) {
+        if (pages.length === 1) {
+            hierarchy.push({
+                type: 'page',
+                id: pages[0].id,
+                title: pages[0].title,
+                htmlId: pages[0].htmlId,
+            });
+        } else {
+            hierarchy.push({
+                type: 'folder',
+                name: folderName,
+                pages: pages,
+            });
+        }
+    }
+
+    return hierarchy.sort((a, b) => {
+        const getOrder = (item: NavItem) => {
+            if (item.type === 'page') return item.id;
+            return item.pages[0]?.id || item.name;
+        };
+        return getOrder(a).localeCompare(getOrder(b));
+    });
+}
+
+const navHierarchy = buildNavHierarchy(sortedDocs);
 ---
 
 <BaseLayout title={title} bodyClass="design-system-page">
@@ -36,11 +95,30 @@ const renderedDocs = await Promise.all(
         <div id="anchor-menu" class="anchor-menu stack exposed-grid">
             <a href="#hero" class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">~</a>
             {
-                sortedDocs.map((doc, index) => (
-                    <a href={`#${doc.data.htmlId}`} class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">
-                        {doc.data.title}
-                    </a>
-                ))
+                navHierarchy.map((item) => {
+                    if (item.type === 'page') {
+                        return (
+                            <a href={`#${item.htmlId}`} class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">
+                                {item.title}
+                            </a>
+                        );
+                    } else {
+                        return (
+                            <details open class="nav-folder">
+                                <summary>{item.name}</summary>
+                                <ul>
+                                    {item.pages.map((page) => (
+                                        <li>
+                                            <a href={`#${page.htmlId}`} class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">
+                                                {page.title}
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </details>
+                        );
+                    }
+                })
             }
         </div>
         {
