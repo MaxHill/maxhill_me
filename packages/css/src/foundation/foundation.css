@@ -66,11 +66,6 @@
         --shadow-color: 220 3% 15%;
         --shadow-strength: 1%;
 
-        @media (prefers-color-scheme: dark) {
-            --shadow-color: 220 40% 2%;
-            --shadow-strength: 25%;
-        }
-
         --shadow-1: 0 1px 2px -1px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 9%));
         --shadow-2: 0 3px 5px -2px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 3%)),
         0 7px 14px -5px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 5%));
