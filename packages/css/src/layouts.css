@@ -103,6 +103,53 @@
                     }
                     background: var(--color-surface);
                 }
+
+                >.nav-folder {
+                    summary {
+                        padding: var(--size-fluid-1);
+                        cursor: pointer;
+                        list-style: none;
+                        user-select: none;
+
+                        &::-webkit-details-marker {
+                            display: none;
+                        }
+
+                        &::before {
+                            content: "▼ ";
+                            display: inline-block;
+                            transition: transform 0.2s ease;
+                        }
+                    }
+
+                    &:not([open]) summary::before {
+                        transform: rotate(-90deg);
+                    }
+
+                    ul {
+                        list-style: none;
+                        padding: 0;
+                        margin: 0;
+
+                        li {
+                            .nav-link {
+                                display: block;
+                                padding: var(--size-fluid-1);
+                                padding-inline-start: var(--size-fluid-3);
+                                text-decoration: none;
+                                color: var(--color-text);
+                            }
+
+                            .nav-link.active {
+                                &::before {
+                                    content: "> ";
+                                    color: var(--color-text-link);
+                                }
+                                background: var(--color-surface);
+                            }
+                        }
+                    }
+                }
             }
 
             /* Fade out inactive documents */
