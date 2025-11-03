@@ -81,7 +81,7 @@
             >.anchor-menu {
                 font-family: var(--ff-display);
                 position: sticky;
-                width: var(--size-fluid-8);
+                width: var(--size-fluid-9);
                 z-index: var(--layer-3);
                 background-color: var(--color-background);
                 left: calc(var(--size-fluid-9) * -1);
@@ -110,6 +110,8 @@
                         cursor: pointer;
                         list-style: none;
                         user-select: none;
+                        display: inline-flex;
+                        gap: var(--size-2);
 
                         &::-webkit-details-marker {
                             display: none;
