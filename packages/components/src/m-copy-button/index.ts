@@ -23,6 +23,10 @@ const DEFAULT_COPY_ICON = `
  * @attr {boolean} show-icon - Show/hide the copy icon (default: true)
  * @attr {string} feedback - Custom feedback message shown on successful copy (default: "Copied!")
  * 
+ * @prop {string} value - The text to copy to clipboard (required)
+ * @prop {boolean} showIcon - Show/hide the copy icon (default: true)
+ * @prop {string} feedback - Custom feedback message shown on successful copy (default: "Copied!")
+ * 
  * @fires copy-success - Fired when text is successfully copied (detail: { value: string })
  * @fires copy-error - Fired when copy fails (detail: { error: Error })
  * 

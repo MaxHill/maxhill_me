@@ -10,6 +10,12 @@ export interface MTabChangeEventDetail {
     tab: MTab;
     panel: MTabPanel;
 }
+
+/**
+ * 
+ * @class
+ * @classdesc Event sent when tab becomes active
+ */
 export class MTabShowEvent extends CustomEvent<MTabChangeEventDetail> {
     constructor(detail: MTabChangeEventDetail) {
         super('m-tab-show', {
@@ -20,6 +26,11 @@ export class MTabShowEvent extends CustomEvent<MTabChangeEventDetail> {
     }
 }
 
+/**
+ * 
+ * @class
+ * @classdesc Event sent when a tab is hidden
+ */
 export class MTabHideEvent extends CustomEvent<MTabChangeEventDetail> {
     constructor(detail: MTabChangeEventDetail) {
         super('m-tab-hide', {
@@ -30,8 +41,54 @@ export class MTabHideEvent extends CustomEvent<MTabChangeEventDetail> {
     }
 }
 
+/**
+ * A tab list container that manages tabs and their associated panels with full keyboard navigation.
+ * Supports arrow keys (and vim h/l), Home/End keys for navigation.
+ * 
+ * ### Example
+ * ```html
+ * <m-tab-list tab="home">
+ *   <m-tab panel="home">Home</m-tab>
+ *   <m-tab panel="profile">Profile</m-tab>
+ *   <m-tab panel="settings" disabled>Settings</m-tab>
+ *   
+ *   <m-tab-panel name="home">
+ *     <h2>Home Content</h2>
+ *   </m-tab-panel>
+ *   <m-tab-panel name="profile">
+ *     <h2>Profile Content</h2>
+ *   </m-tab-panel>
+ *   <m-tab-panel name="settings">
+ *     <h2>Settings Content</h2>
+ *   </m-tab-panel>
+ * </m-tab-list>
+ * ```
+ * 
+ * @customElement
+ * @tagname m-tab-list
+ * 
+ * @slot tab - Slot for m-tab elements (auto-assigned)
+ * @slot tab-panel - Slot for m-tab-panel elements (auto-assigned)
+ * 
+ * @attr {string} tab - The currently active tab panel name
+ * @attr {string} label - Accessible label for the tab list (sets aria-label)
+ * 
+ * @prop {string} tab - The currently active tab panel name
+ * @prop {string} label - Accessible label for the tab list
+ * 
+ * @csspart tab - Container wrapping the tab buttons
+ * @csspart panels - Container wrapping the tab panels
+ * 
+ * @event m-tab-show - Fired when a tab panel becomes visible. Detail: MTabChangeEventDetail { tab: MTab, panel: MTabPanel }
+ * @event m-tab-hide - Fired when a tab panel becomes hidden. Detail: MTabChangeEventDetail { tab: MTab, panel: MTabPanel }
+ * 
+ */
 export class MTabList extends MElement {
+    static tagName = 'm-tab-list';
     static observedAttributes = ['tab', 'label'];
+
+    @BindAttribute({ attribute: "aria-label" })
+    label: string = '';
 
     @BindAttribute()
     tab: string = '';
@@ -52,6 +109,9 @@ export class MTabList extends MElement {
         this.tabSlot = this.#shadowRoot.querySelector("slot[name='tab']")!;
         this.panelSlot = this.#shadowRoot.querySelector("slot[name='tab-panel']")!;
 
+        this.classList.add("box")
+        this.setAttribute("data-padded", "false")
+
         this.addEventListener("click", this.handleTabsClick.bind(this));
         this.addEventListener("keydown", this.handleTabsKeyDown.bind(this));
         this.tabSlot.addEventListener('slotchange', () => {
@@ -66,10 +126,6 @@ export class MTabList extends MElement {
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
-
-        if (name === 'label') {
-            this.setAttribute('aria-label', newValue as string ?? '');
-        }
 
         if (name === "tab") {
             this.setActiveTab(this.tab);
@@ -153,11 +209,11 @@ export class MTabList extends MElement {
                 const wasVisible = panel.visible;
                 panel.visible = true;
                 if (!wasVisible) {
-                    this.dispatchEvent(new MTabShowEvent({tab: linkedTab, panel}));
+                    this.dispatchEvent(new MTabShowEvent({ tab: linkedTab, panel }));
                 }
             } else if (linkedTab && panel.visible) {
                 panel.visible = false;
-                this.dispatchEvent(new MTabHideEvent({tab: linkedTab, panel}));
+                this.dispatchEvent(new MTabHideEvent({ tab: linkedTab, panel }));
             }
         }
 
@@ -168,9 +224,7 @@ export class MTabList extends MElement {
             <div part="tab">
                 <slot name="tab"></slot>
             </div>
-            <div part="panels">
-                <slot name="tab-panel"></slot>
-            </div>
+            <slot name="tab-panel"></slot>
         `;
     }
 
@@ -187,10 +241,6 @@ export class MTabList extends MElement {
     private getPanels() {
         const panels = this.panelSlot.assignedElements({ flatten: true }) as MTabPanel[];
         return panels.filter(panel => panel.localName === 'm-tab-panel');
-    }
-
-    static define(tag = 'm-tab-list', registry = customElements) {
-        return super.define(tag, registry) as typeof MTabList;
     }
 }
 

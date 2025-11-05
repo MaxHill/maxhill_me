@@ -1,3 +1,6 @@
+:host {
+    padding: var(--_padding-block) var(--_padding-inline);
+}
 :host(:not([visible])) {
     display: none;
 }

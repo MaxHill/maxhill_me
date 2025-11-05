@@ -1,9 +1,30 @@
 import { BindAttribute } from "../utils/reflect-attribute";
 import { MElement } from "../utils/m-element";
+import styles from "./tab.css?inline";
+const baseStyleSheet = new CSSStyleSheet();
+baseStyleSheet.replaceSync(styles);
 
+/**
+ * A tab button used within m-tab-list for switching between tab panels.
+ * 
+ * @customElement
+ * @tagname m-tab
+ * 
+ * @slot - Default slot for tab label content
+ * 
+ * @attr {string} panel - ID of the associated tab panel to control
+ * @attr {boolean} active - Whether this tab is currently active
+ * @attr {boolean} disabled - Whether this tab is disabled and cannot be selected
+ * 
+ * @prop {string} panel - ID of the associated tab panel to control
+ * @prop {boolean} active - Whether this tab is currently active
+ * @prop {boolean} disabled - Whether this tab is disabled and cannot be selected
+ */
 export class MTab extends MElement {
+    static tagName = 'm-tab';
     static observedAttributes = ["active", "panel", "disabled"]
-    #shadowRoot: ShadowRoot;
+
+    @BindAttribute()
     panel?: string;
 
     @BindAttribute()
@@ -12,9 +33,12 @@ export class MTab extends MElement {
     @BindAttribute()
     disabled: boolean = false;
 
+    #shadowRoot: ShadowRoot;
+
     constructor() {
         super();
         this.#shadowRoot = this.attachShadow({ mode: 'open' });
+        this.#shadowRoot.adoptedStyleSheets = [baseStyleSheet];
     }
 
     connectedCallback() {
@@ -33,9 +57,6 @@ export class MTab extends MElement {
     attributeChangedCallback (name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
         
-        if (name === 'panel') {
-            this.panel = newValue as string;
-        }
         if (name === 'active') {
           this.setAttribute('aria-selected', this.active ? 'true' : 'false');
           this.setAttribute('tabindex', this.active ? '0' : '-1');
@@ -53,10 +74,6 @@ export class MTab extends MElement {
         this.#shadowRoot.innerHTML = `
           <slot></slot>
         `;
-    }
-
-    static define(tag = 'm-tab', registry = customElements) {
-        return super.define(tag, registry) as typeof MTab;
     }
 }
 
