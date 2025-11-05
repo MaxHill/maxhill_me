@@ -77,7 +77,6 @@ export class MTabHideEvent extends CustomEvent<MTabChangeEventDetail> {
  * @prop {string} label - Accessible label for the tab list
  * 
  * @csspart tab - Container wrapping the tab buttons
- * @csspart panels - Container wrapping the tab panels
  * 
  * @event m-tab-show - Fired when a tab panel becomes visible. Detail: MTabChangeEventDetail { tab: MTab, panel: MTabPanel }
  * @event m-tab-hide - Fired when a tab panel becomes hidden. Detail: MTabChangeEventDetail { tab: MTab, panel: MTabPanel }
