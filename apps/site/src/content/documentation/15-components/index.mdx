@@ -93,11 +93,19 @@ Cards group related content and actions in a contained, scannable format.
     <m-fit-text font-display>Text<br />fits</m-fit-text>
 </div>
 
+### Tabs
+<m-tab-list label="Example">
+    <m-tab panel="tab1">Tab 1</m-tab>
+    <m-tab panel="tab2">Tab 2</m-tab>
+    <m-tab-panel name="tab1"> Panel value 1</m-tab-panel>
+    <m-tab-panel name="tab2"> Panel value 2</m-tab-panel>
+</m-tab-list>
+
 ### Tabs container (vendored)
 Tab containers provide accessible navigation between related content panels. This is a low-level component that can be used to build higher-level abstractions, such as the <tab-card/> component described below.
 
-<tab-container>
-  <div data-background="surface" role="tablist">
+<tab-container class="box" data-padded="false" vertical="true">
+  <div data-background="surface" role="tablist" data-border="be">
     <button type="button" role="tab" aria-selected="true">Tab 1</button>
     <button type="button" role="tab">Tab 2</button>
     <button type="button" role="tab">Tab 3</button>

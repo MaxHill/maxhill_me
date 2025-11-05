@@ -1,0 +1,7 @@
+:host {
+    display: grid;
+
+    [part="tab"] {
+        background: orange;
+    }
+}
