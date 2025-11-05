@@ -1,19 +1,44 @@
 import { MTab } from "./tab";
 import { MTabPanel } from "./tab-panel";
-import { BindAttribute, handleAttributeChange } from "../utils/reflect-attribute";
+import { BindAttribute } from "../utils/reflect-attribute";
+import { MElement } from "../utils/m-element";
 import styles from "./tab-list.css?inline";
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
-export class MTabList extends HTMLElement {
+export interface MTabChangeEventDetail {
+    tab: MTab;
+    panel: MTabPanel;
+}
+export class MTabShowEvent extends CustomEvent<MTabChangeEventDetail> {
+    constructor(detail: MTabChangeEventDetail) {
+        super('m-tab-show', {
+            detail,
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export class MTabHideEvent extends CustomEvent<MTabChangeEventDetail> {
+    constructor(detail: MTabChangeEventDetail) {
+        super('m-tab-hide', {
+            detail,
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export class MTabList extends MElement {
     static observedAttributes = ['tab', 'label'];
-    
-    #shadowRoot: ShadowRoot;
-    private tabSlot!: HTMLSlotElement;
-    private panelSlot!: HTMLSlotElement;
 
     @BindAttribute()
     tab: string = '';
+
+    #shadowRoot: ShadowRoot;
+    private tabSlot!: HTMLSlotElement;
+    private panelSlot!: HTMLSlotElement;
 
     constructor() {
         super();
@@ -40,10 +65,8 @@ export class MTabList extends HTMLElement {
     }
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
-        if (oldValue === newValue) return;
-        handleAttributeChange(this, name, newValue as string | null);
-        
-        
+        super.attributeChangedCallback(name, oldValue, newValue);
+
         if (name === 'label') {
             this.setAttribute('aria-label', newValue as string ?? '');
         }
@@ -88,24 +111,17 @@ export class MTabList extends HTMLElement {
 
         let targetTab: MTab | undefined;
 
-        switch (event.key) {
-            case 'ArrowLeft':
-            case 'h':
-                targetTab = tabs[(currentIndex - 1 + tabs.length) % tabs.length];
-                break;
-            case 'ArrowRight':
-            case 'l':
-                targetTab = tabs[(currentIndex + 1) % tabs.length];
-                break;
-            case 'Home':
-                targetTab = tabs[0];
-                break;
-            case 'End':
-                targetTab = tabs[tabs.length - 1];
-                break;
-            case ' ':
-                event.preventDefault();
-                return;
+        if (event.key === 'ArrowLeft' || event.key === 'h') {
+            targetTab = tabs[(currentIndex - 1 + tabs.length) % tabs.length];
+        } else if (event.key === 'ArrowRight' || event.key === 'l') {
+            targetTab = tabs[(currentIndex + 1) % tabs.length];
+        } else if (event.key === 'Home') {
+            targetTab = tabs[0];
+        } else if (event.key === 'End') {
+            targetTab = tabs[tabs.length - 1];
+        } else if (event.key === ' ') {
+            event.preventDefault();
+            return;
         }
 
         if (targetTab && targetTab.panel) {
@@ -134,9 +150,14 @@ export class MTabList extends HTMLElement {
             }
 
             if (panel.name === name && linkedTab && !linkedTab.disabled) {
+                const wasVisible = panel.visible;
                 panel.visible = true;
+                if (!wasVisible) {
+                    this.dispatchEvent(new MTabShowEvent({tab: linkedTab, panel}));
+                }
             } else if (linkedTab && panel.visible) {
                 panel.visible = false;
+                this.dispatchEvent(new MTabHideEvent({tab: linkedTab, panel}));
             }
         }
 
@@ -169,10 +190,7 @@ export class MTabList extends HTMLElement {
     }
 
     static define(tag = 'm-tab-list', registry = customElements) {
-        if (!registry.get(tag)) {
-            registry.define(tag, this);
-        }
-        return this;
+        return super.define(tag, registry) as typeof MTabList;
     }
 }
 
