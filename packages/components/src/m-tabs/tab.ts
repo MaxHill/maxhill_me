@@ -1,6 +1,7 @@
-import { BindAttribute, handleAttributeChange } from "../utils/reflect-attribute";
+import { BindAttribute } from "../utils/reflect-attribute";
+import { MElement } from "../utils/m-element";
 
-export class MTab extends HTMLElement {
+export class MTab extends MElement {
     static observedAttributes = ["active", "panel", "disabled"]
     #shadowRoot: ShadowRoot;
     panel?: string;
@@ -29,18 +30,18 @@ export class MTab extends HTMLElement {
         this.active = false;
     }
 
-    attributeChangedCallback (name: string, _oldValue: unknown, newValue: unknown) {
+    attributeChangedCallback (name: string, oldValue: unknown, newValue: unknown) {
+        super.attributeChangedCallback(name, oldValue, newValue);
+        
         if (name === 'panel') {
             this.panel = newValue as string;
         }
         if (name === 'active') {
-          handleAttributeChange(this, name, newValue as string | null);
           this.setAttribute('aria-selected', this.active ? 'true' : 'false');
           this.setAttribute('tabindex', this.active ? '0' : '-1');
         }
 
         if (name === 'disabled') {
-          handleAttributeChange(this, name, newValue as string | null);
           this.setAttribute('aria-disabled', this.disabled ? 'true' : 'false');
           if (this.active && this.disabled) {
             this.active = false;
@@ -55,10 +56,7 @@ export class MTab extends HTMLElement {
     }
 
     static define(tag = 'm-tab', registry = customElements) {
-        if (!registry.get(tag)) {
-            registry.define(tag, this);
-        }
-        return this;
+        return super.define(tag, registry) as typeof MTab;
     }
 }
 
