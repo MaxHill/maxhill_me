@@ -18,13 +18,19 @@
     "build": "cem analyze && vite build && tsc --emitDeclarationOnly",
     "dev": "vite build --watch",
     "clean": "rm -rf dist",
-    "docs": "cem analyze"
+    "docs": "cem analyze",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@custom-elements-manifest/analyzer": "^0.10.10",
+    "@vitest/browser": "^4.0.6",
     "glob": "^11.0.3",
+    "happy-dom": "^20.0.10",
+    "rollup-plugin-string": "^3.0.0",
     "typescript": "^5.9.3",
-    "vite": "^6.0.11"
+    "vite": "^6.0.11",
+    "vitest": "^4.0.6"
   },
   "customElements": "custom-elements.json"
 }

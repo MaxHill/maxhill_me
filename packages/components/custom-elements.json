@@ -310,6 +310,37 @@
     },
     {
       "kind": "javascript-module",
+      "path": "src/m-tabs/index.ts",
+      "declarations": [],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "*",
+          "declaration": {
+            "name": "*",
+            "module": "src/m-tabs/tab-list"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "*",
+          "declaration": {
+            "name": "*",
+            "module": "src/m-tabs/tab"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "*",
+          "declaration": {
+            "name": "*",
+            "module": "src/m-tabs/tab-panel"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/vendored/tab-container-element/tab-container-element.ts",
       "declarations": [
         {
