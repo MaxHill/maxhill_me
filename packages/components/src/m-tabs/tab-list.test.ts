@@ -308,6 +308,96 @@ describe('m-tab-list', () => {
       expect(panel1.visible).toBe(false);
       expect(panel2.visible).toBe(true);
     });
+
+    it('should dispatch m-tab-show event when tab becomes visible', async () => {
+      const el = await fixture<MTabList>(html`
+        <m-tab-list>
+          <m-tab panel="panel-1">Tab 1</m-tab>
+          <m-tab panel="panel-2">Tab 2</m-tab>
+          <m-tab-panel name="panel-1">Panel 1</m-tab-panel>
+          <m-tab-panel name="panel-2">Panel 2</m-tab-panel>
+        </m-tab-list>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-tab').length === 2);
+      
+      const tabs = el.querySelectorAll('m-tab');
+      const panels = el.querySelectorAll('m-tab-panel');
+      const secondTab = tabs[1] as MTab;
+      const panel2 = panels[1] as MTabPanel;
+
+      let showEventFired = false;
+      let eventDetail: any;
+
+      el.addEventListener('m-tab-show', (e: Event) => {
+        showEventFired = true;
+        eventDetail = (e as CustomEvent).detail;
+      });
+
+      el.tab = 'panel-2';
+
+      await waitUntil(() => showEventFired);
+
+      expect(showEventFired).toBe(true);
+      expect(eventDetail.tab).toBe(secondTab);
+      expect(eventDetail.panel).toBe(panel2);
+    });
+
+    it('should dispatch m-tab-hide event when tab becomes hidden', async () => {
+      const el = await fixture<MTabList>(html`
+        <m-tab-list>
+          <m-tab panel="panel-1">Tab 1</m-tab>
+          <m-tab panel="panel-2">Tab 2</m-tab>
+          <m-tab-panel name="panel-1">Panel 1</m-tab-panel>
+          <m-tab-panel name="panel-2">Panel 2</m-tab-panel>
+        </m-tab-list>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-tab').length === 2);
+      
+      const tabs = el.querySelectorAll('m-tab');
+      const panels = el.querySelectorAll('m-tab-panel');
+      const firstTab = tabs[0] as MTab;
+      const panel1 = panels[0] as MTabPanel;
+
+      let hideEventFired = false;
+      let eventDetail: any;
+
+      el.addEventListener('m-tab-hide', (e: Event) => {
+        hideEventFired = true;
+        eventDetail = (e as CustomEvent).detail;
+      });
+
+      el.tab = 'panel-2';
+
+      await waitUntil(() => hideEventFired);
+
+      expect(hideEventFired).toBe(true);
+      expect(eventDetail.tab).toBe(firstTab);
+      expect(eventDetail.panel).toBe(panel1);
+    });
+
+    it('should not dispatch m-tab-show event if panel is already visible', async () => {
+      const el = await fixture<MTabList>(html`
+        <m-tab-list>
+          <m-tab panel="panel-1">Tab 1</m-tab>
+          <m-tab-panel name="panel-1">Panel 1</m-tab-panel>
+        </m-tab-list>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-tab').length === 1);
+
+      let showEventCount = 0;
+
+      el.addEventListener('m-tab-show', () => {
+        showEventCount++;
+      });
+
+      el.tab = 'panel-1';
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      expect(showEventCount).toBe(0);
+    });
   });
 
   describe('ARIA attributes', () => {

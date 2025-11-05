@@ -341,6 +341,457 @@
     },
     {
       "kind": "javascript-module",
+      "path": "src/m-tabs/tab-list.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "MTabShowEvent",
+          "superclass": {
+            "name": "CustomEvent",
+            "module": "src/m-tabs/tab-list.ts"
+          }
+        },
+        {
+          "kind": "class",
+          "description": "",
+          "name": "MTabHideEvent",
+          "superclass": {
+            "name": "CustomEvent",
+            "module": "src/m-tabs/tab-list.ts"
+          }
+        },
+        {
+          "kind": "class",
+          "description": "A tab list container that manages tabs and their associated panels with full keyboard navigation.\nSupports arrow keys (and vim h/l), Home/End keys for navigation.\n\n### Example\n```html\n<m-tab-list tab=\"home\">\n  <m-tab panel=\"home\">Home</m-tab>\n  <m-tab panel=\"profile\">Profile</m-tab>\n  <m-tab panel=\"settings\" disabled>Settings</m-tab>\n  \n  <m-tab-panel name=\"home\">\n    <h2>Home Content</h2>\n  </m-tab-panel>\n  <m-tab-panel name=\"profile\">\n    <h2>Profile Content</h2>\n  </m-tab-panel>\n  <m-tab-panel name=\"settings\">\n    <h2>Settings Content</h2>\n  </m-tab-panel>\n</m-tab-list>\n```",
+          "name": "MTabList",
+          "cssParts": [
+            {
+              "description": "Container wrapping the tab buttons",
+              "name": "tab"
+            },
+            {
+              "description": "Container wrapping the tab panels",
+              "name": "panels"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Slot for m-tab elements (auto-assigned)",
+              "name": "tab"
+            },
+            {
+              "description": "Slot for m-tab-panel elements (auto-assigned)",
+              "name": "tab-panel"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "default": "''"
+            },
+            {
+              "kind": "field",
+              "name": "tab",
+              "type": {
+                "text": "string"
+              },
+              "default": "''"
+            },
+            {
+              "kind": "field",
+              "name": "#shadowRoot",
+              "privacy": "private",
+              "type": {
+                "text": "ShadowRoot"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "tabSlot",
+              "type": {
+                "text": "HTMLSlotElement"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "panelSlot",
+              "type": {
+                "text": "HTMLSlotElement"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "initializeActiveTab",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "handleTabsClick",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "MouseEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "handleTabsKeyDown",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "KeyboardEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "setActiveTab",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "method",
+              "name": "getTabs",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "options",
+                  "default": "{ includeDisabled: false }"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getPanels",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "default": "'m-tab-list'"
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "adoptedStyleSheets",
+              "type": {
+                "text": "array"
+              },
+              "default": "[baseStyleSheet]"
+            }
+          ],
+          "events": [
+            {
+              "type": {
+                "text": "MTabShowEvent"
+              }
+            },
+            {
+              "description": "Fired when a tab panel becomes visible. Detail: MTabChangeEventDetail { tab: MTab, panel: MTabPanel }",
+              "name": "m-tab-show"
+            },
+            {
+              "description": "Fired when a tab panel becomes hidden. Detail: MTabChangeEventDetail { tab: MTab, panel: MTabPanel }",
+              "name": "m-tab-hide"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "tab",
+              "type": {
+                "text": "string"
+              },
+              "description": "The currently active tab panel name"
+            },
+            {
+              "name": "label",
+              "type": {
+                "text": "string"
+              },
+              "description": "Accessible label for the tab list (sets aria-label)"
+            }
+          ],
+          "superclass": {
+            "name": "MElement",
+            "module": "/src/utils/m-element"
+          },
+          "tagName": "m-tab-list",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "MTabShowEvent",
+          "declaration": {
+            "name": "MTabShowEvent",
+            "module": "src/m-tabs/tab-list.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "MTabHideEvent",
+          "declaration": {
+            "name": "MTabHideEvent",
+            "module": "src/m-tabs/tab-list.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "MTabList",
+          "declaration": {
+            "name": "MTabList",
+            "module": "src/m-tabs/tab-list.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/m-tabs/tab-panel.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A tab panel that displays content when its associated tab is active.",
+          "name": "MTabPanel",
+          "slots": [
+            {
+              "description": "Default slot for panel content",
+              "name": ""
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"\""
+            },
+            {
+              "kind": "field",
+              "name": "visible",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "#shadowRoot",
+              "privacy": "private",
+              "type": {
+                "text": "ShadowRoot"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "default": "'m-tab-panel'"
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "adoptedStyleSheets",
+              "type": {
+                "text": "array"
+              },
+              "default": "[baseStyleSheet]"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "visible",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Whether this panel is currently visible"
+            },
+            {
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "description": "Unique identifier for this panel, referenced by m-tab's panel attribute"
+            }
+          ],
+          "superclass": {
+            "name": "MElement",
+            "module": "/src/utils/m-element"
+          },
+          "tagName": "m-tab-panel",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "MTabPanel",
+          "declaration": {
+            "name": "MTabPanel",
+            "module": "src/m-tabs/tab-panel.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/m-tabs/tab.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A tab button used within m-tab-list for switching between tab panels.",
+          "name": "MTab",
+          "slots": [
+            {
+              "description": "Default slot for tab label content",
+              "name": ""
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "panel",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "active",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "#shadowRoot",
+              "privacy": "private",
+              "type": {
+                "text": "ShadowRoot"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "default": "'m-tab'"
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ]
+            }
+          ],
+          "attributes": [
+            {
+              "name": "active",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Whether this tab is currently active"
+            },
+            {
+              "name": "panel",
+              "type": {
+                "text": "string"
+              },
+              "description": "ID of the associated tab panel to control"
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Whether this tab is disabled and cannot be selected"
+            }
+          ],
+          "superclass": {
+            "name": "MElement",
+            "module": "/src/utils/m-element"
+          },
+          "tagName": "m-tab",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "MTab",
+          "declaration": {
+            "name": "MTab",
+            "module": "src/m-tabs/tab.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/vendored/tab-container-element/tab-container-element.ts",
       "declarations": [
         {

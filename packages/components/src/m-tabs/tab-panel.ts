@@ -4,16 +4,31 @@ import styles from "./tab-panel.css?inline";
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
+/**
+ * A tab panel that displays content when its associated tab is active.
+ * 
+ * @customElement
+ * @tagname m-tab-panel
+ * 
+ * @slot - Default slot for panel content
+ * 
+ * @attr {string} name - Unique identifier for this panel, referenced by m-tab's panel attribute
+ * @attr {boolean} visible - Whether this panel is currently visible
+ * 
+ * @prop {string} name - Unique identifier for this panel, referenced by m-tab's panel attribute
+ * @prop {boolean} visible - Whether this panel is currently visible
+ */
 export class MTabPanel extends MElement {
-
+    static tagName = 'm-tab-panel';
     static observedAttributes = ["visible", "name"]
-    #shadowRoot: ShadowRoot;
 
     @BindAttribute()
     name: string = "";
 
     @BindAttribute()
     visible: boolean = false;
+
+    #shadowRoot: ShadowRoot;
 
     constructor() {
         super();
@@ -37,10 +52,6 @@ export class MTabPanel extends MElement {
         this.#shadowRoot.innerHTML = `
             <slot></slot>
         `;
-    }
-
-    static define(tag = 'm-tab-panel', registry = customElements) {
-        return super.define(tag, registry) as typeof MTabPanel;
     }
 }
 

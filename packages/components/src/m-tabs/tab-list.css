@@ -1,7 +1,13 @@
 :host {
+    --_padding-inline: var(--size-fluid-1);
+    --_padding-block: var(--size-2);
+    --border-width: 2px;
     display: grid;
+    grid-template-rows: max-content;
 
     [part="tab"] {
-        background: orange;
+        background: var(--color-surface);
+        border-bottom: var(--border-width) solid var(--color-stroke);
+        display: flex;
     }
 }

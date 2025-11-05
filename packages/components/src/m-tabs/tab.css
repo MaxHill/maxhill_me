@@ -1,0 +1,16 @@
+:host {
+    display: block;
+    cursor: pointer;
+    padding: var(--_padding-block) var(--_padding-inline);
+}
+
+:host([aria-selected="true"]) {
+    background-color: var(--color-primary-fill-soft);
+    color: var(--color-primary-text-on-soft);
+    border-bottom: var(--border-width) solid var(--color-primary-stroke-mid);
+    margin-bottom: calc(var(--border-width) * -1);
+}
+
+:host([disabled]) {
+    opacity: .4;
+}
