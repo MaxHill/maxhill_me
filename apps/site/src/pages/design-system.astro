@@ -150,9 +150,9 @@ const navHierarchy = buildNavHierarchy(sortedDocs);
     const navLinks = document.querySelectorAll(".nav-link");
 
     document.addEventListener("click", (e) => {
-        if(toggleMenuButton.contains(e.target)) {
+        if(toggleMenuButton.contains(e.target as Node)) {
             anchorMenu.classList.toggle("open");
-        } else if (e.target.matches(".nav-link") || !anchorMenu.contains(e.target)) {
+        } else if (e.target && (e.target as Element).matches(".nav-link") || !anchorMenu.contains(e.target as Node)) {
             anchorMenu.classList.remove("open");
         }
     });

@@ -1,6 +1,6 @@
 import MCard from './m-card';
 import MCopyButton from './m-copy-button';
-import { MFilter } from './m-filter';
+import { MSearchList } from './m-search-list';
 import MFitText from './m-fit-text';
 import {MTabList, MTab, MTabPanel} from './m-tabs/';
 
@@ -13,7 +13,7 @@ export function registerAll() {
   MTab.define();
   MTabPanel.define();
 
-  MFilter.define();
+  MSearchList.define();
 }
 
 registerAll();
