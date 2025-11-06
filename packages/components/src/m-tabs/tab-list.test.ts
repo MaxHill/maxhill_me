@@ -544,4 +544,173 @@ describe('m-tab-list', () => {
       expect(secondTab.disabled).toBe(true);
     });
   });
+
+  describe('vertical orientation', () => {
+    it('should set aria-orientation="vertical" when position is "start"', async () => {
+      const el = await fixture<MTabList>(html`
+        <m-tab-list position="start">
+          <m-tab panel="panel-1">Tab 1</m-tab>
+          <m-tab-panel name="panel-1">Panel 1</m-tab-panel>
+        </m-tab-list>
+      `);
+      
+      expect(el.getAttribute('aria-orientation')).toBe('vertical');
+    });
+
+    it('should set aria-orientation="vertical" when position is "end"', async () => {
+      const el = await fixture<MTabList>(html`
+        <m-tab-list position="end">
+          <m-tab panel="panel-1">Tab 1</m-tab>
+          <m-tab-panel name="panel-1">Panel 1</m-tab-panel>
+        </m-tab-list>
+      `);
+      
+      expect(el.getAttribute('aria-orientation')).toBe('vertical');
+    });
+
+    it('should set aria-orientation="horizontal" when position is "top"', async () => {
+      const el = await fixture<MTabList>(html`
+        <m-tab-list position="top">
+          <m-tab panel="panel-1">Tab 1</m-tab>
+          <m-tab-panel name="panel-1">Panel 1</m-tab-panel>
+        </m-tab-list>
+      `);
+      
+      expect(el.getAttribute('aria-orientation')).toBe('horizontal');
+    });
+
+    it('should set aria-orientation="horizontal" when position is "bottom"', async () => {
+      const el = await fixture<MTabList>(html`
+        <m-tab-list position="bottom">
+          <m-tab panel="panel-1">Tab 1</m-tab>
+          <m-tab-panel name="panel-1">Panel 1</m-tab-panel>
+        </m-tab-list>
+      `);
+      
+      expect(el.getAttribute('aria-orientation')).toBe('horizontal');
+    });
+
+    it('should default to horizontal orientation', async () => {
+      const el = await fixture<MTabList>(html`
+        <m-tab-list>
+          <m-tab panel="panel-1">Tab 1</m-tab>
+          <m-tab-panel name="panel-1">Panel 1</m-tab-panel>
+        </m-tab-list>
+      `);
+      
+      expect(el.getAttribute('aria-orientation')).toBe('horizontal');
+    });
+
+    it('should navigate with ArrowDown in vertical mode', async () => {
+      const el = await fixture<MTabList>(html`
+        <m-tab-list position="start">
+          <m-tab panel="panel-1">Tab 1</m-tab>
+          <m-tab panel="panel-2">Tab 2</m-tab>
+          <m-tab panel="panel-3">Tab 3</m-tab>
+          <m-tab-panel name="panel-1">Panel 1</m-tab-panel>
+          <m-tab-panel name="panel-2">Panel 2</m-tab-panel>
+          <m-tab-panel name="panel-3">Panel 3</m-tab-panel>
+        </m-tab-list>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-tab').length === 3);
+      
+      const tabs = el.querySelectorAll('m-tab');
+      const firstTab = tabs[0] as MTab;
+      const secondTab = tabs[1] as MTab;
+
+      firstTab.focus();
+      firstTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      
+      expect(document.activeElement).toBe(secondTab);
+      expect(secondTab.active).toBe(true);
+    });
+
+    it('should navigate with ArrowUp in vertical mode', async () => {
+      const el = await fixture<MTabList>(html`
+        <m-tab-list position="start">
+          <m-tab panel="panel-1">Tab 1</m-tab>
+          <m-tab panel="panel-2">Tab 2</m-tab>
+          <m-tab panel="panel-3">Tab 3</m-tab>
+          <m-tab-panel name="panel-1">Panel 1</m-tab-panel>
+          <m-tab-panel name="panel-2">Panel 2</m-tab-panel>
+          <m-tab-panel name="panel-3">Panel 3</m-tab-panel>
+        </m-tab-list>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-tab').length === 3);
+      
+      const tabs = el.querySelectorAll('m-tab');
+      const firstTab = tabs[0] as MTab;
+      const secondTab = tabs[1] as MTab;
+
+      secondTab.focus();
+      secondTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      
+      expect(document.activeElement).toBe(firstTab);
+      expect(firstTab.active).toBe(true);
+    });
+
+    it('should navigate with vim keys (j for down, k for up) in vertical mode', async () => {
+      const el = await fixture<MTabList>(html`
+        <m-tab-list position="start">
+          <m-tab panel="panel-1">Tab 1</m-tab>
+          <m-tab panel="panel-2">Tab 2</m-tab>
+          <m-tab-panel name="panel-1">Panel 1</m-tab-panel>
+          <m-tab-panel name="panel-2">Panel 2</m-tab-panel>
+        </m-tab-list>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-tab').length === 2);
+      
+      const tabs = el.querySelectorAll('m-tab');
+      const firstTab = tabs[0] as MTab;
+      const secondTab = tabs[1] as MTab;
+
+      firstTab.focus();
+      firstTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', bubbles: true }));
+      expect(document.activeElement).toBe(secondTab);
+
+      secondTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', bubbles: true }));
+      expect(document.activeElement).toBe(firstTab);
+    });
+
+    it('should not respond to horizontal arrow keys in vertical mode', async () => {
+      const el = await fixture<MTabList>(html`
+        <m-tab-list position="start">
+          <m-tab panel="panel-1">Tab 1</m-tab>
+          <m-tab panel="panel-2">Tab 2</m-tab>
+          <m-tab-panel name="panel-1">Panel 1</m-tab-panel>
+          <m-tab-panel name="panel-2">Panel 2</m-tab-panel>
+        </m-tab-list>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-tab').length === 2);
+      
+      const tabs = el.querySelectorAll('m-tab');
+      const firstTab = tabs[0] as MTab;
+
+      firstTab.focus();
+      firstTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      
+      expect(document.activeElement).toBe(firstTab);
+      expect(firstTab.active).toBe(true);
+    });
+
+    it('should update aria-orientation when position changes', async () => {
+      const el = await fixture<MTabList>(html`
+        <m-tab-list position="top">
+          <m-tab panel="panel-1">Tab 1</m-tab>
+          <m-tab-panel name="panel-1">Panel 1</m-tab-panel>
+        </m-tab-list>
+      `);
+      
+      expect(el.getAttribute('aria-orientation')).toBe('horizontal');
+      
+      el.position = 'start';
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      expect(el.getAttribute('aria-orientation')).toBe('vertical');
+    });
+  });
 });

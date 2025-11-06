@@ -147,17 +147,29 @@
             {
               "kind": "field",
               "name": "value",
-              "readonly": true
+              "readonly": true,
+              "type": {
+                "text": "string"
+              },
+              "description": "The text to copy to clipboard (required)"
             },
             {
               "kind": "field",
               "name": "showIcon",
-              "readonly": true
+              "readonly": true,
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Show/hide the copy icon (default: true)"
             },
             {
               "kind": "field",
               "name": "feedback",
-              "readonly": true
+              "readonly": true,
+              "type": {
+                "text": "string"
+              },
+              "description": "Custom feedback message shown on successful copy (default: \"Copied!\")"
             },
             {
               "kind": "method",
@@ -310,6 +322,108 @@
     },
     {
       "kind": "javascript-module",
+      "path": "src/m-filter/index.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "MFilter",
+          "members": [
+            {
+              "kind": "field",
+              "name": "tagName",
+              "type": {
+                "text": "string"
+              },
+              "static": true,
+              "default": "'m-filter'"
+            },
+            {
+              "kind": "field",
+              "name": "target",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "#shadowRoot",
+              "privacy": "private",
+              "type": {
+                "text": "ShadowRoot"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "input",
+              "type": {
+                "text": "HTMLInputElement | null"
+              },
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "items",
+              "type": {
+                "text": "Element[]"
+              },
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "handleInput",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "searchItems",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "query",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "field",
+              "name": "adoptedStyleSheets",
+              "type": {
+                "text": "array"
+              },
+              "default": "[baseStyleSheet]"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "target"
+            }
+          ],
+          "superclass": {
+            "name": "MElement",
+            "module": "/src/utils/m-element"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "MFilter",
+          "declaration": {
+            "name": "MFilter",
+            "module": "src/m-filter/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/m-tabs/index.ts",
       "declarations": [],
       "exports": [
@@ -363,16 +477,12 @@
         },
         {
           "kind": "class",
-          "description": "A tab list container that manages tabs and their associated panels with full keyboard navigation.\nSupports arrow keys (and vim h/l), Home/End keys for navigation.\n\n### Example\n```html\n<m-tab-list tab=\"home\">\n  <m-tab panel=\"home\">Home</m-tab>\n  <m-tab panel=\"profile\">Profile</m-tab>\n  <m-tab panel=\"settings\" disabled>Settings</m-tab>\n  \n  <m-tab-panel name=\"home\">\n    <h2>Home Content</h2>\n  </m-tab-panel>\n  <m-tab-panel name=\"profile\">\n    <h2>Profile Content</h2>\n  </m-tab-panel>\n  <m-tab-panel name=\"settings\">\n    <h2>Settings Content</h2>\n  </m-tab-panel>\n</m-tab-list>\n```",
+          "description": "A tab list container that manages tabs and their associated panels with full keyboard navigation.\nSupports horizontal (arrow left/right, h/l) and vertical (arrow up/down, j/k) navigation depending on position.\nHome/End keys work in both orientations.\n\n### Example\n<m-tab-list tab=\"home\">\n  <m-tab panel=\"home\">Home</m-tab>\n  <m-tab panel=\"profile\">Profile</m-tab>\n  <m-tab panel=\"settings\" disabled>Settings</m-tab>\n  \n  <m-tab-panel name=\"home\">\n    <p>Home Content</p>\n  </m-tab-panel>\n  <m-tab-panel name=\"profile\">\n    <p>Profile Content</p>\n  </m-tab-panel>\n  <m-tab-panel name=\"settings\">\n    <p>Settings Content</p>\n  </m-tab-panel>\n</m-tab-list>\n\n### Vertical Example\n<m-tab-list tab=\"home\" position=\"start\">\n  <m-tab panel=\"home\">Home</m-tab>\n  <m-tab panel=\"profile\">Profile</m-tab>\n  <m-tab-panel name=\"home\">Home Content</m-tab-panel>\n  <m-tab-panel name=\"profile\">Profile Content</m-tab-panel>\n</m-tab-list>",
           "name": "MTabList",
           "cssParts": [
             {
               "description": "Container wrapping the tab buttons",
               "name": "tab"
-            },
-            {
-              "description": "Container wrapping the tab panels",
-              "name": "panels"
             }
           ],
           "slots": [
@@ -388,11 +498,21 @@
           "members": [
             {
               "kind": "field",
+              "name": "tagName",
+              "type": {
+                "text": "string"
+              },
+              "static": true,
+              "default": "'m-tab-list'"
+            },
+            {
+              "kind": "field",
               "name": "label",
               "type": {
                 "text": "string"
               },
-              "default": "''"
+              "default": "''",
+              "description": "Accessible label for the tab list"
             },
             {
               "kind": "field",
@@ -400,7 +520,17 @@
               "type": {
                 "text": "string"
               },
-              "default": "''"
+              "default": "''",
+              "description": "The currently active tab panel name"
+            },
+            {
+              "kind": "field",
+              "name": "position",
+              "type": {
+                "text": "\"top\"|\"bottom\"|\"start\"|\"end\""
+              },
+              "default": "'top'",
+              "description": "Tab list orientation"
             },
             {
               "kind": "field",
@@ -424,6 +554,11 @@
               "type": {
                 "text": "HTMLSlotElement"
               },
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "updateOrientation",
               "privacy": "private"
             },
             {
@@ -491,21 +626,6 @@
               "privacy": "private"
             },
             {
-              "kind": "method",
-              "name": "define",
-              "static": true,
-              "parameters": [
-                {
-                  "name": "tag",
-                  "default": "'m-tab-list'"
-                },
-                {
-                  "name": "registry",
-                  "default": "customElements"
-                }
-              ]
-            },
-            {
               "kind": "field",
               "name": "adoptedStyleSheets",
               "type": {
@@ -543,6 +663,13 @@
                 "text": "string"
               },
               "description": "Accessible label for the tab list (sets aria-label)"
+            },
+            {
+              "name": "position",
+              "type": {
+                "text": "\"top\"|\"bottom\"|\"start\"|\"end\""
+              },
+              "description": "Tab list orientation: top/bottom for horizontal, start/end for vertical"
             }
           ],
           "superclass": {
@@ -597,11 +724,21 @@
           "members": [
             {
               "kind": "field",
+              "name": "tagName",
+              "type": {
+                "text": "string"
+              },
+              "static": true,
+              "default": "'m-tab-panel'"
+            },
+            {
+              "kind": "field",
               "name": "name",
               "type": {
                 "text": "string"
               },
-              "default": "\"\""
+              "default": "\"\"",
+              "description": "Unique identifier for this panel, referenced by m-tab's panel attribute"
             },
             {
               "kind": "field",
@@ -609,7 +746,8 @@
               "type": {
                 "text": "boolean"
               },
-              "default": "false"
+              "default": "false",
+              "description": "Whether this panel is currently visible"
             },
             {
               "kind": "field",
@@ -622,21 +760,6 @@
             {
               "kind": "method",
               "name": "render"
-            },
-            {
-              "kind": "method",
-              "name": "define",
-              "static": true,
-              "parameters": [
-                {
-                  "name": "tag",
-                  "default": "'m-tab-panel'"
-                },
-                {
-                  "name": "registry",
-                  "default": "customElements"
-                }
-              ]
             },
             {
               "kind": "field",
@@ -699,10 +822,20 @@
           "members": [
             {
               "kind": "field",
+              "name": "tagName",
+              "type": {
+                "text": "string"
+              },
+              "static": true,
+              "default": "'m-tab'"
+            },
+            {
+              "kind": "field",
               "name": "panel",
               "type": {
-                "text": "string | undefined"
-              }
+                "text": "string"
+              },
+              "description": "ID of the associated tab panel to control"
             },
             {
               "kind": "field",
@@ -710,7 +843,8 @@
               "type": {
                 "text": "boolean"
               },
-              "default": "false"
+              "default": "false",
+              "description": "Whether this tab is currently active"
             },
             {
               "kind": "field",
@@ -718,7 +852,8 @@
               "type": {
                 "text": "boolean"
               },
-              "default": "false"
+              "default": "false",
+              "description": "Whether this tab is disabled and cannot be selected"
             },
             {
               "kind": "field",
@@ -733,19 +868,12 @@
               "name": "render"
             },
             {
-              "kind": "method",
-              "name": "define",
-              "static": true,
-              "parameters": [
-                {
-                  "name": "tag",
-                  "default": "'m-tab'"
-                },
-                {
-                  "name": "registry",
-                  "default": "customElements"
-                }
-              ]
+              "kind": "field",
+              "name": "adoptedStyleSheets",
+              "type": {
+                "text": "array"
+              },
+              "default": "[baseStyleSheet]"
             }
           ],
           "attributes": [
@@ -786,408 +914,6 @@
           "declaration": {
             "name": "MTab",
             "module": "src/m-tabs/tab.ts"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "javascript-module",
-      "path": "src/vendored/tab-container-element/tab-container-element.ts",
-      "declarations": [
-        {
-          "kind": "class",
-          "description": "Event fired when a tab is about to change",
-          "name": "TabContainerChangeEvent",
-          "members": [
-            {
-              "kind": "field",
-              "name": "detail",
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "#tabIndex",
-              "privacy": "private",
-              "type": {
-                "text": "number | null"
-              },
-              "default": "null"
-            },
-            {
-              "kind": "field",
-              "name": "tabIndex",
-              "type": {
-                "text": "number | null"
-              },
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "#panel",
-              "privacy": "private",
-              "type": {
-                "text": "Element | null"
-              },
-              "default": "null"
-            },
-            {
-              "kind": "field",
-              "name": "panel",
-              "type": {
-                "text": "Element | null"
-              },
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "#tab",
-              "privacy": "private",
-              "type": {
-                "text": "Element | null"
-              },
-              "default": "null"
-            },
-            {
-              "kind": "field",
-              "name": "tab",
-              "type": {
-                "text": "Element | null"
-              },
-              "readonly": true
-            }
-          ],
-          "events": [
-            {
-              "description": "Fires before tab changes, can be cancelled",
-              "name": "tab-container-change"
-            },
-            {
-              "description": "Fires after tab has changed",
-              "name": "tab-container-changed"
-            }
-          ],
-          "superclass": {
-            "name": "Event",
-            "module": "src/vendored/tab-container-element/tab-container-element.ts"
-          }
-        },
-        {
-          "kind": "class",
-          "description": "A container element for managing tabbed interfaces with keyboard navigation support.",
-          "name": "TabContainerElement",
-          "slots": [
-            {
-              "description": "Elements with role=\"tab\" and role=\"tabpanel\" are automatically distributed",
-              "name": ""
-            },
-            {
-              "description": "Content to appear before the tab list",
-              "name": "before-tabs"
-            },
-            {
-              "description": "Content to appear after the tab list",
-              "name": "after-tabs"
-            },
-            {
-              "description": "Custom wrapper for the entire tablist",
-              "name": "tablist-wrapper"
-            }
-          ],
-          "members": [
-            {
-              "kind": "method",
-              "name": "define",
-              "static": true,
-              "parameters": [
-                {
-                  "name": "tag",
-                  "default": "'tab-container'"
-                },
-                {
-                  "name": "registry",
-                  "default": "customElements"
-                }
-              ]
-            },
-            {
-              "kind": "field",
-              "name": "onChange"
-            },
-            {
-              "kind": "field",
-              "name": "#onTabContainerChange",
-              "privacy": "private",
-              "type": {
-                "text": "((event: TabContainerChangeEvent) => void) | null"
-              },
-              "default": "null"
-            },
-            {
-              "kind": "field",
-              "name": "onTabContainerChange"
-            },
-            {
-              "kind": "field",
-              "name": "#onTabContainerChanged",
-              "privacy": "private",
-              "type": {
-                "text": "((event: TabContainerChangeEvent) => void) | null"
-              },
-              "default": "null"
-            },
-            {
-              "kind": "field",
-              "name": "onTabContainerChanged"
-            },
-            {
-              "kind": "field",
-              "name": "onChanged"
-            },
-            {
-              "kind": "field",
-              "name": "#tabList",
-              "privacy": "private",
-              "type": {
-                "text": "HTMLElement"
-              },
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "#tabListWrapper",
-              "privacy": "private",
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "#tabListTabWrapper",
-              "privacy": "private",
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "#beforeTabsSlot",
-              "privacy": "private",
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "#afterTabsSlot",
-              "privacy": "private",
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "#afterPanelsSlot",
-              "privacy": "private",
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "#tabListSlot",
-              "privacy": "private",
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "#panelSlot",
-              "privacy": "private",
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "#tabs",
-              "privacy": "private",
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "activeTab",
-              "readonly": true,
-              "type": {
-                "text": "HTMLElement"
-              },
-              "description": "Gets the currently active tab element"
-            },
-            {
-              "kind": "field",
-              "name": "activePanel",
-              "readonly": true,
-              "type": {
-                "text": "HTMLElement"
-              },
-              "description": "Gets the currently active panel element"
-            },
-            {
-              "kind": "field",
-              "name": "vertical",
-              "type": {
-                "text": "boolean"
-              },
-              "description": "Gets or sets whether tabs are displayed vertically"
-            },
-            {
-              "kind": "field",
-              "name": "#setupComplete",
-              "privacy": "private",
-              "type": {
-                "text": "boolean"
-              },
-              "default": "false"
-            },
-            {
-              "kind": "field",
-              "name": "#internals",
-              "privacy": "private",
-              "type": {
-                "text": "ElementInternals | null"
-              }
-            },
-            {
-              "kind": "method",
-              "name": "handleEvent",
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "Event"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "#handleKeydown",
-              "privacy": "private",
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "KeyboardEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "#handleClick",
-              "privacy": "private",
-              "parameters": [
-                {
-                  "name": "event",
-                  "type": {
-                    "text": "MouseEvent"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "#reflectAttributeToShadow",
-              "privacy": "private",
-              "parameters": [
-                {
-                  "name": "name",
-                  "type": {
-                    "text": "string"
-                  }
-                },
-                {
-                  "name": "node",
-                  "type": {
-                    "text": "Element"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "field",
-              "name": "selectedTabIndex",
-              "type": {
-                "text": "number"
-              },
-              "description": "Gets or sets the currently selected tab index"
-            },
-            {
-              "kind": "field",
-              "name": "defaultTabIndex",
-              "type": {
-                "text": "number"
-              },
-              "description": "Gets or sets the default tab index"
-            },
-            {
-              "kind": "method",
-              "name": "selectTab",
-              "return": {
-                "type": {
-                  "text": "void"
-                }
-              },
-              "parameters": [
-                {
-                  "name": "index",
-                  "type": {
-                    "text": "number"
-                  }
-                }
-              ]
-            }
-          ],
-          "events": [
-            {
-              "name": "tab-container-change",
-              "type": {
-                "text": "TabContainerChangeEvent"
-              },
-              "description": "Fires before tab selection changes (cancelable)"
-            },
-            {
-              "name": "tab-container-changed",
-              "type": {
-                "text": "TabContainerChangeEvent"
-              },
-              "description": "Fires after tab selection has changed"
-            }
-          ],
-          "attributes": [
-            {
-              "name": "vertical",
-              "type": {
-                "text": "boolean"
-              },
-              "description": "Sets the tab orientation to vertical"
-            },
-            {
-              "type": {
-                "text": "number"
-              },
-              "description": "The index of the default selected tab",
-              "name": "default-tab"
-            }
-          ],
-          "superclass": {
-            "name": "HTMLElement"
-          },
-          "tagName": "tab-container",
-          "customElement": true
-        }
-      ],
-      "exports": [
-        {
-          "kind": "js",
-          "name": "TabContainerChangeEvent",
-          "declaration": {
-            "name": "TabContainerChangeEvent",
-            "module": "src/vendored/tab-container-element/tab-container-element.ts"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "TabContainerElement",
-          "declaration": {
-            "name": "TabContainerElement",
-            "module": "src/vendored/tab-container-element/tab-container-element.ts"
           }
         }
       ]

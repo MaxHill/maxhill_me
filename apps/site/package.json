@@ -14,7 +14,8 @@
     "@lucide/astro": "^0.546.0",
     "@maxhill/components": "workspace:*",
     "@maxhill/css": "workspace:*",
-    "astro": "^5.14.4"
+    "astro": "^5.14.4",
+    "marked": "^16.4.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
