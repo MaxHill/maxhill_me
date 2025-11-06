@@ -7,8 +7,10 @@
 :host([aria-selected="true"]) {
     background-color: var(--color-primary-fill-soft);
     color: var(--color-primary-text-on-soft);
-    border-bottom: var(--border-width) solid var(--color-primary-stroke-mid);
-    margin-bottom: calc(var(--border-width) * -1);
+    border-style: solid;
+    border-color: var(--color-primary-stroke-mid);
+    border-width: var(--border-width);
+    margin: var(--margin);
 }
 
 :host([disabled]) {

@@ -1,5 +1,6 @@
 ---
 import customElements from '@maxhill/components/custom-elements.json';
+import { marked } from 'marked';
 
 const components = customElements.modules
   .flatMap(module => module.declarations || [])
@@ -10,7 +11,7 @@ const components = customElements.modules
   {components.map(component => (
     <section class="component">
       <h3>&lt;{component.tagName || component.name}&gt;</h3>
-      <p>{component.description}</p>
+      {component.description && <div set:html={marked.parse(component.description)} />}
       
       {component.attributes && component.attributes.length > 0 && (
         <div class="attributes">

@@ -43,26 +43,33 @@ export class MTabHideEvent extends CustomEvent<MTabChangeEventDetail> {
 
 /**
  * A tab list container that manages tabs and their associated panels with full keyboard navigation.
- * Supports arrow keys (and vim h/l), Home/End keys for navigation.
+ * Supports horizontal (arrow left/right, h/l) and vertical (arrow up/down, j/k) navigation depending on position.
+ * Home/End keys work in both orientations.
  * 
  * ### Example
- * ```html
  * <m-tab-list tab="home">
  *   <m-tab panel="home">Home</m-tab>
  *   <m-tab panel="profile">Profile</m-tab>
  *   <m-tab panel="settings" disabled>Settings</m-tab>
  *   
  *   <m-tab-panel name="home">
- *     <h2>Home Content</h2>
+ *     <p>Home Content</p>
  *   </m-tab-panel>
  *   <m-tab-panel name="profile">
- *     <h2>Profile Content</h2>
+ *     <p>Profile Content</p>
  *   </m-tab-panel>
  *   <m-tab-panel name="settings">
- *     <h2>Settings Content</h2>
+ *     <p>Settings Content</p>
  *   </m-tab-panel>
  * </m-tab-list>
- * ```
+ * 
+ * ### Vertical Example
+ * <m-tab-list tab="home" position="start">
+ *   <m-tab panel="home">Home</m-tab>
+ *   <m-tab panel="profile">Profile</m-tab>
+ *   <m-tab-panel name="home">Home Content</m-tab-panel>
+ *   <m-tab-panel name="profile">Profile Content</m-tab-panel>
+ * </m-tab-list>
  * 
  * @customElement
  * @tagname m-tab-list
@@ -72,9 +79,11 @@ export class MTabHideEvent extends CustomEvent<MTabChangeEventDetail> {
  * 
  * @attr {string} tab - The currently active tab panel name
  * @attr {string} label - Accessible label for the tab list (sets aria-label)
+ * @attr {"top"|"bottom"|"start"|"end"} position - Tab list orientation: top/bottom for horizontal, start/end for vertical
  * 
  * @prop {string} tab - The currently active tab panel name
  * @prop {string} label - Accessible label for the tab list
+ * @prop {"top"|"bottom"|"start"|"end"} position - Tab list orientation
  * 
  * @csspart tab - Container wrapping the tab buttons
  * 
@@ -84,13 +93,16 @@ export class MTabHideEvent extends CustomEvent<MTabChangeEventDetail> {
  */
 export class MTabList extends MElement {
     static tagName = 'm-tab-list';
-    static observedAttributes = ['tab', 'label'];
+    static observedAttributes = ['tab', 'label', "position"];
 
     @BindAttribute({ attribute: "aria-label" })
     label: string = '';
 
     @BindAttribute()
     tab: string = '';
+
+    @BindAttribute()
+    position: "start"|"end"|"top"|"bottom" = 'top';
 
     #shadowRoot: ShadowRoot;
     private tabSlot!: HTMLSlotElement;
@@ -104,6 +116,7 @@ export class MTabList extends MElement {
 
     connectedCallback() {
         this.setAttribute('role', 'tablist');
+        this.updateOrientation();
         this.render();
         this.tabSlot = this.#shadowRoot.querySelector("slot[name='tab']")!;
         this.panelSlot = this.#shadowRoot.querySelector("slot[name='tab-panel']")!;
@@ -129,6 +142,14 @@ export class MTabList extends MElement {
         if (name === "tab") {
             this.setActiveTab(this.tab);
         }
+        if (name === "position") {
+            this.updateOrientation();
+        }
+    }
+
+    private updateOrientation() {
+        const isVertical = this.position === 'start' || this.position === 'end';
+        this.setAttribute('aria-orientation', isVertical ? 'vertical' : 'horizontal');
     }
 
     private initializeActiveTab() {
@@ -164,13 +185,24 @@ export class MTabList extends MElement {
 
         if (currentIndex === -1) return;
 
+        const isVertical = this.position === 'start' || this.position === 'end';
         let targetTab: MTab | undefined;
 
-        if (event.key === 'ArrowLeft' || event.key === 'h') {
-            targetTab = tabs[(currentIndex - 1 + tabs.length) % tabs.length];
-        } else if (event.key === 'ArrowRight' || event.key === 'l') {
-            targetTab = tabs[(currentIndex + 1) % tabs.length];
-        } else if (event.key === 'Home') {
+        if (isVertical) {
+            if (event.key === 'ArrowUp' || event.key === 'k') {
+                targetTab = tabs[(currentIndex - 1 + tabs.length) % tabs.length];
+            } else if (event.key === 'ArrowDown' || event.key === 'j') {
+                targetTab = tabs[(currentIndex + 1) % tabs.length];
+            }
+        } else {
+            if (event.key === 'ArrowLeft' || event.key === 'h') {
+                targetTab = tabs[(currentIndex - 1 + tabs.length) % tabs.length];
+            } else if (event.key === 'ArrowRight' || event.key === 'l') {
+                targetTab = tabs[(currentIndex + 1) % tabs.length];
+            }
+        }
+
+        if (event.key === 'Home') {
             targetTab = tabs[0];
         } else if (event.key === 'End') {
             targetTab = tabs[tabs.length - 1];
@@ -228,6 +260,7 @@ export class MTabList extends MElement {
     }
 
     private getTabs(options = { includeDisabled: false }) {
+        if (!this.tabSlot) return [];
         const tabs = this.tabSlot.assignedElements({ flatten: true }) as MTab[];
 
         if (options.includeDisabled) {
@@ -238,6 +271,7 @@ export class MTabList extends MElement {
     }
 
     private getPanels() {
+        if (!this.panelSlot) return [];
         const panels = this.panelSlot.assignedElements({ flatten: true }) as MTabPanel[];
         return panels.filter(panel => panel.localName === 'm-tab-panel');
     }

@@ -1,13 +1,46 @@
 :host {
     --_padding-inline: var(--size-fluid-1);
     --_padding-block: var(--size-2);
-    --border-width: 2px;
+    --margin: 0 0 -2px 0;
+    --border-width: 0 0 2px 0;
     display: grid;
     grid-template-rows: max-content;
 
     [part="tab"] {
+        border-style: solid;
+        border-color: var(--color-stroke);
+        border-width: var(--border-width);
         background: var(--color-surface);
-        border-bottom: var(--border-width) solid var(--color-stroke);
         display: flex;
+    }
+}
+
+:host([position="bottom"]) {
+    --border-width: 2px 0 0 0;
+    --margin: -2px 0 0 0;
+    grid-template-areas: 
+        "panel"
+        "tab";
+    [part="tab"] {
+        grid-area: tab;
+    }
+}
+
+:host([position="start"]) {
+    --border-width: 0 2px 0 0;
+    --margin: 0 -2px 0 0;
+    grid-template-columns: auto 1fr;
+    [part="tab"] {
+        flex-direction: column;
+    }
+}
+:host([position="end"]) {
+    --border-width: 0  0 0 2px;
+    --margin: 0 0 0 -2px ;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "panel tab";
+    [part="tab"] {
+        grid-area: tab;
+        flex-direction: column;
     }
 }
