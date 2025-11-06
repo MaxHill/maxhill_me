@@ -1,151 +1,157 @@
 ---
-import customElements from '@maxhill/components/custom-elements.json';
-import { marked } from 'marked';
+import customElements from "@maxhill/components/custom-elements.json";
+import { marked } from "marked";
 
 const components = customElements.modules
-  .flatMap(module => module.declarations || [])
-  .filter(decl => decl.customElement === true);
+    .flatMap((module) => (module as any).declarations || [])
+    .filter(
+        (decl) => "customElement" in decl && decl.customElement === true,
+    ) as any[];
 ---
 
-<div class="component-list">
-  {components.map(component => (
-    <section class="component">
-      <h3>&lt;{component.tagName || component.name}&gt;</h3>
-      {component.description && <div set:html={marked.parse(component.description)} />}
-      
-      {component.attributes && component.attributes.length > 0 && (
-        <div class="attributes">
-          <h4>Attributes</h4>
-          <dl>
-            {component.attributes.map(attr => (
-              <>
-                <dt>
-                  <code>{attr.name}</code>
-                  {attr.type && <span class="type">: {attr.type.text}</span>}
-                </dt>
-                {attr.description && <dd>{attr.description}</dd>}
-              </>
-            ))}
-          </dl>
-        </div>
-      )}
-      
-      {component.slots && component.slots.length > 0 && (
-        <div class="slots">
-          <h4>Slots</h4>
-          <dl>
-            {component.slots.map(slot => (
-              <>
-                <dt><code>{slot.name || '(default)'}</code></dt>
-                {slot.description && <dd>{slot.description}</dd>}
-              </>
-            ))}
-          </dl>
-        </div>
-      )}
-      
-      {component.events && component.events.length > 0 && (
-        <div class="events">
-          <h4>Events</h4>
-          <dl>
-            {component.events.map(event => (
-              <>
-                <dt>
-                  <code>{event.name}</code>
-                  {event.type && <span class="type">: {event.type.text}</span>}
-                </dt>
-                {event.description && <dd>{event.description}</dd>}
-              </>
-            ))}
-          </dl>
-        </div>
-      )}
-      
-      {component.examples && component.examples.length > 0 && (
-        <div class="examples">
-          <h4>Examples</h4>
-          {component.examples.map(example => (
-            <div class="example">
-              {example.description && <h5>{example.description}</h5>}
-              <pre><code>{example.value}</code></pre>
+<m-search-list>
+    <label slot="controller">Search components</label>
+    <input slot="controller" type="search"/>
+{
+    components.map((component) => (
+        <details class="content-grid" data-keywords={component.tagName || component.name}>
+            <summary>&lt;{component.tagName || component.name}&gt;</summary>
+            <div class="content-grid typesetting" >
+            {component.description && (
+                <div class="typesetting" set:html={marked.parse(component.description)} />
+            )}
+
+            {component.attributes && component.attributes.length > 0 && (
+                    <h4>Attributes</h4>
+                    <dl>
+                        {component.attributes.map((attr: any) => (
+                            <>
+                                <dt>
+                                    <m-copy-button value={attr.name}>
+                                        {attr.name}
+                                    </m-copy-button>
+                                    {attr.type && (
+                                        <span class="type">
+                                            : {attr.type.text}
+                                        </span>
+                                    )}
+                                </dt>
+                                {attr.description && (
+                                    <dd>{attr.description}</dd>
+                                )}
+                            </>
+                        ))}
+                    </dl>
+            )}
+
+            {component.slots && component.slots.length > 0 && (
+                    <h4>Slots</h4>
+                    <dl>
+                        {component.slots.map((slot: any) => (
+                            <>
+                                <dt>
+                                    <m-copy-button value={`slot="${slot.name || ''}"`}>
+                                        slot="{slot.name || '(default)'}"
+                                    </m-copy-button>
+                                </dt>
+                                {slot.description && (
+                                    <dd>{slot.description}</dd>
+                                )}
+                            </>
+                        ))}
+                    </dl>
+            )}
+
+            {component.cssParts && component.cssParts.length > 0 && (
+                    <h4>CSS Parts</h4>
+                    <dl>
+                        {component.cssParts.map((part: any) => (
+                            <>
+                                <dt>
+                                    <m-copy-button value={`::part(${part.name})`}>
+                                        ::part({part.name})
+                                    </m-copy-button>
+                                </dt>
+                                {part.description && (
+                                    <dd>{part.description}</dd>
+                                )}
+                            </>
+                        ))}
+                    </dl>
+            )}
+
+            {component.members && component.members.filter((m: any) => !m.static && m.privacy !== 'private').length > 0 && (
+                    <h4>Public Members</h4>
+                    <dl>
+                        {component.members.filter((m: any) => !m.static && m.privacy !== 'private').map((member: any) => (
+                            <>
+                                <dt>
+                                    <m-copy-button value={member.name}>
+                                        {member.name}
+                                    </m-copy-button>
+                                    {member.type && (
+                                        <span class="type">
+                                            : {member.type.text}
+                                        </span>
+                                    )}
+                                </dt>
+                                {member.description && (
+                                    <dd>{member.description}</dd>
+                                )}
+                            </>
+                        ))}
+                    </dl>
+            )}
+
+            {component.events && component.events.length > 0 && (
+                    <h4>Events</h4>
+                    <dl>
+                        {component.events.map((event: any) => (
+                            <>
+                                <dt>
+                                    <m-copy-button value={event.name}>
+                                        {event.name}
+                                    </m-copy-button>
+                                    {event.type && (
+                                        <span class="type">{event.type.text}</span>
+                                    )}
+                                </dt>
+                                {event.description && (
+                                    <dd>{event.description}</dd>
+                                )}
+                            </>
+                        ))}
+                    </dl>
+            )}
             </div>
-          ))}
-        </div>
-      )}
-    </section>
-  ))}
-</div>
+        </details>
+    ))
+}
+</m-search-list>
 
 <style>
-  .component-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--size-6);
-  }
-  
-  .component {
-    border: var(--border);
-    border-radius: var(--radius-2);
-    padding: var(--size-4);
-    background-color: var(--color-surface);
-  }
-  
-  .component h3 {
-    margin: 0 0 var(--size-2) 0;
-    color: var(--color-text-loud);
-    font-family: var(--font-mono);
-    font-size: var(--font-size-4);
-  }
-  
-  .component > p {
-    margin: 0 0 var(--size-4) 0;
-    color: var(--color-text);
-  }
-  
-  .attributes, .slots, .events {
-    margin-top: var(--size-4);
-  }
-  
-  h4 {
-    margin: 0 0 var(--size-2) 0;
-    font-size: var(--font-size-2);
-    color: var(--color-text-loud);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  
-  dl {
-    margin: 0;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: var(--size-2) var(--size-4);
-    align-items: baseline;
-  }
-  
-  dt {
-    display: flex;
-    align-items: baseline;
-    gap: var(--size-2);
-  }
-  
-  dd {
-    margin: 0;
-    color: var(--color-text-soft);
-    font-size: var(--font-size-1);
-  }
-  
-  code {
-    font-family: var(--font-mono);
-    background-color: var(--color-surface-raised);
-    padding: var(--size-1) var(--size-2);
-    border-radius: var(--radius-1);
-    font-size: var(--font-size-1);
-    width: fit-content;
-  }
-  
-  .type {
-    font-family: var(--font-mono);
-    color: var(--color-text-soft);
-    font-size: var(--font-size-1);
-  }
+    details {
+        display: content;
+
+        &[data-match="false"] {
+            display: none;
+        }
+    }
+
+    dl {
+        display: grid;
+        grid-template-columns: auto auto 1fr;
+        gap: var(--size-fluid-1);
+
+        dt {
+            display: grid;
+            grid-column: span 2;
+            grid-template-columns: subgrid;
+            m-copy-button {
+                font-size: var(--font-size-1);
+            }
+        }
+        dd {}
+    }
+
 </style>

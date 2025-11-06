@@ -254,6 +254,127 @@
     },
     {
       "kind": "javascript-module",
+      "path": "src/m-search-list/index.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "A search list component that filters items based on user input using fuzzy search.\nFilters items by matching against their text content and data-keywords attribute.\n\n### Example\n<m-search-list>\n  <input slot=\"controller\" type=\"search\" placeholder=\"Search...\">\n    <li data-keywords=\"javascript js\">JavaScript</li>\n    <li data-keywords=\"typescript ts\">TypeScript</li>\n    <li data-keywords=\"python py\">Python</li>\n</m-search-list>\n\n### With target selector\n<m-search-list target=\"ul\">\n  <input slot=\"controller\" type=\"search\">\n  <div>\n    <ul>\n      <li>Item 1</li>\n      <li>Item 2</li>\n    </ul>\n  </div>\n</m-search-list>",
+          "name": "MSearchList",
+          "slots": [
+            {
+              "description": "Slot for the input element",
+              "name": "controller"
+            },
+            {
+              "description": "Slot for the list container and items",
+              "name": "(default)"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "tagName",
+              "type": {
+                "text": "string"
+              },
+              "static": true,
+              "default": "'m-search-list'"
+            },
+            {
+              "kind": "field",
+              "name": "target",
+              "type": {
+                "text": "string"
+              },
+              "description": "CSS selector for the container element"
+            },
+            {
+              "kind": "field",
+              "name": "#shadowRoot",
+              "privacy": "private",
+              "type": {
+                "text": "ShadowRoot"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "input",
+              "type": {
+                "text": "HTMLInputElement | null"
+              },
+              "readonly": true,
+              "description": "The input element used for search"
+            },
+            {
+              "kind": "field",
+              "name": "items",
+              "type": {
+                "text": "Element[]"
+              },
+              "readonly": true,
+              "description": "Array of filterable items"
+            },
+            {
+              "kind": "field",
+              "name": "handleInput",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "searchItems",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "query",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "field",
+              "name": "adoptedStyleSheets",
+              "type": {
+                "text": "array"
+              },
+              "default": "[baseStyleSheet]"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "target",
+              "type": {
+                "text": "string"
+              },
+              "description": "CSS selector for the container element whose children should be filtered"
+            }
+          ],
+          "superclass": {
+            "name": "MElement",
+            "module": "/src/utils/m-element"
+          },
+          "tagName": "m-search-list",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "MSearchList",
+          "declaration": {
+            "name": "MSearchList",
+            "module": "src/m-search-list/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/m-fit-text/index.ts",
       "declarations": [
         {
@@ -316,108 +437,6 @@
           "declaration": {
             "name": "MFitText",
             "module": "src/m-fit-text/index.ts"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "javascript-module",
-      "path": "src/m-filter/index.ts",
-      "declarations": [
-        {
-          "kind": "class",
-          "description": "",
-          "name": "MFilter",
-          "members": [
-            {
-              "kind": "field",
-              "name": "tagName",
-              "type": {
-                "text": "string"
-              },
-              "static": true,
-              "default": "'m-filter'"
-            },
-            {
-              "kind": "field",
-              "name": "target",
-              "type": {
-                "text": "string | undefined"
-              }
-            },
-            {
-              "kind": "field",
-              "name": "#shadowRoot",
-              "privacy": "private",
-              "type": {
-                "text": "ShadowRoot"
-              }
-            },
-            {
-              "kind": "field",
-              "name": "input",
-              "type": {
-                "text": "HTMLInputElement | null"
-              },
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "items",
-              "type": {
-                "text": "Element[]"
-              },
-              "readonly": true
-            },
-            {
-              "kind": "field",
-              "name": "handleInput",
-              "privacy": "private"
-            },
-            {
-              "kind": "method",
-              "name": "searchItems",
-              "privacy": "private",
-              "parameters": [
-                {
-                  "name": "query",
-                  "type": {
-                    "text": "string"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "render"
-            },
-            {
-              "kind": "field",
-              "name": "adoptedStyleSheets",
-              "type": {
-                "text": "array"
-              },
-              "default": "[baseStyleSheet]"
-            }
-          ],
-          "attributes": [
-            {
-              "name": "target"
-            }
-          ],
-          "superclass": {
-            "name": "MElement",
-            "module": "/src/utils/m-element"
-          }
-        }
-      ],
-      "exports": [
-        {
-          "kind": "js",
-          "name": "MFilter",
-          "declaration": {
-            "name": "MFilter",
-            "module": "src/m-filter/index.ts"
           }
         }
       ]
