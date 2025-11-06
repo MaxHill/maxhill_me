@@ -3,8 +3,9 @@ import { BindAttribute } from "../utils/reflect-attribute";
 import {fuzzySearch} from "../utils/search";
 import styles from "./index.css?inline";
 
-// TODO: Empty state
+// TODO: Empty state 
 // TODO: Initial state
+// TODO: Refactor state
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
@@ -15,9 +16,10 @@ baseStyleSheet.replaceSync(styles);
  * ### Example
  * <m-search-list>
  *   <input slot="controller" type="search" placeholder="Search...">
- *     <li data-keywords="javascript js">JavaScript</li>
- *     <li data-keywords="typescript ts">TypeScript</li>
- *     <li data-keywords="python py">Python</li>
+ *     <div data-keywords="javascript js">JavaScript</div>
+ *     <div data-keywords="typescript ts">TypeScript</div>
+ *     <div data-keywords="python py">Python</div>
+ *     <p slot="empty">No match found</p>
  * </m-search-list>
  * 
  * ### With target selector
@@ -36,6 +38,7 @@ baseStyleSheet.replaceSync(styles);
  * 
  * @slot controller - Slot for the input element
  * @slot (default) - Slot for the list container and items
+ * @slot empty - Slot for content to display when no items match the search
  * 
  * @attr {string} target - CSS selector for the container element whose children should be filtered
  * 
@@ -97,6 +100,7 @@ export class MSearchList extends MElement {
     }
 
     private searchItems(query: string) {
+        let hasMatch = false;
         for (const item of this.items) {
             const keywords = item.getAttribute("data-keywords");
             const text = item.textContent;
@@ -104,10 +108,23 @@ export class MSearchList extends MElement {
             if(match) {
                 item.removeAttribute("hidden")
                 item.setAttribute("data-match", "true")
+                hasMatch = true;
             } else {
                 item.setAttribute("hidden", "")
                 item.setAttribute("data-match", "false")
             }
+        }
+        this.toggleEmptySlot(!hasMatch);
+    }
+
+    private toggleEmptySlot(show: boolean) {
+        const emptySlot = this.#shadowRoot.querySelector('slot[name="empty"]') as HTMLSlotElement;
+        if (!emptySlot) return;
+        
+        if (show) {
+            emptySlot.style.display = 'block';
+        } else {
+            emptySlot.style.display = 'none';
         }
     }
 
@@ -116,6 +133,7 @@ export class MSearchList extends MElement {
         this.#shadowRoot.innerHTML = `
             <slot name="controller"></slot>
             <slot></slot>
+            <slot name="empty" style="display: none;"></slot>
         `;
     }
 }

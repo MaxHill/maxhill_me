@@ -254,11 +254,79 @@
     },
     {
       "kind": "javascript-module",
+      "path": "src/m-fit-text/index.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "Automatically scales text to fit the full width of its container using CSS container queries.",
+          "name": "MFitText",
+          "cssProperties": [
+            {
+              "description": "Maximum font size constraint (default: infinity)",
+              "name": "--max-font-size"
+            }
+          ],
+          "slots": [
+            {
+              "description": "Default slot for text content to be scaled",
+              "name": ""
+            }
+          ],
+          "members": [
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "default": "'m-fit-text'"
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ]
+            }
+          ],
+          "attributes": [
+            {
+              "name": "font-display",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Whether to use the display font family"
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "tagName": "m-fit-text",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "MFitText",
+            "module": "src/m-fit-text/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/m-search-list/index.ts",
       "declarations": [
         {
           "kind": "class",
-          "description": "A search list component that filters items based on user input using fuzzy search.\nFilters items by matching against their text content and data-keywords attribute.\n\n### Example\n<m-search-list>\n  <input slot=\"controller\" type=\"search\" placeholder=\"Search...\">\n    <li data-keywords=\"javascript js\">JavaScript</li>\n    <li data-keywords=\"typescript ts\">TypeScript</li>\n    <li data-keywords=\"python py\">Python</li>\n</m-search-list>\n\n### With target selector\n<m-search-list target=\"ul\">\n  <input slot=\"controller\" type=\"search\">\n  <div>\n    <ul>\n      <li>Item 1</li>\n      <li>Item 2</li>\n    </ul>\n  </div>\n</m-search-list>",
+          "description": "A search list component that filters items based on user input using fuzzy search.\nFilters items by matching against their text content and data-keywords attribute.\n\n### Example\n<m-search-list>\n  <input slot=\"controller\" type=\"search\" placeholder=\"Search...\">\n    <div data-keywords=\"javascript js\">JavaScript</div>\n    <div data-keywords=\"typescript ts\">TypeScript</div>\n    <div data-keywords=\"python py\">Python</div>\n    <p slot=\"empty\">No match found</p>\n</m-search-list>\n\n### With target selector\n<m-search-list target=\"ul\">\n  <input slot=\"controller\" type=\"search\">\n  <div>\n    <ul>\n      <li>Item 1</li>\n      <li>Item 2</li>\n    </ul>\n  </div>\n</m-search-list>",
           "name": "MSearchList",
           "slots": [
             {
@@ -268,6 +336,10 @@
             {
               "description": "Slot for the list container and items",
               "name": "(default)"
+            },
+            {
+              "description": "Slot for content to display when no items match the search",
+              "name": "empty"
             }
           ],
           "members": [
@@ -334,6 +406,19 @@
             },
             {
               "kind": "method",
+              "name": "toggleEmptySlot",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "show",
+                  "type": {
+                    "text": "boolean"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
               "name": "render"
             },
             {
@@ -369,74 +454,6 @@
           "declaration": {
             "name": "MSearchList",
             "module": "src/m-search-list/index.ts"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "javascript-module",
-      "path": "src/m-fit-text/index.ts",
-      "declarations": [
-        {
-          "kind": "class",
-          "description": "Automatically scales text to fit the full width of its container using CSS container queries.",
-          "name": "MFitText",
-          "cssProperties": [
-            {
-              "description": "Maximum font size constraint (default: infinity)",
-              "name": "--max-font-size"
-            }
-          ],
-          "slots": [
-            {
-              "description": "Default slot for text content to be scaled",
-              "name": ""
-            }
-          ],
-          "members": [
-            {
-              "kind": "method",
-              "name": "render"
-            },
-            {
-              "kind": "method",
-              "name": "define",
-              "static": true,
-              "parameters": [
-                {
-                  "name": "tag",
-                  "default": "'m-fit-text'"
-                },
-                {
-                  "name": "registry",
-                  "default": "customElements"
-                }
-              ]
-            }
-          ],
-          "attributes": [
-            {
-              "name": "font-display",
-              "type": {
-                "text": "boolean"
-              },
-              "description": "Whether to use the display font family"
-            }
-          ],
-          "superclass": {
-            "name": "HTMLElement"
-          },
-          "tagName": "m-fit-text",
-          "customElement": true
-        }
-      ],
-      "exports": [
-        {
-          "kind": "js",
-          "name": "default",
-          "declaration": {
-            "name": "MFitText",
-            "module": "src/m-fit-text/index.ts"
           }
         }
       ]
