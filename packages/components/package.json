@@ -22,6 +22,9 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "dependencies": {
+    "@maxhill/css": "workspace:*"
+  },
   "devDependencies": {
     "@custom-elements-manifest/analyzer": "^0.10.10",
     "@vitest/browser": "^4.0.6",

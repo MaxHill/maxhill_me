@@ -1,0 +1,16 @@
+:host {
+    display: block;
+    padding: var(--size-2);
+    cursor: pointer;
+}
+
+
+:host(:state(focus)) {
+    outline: 2px solid var(--color-primary-border-mid);
+    outline-offset: -2px;
+    background: var(--color-primary-fill-softer);
+}
+
+:host([aria-selected="true"]) {
+    background: var(--color-primary-fill-mid);
+}

@@ -46,29 +46,41 @@ export class MTabHideEvent extends CustomEvent<MTabChangeEventDetail> {
  * Supports horizontal (arrow left/right, h/l) and vertical (arrow up/down, j/k) navigation depending on position.
  * Home/End keys work in both orientations.
  * 
- * ### Example
- * <m-tab-list tab="home">
- *   <m-tab panel="home">Home</m-tab>
- *   <m-tab panel="profile">Profile</m-tab>
- *   <m-tab panel="settings" disabled>Settings</m-tab>
- *   
- *   <m-tab-panel name="home">
- *     <p>Home Content</p>
- *   </m-tab-panel>
- *   <m-tab-panel name="profile">
- *     <p>Profile Content</p>
- *   </m-tab-panel>
- *   <m-tab-panel name="settings">
- *     <p>Settings Content</p>
- *   </m-tab-panel>
+ * ### Examples
+ * <m-tab-list label="Example" tab="tab2">
+ *     <m-tab panel="tab1">Tab 1</m-tab>
+ *     <m-tab panel="tab2">Tab 2</m-tab>
+ *     <m-tab panel="tab3" disabled>Tab 3</m-tab>
+ *     <m-tab-panel name="tab1"> Panel value 1</m-tab-panel>
+ *     <m-tab-panel name="tab2"> Panel value 2</m-tab-panel>
+ *     <m-tab-panel name="tab3"> Panel value 3</m-tab-panel>
  * </m-tab-list>
  * 
- * ### Vertical Example
- * <m-tab-list tab="home" position="start">
- *   <m-tab panel="home">Home</m-tab>
- *   <m-tab panel="profile">Profile</m-tab>
- *   <m-tab-panel name="home">Home Content</m-tab-panel>
- *   <m-tab-panel name="profile">Profile Content</m-tab-panel>
+ * <m-tab-list label="Example" tab="tab2" position="bottom">
+ *     <m-tab panel="tab1">Tab 1</m-tab>
+ *     <m-tab panel="tab2">Tab 2</m-tab>
+ *     <m-tab panel="tab3" disabled>Tab 3</m-tab>
+ *     <m-tab-panel name="tab1"> Panel value 1</m-tab-panel>
+ *     <m-tab-panel name="tab2"> Panel value 2</m-tab-panel>
+ *     <m-tab-panel name="tab3"> Panel value 3</m-tab-panel>
+ * </m-tab-list>
+ * 
+ * <m-tab-list label="Example" tab="tab2" position="start">
+ *     <m-tab panel="tab1">Tab 1</m-tab>
+ *     <m-tab panel="tab2">Tab 2</m-tab>
+ *     <m-tab panel="tab3" disabled>Tab 3</m-tab>
+ *     <m-tab-panel name="tab1"> Panel value 1</m-tab-panel>
+ *     <m-tab-panel name="tab2"> Panel value 2</m-tab-panel>
+ *     <m-tab-panel name="tab3"> Panel value 3</m-tab-panel>
+ * </m-tab-list>
+ * 
+ * <m-tab-list label="Example" tab="tab2" position="end">
+ *     <m-tab panel="tab1">Tab 1</m-tab>
+ *     <m-tab panel="tab2">Tab 2</m-tab>
+ *     <m-tab panel="tab3" disabled>Tab 3</m-tab>
+ *     <m-tab-panel name="tab1"> Panel value 1</m-tab-panel>
+ *     <m-tab-panel name="tab2"> Panel value 2</m-tab-panel>
+ *     <m-tab-panel name="tab3"> Panel value 3</m-tab-panel>
  * </m-tab-list>
  * 
  * @customElement

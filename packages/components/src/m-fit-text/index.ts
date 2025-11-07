@@ -25,6 +25,10 @@ try {
 
 /**
  * Automatically scales text to fit the full width of its container using CSS container queries.
+ *
+ * <div class="box" data-padded="false">
+ *     <m-fit-text font-display>Text</br>fits</m-fit-text>
+ * </div>
  * 
  * @customElement
  * @tagname m-fit-text
