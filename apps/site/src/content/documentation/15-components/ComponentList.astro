@@ -130,6 +130,10 @@ const components = customElements.modules
 </m-search-list>
 
 <style>
+    :global([data-match="false"]) {
+        display: none;
+    }
+
     details {
         display: content;
 
