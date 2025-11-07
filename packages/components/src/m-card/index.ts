@@ -5,6 +5,65 @@ baseStyleSheet.replaceSync(styles);
 
 /**
  * A card component with support for title, content, and footer sections.
+ *
+ * <m-card>
+ *   <div slot="title">Card Element Title</div>
+ *   <p>This is the main content of the card element.</p>
+ *   <p>It uses web components with shadow DOM.</p>
+ *   <div slot="footer">Card element footer</div>
+ * </m-card>
+ * 
+ * <m-card data-variant="outline">
+ *   <div slot="title">Outline Variant</div>
+ *   <p>This card element has a outline variant.</p>
+ *   <div slot="footer">Footer info</div>
+ * </m-card>
+ * 
+ * <m-card>
+ *   <div slot="title">Card Element with Title Only</div>
+ *   <p>This card element has a title but no footer.</p>
+ * </m-card>
+ * 
+ * <m-card>
+ *   <p>Card Element with Content Only</p>
+ *   <p>No title or footer, just content.</p>
+ * </m-card>
+ * 
+ * **Card Elements in a `.collection`**
+ * 
+ * <div class="collection">
+ *   <m-card data-subgrid="true">
+ *     <div slot="title">Card Element 1</div>
+ *     <div class="stack2">
+ *       <p>This is the main content.</p>
+ *       <p>Using web components.</p>
+ *       <p>More text</p>
+ *     </div>
+ *     <div slot="footer">Footer info</div>
+ *   </m-card>
+ *   <m-card data-subgrid="true">
+ *     <div slot="title">Card Element 2</div>
+ *     <div class="stack2">
+ *       <p>This is the main content.</p>
+ *       <p>Using web components.</p>
+ *     </div>
+ *     <div slot="footer">Footer info</div>
+ *   </m-card>
+ *   <m-card data-subgrid="true">
+ *     <div slot="title">Card Element 3</div>
+ *     <div class="stack2">
+ *       <p>Shorter content.</p>
+ *     </div>
+ *     <div slot="footer">Footer info</div>
+ *   </m-card>
+ *   <m-card data-subgrid="true">
+ *     <div slot="title">Card Element 4</div>
+ *     <div class="stack2">
+ *       <p>Another card.</p>
+ *     </div>
+ *     <div slot="footer">Footer info</div>
+ *   </m-card>
+ * </div>
  * 
  * @customElement
  * @tagname m-card

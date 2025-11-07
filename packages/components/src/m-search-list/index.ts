@@ -10,6 +10,9 @@ baseStyleSheet.replaceSync(styles);
  * A search list component that filters items based on user input using fuzzy search.
  * Filters items by matching against their text content and data-keywords attribute.
  * 
+ * Features debounced input handling and accessible screen reader announcements
+ * for search results.
+ * 
  * ### Example
  * <m-search-list>
  *   <input slot="controller" type="search" placeholder="Search...">
@@ -31,17 +34,26 @@ baseStyleSheet.replaceSync(styles);
  *   </div>
  * </m-search-list>
  * 
+ * ### With custom debounce
+ * <m-search-list debounce="500">
+ *   <input slot="controller" type="search">
+ *   <div>Item 1</div>
+ *   <div>Item 2</div>
+ * </m-search-list>
+ * 
  * @customElement
  * @tagname m-search-list
  * 
- * @slot controller - Slot for the input element
- * @slot (default) - Slot for the list container and items
- * @slot empty - Slot for content to display when no items match the search
- * @slot initial - Slot for content to display before any search is performed
+ * @slot controller - Slot for the input element that controls the search
+ * @slot (default) - Slot for the list container and items to be filtered
+ * @slot empty - Optional content to display when no items match the search query
+ * @slot initial - Optional content to display before any search query is entered
  * 
  * @attr {string} target - CSS selector for the container element whose children should be filtered
+ * @attr {number} debounce - Time in milliseconds to debounce input events (default: 150ms)
  * 
  * @prop {string} target - CSS selector for the container element
+ * @prop {number} debounce - Time in milliseconds to debounce input events
  * @prop {HTMLInputElement | null} input - The input element used for search
  * @prop {Element[]} items - Array of filterable items
  * 
@@ -57,6 +69,7 @@ export class MSearchList extends MElement {
     private state: "initial" | "searching" | "empty" = "initial"
     private resultsMessage: string = '';
     private resultsTimeout?: ReturnType<typeof setTimeout>;
+    private debounceTimeout?: ReturnType<typeof setTimeout>;
 
     private _internals: ElementInternals;
     private defaultSlot!: HTMLSlotElement;
@@ -72,6 +85,9 @@ export class MSearchList extends MElement {
 
     @BindAttribute()
     target?: string;
+
+    @BindAttribute()
+    debounce: number = 150;
 
     #shadowRoot: ShadowRoot;
     #ariaLiveRegion!: HTMLDivElement;
@@ -131,11 +147,21 @@ export class MSearchList extends MElement {
         if (this.resultsTimeout) {
             clearTimeout(this.resultsTimeout);
         }
+        if (this.debounceTimeout) {
+            clearTimeout(this.debounceTimeout);
+        }
     }
 
     private handleInput = (e: Event) => {
         const input = e.target as HTMLInputElement;
-        this.searchItems(input.value);
+        
+        if (this.debounceTimeout) {
+            clearTimeout(this.debounceTimeout);
+        }
+
+        this.debounceTimeout = setTimeout(() => {
+            this.searchItems(input.value);
+        }, this.debounce);
     }
 
     private searchItems(query: string) {
