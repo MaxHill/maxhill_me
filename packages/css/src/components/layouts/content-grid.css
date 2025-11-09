@@ -10,7 +10,6 @@
 
     & > * {
       width: min(var(--_content-max-width), calc(100% - (var(--_padding-inline) * 2)));
-      overflow: hidden;
     }
 
     & > [data-width="breakout"] {
