@@ -1,12 +1,24 @@
 ---
 import customElements from "@maxhill/components/custom-elements.json";
 import { marked } from "marked";
+import { getAllComponents, getComponentPublicProperties, getComponentPublicMethods, getComponentEventsWithType, getCustomEventDetailTypes } from "@wc-toolkit/cem-utilities";
 
-const components = customElements.modules
-    .flatMap((module) => (module as any).declarations || [])
-    .filter(
-        (decl) => "customElement" in decl && decl.customElement === true,
-    ) as any[];
+const components = getAllComponents(customElements).map((component) => {
+    const properties = getComponentPublicProperties(component);
+    const methods = getComponentPublicMethods(component);
+    const events = getComponentEventsWithType(component, { overrideCustomEventType: true });
+    const customEventDetailTypes = getCustomEventDetailTypes(component);
+    const publicMembers = component.members?.filter((m: any) => !m.static && m.privacy !== 'private') || [];
+    
+    return {
+        ...component,
+        properties,
+        methods,
+        events,
+        customEventDetailTypes,
+        publicMembers,
+    };
+});
 ---
 
 <m-search-list>
@@ -21,107 +33,150 @@ const components = customElements.modules
                 <div class="typesetting" set:html={marked.parse(component.description)} />
             )}
 
-            {component.attributes && component.attributes.length > 0 && (
-                    <h4>Attributes</h4>
-                    <dl>
-                        {component.attributes.map((attr: any) => (
-                            <>
-                                <dt>
-                                    <m-copy-button value={attr.name}>
-                                        {attr.name}
-                                    </m-copy-button>
-                                    {attr.type && (
-                                        <span class="type">
-                                            : {attr.type.text}
-                                        </span>
-                                    )}
-                                </dt>
-                                {attr.description && (
-                                    <dd>{attr.description}</dd>
-                                )}
-                            </>
-                        ))}
-                    </dl>
+            {component.properties && component.properties.length > 0 && (
+                    <>
+                        <h4>Properties</h4>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th class="name">Name</th>
+                                        <th class="type">Type</th>
+                                        <th class="description">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {component.properties.map((prop: any) => (
+                                        <tr>
+                                            <td class="name">
+                                                <m-copy-button value={prop.name}>
+                                                    {prop.name}
+                                                </m-copy-button>
+                                            </td>
+                                            <td class="type">{prop.type?.text}</td>
+                                            <td class="description">{prop.description}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
             )}
 
-            {component.slots && component.slots.length > 0 && (
-                    <h4>Slots</h4>
-                    <dl>
-                        {component.slots.map((slot: any) => (
-                            <>
-                                <dt>
-                                    <m-copy-button value={`slot="${slot.name || ''}"`}>
-                                        slot="{slot.name || '(default)'}"
-                                    </m-copy-button>
-                                </dt>
-                                {slot.description && (
-                                    <dd>{slot.description}</dd>
-                                )}
-                            </>
-                        ))}
-                    </dl>
-            )}
-
-            {component.cssParts && component.cssParts.length > 0 && (
-                    <h4>CSS Parts</h4>
-                    <dl>
-                        {component.cssParts.map((part: any) => (
-                            <>
-                                <dt>
-                                    <m-copy-button value={`::part(${part.name})`}>
-                                        ::part({part.name})
-                                    </m-copy-button>
-                                </dt>
-                                {part.description && (
-                                    <dd>{part.description}</dd>
-                                )}
-                            </>
-                        ))}
-                    </dl>
-            )}
-
-            {component.members && component.members.filter((m: any) => !m.static && m.privacy !== 'private').length > 0 && (
-                    <h4>Public Members</h4>
-                    <dl>
-                        {component.members.filter((m: any) => !m.static && m.privacy !== 'private').map((member: any) => (
-                            <>
-                                <dt>
-                                    <m-copy-button value={member.name}>
-                                        {member.name}
-                                    </m-copy-button>
-                                    {member.type && (
-                                        <span class="type">
-                                            : {member.type.text}
-                                        </span>
-                                    )}
-                                </dt>
-                                {member.description && (
-                                    <dd>{member.description}</dd>
-                                )}
-                            </>
-                        ))}
-                    </dl>
+            {component.methods && component.methods.length > 0 && (
+                    <>
+                        <h4>Methods</h4>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th class="name">Name</th>
+                                        <th class="type">Type</th>
+                                        <th class="description">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {component.methods.map((method: any) => (
+                                        <tr>
+                                            <td class="name">
+                                                <m-copy-button value={method.name}>
+                                                    {method.name}
+                                                </m-copy-button>
+                                            </td>
+                                            <td class="type">{method.type?.text}</td>
+                                            <td class="description">{method.description}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
             )}
 
             {component.events && component.events.length > 0 && (
-                    <h4>Events</h4>
-                    <dl>
-                        {component.events.map((event: any) => (
-                            <>
-                                <dt>
-                                    <m-copy-button value={event.name}>
-                                        {event.name}
-                                    </m-copy-button>
-                                    {event.type && (
-                                        <span class="type">{event.type.text}</span>
-                                    )}
-                                </dt>
-                                {event.description && (
-                                    <dd>{event.description}</dd>
-                                )}
-                            </>
-                        ))}
-                    </dl>
+                    <>
+                        <h4>Events</h4>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th class="name">Name</th>
+                                        <th class="type">Type</th>
+                                        <th class="description">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {component.events.map((event: any) => (
+                                        <tr>
+                                            <td class="name">
+                                                <m-copy-button value={event.name}>
+                                                    {event.name}
+                                                </m-copy-button>
+                                            </td>
+                                            <td class="type">{event.type?.text}</td>
+                                            <td class="description">{event.description}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+            )}
+
+            {component.slots && component.slots.length > 0 && (
+                    <>
+                        <h4>Slots</h4>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th class="name">Name</th>
+                                        <th class="description">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {component.slots.map((slot: any) => (
+                                        <tr>
+                                            <td class="name">
+                                                <m-copy-button value={`slot="${slot.name || ''}"`}>
+                                                    slot="{slot.name || '(default)'}"
+                                                </m-copy-button>
+                                            </td>
+                                            <td class="description">{slot.description}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+            )}
+
+            {component.cssParts && component.cssParts.length > 0 && (
+                    <>
+                        <h4>CSS Parts</h4>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {component.cssParts.map((part: any) => (
+                                        <tr>
+                                            <td>
+                                                <m-copy-button value={`::part(${part.name})`}>
+                                                    ::part({part.name})
+                                                </m-copy-button>
+                                            </td>
+                                            <td>{part.description}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
             )}
             </div>
         </details>
@@ -142,20 +197,45 @@ const components = customElements.modules
         }
     }
 
-    dl {
-        display: grid;
-        grid-template-columns: auto auto 1fr;
-        gap: var(--size-fluid-1);
+    .table-wrapper {
+        overflow-x: auto;
+        width: 100%;
+    }
 
-        dt {
-            display: grid;
-            grid-column: span 2;
-            grid-template-columns: subgrid;
+    table {
+        width: max-content;
+        border-collapse: collapse;
+        
+        th, td {
+            text-align: left;
+            padding: var(--size-2);
+        }
+
+        th {
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        tr {
+            border-bottom: var(--border);
+        }
+
+        th:nth-child(1), td:nth-child(1),
+        th:nth-child(2), td:nth-child(2) {
+            width: max-content;
+            white-space: nowrap;
+        }
+
+        th:nth-child(3), td:nth-child(3) {
+            width: max-content;
+            max-width: var(--size-content-1);
+        }
+
+        td {
             m-copy-button {
                 font-size: var(--font-size-1);
             }
         }
-        dd {}
     }
 
 </style>

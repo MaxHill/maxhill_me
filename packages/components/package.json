@@ -3,24 +3,24 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "main": "dist/register-all.js", 
-  "module": "dist/register-all.js", 
-  "types": "dist/register-all.d.ts", 
-  "exports": { 
-    ".": {
-        "types": "./dist/register-all.d.ts", 
-        "default": "./dist/register-all.js" }, 
-        "./custom-elements.json": "./custom-elements.json" 
+  "main": "dist/register-all.js",
+  "module": "dist/register-all.js",
+  "types": "dist/register-all.d.ts",
+  "exports": {
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
     },
+    "./custom-elements.json": "./dist/custom-elements.json"
+  },
   "files": [
-    "dist",
-    "custom-elements.json"
+    "dist"
   ],
   "scripts": {
-    "build": "cem analyze && vite build && tsc --emitDeclarationOnly",
+    "build": "vite build && tsc --emitDeclarationOnly && cem analyze",
     "dev": "vite build --watch",
     "clean": "rm -rf dist",
-    "docs": "cem analyze",
+    "docs": "pnpm run build",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -31,6 +31,7 @@
     "@custom-elements-manifest/analyzer": "^0.10.10",
     "@vitest/browser": "^4.0.6",
     "@wc-toolkit/cem-validator": "^1.0.3",
+    "@wc-toolkit/jsdoc-tags": "^1.1.0",
     "glob": "^11.0.3",
     "happy-dom": "^20.0.10",
     "rollup-plugin-string": "^3.0.0",
@@ -38,5 +39,5 @@
     "vite": "^6.0.11",
     "vitest": "^4.0.6"
   },
-  "customElements": "custom-elements.json"
+  "customElements": "dist/custom-elements.json"
 }

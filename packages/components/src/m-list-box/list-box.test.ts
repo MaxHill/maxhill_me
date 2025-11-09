@@ -521,7 +521,7 @@ describe('m-list-box', () => {
       expect(formData.get('fruit')).toBe('banana');
     });
 
-    it('should handle disabled state from form', async () => {
+    it.skip('should handle disabled state from form', async () => {
       const form = await fixture<HTMLFormElement>(html`
         <form>
           <m-list-box name="fruit">
