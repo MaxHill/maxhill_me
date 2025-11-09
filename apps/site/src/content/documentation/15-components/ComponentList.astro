@@ -22,15 +22,15 @@ const components = getAllComponents(customElements).map((component) => {
 ---
 
 <m-search-list data-width="full">
-    <label slot="controller">Search components</label>
-    <input slot="controller" type="search"/>
+    <label for="search-components" slot="controller">Search components</label>
+    <input id="search-components" slot="controller" type="search"/>
 {
     components.map((component) => (
-        <details class="content-grid" data-keywords={component.tagName || component.name}>
+        <details data-keywords={component.tagName || component.name}>
             <summary>&lt;{component.tagName || component.name}&gt;</summary>
-            <div class="content-grid typesetting" >
+            <div class="content-grid" >
             {component.description && (
-                <div class="typesetting" set:html={marked.parse(component.description)} />
+                <div set:html={marked.parse(component.description)} />
             )}
 
             {component.examples && component.examples.length > 0 && (
