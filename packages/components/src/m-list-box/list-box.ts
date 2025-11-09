@@ -6,20 +6,81 @@ import styles from "./list-box.css?inline";
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
-
-interface MListBoxSelectEventDetail {
+/**
+ * Event detail for m-listbox-select and m-listbox-unselected events
+ */
+export interface MListBoxSelectEventDetail {
+    /** The list box item that was selected or unselected */
     item: MListBoxItem;
+    /** Whether the item is now selected */
     selected: boolean;
 }
 
-interface MListBoxChangeEventDetail {
+/**
+ * Event detail for m-listbox-change events
+ */
+export interface MListBoxChangeEventDetail {
+    /** Array of currently selected item values */
     selected: string[];
 }
 
-interface MListBoxFocusChangeEventDetail {
+/**
+ * Event detail for m-listbox-focus-change events
+ */
+export interface MListBoxFocusChangeEventDetail {
+    /** The list box item that received focus, or null if focus was cleared */
     item: MListBoxItem | null;
 }
 
+/**
+ * A form-associated listbox component for single or multiple selection.
+ * Supports keyboard navigation, form integration, and accessible selection patterns.
+ * 
+ * @customElement
+ * @tagname m-list-box
+ * 
+ * @example Basic usage
+ * <m-list-box name="fruit">
+ *   <m-list-box-item value="apple">Apple</m-list-box-item>
+ *   <m-list-box-item value="pear">Pear</m-list-box-item>
+ *   <m-list-box-item value="orange">Orange</m-list-box-item>
+ * </m-list-box>
+ * 
+ * @example Multiple selection
+ * <m-list-box name="fruits" multiple>
+ *   <m-list-box-item value="apple">Apple</m-list-box-item>
+ *   <m-list-box-item value="pear">Pear</m-list-box-item>
+ *   <m-list-box-item value="orange">Orange</m-list-box-item>
+ * </m-list-box>
+ * 
+ * @example Form integration
+ * <form>
+ *   <label>Select your favorite fruit:</label>
+ *   <m-list-box name="favorite-fruit">
+ *     <m-list-box-item value="apple">Apple</m-list-box-item>
+ *     <m-list-box-item value="pear" selected>Pear</m-list-box-item>
+ *     <m-list-box-item value="orange">Orange</m-list-box-item>
+ *   </m-list-box>
+ *   <button type="submit">Submit</button>
+ * </form>
+ * 
+ * @slot - The default slot accepts m-list-box-item elements
+ * 
+ * @attr {string} name - The form control name
+ * @attr {boolean} multiple - Whether multiple items can be selected
+ * 
+ * @prop {string | null} value - The value of the first selected item
+ * @prop {string[]} values - Array of all selected item values
+ * @prop {boolean} multiple - Whether multiple selection is enabled
+ * @prop {HTMLFormElement | null} form - The associated form element
+ * @prop {string} name - The form control name
+ * 
+ * @event m-listbox-select - Fired when an item is selected. Detail: { item: MListBoxItem, selected: boolean }
+ * @event m-listbox-unselected - Fired when an item is unselected. Detail: { item: MListBoxItem, selected: boolean }
+ * @event m-listbox-change - Fired when the selection changes. Detail: { selected: string[] }
+ * @event m-listbox-focus-change - Fired when focus moves to a different item. Detail: { item: MListBoxItem | null }
+ * 
+ */
 export class MListBox extends MElement {
     static tagName = 'm-list-box';
     static formAssociated = true;
@@ -69,7 +130,6 @@ export class MListBox extends MElement {
      *  Getters / Form Accessors
      * ----------------------------- */
     private get items(): MListBoxItem[] {
-        // Query light DOM children (slotted items)
         return Array.from(this.querySelectorAll<MListBoxItem>('m-list-box-item'));
     }
 
@@ -77,10 +137,18 @@ export class MListBox extends MElement {
         return this.items.filter(item => !!item.selected);
     }
 
+    /**
+     * Returns the value of the first selected item, or null if nothing is selected.
+     * Useful for single-select mode.
+     */
     get value(): string | null {
         return this.selected[0]?.value ?? null;
     }
 
+    /**
+     * Returns an array of all selected item values.
+     * Useful for multiple-select mode.
+     */
     get values(): string[] {
         return this.selected.reduce<string[]>((acc, item) => {
             if (item.value) acc.push(item.value);
@@ -88,6 +156,13 @@ export class MListBox extends MElement {
         }, []);
     }
 
+    /**
+     * Whether the listbox allows multiple selection.
+     * When true, arrow keys move focus without selecting.
+     * When false (default), arrow keys both move focus and select.
+     * 
+     * @attr multiple
+     */
     get multiple(): boolean {
         return this.hasAttribute('multiple');
     }
@@ -97,10 +172,18 @@ export class MListBox extends MElement {
         else this.removeAttribute('multiple');
     }
 
+    /**
+     * Returns the associated form element, if any.
+     */
     get form(): HTMLFormElement | null {
         return this.internals.form;
     }
 
+    /**
+     * The name of the form control. Submitted with the form as part of a name/value pair.
+     * 
+     * @attr name
+     */
     get name(): string {
         return this.getAttribute('name') ?? '';
     }
@@ -137,6 +220,12 @@ export class MListBox extends MElement {
     /*** ----------------------------
      *  Focus Management
      * ----------------------------- */
+    /**
+     * Sets focus to a specific list box item.
+     * Removes focus from the previously focused item and dispatches a focus-change event.
+     * 
+     * @param item - The item to focus, or null to clear focus
+     */
     setFocus(item: MListBoxItem | null): void {
         if (!item) return;
         if (this.focusedElement) this.focusedElement.removeAttribute('focused');
@@ -153,14 +242,24 @@ export class MListBox extends MElement {
         );
     }
 
+    /**
+     * Moves focus to the first item in the list.
+     */
     focusFirst(): void {
         this.setFocus(this.items[0] ?? null);
     }
 
+    /**
+     * Moves focus to the last item in the list.
+     */
     focusLast(): void {
         this.setFocus(this.items[this.items.length - 1] ?? null);
     }
 
+    /**
+     * Moves focus to the next item in the list.
+     * Wraps around to the first item if at the end.
+     */
     focusNext(): void {
         if (!this.focusedElement) return this.focusFirst();
         const idx = this.items.indexOf(this.focusedElement);
@@ -168,6 +267,10 @@ export class MListBox extends MElement {
         this.setFocus(next);
     }
 
+    /**
+     * Moves focus to the previous item in the list.
+     * Wraps around to the last item if at the beginning.
+     */
     focusPrev(): void {
         if (!this.focusedElement) return this.focusLast();
         const idx = this.items.indexOf(this.focusedElement);
@@ -175,6 +278,9 @@ export class MListBox extends MElement {
         this.setFocus(prev);
     }
 
+    /**
+     * Clears focus from the currently focused item.
+     */
     focusBlur(): void {
         if (this.focusedElement) {
             this.focusedElement.removeAttribute('focused');
@@ -185,6 +291,14 @@ export class MListBox extends MElement {
     /*** ----------------------------
      *  Selection Management
      * ----------------------------- */
+    /**
+     * Selects or toggles selection of a list box item.
+     * In single-select mode, deselects all other items and selects the target item.
+     * In multiple-select mode, toggles the selection state of the target item.
+     * Dispatches m-listbox-select, m-listbox-unselected, and m-listbox-change events.
+     * 
+     * @param item - The item to select or toggle
+     */
     select(item: MListBoxItem | null): void {
         if (!item) return;
 
@@ -230,18 +344,31 @@ export class MListBox extends MElement {
         this.updateFormValue();
     }
 
+    /**
+     * Selects the currently focused item.
+     */
     selectFocused(): void {
         if (this.focusedElement) this.select(this.focusedElement);
     }
 
+    /**
+     * Selects the first item in the list.
+     */
     selectFirst(): void {
         if (this.items[0]) this.select(this.items[0]);
     }
 
+    /**
+     * Selects the last item in the list.
+     */
     selectLast(): void {
         if (this.items.length) this.select(this.items[this.items.length - 1]);
     }
 
+    /**
+     * Selects the next item in the list.
+     * Wraps around to the first item if at the end.
+     */
     selectNext(): void {
         if (!this.focusedElement) return this.selectFirst();
         const idx = this.items.indexOf(this.focusedElement);
@@ -249,6 +376,10 @@ export class MListBox extends MElement {
         this.select(next);
     }
 
+    /**
+     * Selects the previous item in the list.
+     * Wraps around to the last item if at the beginning.
+     */
     selectPrev(): void {
         if (!this.focusedElement) return this.selectLast();
         const idx = this.items.indexOf(this.focusedElement);
@@ -338,296 +469,3 @@ export class MListBox extends MElement {
         }
     };
 }
-
-
-
-// /**
-//  * Form-associated listbox for single or multiple selection
-//  *
-//  * # Single selection
-//  * <m-list-box name="fruit" value="apple">
-//  *   <m-list-box-item value="apple">Apple</m-list-box-item>
-//  *   <m-list-box-item value="pear">Pear</m-list-box-item>
-//  * </m-list-box>
-//  * 
-//  * # Multiple selection
-//  * <m-list-box name="fruits" multiple>
-//  *   <m-list-box-item value="apple">Apple</m-list-box-item>
-//  *   <m-list-box-item value="pear">Pear</m-list-box-item>
-//  * </m-list-box>
-//  * 
-//  * # In a form
-//  * <form id="myForm">
-//  *   <m-list-box name="fruit">
-//  *     <m-list-box-item value="apple">Apple</m-list-box-item>
-//  *     <m-list-box-item value="pear">Pear</m-list-box-item>
-//  *   </m-list-box>
-//  *   <button type="submit">Submit</button>
-//  * </form>
-//  * <pre id="output"></pre>
-//  * 
-//  * <script >
-//  *   document.getElementById('myForm').addEventListener('submit', (e) => {
-//  *     e.preventDefault();
-//  *     const formData = new FormData(e.target);
-//  *     const data = Object.fromEntries(formData.entries());
-//  *     document.getElementById('output').textContent = JSON.stringify(data, null, 2);
-//  *   });
-//  * </script>
-//  *
-//  * @customElement
-//  * @tagname m-list-box
-//  */
-// export class MListBox extends MElement {
-//     static tagName = 'm-list-box';
-//     static observedAttributes = ['value', 'name', 'disabled', 'multiple'];
-//     static formAssociated = true;
-//
-//     #shadowRoot: ShadowRoot;
-//     #internals: ElementInternals;
-//     #initialValue: string = '';
-//     #activeIndex: number = -1;
-//
-//     @BindAttribute()
-//     value: string = '';
-//
-//     @BindAttribute()
-//     name: string = '';
-//
-//     @BindAttribute()
-//     disabled: boolean = false;
-//
-//     @BindAttribute()
-//     multiple: boolean = false;
-//
-//     constructor() {
-//         super();
-//         this.#shadowRoot = this.attachShadow({ mode: 'open' });
-//         this.#shadowRoot.adoptedStyleSheets = [baseStyleSheet];
-//         this.#internals = this.attachInternals();
-//     }
-//
-//     connectedCallback() {
-//         this.#initialValue = this.getAttribute('value') ?? '';
-//         this.#setupAccessibility();
-//         this.#setupEventListeners();
-//         this.#applyFormValue();
-//         this.#updateItems();
-//         this.render();
-//     }
-//
-//     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
-//         super.attributeChangedCallback(name, oldValue, newValue);
-//
-//         if (name === "value" && oldValue !== newValue) {
-//             this.#applyFormValue();
-//             this.#updateItems();
-//             this.dispatchEvent(new Event('change', { bubbles: true }));
-//         } else if (name === "disabled") {
-//             this.#updateDisabledState();
-//         } else if (name === "multiple") {
-//             if (this.multiple) {
-//                 this.setAttribute('aria-multiselectable', 'true');
-//             } else {
-//                 this.removeAttribute('aria-multiselectable');
-//             }
-//         }
-//     }
-//
-//     selectValue(itemValue: string) {
-//         if (this.disabled) return;
-//
-//         if (this.multiple) {
-//             const values = this.value ? this.value.split(',') : [];
-//             const index = values.indexOf(itemValue);
-//
-//             if (index === -1) {
-//                 values.push(itemValue);
-//             } else {
-//                 values.splice(index, 1);
-//             }
-//
-//             this.value = values.join(',');
-//         } else {
-//             if (this.value !== itemValue) {
-//                 this.value = itemValue;
-//             }
-//         }
-//     }
-//
-//     #applyFormValue() {
-//         this.#internals.setFormValue(this.value || '');
-//     }
-//
-//     #updateItems() {
-//         const items = this.#getItems();
-//         const selectedValues = this.multiple && this.value 
-//             ? this.value.split(',') 
-//             : [this.value];
-//
-//         items.forEach((item, index) => {
-//             const isSelected = selectedValues.includes(item.value);
-//             item.setAttribute('aria-selected', String(isSelected));
-//             item.selected = isSelected;
-//
-//             if (!item.id) {
-//                 item.id = `${this.id || 'listbox'}-option-${index}`;
-//             }
-//         });
-//     }
-//
-//     #getItems(): MListBoxItem[] {
-//         return Array.from(this.querySelectorAll('m-list-box-item')) as MListBoxItem[];
-//     }
-//
-//     #setupAccessibility() {
-//         this.setAttribute('role', 'listbox');
-//
-//         if (!this.hasAttribute('tabindex')) {
-//             this.setAttribute('tabindex', '0');
-//         }
-//
-//         if (this.multiple) {
-//             this.setAttribute('aria-multiselectable', 'true');
-//         }
-//
-//         this.#updateDisabledState();
-//     }
-//
-//     #updateDisabledState() {
-//         if (this.disabled) {
-//             this.setAttribute('aria-disabled', 'true');
-//             this.setAttribute('tabindex', '-1');
-//         } else {
-//             this.removeAttribute('aria-disabled');
-//             this.setAttribute('tabindex', '0');
-//         }
-//     }
-//
-//     #setupEventListeners() {
-//         this.addEventListener('click', this.#handleClick.bind(this));
-//         this.addEventListener('keydown', this.#handleKeyDown.bind(this));
-//         this.addEventListener('focus', this.#handleFocus.bind(this));
-//     }
-//
-//     #handleClick(e: Event) {
-//         if (this.disabled) return;
-//
-//         const target = e.target as HTMLElement;
-//         const item = target.closest('m-list-box-item') as MListBoxItem;
-//
-//         if (item && item.value && !item.disabled) {
-//             this.selectValue(item.value);
-//         }
-//     }
-//
-//     #handleFocus() {
-//         if (this.#activeIndex === -1) {
-//             this.#initializeVirtualFocus();
-//         }
-//     }
-//
-//     #handleKeyDown(e: KeyboardEvent) {
-//         if (this.disabled) return;
-//
-//         const items = this.#getItems();
-//         if (items.length === 0) return;
-//
-//         let nextIndex = this.#activeIndex;
-//
-//         switch (e.key) {
-//             case 'ArrowDown':
-//                 e.preventDefault();
-//                 if (nextIndex < 0) {
-//                     nextIndex = 0;
-//                 } else if (nextIndex < items.length - 1) {
-//                     nextIndex++;
-//                 }
-//                 break;
-//             case 'ArrowUp':
-//                 e.preventDefault();
-//                 if (nextIndex < 0) {
-//                     nextIndex = items.length - 1;
-//                 } else if (nextIndex > 0) {
-//                     nextIndex--;
-//                 }
-//                 break;
-//             case 'Home':
-//                 e.preventDefault();
-//                 nextIndex = 0;
-//                 break;
-//             case 'End':
-//                 e.preventDefault();
-//                 nextIndex = items.length - 1;
-//                 break;
-//             case ' ':
-//             case 'Enter':
-//                 e.preventDefault();
-//                 const activeItem = items[this.#activeIndex >= 0 ? this.#activeIndex : 0];
-//                 if (activeItem?.value && !activeItem.disabled) {
-//                     this.selectValue(activeItem.value);
-//                 }
-//                 return;
-//             default:
-//                 return;
-//         }
-//
-//         if (nextIndex !== this.#activeIndex && nextIndex >= 0 && items[nextIndex]) {
-//             this.#setActiveIndex(nextIndex, items);
-//         }
-//     }
-//
-//     #setActiveIndex(index: number, items?: MListBoxItem[]) {
-//         const itemList = items || this.#getItems();
-//         if (index < 0 || index >= itemList.length) return;
-//
-//         this.#activeIndex = index;
-//         const activeItem = itemList[index];
-//
-//         if (activeItem?.id) {
-//             this.setAttribute('aria-activedescendant', activeItem.id);
-//         }
-//     }
-//
-//     #initializeVirtualFocus() {
-//         const items = this.#getItems();
-//         if (items.length === 0) return;
-//
-//         let initialIndex = -1;
-//
-//         if (this.value) {
-//             const selectedValues = this.multiple 
-//                 ? this.value.split(',') 
-//                 : [this.value];
-//
-//             initialIndex = items.findIndex(item => selectedValues.includes(item.value));
-//         }
-//
-//         if (initialIndex === -1) {
-//             initialIndex = 0;
-//         }
-//
-//         this.#setActiveIndex(initialIndex, items);
-//     }
-//
-//     render() {
-//         this.#shadowRoot.innerHTML = `
-//             <slot></slot>
-//         `;
-//     }
-//
-//     //  ------------------------------------------------------------------------
-//     //  Form callbacks                                                                     
-//     //  ------------------------------------------------------------------------ 
-//     formResetCallback() {
-//         this.value = this.#initialValue;
-//     }
-//
-//     formDisabledCallback(disabled: boolean) {
-//         this.disabled = disabled;
-//     }
-//
-//     formStateRestoreCallback(state: string) {
-//         this.value = state;
-//     }
-// } 
