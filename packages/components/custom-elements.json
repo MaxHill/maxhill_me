@@ -4,6 +4,628 @@
   "modules": [
     {
       "kind": "javascript-module",
+      "path": "dist/m-card.js",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "a",
+          "default": "o"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "a",
+            "module": "dist/m-card.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/m-copy-button.js",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "r",
+          "default": "o"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "r",
+            "module": "dist/m-copy-button.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/m-element-DDTovdQv.js",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "h",
+          "parameters": [
+            {
+              "name": "s"
+            }
+          ]
+        },
+        {
+          "kind": "class",
+          "description": "",
+          "name": "y",
+          "members": [
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "u"
+                },
+                {
+                  "name": "i",
+                  "default": "customElements"
+                }
+              ]
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "B",
+          "declaration": {
+            "name": "h",
+            "module": "dist/m-element-DDTovdQv.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "M",
+          "declaration": {
+            "name": "y",
+            "module": "dist/m-element-DDTovdQv.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/m-fit-text.js",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "i",
+          "default": "a"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "i",
+            "module": "dist/m-fit-text.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/m-list-box.js",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "A",
+          "default": "m"
+        },
+        {
+          "kind": "class",
+          "description": "",
+          "name": "h",
+          "members": [
+            {
+              "kind": "method",
+              "name": "setVirtualFocus",
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "field",
+              "name": "value"
+            },
+            {
+              "kind": "field",
+              "name": "selected"
+            },
+            {
+              "kind": "field",
+              "name": "focused"
+            },
+            {
+              "kind": "field",
+              "name": "disabled"
+            },
+            {
+              "kind": "field",
+              "name": "_internals",
+              "default": "void 0"
+            },
+            {
+              "kind": "field",
+              "name": "adoptedStyleSheets",
+              "type": {
+                "text": "array"
+              },
+              "default": "[T]"
+            }
+          ],
+          "superclass": {
+            "module": "dist/m-list-box.js"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "MListBox",
+          "declaration": {
+            "name": "A",
+            "module": "dist/m-list-box.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "MListBoxItem",
+          "declaration": {
+            "name": "h",
+            "module": "dist/m-list-box.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/m-search-list.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "y",
+          "members": [
+            {
+              "kind": "field",
+              "name": "emptySlotHasContent",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "initialSlotHasContent",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "input",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "items",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "searchItems",
+              "parameters": [
+                {
+                  "name": "a"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "updateAriaLive",
+              "parameters": [
+                {
+                  "name": "a"
+                },
+                {
+                  "name": "d"
+                },
+                {
+                  "name": "r"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "toggleSlots"
+            },
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "field",
+              "name": "state",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"initial\""
+            },
+            {
+              "kind": "field",
+              "name": "resultsMessage",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"\""
+            },
+            {
+              "kind": "field",
+              "name": "resultsTimeout",
+              "default": "void 0"
+            },
+            {
+              "kind": "field",
+              "name": "debounceTimeout",
+              "default": "void 0"
+            },
+            {
+              "kind": "field",
+              "name": "_internals",
+              "default": "void 0"
+            },
+            {
+              "kind": "field",
+              "name": "defaultSlot",
+              "default": "void 0"
+            },
+            {
+              "kind": "field",
+              "name": "emptySlot",
+              "default": "void 0"
+            },
+            {
+              "kind": "field",
+              "name": "initialSlot",
+              "default": "void 0"
+            },
+            {
+              "kind": "field",
+              "name": "target"
+            },
+            {
+              "kind": "field",
+              "name": "debounce"
+            },
+            {
+              "kind": "field",
+              "name": "handleInput"
+            },
+            {
+              "kind": "field",
+              "name": "adoptedStyleSheets",
+              "type": {
+                "text": "array"
+              },
+              "default": "[B]"
+            }
+          ],
+          "superclass": {
+            "module": "dist/m-search-list.js"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "MSearchList",
+          "declaration": {
+            "name": "y",
+            "module": "dist/m-search-list.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/m-tabs.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "yt",
+          "superclass": {
+            "name": "CustomEvent",
+            "module": "dist/m-tabs.js"
+          }
+        },
+        {
+          "kind": "class",
+          "description": "",
+          "name": "kt",
+          "superclass": {
+            "name": "CustomEvent",
+            "module": "dist/m-tabs.js"
+          }
+        },
+        {
+          "kind": "class",
+          "description": "",
+          "name": "y",
+          "members": [
+            {
+              "kind": "method",
+              "name": "updateOrientation"
+            },
+            {
+              "kind": "method",
+              "name": "initializeActiveTab"
+            },
+            {
+              "kind": "method",
+              "name": "handleTabsClick",
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "handleTabsKeyDown",
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "setActiveTab",
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "method",
+              "name": "getTabs",
+              "parameters": [
+                {
+                  "name": "e",
+                  "default": "{ includeDisabled: !1 }"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getPanels"
+            },
+            {
+              "kind": "field",
+              "name": "label"
+            },
+            {
+              "kind": "field",
+              "name": "tab"
+            },
+            {
+              "kind": "field",
+              "name": "position"
+            },
+            {
+              "kind": "field",
+              "name": "tabSlot",
+              "default": "void 0"
+            },
+            {
+              "kind": "field",
+              "name": "panelSlot",
+              "default": "void 0"
+            },
+            {
+              "kind": "field",
+              "name": "adoptedStyleSheets",
+              "type": {
+                "text": "array"
+              },
+              "default": "[X]"
+            }
+          ],
+          "events": [
+            {
+              "type": {
+                "text": "yt"
+              }
+            }
+          ],
+          "superclass": {
+            "module": "dist/m-tabs.js"
+          }
+        },
+        {
+          "kind": "class",
+          "description": "",
+          "name": "k",
+          "members": [
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "field",
+              "name": "panel"
+            },
+            {
+              "kind": "field",
+              "name": "active"
+            },
+            {
+              "kind": "field",
+              "name": "disabled"
+            },
+            {
+              "kind": "field",
+              "name": "adoptedStyleSheets",
+              "type": {
+                "text": "array"
+              },
+              "default": "[it]"
+            }
+          ],
+          "superclass": {
+            "module": "dist/m-tabs.js"
+          }
+        },
+        {
+          "kind": "class",
+          "description": "",
+          "name": "z",
+          "members": [
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "field",
+              "name": "name"
+            },
+            {
+              "kind": "field",
+              "name": "visible"
+            },
+            {
+              "kind": "field",
+              "name": "adoptedStyleSheets",
+              "type": {
+                "text": "array"
+              },
+              "default": "[ct]"
+            }
+          ],
+          "superclass": {
+            "module": "dist/m-tabs.js"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "MTab",
+          "declaration": {
+            "name": "k",
+            "module": "dist/m-tabs.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "MTabHideEvent",
+          "declaration": {
+            "name": "kt",
+            "module": "dist/m-tabs.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "MTabList",
+          "declaration": {
+            "name": "y",
+            "module": "dist/m-tabs.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "MTabPanel",
+          "declaration": {
+            "name": "z",
+            "module": "dist/m-tabs.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "MTabShowEvent",
+          "declaration": {
+            "name": "yt",
+            "module": "dist/m-tabs.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/register-all.js",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "M"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "registerAll",
+          "declaration": {
+            "name": "M",
+            "module": "dist/register-all.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/register-all.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "registerAll"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "registerAll",
+          "declaration": {
+            "name": "registerAll",
+            "module": "src/register-all.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/test-setup.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/m-card/index.ts",
       "declarations": [
         {
@@ -359,7 +981,11 @@
                 "text": "string"
               },
               "static": true,
-              "default": "'m-list-box-item'"
+              "default": "'m-list-box-item'",
+              "inheritedFrom": {
+                "name": "MElement",
+                "module": "src/utils/m-element.ts"
+              }
             },
             {
               "kind": "field",
@@ -372,6 +998,14 @@
             {
               "kind": "field",
               "name": "selected",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "focused",
               "type": {
                 "text": "boolean"
               },
@@ -394,6 +1028,13 @@
               }
             },
             {
+              "kind": "field",
+              "name": "_internals",
+              "type": {
+                "text": "ElementInternals"
+              }
+            },
+            {
               "kind": "method",
               "name": "#setupAccessibility",
               "privacy": "private"
@@ -404,9 +1045,16 @@
               "privacy": "private"
             },
             {
-              "kind": "field",
-              "name": "#selectMe",
-              "privacy": "private"
+              "kind": "method",
+              "name": "setVirtualFocus",
+              "parameters": [
+                {
+                  "name": "focused",
+                  "type": {
+                    "text": "boolean"
+                  }
+                }
+              ]
             },
             {
               "kind": "method",
@@ -419,6 +1067,28 @@
                 "text": "array"
               },
               "default": "[baseStyleSheet]"
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "MElement",
+                "module": "src/utils/m-element.ts"
+              }
             }
           ],
           "attributes": [
@@ -427,6 +1097,9 @@
             },
             {
               "name": "selected"
+            },
+            {
+              "name": "focused"
             },
             {
               "name": "disabled"
@@ -455,7 +1128,7 @@
       "declarations": [
         {
           "kind": "class",
-          "description": "Form-associated listbox for single or multiple selection\n\n# Single selection\n<m-list-box name=\"fruit\" value=\"apple\">\n  <m-list-box-item value=\"apple\">Apple</m-list-box-item>\n  <m-list-box-item value=\"pear\">Pear</m-list-box-item>\n</m-list-box>\n\n# Multiple selection\n<m-list-box name=\"fruits\" multiple>\n  <m-list-box-item value=\"apple\">Apple</m-list-box-item>\n  <m-list-box-item value=\"pear\">Pear</m-list-box-item>\n</m-list-box>\n\n# In a form\n<form id=\"myForm\">\n  <m-list-box name=\"fruit\">\n    <m-list-box-item value=\"apple\">Apple</m-list-box-item>\n    <m-list-box-item value=\"pear\">Pear</m-list-box-item>\n  </m-list-box>\n  <button type=\"submit\">Submit</button>\n</form>\n<pre id=\"output\"></pre>\n\n<script >\n  document.getElementById('myForm').addEventListener('submit', (e) => {\n    e.preventDefault();\n    const formData = new FormData(e.target);\n    const data = Object.fromEntries(formData.entries());\n    document.getElementById('output').textContent = JSON.stringify(data, null, 2);\n  });\n</script>",
+          "description": "",
           "name": "MListBox",
           "members": [
             {
@@ -465,7 +1138,11 @@
                 "text": "string"
               },
               "static": true,
-              "default": "'m-list-box'"
+              "default": "'m-list-box'",
+              "inheritedFrom": {
+                "name": "MElement",
+                "module": "src/utils/m-element.ts"
+              }
             },
             {
               "kind": "field",
@@ -478,152 +1155,258 @@
             },
             {
               "kind": "field",
-              "name": "#shadowRoot",
-              "privacy": "private",
+              "name": "focusedElement",
               "type": {
-                "text": "ShadowRoot"
-              }
+                "text": "MListBoxItem | null"
+              },
+              "privacy": "private",
+              "default": "null"
             },
             {
               "kind": "field",
-              "name": "#internals",
-              "privacy": "private",
+              "name": "internals",
               "type": {
                 "text": "ElementInternals"
-              }
+              },
+              "privacy": "private"
             },
             {
               "kind": "field",
-              "name": "#initialValue",
-              "privacy": "private",
+              "name": "items",
               "type": {
-                "text": "string"
+                "text": "MListBoxItem[]"
               },
-              "default": "''"
+              "privacy": "private",
+              "description": "* ----------------------------\nGetters / Form Accessors\n-----------------------------",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "selected",
+              "type": {
+                "text": "MListBoxItem[]"
+              },
+              "privacy": "private",
+              "readonly": true
             },
             {
               "kind": "field",
               "name": "value",
               "type": {
-                "text": "string"
+                "text": "string | null"
               },
-              "default": "''"
+              "readonly": true
             },
             {
               "kind": "field",
-              "name": "name",
+              "name": "values",
               "type": {
-                "text": "string"
+                "text": "string[]"
               },
-              "default": "''"
-            },
-            {
-              "kind": "field",
-              "name": "disabled",
-              "type": {
-                "text": "boolean"
-              },
-              "default": "false"
+              "readonly": true
             },
             {
               "kind": "field",
               "name": "multiple",
               "type": {
                 "text": "boolean"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "form",
+              "type": {
+                "text": "HTMLFormElement | null"
               },
-              "default": "false"
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "name",
+              "type": {
+                "text": "string"
+              }
             },
             {
               "kind": "method",
-              "name": "selectValue",
-              "parameters": [
-                {
-                  "name": "itemValue",
-                  "type": {
-                    "text": "string"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "method",
-              "name": "#applyFormValue",
-              "privacy": "private"
-            },
-            {
-              "kind": "method",
-              "name": "#updateItems",
-              "privacy": "private"
-            },
-            {
-              "kind": "method",
-              "name": "#getItems",
+              "name": "updateFormValue",
               "privacy": "private",
               "return": {
                 "type": {
-                  "text": "MListBoxItem[]"
+                  "text": "void"
+                }
+              },
+              "description": "* ----------------------------\nForm association\n-----------------------------"
+            },
+            {
+              "kind": "method",
+              "name": "formAssociatedCallback",
+              "return": {
+                "type": {
+                  "text": "void"
                 }
               }
             },
             {
               "kind": "method",
-              "name": "#setupAccessibility",
-              "privacy": "private"
+              "name": "formResetCallback",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
             },
             {
               "kind": "method",
-              "name": "#updateDisabledState",
-              "privacy": "private"
+              "name": "setFocus",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "item",
+                  "type": {
+                    "text": "MListBoxItem | null"
+                  }
+                }
+              ],
+              "description": "* ----------------------------\nFocus Management\n-----------------------------"
             },
             {
               "kind": "method",
-              "name": "#setupEventListeners",
-              "privacy": "private"
+              "name": "focusFirst",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
             },
             {
               "kind": "method",
-              "name": "#handleKeyDown",
+              "name": "focusLast",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "focusNext",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "focusPrev",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "focusBlur",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "select",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "item",
+                  "type": {
+                    "text": "MListBoxItem | null"
+                  }
+                }
+              ],
+              "description": "* ----------------------------\nSelection Management\n-----------------------------"
+            },
+            {
+              "kind": "method",
+              "name": "selectFocused",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "selectFirst",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "selectLast",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "selectNext",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "selectPrev",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "field",
+              "name": "handleKeydown",
               "privacy": "private",
-              "parameters": [
-                {
-                  "name": "e",
-                  "type": {
-                    "text": "KeyboardEvent"
-                  }
-                }
-              ]
+              "description": "* ----------------------------\nEvent Handlers\n-----------------------------"
             },
             {
-              "kind": "method",
-              "name": "render"
+              "kind": "field",
+              "name": "handleFocus",
+              "privacy": "private"
             },
             {
-              "kind": "method",
-              "name": "formResetCallback"
+              "kind": "field",
+              "name": "handleBlur",
+              "privacy": "private"
             },
             {
-              "kind": "method",
-              "name": "formDisabledCallback",
-              "parameters": [
-                {
-                  "name": "disabled",
-                  "type": {
-                    "text": "boolean"
-                  }
-                }
-              ]
+              "kind": "field",
+              "name": "handleClick",
+              "privacy": "private"
             },
             {
-              "kind": "method",
-              "name": "formStateRestoreCallback",
-              "parameters": [
-                {
-                  "name": "state",
-                  "type": {
-                    "text": "string"
-                  }
-                }
-              ]
+              "kind": "field",
+              "name": "innerHTML",
+              "default": "`<slot></slot>`"
             },
             {
               "kind": "field",
@@ -632,26 +1415,65 @@
                 "text": "array"
               },
               "default": "[baseStyleSheet]"
+            },
+            {
+              "kind": "field",
+              "name": "tabIndex",
+              "type": {
+                "text": "number"
+              },
+              "default": "0"
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "MElement",
+                "module": "src/utils/m-element.ts"
+              }
             }
           ],
           "events": [
             {
-              "name": "change",
+              "name": "m-listbox-focus-change",
               "type": {
-                "text": "Event"
+                "text": "CustomEvent"
+              }
+            },
+            {
+              "name": "m-listbox-unselected",
+              "type": {
+                "text": "CustomEvent"
+              }
+            },
+            {
+              "name": "eventName",
+              "type": {
+                "text": "CustomEvent"
+              }
+            },
+            {
+              "name": "m-listbox-change",
+              "type": {
+                "text": "CustomEvent"
               }
             }
           ],
           "attributes": [
-            {
-              "name": "value"
-            },
-            {
-              "name": "name"
-            },
-            {
-              "name": "disabled"
-            },
             {
               "name": "multiple"
             }
@@ -659,9 +1481,7 @@
           "superclass": {
             "name": "MElement",
             "module": "/src/utils/m-element"
-          },
-          "tagName": "m-list-box",
-          "customElement": true
+          }
         }
       ],
       "exports": [
@@ -709,7 +1529,11 @@
                 "text": "string"
               },
               "static": true,
-              "default": "'m-search-list'"
+              "default": "'m-search-list'",
+              "inheritedFrom": {
+                "name": "MElement",
+                "module": "src/utils/m-element.ts"
+              }
             },
             {
               "kind": "field",
@@ -897,6 +1721,28 @@
                 "text": "array"
               },
               "default": "[baseStyleSheet]"
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "MElement",
+                "module": "src/utils/m-element.ts"
+              }
             }
           ],
           "attributes": [
@@ -1029,7 +1875,11 @@
                 "text": "string"
               },
               "static": true,
-              "default": "'m-tab-list'"
+              "default": "'m-tab-list'",
+              "inheritedFrom": {
+                "name": "MElement",
+                "module": "src/utils/m-element.ts"
+              }
             },
             {
               "kind": "field",
@@ -1158,6 +2008,28 @@
                 "text": "array"
               },
               "default": "[baseStyleSheet]"
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "MElement",
+                "module": "src/utils/m-element.ts"
+              }
             }
           ],
           "events": [
@@ -1255,7 +2127,11 @@
                 "text": "string"
               },
               "static": true,
-              "default": "'m-tab-panel'"
+              "default": "'m-tab-panel'",
+              "inheritedFrom": {
+                "name": "MElement",
+                "module": "src/utils/m-element.ts"
+              }
             },
             {
               "kind": "field",
@@ -1294,6 +2170,28 @@
                 "text": "array"
               },
               "default": "[baseStyleSheet]"
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "MElement",
+                "module": "src/utils/m-element.ts"
+              }
             }
           ],
           "attributes": [
@@ -1353,7 +2251,11 @@
                 "text": "string"
               },
               "static": true,
-              "default": "'m-tab'"
+              "default": "'m-tab'",
+              "inheritedFrom": {
+                "name": "MElement",
+                "module": "src/utils/m-element.ts"
+              }
             },
             {
               "kind": "field",
@@ -1400,6 +2302,28 @@
                 "text": "array"
               },
               "default": "[baseStyleSheet]"
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "MElement",
+                "module": "src/utils/m-element.ts"
+              }
             }
           ],
           "attributes": [
@@ -1440,6 +2364,204 @@
           "declaration": {
             "name": "MTab",
             "module": "src/m-tabs/tab.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/utils/m-element.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "MElement",
+          "members": [
+            {
+              "kind": "field",
+              "name": "tagName",
+              "type": {
+                "text": "string"
+              },
+              "static": true
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "tag",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "registry",
+                  "default": "customElements"
+                }
+              ]
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "MElement",
+          "declaration": {
+            "name": "MElement",
+            "module": "src/utils/m-element.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/utils/reflect-attribute.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "reflectAttribute",
+          "return": {
+            "type": {
+              "text": "string | boolean | undefined"
+            }
+          },
+          "parameters": [
+            {
+              "name": "instance",
+              "type": {
+                "text": "HTMLElement"
+              }
+            },
+            {
+              "name": "attrName",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "value",
+              "type": {
+                "text": "string | boolean | undefined"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "BindAttribute",
+          "parameters": [
+            {
+              "name": "options",
+              "optional": true,
+              "type": {
+                "text": "{ \n  attribute?: string;\n  converter?: (value: any) => string;\n}"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "handleAttributeChange",
+          "parameters": [
+            {
+              "name": "element",
+              "type": {
+                "text": "HTMLElement"
+              }
+            },
+            {
+              "name": "name",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "newValue",
+              "type": {
+                "text": "string | null"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "reflectAttribute",
+          "declaration": {
+            "name": "reflectAttribute",
+            "module": "src/utils/reflect-attribute.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BindAttribute",
+          "declaration": {
+            "name": "BindAttribute",
+            "module": "src/utils/reflect-attribute.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "handleAttributeChange",
+          "declaration": {
+            "name": "handleAttributeChange",
+            "module": "src/utils/reflect-attribute.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/utils/search.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "fuzzySearch",
+          "return": {
+            "type": {
+              "text": ""
+            }
+          },
+          "parameters": [
+            {
+              "name": "query",
+              "type": {
+                "text": "string"
+              },
+              "description": "The search query to look for"
+            },
+            {
+              "name": "content",
+              "type": {
+                "text": "string"
+              },
+              "description": "The string to search within"
+            },
+            {
+              "name": "threshold",
+              "default": "0.7",
+              "description": "Minimum similarity threshold (0-1), where 1 requires exact match"
+            }
+          ],
+          "description": "Fuzzy string matching that handles typos, transpositions, and works with any language/script. The higher the\nthreshold (0-1), the pickier it is about matches. 0.7 is a good default that catches most typos while avoiding false\npositives."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "fuzzySearch",
+          "declaration": {
+            "name": "fuzzySearch",
+            "module": "src/utils/search.ts"
           }
         }
       ]
