@@ -8,335 +8,335 @@ baseStyleSheet.replaceSync(styles);
 
 
 interface MListBoxSelectEventDetail {
-  item: MListBoxItem;
-  selected: boolean;
+    item: MListBoxItem;
+    selected: boolean;
 }
 
 interface MListBoxChangeEventDetail {
-  selected: string[];
+    selected: string[];
 }
 
 interface MListBoxFocusChangeEventDetail {
-  item: MListBoxItem | null;
+    item: MListBoxItem | null;
 }
 
 export class MListBox extends MElement {
-  static tagName = 'm-list-box';
-  static formAssociated = true;
-  static observedAttributes = ['multiple'];
+    static tagName = 'm-list-box';
+    static formAssociated = true;
+    static observedAttributes = ['multiple'];
 
-  private focusedElement: MListBoxItem | null = null;
-  private internals: ElementInternals;
+    private focusedElement: MListBoxItem | null = null;
+    private internals: ElementInternals;
 
-  constructor() {
-    super();
-    const shadow = this.attachShadow({ mode: 'open' });
-    shadow.innerHTML = `<slot></slot>`;
-    shadow.adoptedStyleSheets = [baseStyleSheet];
-    this.internals = this.attachInternals();
-    this.tabIndex = 0;
-  }
-
-  /*** ----------------------------
-   *  Lifecycle
-   * ----------------------------- */
-  connectedCallback(): void {
-    this.addEventListener('keydown', this.handleKeydown);
-    this.addEventListener('focus', this.handleFocus, true);
-    this.addEventListener('blur', this.handleBlur, true);
-    this.addEventListener('click', this.handleClick);
-  }
-
-  disconnectedCallback(): void {
-    this.removeEventListener('keydown', this.handleKeydown);
-    this.removeEventListener('focus', this.handleFocus, true);
-    this.removeEventListener('blur', this.handleBlur, true);
-    this.removeEventListener('click', this.handleClick);
-  }
-
-
-  attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
-      // TODO: will this really work
-    if (name === 'multiple') {
-      // Reset selection when switching modes
-      this.items.forEach(item => (item.selected = false));
-      this.focusedElement = null;
-      this.updateFormValue();
+    constructor() {
+        super();
+        const shadow = this.attachShadow({ mode: 'open' });
+        shadow.innerHTML = `<slot></slot>`;
+        shadow.adoptedStyleSheets = [baseStyleSheet];
+        this.internals = this.attachInternals();
+        this.tabIndex = 0;
     }
-  }
 
-  /*** ----------------------------
-   *  Getters / Form Accessors
-   * ----------------------------- */
-  private get items(): MListBoxItem[] {
-    // Query light DOM children (slotted items)
-    return Array.from(this.querySelectorAll<MListBoxItem>('m-list-box-item'));
-  }
-
-  private get selected(): MListBoxItem[] {
-    return this.items.filter(item => !!item.selected);
-  }
-
-  get value(): string | null {
-    return this.selected[0]?.value ?? null;
-  }
-
-  get values(): string[] {
-    return this.selected.reduce<string[]>((acc, item) => {
-      if (item.value) acc.push(item.value);
-      return acc;
-    }, []);
-  }
-
-  get multiple(): boolean {
-    return this.hasAttribute('multiple');
-  }
-
-  set multiple(value: boolean) {
-    if (value) this.setAttribute('multiple', '');
-    else this.removeAttribute('multiple');
-  }
-
-  get form(): HTMLFormElement | null {
-    return this.internals.form;
-  }
-
-  get name(): string {
-    return this.getAttribute('name') ?? '';
-  }
-
-  set name(value: string) {
-    this.setAttribute('name', value);
-  }
-
-  /*** ----------------------------
-   *  Form association
-   * ----------------------------- */
-  private updateFormValue(): void {
-    if (this.values.length === 0) {
-      this.internals.setFormValue(null);
-    } else if (this.values.length === 1) {
-      this.internals.setFormValue(this.values[0]);
-    } else {
-      const formData = new FormData();
-      for (const val of this.values) formData.append(this.name, val);
-      this.internals.setFormValue(formData);
+    /*** ----------------------------
+     *  Lifecycle
+     * ----------------------------- */
+    connectedCallback(): void {
+        this.addEventListener('keydown', this.handleKeydown);
+        this.addEventListener('focus', this.handleFocus, true);
+        this.addEventListener('blur', this.handleBlur, true);
+        this.addEventListener('click', this.handleClick);
     }
-  }
 
-  formAssociatedCallback(): void {
-    this.updateFormValue();
-  }
-
-  formResetCallback(): void {
-    this.items.forEach(item => (item.selected = false));
-    this.focusedElement = null;
-    this.updateFormValue();
-  }
-
-  /*** ----------------------------
-   *  Focus Management
-   * ----------------------------- */
-  setFocus(item: MListBoxItem | null): void {
-    if (!item) return;
-    if (this.focusedElement) this.focusedElement.removeAttribute('focused');
-
-    item.focused = true
-    this.focusedElement = item;
-
-    this.dispatchEvent(
-      new CustomEvent<MListBoxFocusChangeEventDetail>('m-listbox-focus-change', {
-        detail: { item },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
-  focusFirst(): void {
-    this.setFocus(this.items[0] ?? null);
-  }
-
-  focusLast(): void {
-    this.setFocus(this.items[this.items.length - 1] ?? null);
-  }
-
-  focusNext(): void {
-    if (!this.focusedElement) return this.focusFirst();
-    const idx = this.items.indexOf(this.focusedElement);
-    const next = this.items[idx + 1] ?? this.items[0];
-    this.setFocus(next);
-  }
-
-  focusPrev(): void {
-    if (!this.focusedElement) return this.focusLast();
-    const idx = this.items.indexOf(this.focusedElement);
-    const prev = this.items[idx - 1] ?? this.items[this.items.length - 1];
-    this.setFocus(prev);
-  }
-
-  focusBlur(): void {
-    if (this.focusedElement) {
-      this.focusedElement.removeAttribute('focused');
-      this.focusedElement = null;
+    disconnectedCallback(): void {
+        this.removeEventListener('keydown', this.handleKeydown);
+        this.removeEventListener('focus', this.handleFocus, true);
+        this.removeEventListener('blur', this.handleBlur, true);
+        this.removeEventListener('click', this.handleClick);
     }
-  }
 
-  /*** ----------------------------
-   *  Selection Management
-   * ----------------------------- */
-  select(item: MListBoxItem | null): void {
-  if (!item) return;
 
-  if (!this.multiple) {
-    // single-select mode: reset others
-    this.items.forEach(i => {
-      if (i !== item && i.selected) {
-        i.selected = false;
+    attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
+        // TODO: will this really work
+        if (name === 'multiple') {
+            // Reset selection when switching modes
+            this.items.forEach(item => (item.selected = false));
+            this.focusedElement = null;
+            this.updateFormValue();
+        }
+    }
+
+    /*** ----------------------------
+     *  Getters / Form Accessors
+     * ----------------------------- */
+    private get items(): MListBoxItem[] {
+        // Query light DOM children (slotted items)
+        return Array.from(this.querySelectorAll<MListBoxItem>('m-list-box-item'));
+    }
+
+    private get selected(): MListBoxItem[] {
+        return this.items.filter(item => !!item.selected);
+    }
+
+    get value(): string | null {
+        return this.selected[0]?.value ?? null;
+    }
+
+    get values(): string[] {
+        return this.selected.reduce<string[]>((acc, item) => {
+            if (item.value) acc.push(item.value);
+            return acc;
+        }, []);
+    }
+
+    get multiple(): boolean {
+        return this.hasAttribute('multiple');
+    }
+
+    set multiple(value: boolean) {
+        if (value) this.setAttribute('multiple', '');
+        else this.removeAttribute('multiple');
+    }
+
+    get form(): HTMLFormElement | null {
+        return this.internals.form;
+    }
+
+    get name(): string {
+        return this.getAttribute('name') ?? '';
+    }
+
+    set name(value: string) {
+        this.setAttribute('name', value);
+    }
+
+    /*** ----------------------------
+     *  Form association
+     * ----------------------------- */
+    private updateFormValue(): void {
+        if (this.values.length === 0) {
+            this.internals.setFormValue(null);
+        } else if (this.values.length === 1) {
+            this.internals.setFormValue(this.values[0]);
+        } else {
+            const formData = new FormData();
+            for (const val of this.values) formData.append(this.name, val);
+            this.internals.setFormValue(formData);
+        }
+    }
+
+    formAssociatedCallback(): void {
+        this.updateFormValue();
+    }
+
+    formResetCallback(): void {
+        this.items.forEach(item => (item.selected = false));
+        this.focusedElement = null;
+        this.updateFormValue();
+    }
+
+    /*** ----------------------------
+     *  Focus Management
+     * ----------------------------- */
+    setFocus(item: MListBoxItem | null): void {
+        if (!item) return;
+        if (this.focusedElement) this.focusedElement.removeAttribute('focused');
+
+        item.focused = true
+        this.focusedElement = item;
+
         this.dispatchEvent(
-          new CustomEvent<MListBoxSelectEventDetail>('m-listbox-unselected', {
-            detail: { item: i, selected: false },
-            bubbles: true,
-            composed: true,
-          })
+            new CustomEvent<MListBoxFocusChangeEventDetail>('m-listbox-focus-change', {
+                detail: { item },
+                bubbles: true,
+                composed: true,
+            })
         );
-      }
-    });
-    // select new item
-    item.selected = true;
-    this.setFocus(item); // focus always = selection
-  } else {
-    // multiple mode: toggle selection
-    item.selected = !item.selected;
-  }
-
-  const eventName = item.selected ? 'm-listbox-select' : 'm-listbox-unselected';
-  this.dispatchEvent(
-    new CustomEvent<MListBoxSelectEventDetail>(eventName, {
-      detail: { item, selected: item.selected! },
-      bubbles: true,
-      composed: true,
-    })
-  );
-
-  this.dispatchEvent(
-    new CustomEvent<MListBoxChangeEventDetail>('m-listbox-change', {
-      detail: { selected: this.values },
-      bubbles: true,
-      composed: true,
-    })
-  );
-
-  this.updateFormValue();
-}
-
-  selectFocused(): void {
-    if (this.focusedElement) this.select(this.focusedElement);
-  }
-
-  selectFirst(): void {
-    if (this.items[0]) this.select(this.items[0]);
-  }
-
-  selectLast(): void {
-    if (this.items.length) this.select(this.items[this.items.length - 1]);
-  }
-
-  selectNext(): void {
-    if (!this.focusedElement) return this.selectFirst();
-    const idx = this.items.indexOf(this.focusedElement);
-    const next = this.items[idx + 1] ?? this.items[0];
-    this.select(next);
-  }
-
-  selectPrev(): void {
-    if (!this.focusedElement) return this.selectLast();
-    const idx = this.items.indexOf(this.focusedElement);
-    const prev = this.items[idx - 1] ?? this.items[this.items.length - 1];
-    this.select(prev);
-  }
-
-  /*** ----------------------------
-   *  Event Handlers
-   * ----------------------------- */
-  private handleKeydown = (event: KeyboardEvent) => {
-      event.stopPropagation();
-    if (!this.multiple) {
-      // single-select: arrows select
-      switch (event.key) {
-        case 'ArrowDown':
-          this.selectNext();
-          event.preventDefault();
-          break;
-        case 'ArrowUp':
-          this.selectPrev();
-          event.preventDefault();
-          break;
-        case 'Home':
-          this.selectFirst();
-          event.preventDefault();
-          break;
-        case 'End':
-          this.selectLast();
-          event.preventDefault();
-          break;
-        case ' ':
-        case 'Enter':
-          this.selectFocused();
-          event.preventDefault();
-          break;
-      }
-    } else {
-      // multiple-select: arrows only focus
-      switch (event.key) {
-        case 'ArrowDown':
-          this.focusNext();
-          event.preventDefault();
-          break;
-        case 'ArrowUp':
-          this.focusPrev();
-          event.preventDefault();
-          break;
-        case 'Home':
-          this.focusFirst();
-          event.preventDefault();
-          break;
-        case 'End':
-          this.focusLast();
-          event.preventDefault();
-          break;
-        case ' ':
-        case 'Enter':
-          this.selectFocused();
-          event.preventDefault();
-          break;
-      }
     }
-  };
 
-  private handleFocus = () => {
-    if (!this.focusedElement) this.focusFirst();
-  };
-
-  private handleBlur = () => {
-    this.focusBlur();
-  };
-
-  private handleClick = (event: MouseEvent) => {
-    const item = event
-      .composedPath()
-      .find(el => (el as HTMLElement).tagName === 'M-LIST-BOX-ITEM') as
-      | MListBoxItem
-      | undefined;
-
-    if (item) {
-      if (!this.multiple) this.select(item);
-      else {
-        this.setFocus(item);
-        this.select(item);
-      }
+    focusFirst(): void {
+        this.setFocus(this.items[0] ?? null);
     }
-  };
+
+    focusLast(): void {
+        this.setFocus(this.items[this.items.length - 1] ?? null);
+    }
+
+    focusNext(): void {
+        if (!this.focusedElement) return this.focusFirst();
+        const idx = this.items.indexOf(this.focusedElement);
+        const next = this.items[idx + 1] ?? this.items[0];
+        this.setFocus(next);
+    }
+
+    focusPrev(): void {
+        if (!this.focusedElement) return this.focusLast();
+        const idx = this.items.indexOf(this.focusedElement);
+        const prev = this.items[idx - 1] ?? this.items[this.items.length - 1];
+        this.setFocus(prev);
+    }
+
+    focusBlur(): void {
+        if (this.focusedElement) {
+            this.focusedElement.removeAttribute('focused');
+            this.focusedElement = null;
+        }
+    }
+
+    /*** ----------------------------
+     *  Selection Management
+     * ----------------------------- */
+    select(item: MListBoxItem | null): void {
+        if (!item) return;
+
+        if (!this.multiple) {
+            // single-select mode: reset others
+            this.items.forEach(i => {
+                if (i !== item && i.selected) {
+                    i.selected = false;
+                    this.dispatchEvent(
+                        new CustomEvent<MListBoxSelectEventDetail>('m-listbox-unselected', {
+                            detail: { item: i, selected: false },
+                            bubbles: true,
+                            composed: true,
+                        })
+                    );
+                }
+            });
+            // select new item
+            item.selected = true;
+            this.setFocus(item); // focus always = selection
+        } else {
+            // multiple mode: toggle selection
+            item.selected = !item.selected;
+        }
+
+        const eventName = item.selected ? 'm-listbox-select' : 'm-listbox-unselected';
+        this.dispatchEvent(
+            new CustomEvent<MListBoxSelectEventDetail>(eventName, {
+                detail: { item, selected: item.selected! },
+                bubbles: true,
+                composed: true,
+            })
+        );
+
+        this.dispatchEvent(
+            new CustomEvent<MListBoxChangeEventDetail>('m-listbox-change', {
+                detail: { selected: this.values },
+                bubbles: true,
+                composed: true,
+            })
+        );
+
+        this.updateFormValue();
+    }
+
+    selectFocused(): void {
+        if (this.focusedElement) this.select(this.focusedElement);
+    }
+
+    selectFirst(): void {
+        if (this.items[0]) this.select(this.items[0]);
+    }
+
+    selectLast(): void {
+        if (this.items.length) this.select(this.items[this.items.length - 1]);
+    }
+
+    selectNext(): void {
+        if (!this.focusedElement) return this.selectFirst();
+        const idx = this.items.indexOf(this.focusedElement);
+        const next = this.items[idx + 1] ?? this.items[0];
+        this.select(next);
+    }
+
+    selectPrev(): void {
+        if (!this.focusedElement) return this.selectLast();
+        const idx = this.items.indexOf(this.focusedElement);
+        const prev = this.items[idx - 1] ?? this.items[this.items.length - 1];
+        this.select(prev);
+    }
+
+    /*** ----------------------------
+     *  Event Handlers
+     * ----------------------------- */
+    private handleKeydown = (event: KeyboardEvent) => {
+        event.stopPropagation();
+        if (!this.multiple) {
+            // single-select: arrows select
+            switch (event.key) {
+                case 'ArrowDown':
+                    this.selectNext();
+                    event.preventDefault();
+                    break;
+                case 'ArrowUp':
+                    this.selectPrev();
+                    event.preventDefault();
+                    break;
+                case 'Home':
+                    this.selectFirst();
+                    event.preventDefault();
+                    break;
+                case 'End':
+                    this.selectLast();
+                    event.preventDefault();
+                    break;
+                case ' ':
+                case 'Enter':
+                    this.selectFocused();
+                    event.preventDefault();
+                    break;
+            }
+        } else {
+            // multiple-select: arrows only focus
+            switch (event.key) {
+                case 'ArrowDown':
+                    this.focusNext();
+                    event.preventDefault();
+                    break;
+                case 'ArrowUp':
+                    this.focusPrev();
+                    event.preventDefault();
+                    break;
+                case 'Home':
+                    this.focusFirst();
+                    event.preventDefault();
+                    break;
+                case 'End':
+                    this.focusLast();
+                    event.preventDefault();
+                    break;
+                case ' ':
+                case 'Enter':
+                    this.selectFocused();
+                    event.preventDefault();
+                    break;
+            }
+        }
+    };
+
+    private handleFocus = () => {
+        if (!this.focusedElement) this.focusFirst();
+    };
+
+    private handleBlur = () => {
+        this.focusBlur();
+    };
+
+    private handleClick = (event: MouseEvent) => {
+        const item = event
+            .composedPath()
+            .find(el => (el as HTMLElement).tagName === 'M-LIST-BOX-ITEM') as
+            | MListBoxItem
+            | undefined;
+
+        if (item) {
+            if (!this.multiple) this.select(item);
+            else {
+                this.setFocus(item);
+                this.select(item);
+            }
+        }
+    };
 }
 
 

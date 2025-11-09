@@ -67,6 +67,9 @@ importers:
       '@vitest/browser':
         specifier: ^4.0.6
         version: 4.0.7(vite@6.4.1(@types/node@24.9.1)(yaml@2.8.1))(vitest@4.0.7(@types/debug@4.1.12)(@types/node@24.9.1)(happy-dom@20.0.10)(yaml@2.8.1))
+      '@wc-toolkit/cem-validator':
+        specifier: ^1.0.3
+        version: 1.0.3
       glob:
         specifier: ^11.0.3
         version: 11.0.3
@@ -889,6 +892,9 @@ packages:
 
   '@vscode/l10n@0.0.18':
     resolution: {integrity: sha512-KYSIHVmslkaCDyw013pphY+d7x1qV8IZupYfeIfzNA+nsaWHbn5uPuQRvdRFsa9zFzGeudPuoGoZ1Op4jrJXIQ==}
+
+  '@wc-toolkit/cem-validator@1.0.3':
+    resolution: {integrity: sha512-teKgwoyUaIUmJQCnYVjaxOLo6wOSNN/cCRh3jeeF84rNDuzyygl+zHfwgU5H8Z02hSvgvCJjKX+r7un9A70svw==}
 
   '@web/config-loader@0.1.3':
     resolution: {integrity: sha512-XVKH79pk4d3EHRhofete8eAnqto1e8mCRAqPV00KLNFzCWSe8sWmLnqKCqkPNARC6nksMaGrATnA5sPDRllMpQ==}
@@ -3644,6 +3650,8 @@ snapshots:
       vscode-uri: 3.1.0
 
   '@vscode/l10n@0.0.18': {}
+
+  '@wc-toolkit/cem-validator@1.0.3': {}
 
   '@web/config-loader@0.1.3':
     dependencies:

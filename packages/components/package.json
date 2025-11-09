@@ -3,13 +3,15 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "exports": {
-    "./custom-elements.json": "./custom-elements.json",
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "default": "./dist/*.js"
-    }
-  },
+  "main": "dist/register-all.js", 
+  "module": "dist/register-all.js", 
+  "types": "dist/register-all.d.ts", 
+  "exports": { 
+    ".": {
+        "types": "./dist/register-all.d.ts", 
+        "default": "./dist/register-all.js" }, 
+        "./custom-elements.json": "./custom-elements.json" 
+    },
   "files": [
     "dist",
     "custom-elements.json"
@@ -28,6 +30,7 @@
   "devDependencies": {
     "@custom-elements-manifest/analyzer": "^0.10.10",
     "@vitest/browser": "^4.0.6",
+    "@wc-toolkit/cem-validator": "^1.0.3",
     "glob": "^11.0.3",
     "happy-dom": "^20.0.10",
     "rollup-plugin-string": "^3.0.0",
