@@ -46,43 +46,6 @@ export class MTabHideEvent extends CustomEvent<MTabChangeEventDetail> {
  * Supports horizontal (arrow left/right, h/l) and vertical (arrow up/down, j/k) navigation depending on position.
  * Home/End keys work in both orientations.
  * 
- * ### Examples
- * <m-tab-list label="Example" tab="tab2">
- *     <m-tab panel="tab1">Tab 1</m-tab>
- *     <m-tab panel="tab2">Tab 2</m-tab>
- *     <m-tab panel="tab3" disabled>Tab 3</m-tab>
- *     <m-tab-panel name="tab1"> Panel value 1</m-tab-panel>
- *     <m-tab-panel name="tab2"> Panel value 2</m-tab-panel>
- *     <m-tab-panel name="tab3"> Panel value 3</m-tab-panel>
- * </m-tab-list>
- * 
- * <m-tab-list label="Example" tab="tab2" position="bottom">
- *     <m-tab panel="tab1">Tab 1</m-tab>
- *     <m-tab panel="tab2">Tab 2</m-tab>
- *     <m-tab panel="tab3" disabled>Tab 3</m-tab>
- *     <m-tab-panel name="tab1"> Panel value 1</m-tab-panel>
- *     <m-tab-panel name="tab2"> Panel value 2</m-tab-panel>
- *     <m-tab-panel name="tab3"> Panel value 3</m-tab-panel>
- * </m-tab-list>
- * 
- * <m-tab-list label="Example" tab="tab2" position="start">
- *     <m-tab panel="tab1">Tab 1</m-tab>
- *     <m-tab panel="tab2">Tab 2</m-tab>
- *     <m-tab panel="tab3" disabled>Tab 3</m-tab>
- *     <m-tab-panel name="tab1"> Panel value 1</m-tab-panel>
- *     <m-tab-panel name="tab2"> Panel value 2</m-tab-panel>
- *     <m-tab-panel name="tab3"> Panel value 3</m-tab-panel>
- * </m-tab-list>
- * 
- * <m-tab-list label="Example" tab="tab2" position="end">
- *     <m-tab panel="tab1">Tab 1</m-tab>
- *     <m-tab panel="tab2">Tab 2</m-tab>
- *     <m-tab panel="tab3" disabled>Tab 3</m-tab>
- *     <m-tab-panel name="tab1"> Panel value 1</m-tab-panel>
- *     <m-tab-panel name="tab2"> Panel value 2</m-tab-panel>
- *     <m-tab-panel name="tab3"> Panel value 3</m-tab-panel>
- * </m-tab-list>
- * 
  * @customElement
  * @tagname m-tab-list
  * 
@@ -102,6 +65,43 @@ export class MTabHideEvent extends CustomEvent<MTabChangeEventDetail> {
  * @event m-tab-show - Fired when a tab panel becomes visible. Detail: MTabChangeEventDetail { tab: MTab, panel: MTabPanel }
  * @event m-tab-hide - Fired when a tab panel becomes hidden. Detail: MTabChangeEventDetail { tab: MTab, panel: MTabPanel }
  * 
+ * @example
+ * Basic (top)
+ * <m-tab-list label="Example">
+ *   <m-tab panel="tab1">Tab 1</m-tab>
+ *   <m-tab panel="tab2">Tab 2</m-tab>
+ *   <m-tab-panel name="tab1">Panel 1</m-tab-panel>
+ *   <m-tab-panel name="tab2">Panel 2</m-tab-panel>
+ * </m-tab-list>
+ * 
+ * @example
+ * Bottom position
+ * <m-tab-list label="Example" position="bottom">
+ *   <m-tab panel="tab1">Tab 1</m-tab>
+ *   <m-tab panel="tab2">Tab 2</m-tab>
+ *   <m-tab-panel name="tab1">Panel 1</m-tab-panel>
+ *   <m-tab-panel name="tab2">Panel 2</m-tab-panel>
+ * </m-tab-list>
+ * 
+ * @example
+ * Vertical (start)
+ * <m-tab-list label="Example" position="start">
+ *   <m-tab panel="tab1">Tab 1</m-tab>
+ *   <m-tab panel="tab2">Tab 2</m-tab>
+ *   <m-tab-panel name="tab1">Panel 1</m-tab-panel>
+ *   <m-tab-panel name="tab2">Panel 2</m-tab-panel>
+ * </m-tab-list>
+ * 
+ * @example
+ * Disabled tabs
+ * <m-tab-list label="Example">
+ *   <m-tab panel="tab1">Tab 1</m-tab>
+ *   <m-tab panel="tab2" disabled>Tab 2 (Disabled)</m-tab>
+ *   <m-tab panel="tab3">Tab 3</m-tab>
+ *   <m-tab-panel name="tab1">Panel 1</m-tab-panel>
+ *   <m-tab-panel name="tab2">Panel 2</m-tab-panel>
+ *   <m-tab-panel name="tab3">Panel 3</m-tab-panel>
+ * </m-tab-list>
  */
 export class MTabList extends MElement {
     static tagName = 'm-tab-list';

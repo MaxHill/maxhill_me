@@ -38,6 +38,24 @@ const DEFAULT_COPY_ICON = `
  * @csspart button - The button element
  * @csspart icon - Icon wrapper
  * @csspart feedback - Feedback tooltip
+ * 
+ * @example
+ * Basic
+ * <m-copy-button value="Hello World">
+ *   Copy Text
+ * </m-copy-button>
+ * 
+ * @example
+ * Custom feedback
+ * <m-copy-button value="npm install" feedback="Installed!">
+ *   Copy command
+ * </m-copy-button>
+ * 
+ * @example
+ * Without icon
+ * <m-copy-button value="code snippet" show-icon="false">
+ *   Copy
+ * </m-copy-button>
  */
 class MCopyButton extends HTMLElement {
     static observedAttributes = ["value", "show-icon", "feedback"];

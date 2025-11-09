@@ -40,7 +40,7 @@ const components = getAllComponents(customElements).map((component) => {
                             <div class="example">
                                 {example.name && <h5>{example.name}</h5>}
                                 {example.description && (
-                                    <div class="typesetting" set:html={marked.parse(example.description)} />
+                                    <div class="example-demo" set:html={example.description} />
                                 )}
                             </div>
                         ))}

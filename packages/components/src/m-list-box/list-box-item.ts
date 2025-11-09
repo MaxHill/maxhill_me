@@ -8,17 +8,17 @@ baseStyleSheet.replaceSync(styles);
 /**
  * A selectable item within an m-list-box component.
  * Represents a single option that can be selected, focused, and disabled.
+ *
+ * @customElement
+ * @tagname m-list-box-item
  * 
  * @example
- * ```html
  * <m-list-box name="fruit">
  *   <m-list-box-item value="apple">Apple</m-list-box-item>
  *   <m-list-box-item value="pear" selected>Pear</m-list-box-item>
  *   <m-list-box-item value="orange" disabled>Orange (out of stock)</m-list-box-item>
  * </m-list-box>
- * ```
  * 
- * @tag m-list-box-item
  * @slot - The default slot contains the visible content of the list item
  */
 export class MListBoxItem extends MElement {
