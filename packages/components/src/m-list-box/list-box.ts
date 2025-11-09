@@ -260,6 +260,7 @@ export class MListBox extends MElement {
    *  Event Handlers
    * ----------------------------- */
   private handleKeydown = (event: KeyboardEvent) => {
+      event.stopPropagation();
     if (!this.multiple) {
       // single-select: arrows select
       switch (event.key) {
