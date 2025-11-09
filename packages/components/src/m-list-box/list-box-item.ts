@@ -7,13 +7,16 @@ baseStyleSheet.replaceSync(styles);
 
 export class MListBoxItem extends MElement {
     static tagName = 'm-list-box-item';
-    static observedAttributes = ['value', 'selected', 'disabled'];
+    static observedAttributes = ['value', 'selected', 'focused', 'disabled'];
 
     @BindAttribute()
     value: string = '';
 
     @BindAttribute()
     selected: boolean = false;
+
+    @BindAttribute()
+    focused: boolean = false;
 
     @BindAttribute()
     disabled: boolean = false;
@@ -35,12 +38,23 @@ export class MListBoxItem extends MElement {
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
-        
+
         if (name === 'selected') {
+            console.log("selected changed", oldValue, newValue)
             this.setAttribute('aria-selected', String(this.selected));
-        } else if (name === 'disabled') {
+        }
+
+        if (name === 'disabled') {
+            console.log("disabled changed", oldValue, newValue)
             this.#updateDisabledState();
         }
+
+        if (name === 'focused') {
+            console.log("focused changed", oldValue, newValue)
+            // Use the reflected property boolean instead of raw attribute string
+            this.setVirtualFocus(this.focused);
+        }
+
     }
 
     #setupAccessibility() {

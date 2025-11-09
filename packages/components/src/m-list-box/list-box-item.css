@@ -2,13 +2,15 @@
     display: block;
     padding: var(--size-2);
     cursor: pointer;
+    border-radius: var(--radius-2);
 }
 
 
 :host(:state(focus)) {
-    outline: 2px solid var(--color-primary-border-mid);
-    outline-offset: -2px;
-    background: var(--color-primary-fill-softer);
+    /* outline: 2px solid var(--color-primary-border-mid); */
+    /* outline: 2px solid var(--color-primary-fill-mid); */
+    /* outline-offset: -2px; */
+    background: var(--color-neutral-fill-soft);
 }
 
 :host([aria-selected="true"]) {

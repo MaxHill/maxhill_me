@@ -35,6 +35,21 @@
         color: var(--color-text);
     }
 
+    :is(a, button, input, textarea, summary, m-list-box) {
+      --outline-size: max(2px, 0.08em);
+      --outline-style: solid;
+      --outline-color: var(--color-primary-fill-mid);
+    }
+
+    :is(a, button, input, textarea, summary, m-list-box):focus {
+      outline: none;
+    }
+
+    :is(a, button, input, textarea, summary, m-list-box):focus-visible {
+      outline: var(--outline-size) var(--outline-style) var(--outline-color);
+      outline-offset: var(--outline-offset, var(--outline-size));
+    }
+
     /* TODO: this cannot only be on the element. 
      * Utility classes are in utils.css */
     h1,
