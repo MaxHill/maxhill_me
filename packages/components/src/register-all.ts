@@ -3,7 +3,7 @@ import MCopyButton from './m-copy-button';
 import { MSearchList } from './m-search-list';
 import MFitText from './m-fit-text';
 import {MTabList, MTab, MTabPanel} from './m-tabs/';
-import { MListBox, MListBoxItem } from './m-list-box';
+import { MListbox, MListboxItem } from './m-listbox';
 
 export function registerAll() {
   MCard.define();
@@ -16,8 +16,8 @@ export function registerAll() {
 
   MSearchList.define();
 
-  MListBox.define();
-  MListBoxItem.define();
+  MListbox.define();
+  MListboxItem.define();
 }
 
 registerAll();

@@ -21,14 +21,14 @@ const components = getAllComponents(customElements).map((component) => {
 });
 ---
 
-<m-search-list data-width="full">
+<m-search-list class="content-grid" data-width="full">
+
     <label for="search-components" slot="controller">Search components</label>
     <input id="search-components" slot="controller" type="search"/>
 {
     components.map((component) => (
-        <details data-keywords={component.tagName || component.name}>
+        <details  data-keywords={component.tagName || component.name}>
             <summary>&lt;{component.tagName || component.name}&gt;</summary>
-            <div class="content-grid" >
             {component.description && (
                 <div set:html={marked.parse(component.description)} />
             )}
@@ -192,7 +192,6 @@ const components = getAllComponents(customElements).map((component) => {
                         </div>
                     </>
             )}
-            </div>
         </details>
     ))
 }
@@ -203,8 +202,14 @@ const components = getAllComponents(customElements).map((component) => {
         display: none;
     }
 
+    summary {
+        padding-block: var(--size-2);
+        background-color: var(--color-surface-raised);
+        border-top: var(--border);
+    }
+
     details {
-        display: content;
+        /* display: content; */
 
         &[data-match="false"] {
             display: none;
