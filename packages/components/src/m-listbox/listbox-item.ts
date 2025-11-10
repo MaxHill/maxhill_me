@@ -70,6 +70,9 @@ export class MListboxItem extends MElement {
     }
 
     connectedCallback() {
+         if (!this.id) {
+            this.id = `listbox-item-${crypto.randomUUID()}`;
+        }
         this.render();
         this.setAttribute('role', 'option');
         this.setAttribute('aria-selected', String(this.selected));

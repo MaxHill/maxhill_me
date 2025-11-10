@@ -11,6 +11,8 @@ const entries = Object.fromEntries(
     })
 );
 
+const isWatchMode = process.argv.includes('--watch');
+
 export default defineConfig({
   build: {
     lib: {
@@ -18,7 +20,7 @@ export default defineConfig({
       formats: ['es']
     },
     outDir: 'dist',
-    emptyOutDir: true,
+    emptyOutDir: !isWatchMode,
     rollupOptions: {
       output: {
         entryFileNames: '[name].js',

@@ -1,6 +1,6 @@
 import { MElement } from "../utils/m-element";
 import { BindAttribute } from "../utils/reflect-attribute";
-import { queryAll } from "../utils/query";
+import { query, queryAll } from "../utils/query";
 import type { MListboxItem } from "./listbox-item";
 import styles from "./listbox.css?inline";
 
@@ -85,7 +85,10 @@ export interface MListboxFocusChangeEventDetail {
 export class MListbox extends MElement {
     static tagName = 'm-listbox';
     static formAssociated = true;
-    static observedAttributes = ['multiple', 'name'];
+    static observedAttributes = ['multiple', 'name', 'label'];
+
+    @BindAttribute()
+    label?: string;
 
     @BindAttribute()
     multiple: boolean = false;
@@ -96,13 +99,62 @@ export class MListbox extends MElement {
     @queryAll('m-listbox-item', { dom: "light" })
     private items!: MListboxItem[];
 
-    private focusedElement: MListboxItem | null = null;
+    @query('#last-selected')
+    private ariaLiveRegion!: HTMLDivElement;
+    private ariaLiveTimeout?: ReturnType<typeof setTimeout>;
+
+    private _focusedElement: MListboxItem | null = null;
+    set focusedElement(el: MListboxItem | null) {
+        this._focusedElement = el;
+        if (el) {
+            this.setAttribute("aria-activedescendant", el?.id)
+        } else {
+            this.removeAttribute("aria-activedescendant")
+        }
+
+    }
+    get focusedElement() {
+        return this._focusedElement;
+    }
+
     private internals: ElementInternals;
+
+    /*** ----------------------------
+     *  Getters 
+     * ----------------------------- */
+    private get selected(): MListboxItem[] {
+        return this.items.filter(item => !!item.selected);
+    }
+
+    /**
+     * Returns the value of the first selected item, or null if nothing is selected.
+     * Useful for single-select mode.
+     */
+    get value(): string | null { return this.selected[0]?.value ?? null; }
+
+    /**
+     * Returns an array of all selected item values.
+     * Useful for multiple-select mode.
+     */
+    get values(): string[] {
+        return this.selected.reduce<string[]>((acc, item) => {
+            if (item.value) acc.push(item.value);
+            return acc;
+        }, []);
+    }
+
+    /**
+     * Returns the associated form element, if any.
+     */
+    get form(): HTMLFormElement | null { return this.internals.form; }
 
     constructor() {
         super();
         const shadow = this.attachShadow({ mode: 'open' });
-        shadow.innerHTML = `<slot></slot>`;
+        shadow.innerHTML = `
+            <slot></slot>
+            <div id="last-selected" class="visually-hidden" role="region" aria-live="polite"></div>
+        `;
         shadow.adoptedStyleSheets = [baseStyleSheet];
         this.internals = this.attachInternals();
         this.tabIndex = 0;
@@ -112,6 +164,9 @@ export class MListbox extends MElement {
      *  Lifecycle
      * ----------------------------- */
     connectedCallback(): void {
+        this.setAttribute("tabIndex", "0");
+        this.setAttribute("role", "listbox");
+
         this.addEventListener('keydown', this.handleKeydown);
         this.addEventListener('focus', this.handleFocus, true);
         this.addEventListener('blur', this.handleBlur, true);
@@ -128,46 +183,21 @@ export class MListbox extends MElement {
 
     attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
         super.attributeChangedCallback(name, oldValue, newValue);
-        
+
+        if (name === 'label') {
+            this.setAttribute("aria-label", newValue || "")
+        }
+        if (name === 'label') {
+            this.setAttribute("aria-label", newValue || "")
+        }
         if (name === 'multiple') {
             this.items.forEach(item => (item.selected = false));
             this.focusedElement = null;
             this.updateFormValue();
+            this.setAttribute("aria-multiselectable", String(!!newValue))
         }
     }
 
-    /*** ----------------------------
-     *  Getters / Form Accessors
-     * ----------------------------- */
-    private get selected(): MListboxItem[] {
-        return this.items.filter(item => !!item.selected);
-    }
-
-    /**
-     * Returns the value of the first selected item, or null if nothing is selected.
-     * Useful for single-select mode.
-     */
-    get value(): string | null {
-        return this.selected[0]?.value ?? null;
-    }
-
-    /**
-     * Returns an array of all selected item values.
-     * Useful for multiple-select mode.
-     */
-    get values(): string[] {
-        return this.selected.reduce<string[]>((acc, item) => {
-            if (item.value) acc.push(item.value);
-            return acc;
-        }, []);
-    }
-
-    /**
-     * Returns the associated form element, if any.
-     */
-    get form(): HTMLFormElement | null {
-        return this.internals.form;
-    }
 
     /*** ----------------------------
      *  Form association
@@ -318,6 +348,7 @@ export class MListbox extends MElement {
             })
         );
 
+        this.updateAriaLive();
         this.updateFormValue();
     }
 
@@ -445,4 +476,15 @@ export class MListbox extends MElement {
             }
         }
     };
+
+    private updateAriaLive() {
+        if (this.ariaLiveTimeout) {
+            clearTimeout(this.ariaLiveTimeout);
+        }
+
+        this.ariaLiveTimeout = setTimeout(() => {
+            const lastSelected = this.selected[this.selected.length - 1];
+            this.ariaLiveRegion.textContent = `Last selected ${lastSelected.textContent}`
+        }, 1000);
+    }
 }
