@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "build": "vite build && tsc --emitDeclarationOnly && cem analyze",
-    "dev": "vite build --watch",
+    "dev": "vite build --watch & cem analyze --watch",
     "clean": "rm -rf dist",
     "docs": "pnpm run build",
     "test": "vitest run",

@@ -249,8 +249,8 @@ export class MSearchList extends MElement {
 
     render() {
         this.#shadowRoot.innerHTML = `
-            <slot name="controller"></slot>
             <div id="results" class="visually-hidden" role="region" aria-live="polite"></div>
+            <slot name="controller"></slot>
             <slot></slot>
             <slot name="empty" hidden></slot>
             <slot name="initial" hidden></slot>
