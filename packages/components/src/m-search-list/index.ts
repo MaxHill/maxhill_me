@@ -1,6 +1,7 @@
 import { MElement } from "../utils/m-element";
 import { BindAttribute } from "../utils/reflect-attribute";
 import { fuzzySearch } from "../utils/search";
+import { query } from "../utils/query";
 import styles from "./index.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -74,12 +75,17 @@ export class MSearchList extends MElement {
     private debounceTimeout?: ReturnType<typeof setTimeout>;
 
     private _internals: ElementInternals;
+    
+    @query('slot:not([name])')
     private defaultSlot!: HTMLSlotElement;
+
+    @query('slot[name="empty"]')
     private emptySlot!: HTMLSlotElement;
     get emptySlotHasContent() {
         return this.emptySlot && this.emptySlot.assignedElements().length > 0
     }
 
+    @query('slot[name="initial"]')
     private initialSlot!: HTMLSlotElement
     get initialSlotHasContent() {
         return this.initialSlot && this.initialSlot.assignedElements().length > 0
@@ -92,6 +98,8 @@ export class MSearchList extends MElement {
     debounce: number = 150;
 
     #shadowRoot: ShadowRoot;
+    
+    @query('#results')
     #ariaLiveRegion!: HTMLDivElement;
 
     get input(): HTMLInputElement | null {
@@ -122,10 +130,6 @@ export class MSearchList extends MElement {
 
     connectedCallback() {
         this.render();
-        this.defaultSlot = this.#shadowRoot.querySelector('slot:not([name])') as HTMLSlotElement;
-        this.emptySlot = this.#shadowRoot.querySelector('slot[name="empty"]') as HTMLSlotElement;
-        this.initialSlot = this.#shadowRoot.querySelector('slot[name="initial"]') as HTMLSlotElement;
-        this.#ariaLiveRegion = this.#shadowRoot.querySelector('#results') as HTMLDivElement;
 
         this.emptySlot.addEventListener('slotchange', () => {
             this.toggleSlots();

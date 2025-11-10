@@ -1,3 +1,4 @@
+import { query } from "../utils/query";
 import styles from "./index.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -60,6 +61,9 @@ const DEFAULT_COPY_ICON = `
 class MCopyButton extends HTMLElement {
     static observedAttributes = ["value", "show-icon", "feedback"];
 
+    @query("button")
+    private button!: HTMLButtonElement;
+
     constructor() {
         super();
         this.attachShadow({ mode: "open" });
@@ -114,18 +118,15 @@ class MCopyButton extends HTMLElement {
     }
 
     attachEventListeners() {
-        if (!this.shadowRoot) return;
+        if (!this.button) return;
 
-        const button = this.shadowRoot.querySelector("button");
-        if (!button) return;
-
-        button.addEventListener("click", async () => {
+        this.button.addEventListener("click", async () => {
             if (!this.value) return;
 
             try {
                 await navigator.clipboard.writeText(this.value);
 
-                button.classList.add("copied");
+                this.button.classList.add("copied");
 
                 this.dispatchEvent(
                     new CustomEvent("copy-success", {
@@ -135,10 +136,10 @@ class MCopyButton extends HTMLElement {
                     }),
                 );
 
-                button.addEventListener(
+                this.button.addEventListener(
                     "animationend",
                     () => {
-                        button.classList.remove("copied");
+                        this.button.classList.remove("copied");
                     },
                     { once: true },
                 );
