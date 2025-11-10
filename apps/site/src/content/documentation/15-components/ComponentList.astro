@@ -1,40 +1,34 @@
 ---
 import customElements from "@maxhill/components/custom-elements.json";
 import { marked } from "marked";
-import { getAllComponents, getComponentPublicProperties, getComponentPublicMethods, getComponentEventsWithType, getCustomEventDetailTypes } from "@wc-toolkit/cem-utilities";
+import { getCollection } from "astro:content";
+import { getComponentByTagName, getComponentPublicProperties, getComponentPublicMethods, getComponentEventsWithType, getCustomEventDetailTypes } from "@wc-toolkit/cem-utilities";
+
+const docEntries = await getCollection('componentDocs');
 
 const docsModules = import.meta.glob('../../../../../../packages/components/src/*/DOCS.mdx', { eager: true });
 
-const docsByFolder = Object.fromEntries(
-  Object.entries(docsModules).map(([path, module]) => {
-    const folder = path.match(/\/([^/]+)\/DOCS\.mdx$/)?.[1];
-    return [folder, module];
-  })
-);
-
-const componentsByTag = new Map();
-
-for (const module of customElements.modules) {
-    const moduleFolder = module.path?.split('/')[1];
-    for (const declaration of module.declarations || []) {
-        if (declaration.customElement && declaration.tagName) {
-            componentsByTag.set(declaration.tagName, {
-                declaration,
-                moduleFolder,
-            });
-        }
+const components = docEntries.map((docsEntry) => {
+    const tagName = docsEntry.id.split('/').slice(-2, -1)[0];
+    
+    if (!tagName) {
+        return null;
     }
-}
-
-const components = getAllComponents(customElements).map((component) => {
+    
+    const component = getComponentByTagName(customElements, tagName);
+    
+    if (!component) {
+        return null;
+    }
+    
     const properties = getComponentPublicProperties(component);
     const methods = getComponentPublicMethods(component);
     const events = getComponentEventsWithType(component, { overrideCustomEventType: true });
     const customEventDetailTypes = getCustomEventDetailTypes(component);
     const publicMembers = component.members?.filter((m: any) => !m.static && m.privacy !== 'private') || [];
     
-    const componentInfo = componentsByTag.get(component.tagName);
-    const DocsModule = componentInfo ? docsByFolder[componentInfo.moduleFolder] : undefined;
+    const docsModulePath = `../../../../../../packages/components/src/${tagName}/DOCS.mdx`;
+    const DocsModule = docsModules[docsModulePath];
     
     return {
         ...component,
@@ -45,7 +39,7 @@ const components = getAllComponents(customElements).map((component) => {
         publicMembers,
         DocsModule,
     };
-});
+}).filter(Boolean);
 ---
 
 <m-search-list class="content-grid" data-width="full">
