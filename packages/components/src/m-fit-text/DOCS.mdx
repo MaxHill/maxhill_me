@@ -1,0 +1,123 @@
+## Examples
+
+### Basic Usage
+
+Text automatically scales to fit the full width of its container.
+
+<div class="box" data-padded="false" style="max-width: 400px;">
+  <m-fit-text>Text fits</m-fit-text>
+</div>
+```html
+<div class="box" data-padded="false" style="max-width: 400px;">
+  <m-fit-text>Text fits</m-fit-text>
+</div>
+```
+
+### Display Font
+
+Use the `font-display` attribute to apply the display font family.
+
+<div class="box" data-padded="false" style="max-width: 600px;">
+  <m-fit-text font-display>Hero Text</m-fit-text>
+</div>
+```html
+<div class="box" data-padded="false" style="max-width: 600px;">
+  <m-fit-text font-display>Hero Text</m-fit-text>
+</div>
+```
+
+### Responsive Sizing
+
+The text automatically adjusts as the container size changes.
+
+<div class="box" data-padded="false" style="resize: horizontal; overflow: auto; max-width: 800px; min-width: 200px;">
+  <m-fit-text>Resize Me</m-fit-text>
+</div>
+```html
+<div class="box" data-padded="false" style="resize: horizontal; overflow: auto;">
+  <m-fit-text>Resize Me</m-fit-text>
+</div>
+```
+
+### Maximum Font Size
+
+Constrain the maximum font size using the `--max-font-size` CSS property.
+
+<div class="box" data-padded="false" style="--max-font-size: 48px; max-width: 800px;">
+  <m-fit-text>Limited Size</m-fit-text>
+</div>
+```html
+<div class="box" data-padded="false" style="--max-font-size: 48px;">
+  <m-fit-text>Limited Size</m-fit-text>
+</div>
+```
+
+### Multiple Lines
+
+Works with longer text that needs to fit within the container width.
+
+<div class="box" data-padded="false" style="max-width: 500px;">
+  <m-fit-text>This is longer text that scales</m-fit-text>
+</div>
+```html
+<div class="box" data-padded="false" style="max-width: 500px;">
+  <m-fit-text>This is longer text that scales</m-fit-text>
+</div>
+```
+
+### In a Grid Layout
+
+Useful for creating responsive hero sections or headings.
+
+<div class="content-grid">
+  <div class="box" data-padded="false">
+    <m-fit-text font-display>Welcome</m-fit-text>
+  </div>
+</div>
+```html
+<div class="content-grid">
+  <div class="box" data-padded="false">
+    <m-fit-text font-display>Welcome</m-fit-text>
+  </div>
+</div>
+```
+
+## Usage Notes
+
+### How It Works
+
+The component uses CSS container queries to measure the available width and automatically scales the text to fit. It:
+1. Measures the container width
+2. Calculates the optimal font size
+3. Applies the scaling using CSS custom properties
+4. Respects the `--max-font-size` constraint if set
+
+### Container Requirements
+
+The parent element must:
+- Have a defined width (explicit or from parent)
+- Be a container query context (automatically handled by the component)
+
+### CSS Custom Properties
+
+- **`--max-font-size`**: Maximum font size constraint (default: infinity)
+  - Example: `--max-font-size: 72px`
+- **`--captured-length`**: Internal property used for calculations
+- **`--captured-length2`**: Internal property used for calculations
+
+### Attributes
+
+- **`font-display`**: Applies the display font family (boolean attribute)
+
+### Performance
+
+The component uses:
+- CSS container queries for efficient responsive sizing
+- No JavaScript calculations required
+- Automatic updates when container size changes
+
+### Accessibility
+
+- Text remains selectable and accessible
+- Screen readers read the content normally
+- Maintains semantic HTML structure

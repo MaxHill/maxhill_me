@@ -17,37 +17,6 @@ baseStyleSheet.replaceSync(styles);
  * @attr {boolean} data-padded - Applies padding to the card
  * @attr {"outline"} data-variant - The visual variant of the card
  * @attr {boolean} data-subgrid - Enables CSS subgrid layout for the card
- * 
- * @example
- * Basic
- * <m-card>
- *   <div slot="title">Card Title</div>
- *   <p>This is the main content of the card.</p>
- *   <div slot="footer">Card footer</div>
- * </m-card>
- * 
- * @example
- * Outline variant
- * <m-card data-variant="outline">
- *   <div slot="title">Outline Card</div>
- *   <p>This card has an outline variant.</p>
- *   <div slot="footer">Footer info</div>
- * </m-card>
- * 
- * @example
- * Subgrid layout
- * <div class="collection">
- *   <m-card data-subgrid="true">
- *     <div slot="title">Card 1</div>
- *     <p>Content</p>
- *     <div slot="footer">Footer</div>
- *   </m-card>
- *   <m-card data-subgrid="true">
- *     <div slot="title">Card 2</div>
- *     <p>Content</p>
- *     <div slot="footer">Footer</div>
- *   </m-card>
- * </div>
  */
 class MCard extends HTMLElement {
     static observedAttributes = [

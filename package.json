@@ -1,6 +1,7 @@
 {
   "name": "maxhill.me",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -8,7 +9,8 @@
     "dev": "turbo dev",
     "check": "turbo check",
     "clean": "turbo clean",
-    "docs": "turbo docs"
+    "docs": "turbo docs",
+    "generate": "plop"
   },
   "keywords": [],
   "author": "",

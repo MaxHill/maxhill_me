@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { MTabList } from './tab-list';
-import { MTab } from './tab';
-import { MTabPanel } from './tab-panel';
+import { MTabList } from './index';
+import { MTab } from '../m-tab';
+import { MTabPanel } from '../m-tab-panel';
 
 MTabList.define();
 MTab.define();

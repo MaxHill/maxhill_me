@@ -1,0 +1,27 @@
+## Overview
+
+A selectable item within an `<m-listbox>` component. Represents a single option that can be selected, focused, and disabled.
+
+## Attributes
+
+- **`value`** (string, required): The value to submit with the form when this item is selected
+- **`selected`** (boolean): Whether this item is initially selected
+- **`disabled`** (boolean): Whether this item is disabled and cannot be selected
+
+## Slots
+
+- **default**: Item content/label
+
+## Example
+
+```html
+<m-listbox name="fruit">
+  <m-listbox-item value="apple">Apple</m-listbox-item>
+  <m-listbox-item value="pear" selected>Pear</m-listbox-item>
+  <m-listbox-item value="orange" disabled>Orange (out of stock)</m-listbox-item>
+</m-listbox>
+```
+
+## See Also
+
+- [`<m-listbox>`](/components/m-listbox) - Container that manages listbox items

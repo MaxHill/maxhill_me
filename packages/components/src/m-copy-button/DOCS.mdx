@@ -1,0 +1,168 @@
+## Examples
+
+### Basic Usage
+
+A simple copy button that copies text to the clipboard.
+
+<m-copy-button value="Hello World">
+  Copy Text
+</m-copy-button>
+```html
+<m-copy-button value="Hello World">
+  Copy Text
+</m-copy-button>
+```
+
+### Custom Feedback Message
+
+Change the feedback message shown after successful copy.
+
+<m-copy-button value="npm install @maxhill/components" feedback="Command copied!">
+  Copy Install Command
+</m-copy-button>
+```html
+<m-copy-button value="npm install @maxhill/components" feedback="Command copied!">
+  Copy Install Command
+</m-copy-button>
+```
+
+### Without Icon
+
+Hide the copy icon by setting `show-icon="false"`.
+
+<m-copy-button value="code snippet example" show-icon="false">
+  Copy
+</m-copy-button>
+```html
+<m-copy-button value="code snippet example" show-icon="false">
+  Copy
+</m-copy-button>
+```
+
+### Custom Icon
+
+Provide your own icon using the `icon` slot.
+
+<m-copy-button value="custom icon text">
+  <span slot="icon">📋</span>
+  Copy with Custom Icon
+</m-copy-button>
+```html
+<m-copy-button value="custom icon text">
+  <span slot="icon">📋</span>
+  Copy with Custom Icon
+</m-copy-button>
+```
+
+### Event Listening
+
+Listen for copy success and error events.
+
+<div class="stack" data-gap="2">
+  <m-copy-button id="event-copy" value="Event example text">
+    Copy Text
+  </m-copy-button>
+  <div id="copy-event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised);">
+    Click the button to see events...
+  </div>
+</div>
+
+{`<script>
+  const eventCopy = document.getElementById('event-copy');
+  const copyEventOutput = document.getElementById('copy-event-output');
+  
+  eventCopy.addEventListener('copy-success', (e) => {
+    copyEventOutput.textContent = \`✓ Copied: "\${e.detail.value}"\`;
+  });
+  
+  eventCopy.addEventListener('copy-error', (e) => {
+    copyEventOutput.textContent = \`✗ Error: \${e.detail.error.message}\`;
+  });
+</script>`}
+```html
+<div class="stack" data-gap="2">
+  <m-copy-button id="event-copy" value="Event example text">
+    Copy Text
+  </m-copy-button>
+  <div id="copy-event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised);">
+    Click the button to see events...
+  </div>
+</div>
+
+<script>
+  const eventCopy = document.getElementById('event-copy');
+  const copyEventOutput = document.getElementById('copy-event-output');
+  
+  eventCopy.addEventListener('copy-success', (e) => {
+    copyEventOutput.textContent = `✓ Copied: "${e.detail.value}"`;
+  });
+  
+  eventCopy.addEventListener('copy-error', (e) => {
+    copyEventOutput.textContent = `✗ Error: ${e.detail.error.message}`;
+  });
+</script>
+```
+
+### Copying Code Snippets
+
+Useful for documentation sites with code examples.
+
+<div class="stack" data-gap="2">
+  <pre class="box" style="position: relative; padding: var(--size-3); background: var(--color-surface-raised);">
+    <m-copy-button 
+      value="const greeting = 'Hello, World!';\nconsole.log(greeting);" 
+      style="position: absolute; top: var(--size-2); right: var(--size-2);"
+      show-icon="true">
+    </m-copy-button>
+    <code>const greeting = 'Hello, World!';
+console.log(greeting);</code>
+  </pre>
+</div>
+```html
+<div class="stack" data-gap="2">
+  <pre class="box" style="position: relative; padding: var(--size-3); background: var(--color-surface-raised);">
+    <m-copy-button 
+      value="const greeting = 'Hello, World!';\nconsole.log(greeting);" 
+      style="position: absolute; top: var(--size-2); right: var(--size-2);"
+      show-icon="true">
+    </m-copy-button>
+    <code>const greeting = 'Hello, World!';
+console.log(greeting);</code>
+  </pre>
+</div>
+```
+
+## Usage Notes
+
+### Clipboard API
+
+The component uses the modern `navigator.clipboard.writeText()` API. This requires:
+- A secure context (HTTPS or localhost)
+- User permission (automatically granted in most browsers)
+
+### Events
+
+- **`copy-success`**: Fired when text is successfully copied
+  - `detail.value`: The copied text
+- **`copy-error`**: Fired when copy fails
+  - `detail.error`: The error object
+
+### Feedback Animation
+
+After successful copy, the button shows feedback and adds a `copied` class that:
+- Displays the feedback message
+- Automatically removes after animation ends
+- Can be styled with CSS
+
+### CSS Custom Properties
+
+- **`--copy-button-gap`**: Gap between content and icon (default: `var(--size-1)`)
+- **`--copy-button-icon-size`**: Size of the icon (default: `1rem`)
+- **`--copy-button-icon-opacity`**: Icon opacity in normal state (default: `0.5`)
+- **`--copy-button-icon-opacity-hover`**: Icon opacity on hover (default: `1`)
+
+### CSS Parts
+
+- **`button`**: The button element
+- **`icon`**: Icon wrapper
+- **`feedback`**: Feedback tooltip

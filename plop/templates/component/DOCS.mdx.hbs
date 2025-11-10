@@ -1,0 +1,83 @@
+## Examples
+
+### Basic Usage
+
+A simple {{componentName}} example.
+
+<{{componentName}} example="test">
+  Default content
+</{{componentName}}>
+```html
+<{{componentName}} example="test">
+  Default content
+</{{componentName}}>
+```
+
+{{#if hasEvents}}
+### Event Listening
+
+Listen to changes with the `{{componentName}}-change` event:
+
+<div class="stack" data-gap="2">
+  <{{componentName}} id="event-example" example="test">
+    Content
+  </{{componentName}}>
+  <div id="event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised); min-height: 3rem;">
+    No events yet...
+  </div>
+</div>
+
+{`<script>
+  const component = document.getElementById('event-example');
+  const output = document.getElementById('event-output');
+  
+  component.addEventListener('{{componentName}}-change', (e) => {
+    output.textContent = \`Example changed to: \${e.detail.example}\`;
+  });
+</script>`}
+```html
+<div class="stack" data-gap="2">
+  <{{componentName}} id="event-example" example="test">
+    Content
+  </{{componentName}}>
+  <div id="event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised); min-height: 3rem;">
+    No events yet...
+  </div>
+</div>
+
+<script>
+  const component = document.getElementById('event-example');
+  const output = document.getElementById('event-output');
+  
+  component.addEventListener('{{componentName}}-change', (e) => {
+    output.textContent = `Example changed to: ${e.detail.example}`;
+  });
+</script>
+```
+{{/if}}
+
+## Attributes
+
+- **`example`** (string): An example property
+
+## Slots
+
+- **default**: Default slot for component content
+
+{{#if hasEvents}}
+## Events
+
+- **`{{componentName}}-change`**: Fired when the example changes. Detail: `{ example: string }`
+- **`change`**: Standard change event
+{{/if}}
+
+## Accessibility
+
+- Semantic HTML structure
+- Keyboard navigation support
+
+## Usage Notes
+
+- This component extends MElement for enhanced functionality
+- Shadow DOM encapsulation for style isolation
+- Reactive attribute binding with @BindAttribute decorator

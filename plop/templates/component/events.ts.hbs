@@ -1,0 +1,13 @@
+export interface {{componentNamePascal}}ChangeEventDetail {
+    example: string;
+}
+
+export class {{componentNamePascal}}ChangeEvent extends CustomEvent<{{componentNamePascal}}ChangeEventDetail> {
+    constructor(detail: {{componentNamePascal}}ChangeEventDetail) {
+        super('{{componentName}}-change', {
+            detail,
+            bubbles: true,
+            composed: true,
+        });
+    }
+}

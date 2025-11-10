@@ -1,6 +1,6 @@
 import { BindAttribute } from "../utils/reflect-attribute";
 import { MElement } from "../utils/m-element";
-import styles from "./tab-panel.css?inline";
+import styles from "./index.css?inline";
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
@@ -55,3 +55,4 @@ export class MTabPanel extends MElement {
     }
 }
 
+export default MTabPanel;

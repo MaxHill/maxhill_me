@@ -1,0 +1,240 @@
+## Examples
+
+### Basic Usage
+
+A simple listbox with keyboard navigation and single selection.
+
+<m-listbox name="fruit">
+  <m-listbox-item value="apple">Apple</m-listbox-item>
+  <m-listbox-item value="pear">Pear</m-listbox-item>
+  <m-listbox-item value="orange">Orange</m-listbox-item>
+  <m-listbox-item value="banana">Banana</m-listbox-item>
+</m-listbox>
+```html
+<m-listbox name="fruit">
+  <m-listbox-item value="apple">Apple</m-listbox-item>
+  <m-listbox-item value="pear">Pear</m-listbox-item>
+  <m-listbox-item value="orange">Orange</m-listbox-item>
+  <m-listbox-item value="banana">Banana</m-listbox-item>
+</m-listbox>
+```
+
+### Multiple Selection
+
+Allow users to select multiple items using Space/Enter keys. Hold Shift while using arrow keys for extended selection.
+
+<m-listbox name="fruits" multiple>
+  <m-listbox-item value="apple">Apple</m-listbox-item>
+  <m-listbox-item value="pear">Pear</m-listbox-item>
+  <m-listbox-item value="orange">Orange</m-listbox-item>
+  <m-listbox-item value="banana">Banana</m-listbox-item>
+  <m-listbox-item value="grape">Grape</m-listbox-item>
+</m-listbox>
+```html
+<m-listbox name="fruits" multiple>
+  <m-listbox-item value="apple">Apple</m-listbox-item>
+  <m-listbox-item value="pear">Pear</m-listbox-item>
+  <m-listbox-item value="orange">Orange</m-listbox-item>
+  <m-listbox-item value="banana">Banana</m-listbox-item>
+  <m-listbox-item value="grape">Grape</m-listbox-item>
+</m-listbox>
+```
+
+### Pre-selected Values
+
+Using the `selected` attribute on items:
+
+<m-listbox name="preselected-fruit-1">
+  <m-listbox-item value="apple">Apple</m-listbox-item>
+  <m-listbox-item value="pear" selected>Pear</m-listbox-item>
+  <m-listbox-item value="orange">Orange</m-listbox-item>
+</m-listbox>
+```html
+<m-listbox name="preselected-fruit-1">
+  <m-listbox-item value="apple">Apple</m-listbox-item>
+  <m-listbox-item value="pear" selected>Pear</m-listbox-item>
+  <m-listbox-item value="orange">Orange</m-listbox-item>
+</m-listbox>
+```
+
+Or using the `value` attribute on the listbox:
+
+<m-listbox name="preselected-fruit-2" value="orange">
+  <m-listbox-item value="apple">Apple</m-listbox-item>
+  <m-listbox-item value="pear">Pear</m-listbox-item>
+  <m-listbox-item value="orange">Orange</m-listbox-item>
+</m-listbox>
+```html
+<m-listbox name="preselected-fruit-2" value="orange">
+  <m-listbox-item value="apple">Apple</m-listbox-item>
+  <m-listbox-item value="pear">Pear</m-listbox-item>
+  <m-listbox-item value="orange">Orange</m-listbox-item>
+</m-listbox>
+```
+
+### Disabled State
+
+A disabled listbox prevents user interaction:
+
+<m-listbox name="disabled-fruit" disabled>
+  <m-listbox-item value="apple">Apple</m-listbox-item>
+  <m-listbox-item value="pear" selected>Pear</m-listbox-item>
+  <m-listbox-item value="orange">Orange</m-listbox-item>
+</m-listbox>
+```html
+<m-listbox name="disabled-fruit" disabled>
+  <m-listbox-item value="apple">Apple</m-listbox-item>
+  <m-listbox-item value="pear" selected>Pear</m-listbox-item>
+  <m-listbox-item value="orange">Orange</m-listbox-item>
+</m-listbox>
+```
+
+### Form Integration
+
+The listbox is form-associated and works seamlessly with standard form submission:
+
+<form id="fruit-form" class="stack" data-gap="2">
+  <label for="favorite-fruit">Select your favorite fruit:</label>
+  <m-listbox id="favorite-fruit" name="favorite-fruit">
+    <m-listbox-item value="apple">Apple</m-listbox-item>
+    <m-listbox-item value="pear" selected>Pear</m-listbox-item>
+    <m-listbox-item value="orange">Orange</m-listbox-item>
+    <m-listbox-item value="banana">Banana</m-listbox-item>
+  </m-listbox>
+  <button type="submit">Submit</button>
+  <div id="form-result" class="box" style="padding: var(--size-2); background: var(--color-surface-raised);"></div>
+</form>
+
+{`<script>
+  const form = document.getElementById('fruit-form');
+  const resultBox = document.getElementById('form-result');
+  
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    resultBox.textContent = \`Selected: \${formData.get('favorite-fruit')}\`;
+  });
+</script>`}
+```html
+<form id="fruit-form" class="stack" data-gap="2">
+  <label for="favorite-fruit">Select your favorite fruit:</label>
+  <m-listbox id="favorite-fruit" name="favorite-fruit">
+    <m-listbox-item value="apple">Apple</m-listbox-item>
+    <m-listbox-item value="pear" selected>Pear</m-listbox-item>
+    <m-listbox-item value="orange">Orange</m-listbox-item>
+    <m-listbox-item value="banana">Banana</m-listbox-item>
+  </m-listbox>
+  <button type="submit">Submit</button>
+  <div id="form-result" class="box" style="padding: var(--size-2); background: var(--color-surface-raised);"></div>
+</form>
+
+<script>
+  const form = document.getElementById('fruit-form');
+  const resultBox = document.getElementById('form-result');
+  
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    resultBox.textContent = `Selected: ${formData.get('favorite-fruit')}`;
+  });
+</script>
+```
+
+### Event Listening
+
+Listen to selection changes with the `m-listbox-change` event:
+
+<div class="stack" data-gap="2">
+  <m-listbox id="event-listbox" name="event-example" multiple>
+    <m-listbox-item value="apple">Apple</m-listbox-item>
+    <m-listbox-item value="pear">Pear</m-listbox-item>
+    <m-listbox-item value="orange">Orange</m-listbox-item>
+    <m-listbox-item value="banana">Banana</m-listbox-item>
+  </m-listbox>
+  <div id="event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised); min-height: 3rem;">
+    Select items to see the event output...
+  </div>
+</div>
+
+{`<script>
+  const eventListbox = document.getElementById('event-listbox');
+  const eventOutput = document.getElementById('event-output');
+  
+  eventListbox.addEventListener('m-listbox-change', (e) => {
+    eventOutput.textContent = \`Selected values: \${e.detail.selected.join(', ') || '(none)'}\`;
+  });
+  
+  eventListbox.addEventListener('change', () => {
+    console.log('Standard change event fired. Current value:', eventListbox.value);
+  });
+</script>`}
+```html
+<div class="stack" data-gap="2">
+  <m-listbox id="event-listbox" name="event-example" multiple>
+    <m-listbox-item value="apple">Apple</m-listbox-item>
+    <m-listbox-item value="pear">Pear</m-listbox-item>
+    <m-listbox-item value="orange">Orange</m-listbox-item>
+    <m-listbox-item value="banana">Banana</m-listbox-item>
+  </m-listbox>
+  <div id="event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised); min-height: 3rem;">
+    Select items to see the event output...
+  </div>
+</div>
+
+<script>
+  const eventListbox = document.getElementById('event-listbox');
+  const eventOutput = document.getElementById('event-output');
+  
+  eventListbox.addEventListener('m-listbox-change', (e) => {
+    eventOutput.textContent = `Selected values: ${e.detail.selected.join(', ') || '(none)'}`;
+  });
+  
+  eventListbox.addEventListener('change', () => {
+    console.log('Standard change event fired. Current value:', eventListbox.value);
+  });
+</script>
+```
+
+## Attributes
+
+- **`name`** (string): The form control name
+- **`multiple`** (boolean): Whether multiple items can be selected
+- **`disabled`** (boolean): Whether the listbox is disabled
+- **`value`** (string | string[]): The value of the first selected item (or array in multiple mode)
+
+## Slots
+
+- **default**: Accepts `<m-listbox-item>` elements
+
+## Events
+
+- **`m-listbox-select`**: Fired when an item is selected. Detail: `{ item: MListboxItem, selected: boolean }`
+- **`m-listbox-unselected`**: Fired when an item is unselected. Detail: `{ item: MListboxItem, selected: boolean }`
+- **`m-listbox-change`**: Fired when the selection changes. Detail: `{ selected: string[] }`
+- **`m-listbox-focus-change`**: Fired when focus moves to a different item. Detail: `{ item: MListboxItem | null }`
+- **`change`**: Standard change event
+
+## Keyboard Navigation
+
+- **Arrow Keys**: Navigate between items
+- **Home/End**: Jump to first/last item
+- **Space/Enter**: Toggle selection
+- **Shift + Arrow/Home/End**: Extended selection (multiple mode only)
+
+## Accessibility
+
+- Full ARIA support with proper roles and states
+- Live region announcements for screen readers
+- Focus management follows ARIA listbox pattern
+- Keyboard navigation matches native select behavior
+
+## Form Integration
+
+- Works with standard `FormData` API
+- Validates with HTML5 constraint validation
+- Supports `required` attribute
+- Single mode returns string value, multiple mode returns array
+
+## See Also
+
+- [`<m-listbox-item>`](/components/m-listbox-item) - Individual listbox item
