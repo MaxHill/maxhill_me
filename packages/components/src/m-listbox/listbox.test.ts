@@ -185,12 +185,16 @@ describe('m-listbox', () => {
       const items = el.querySelectorAll('m-listbox-item');
       const firstItem = items[0] as MListboxItem;
       const secondItem = items[1] as MListboxItem;
+      const thirdItem = items[2] as MListboxItem;
 
       el.focus();
       await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
       
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
 
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === thirdItem.id);
+      
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
       await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
       
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
@@ -253,10 +257,10 @@ describe('m-listbox', () => {
 
       await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
       const items = el.querySelectorAll('m-listbox-item');
+      const firstItem = items[0] as MListboxItem;
       const secondItem = items[1] as MListboxItem;
 
       el.focus();
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
       await waitUntil(() => el.getAttribute('aria-activedescendant') === secondItem.id);
       
@@ -266,28 +270,7 @@ describe('m-listbox', () => {
       expect(secondItem.getAttribute('aria-selected')).toBe('true');
     });
 
-    it('should not move past last item with ArrowDown', async () => {
-      const el = await fixture<MListbox>(html`
-        <m-listbox>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
-        </m-listbox>
-      `);
-
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
-      const items = el.querySelectorAll('m-listbox-item');
-      const lastItem = items[1] as MListboxItem;
-
-      el.focus();
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === lastItem.id);
-      
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-
-      expect(el.getAttribute('aria-activedescendant')).toBe(lastItem.id);
-    });
-
-    it('should not move before first item with ArrowUp', async () => {
+    it('should wrap to first item when ArrowDown is pressed on last item', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
           <m-listbox-item value="apple">Apple</m-listbox-item>
@@ -298,14 +281,39 @@ describe('m-listbox', () => {
       await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
       const items = el.querySelectorAll('m-listbox-item');
       const firstItem = items[0] as MListboxItem;
+      const lastItem = items[1] as MListboxItem;
+
+      el.focus();
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === lastItem.id);
+      
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
+
+      expect(el.getAttribute('aria-activedescendant')).toBe(firstItem.id);
+    });
+
+    it('should wrap to last item when ArrowUp is pressed on first item', async () => {
+      const el = await fixture<MListbox>(html`
+        <m-listbox>
+          <m-listbox-item value="apple">Apple</m-listbox-item>
+          <m-listbox-item value="banana">Banana</m-listbox-item>
+        </m-listbox>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
+      const items = el.querySelectorAll('m-listbox-item');
+      const firstItem = items[0] as MListboxItem;
+      const lastItem = items[1] as MListboxItem;
 
       el.focus();
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
       await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
       
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === lastItem.id);
 
-      expect(el.getAttribute('aria-activedescendant')).toBe(firstItem.id);
+      expect(el.getAttribute('aria-activedescendant')).toBe(lastItem.id);
     });
 
     it('should set :state(focus) on virtually focused item', async () => {
@@ -435,10 +443,10 @@ describe('m-listbox', () => {
       const bananaItem = items[1] as MListboxItem;
 
       appleItem.click();
-      expect(el.value).toBe('apple');
+      expect(el.value).toEqual(['apple']);
 
       bananaItem.click();
-      expect(el.value).toBe('apple,banana');
+      expect(el.value).toEqual(['apple', 'banana']);
       expect(appleItem.getAttribute('aria-selected')).toBe('true');
       expect(bananaItem.getAttribute('aria-selected')).toBe('true');
     });
@@ -454,11 +462,11 @@ describe('m-listbox', () => {
       const item = el.querySelector('m-listbox-item') as MListboxItem;
 
       item.click();
-      expect(el.value).toBe('apple');
+      expect(el.value).toEqual(['apple']);
       expect(item.getAttribute('aria-selected')).toBe('true');
 
       item.click();
-      expect(el.value).toBe('');
+      expect(el.value).toEqual([]);
       expect(item.getAttribute('aria-selected')).toBe('false');
     });
 
@@ -476,10 +484,10 @@ describe('m-listbox', () => {
 
       appleItem.focus();
       el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
-      expect(el.value).toBe('apple');
+      expect(el.value).toEqual(['apple']);
 
       el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
-      expect(el.value).toBe('');
+      expect(el.value).toEqual([]);
     });
   });
 
@@ -554,7 +562,7 @@ describe('m-listbox', () => {
 
       appleItem.click();
 
-      expect(el.value).toBe('');
+      expect(el.value).toBe(null);
       expect(appleItem.getAttribute('aria-selected')).toBe('false');
     });
 

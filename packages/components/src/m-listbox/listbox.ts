@@ -65,13 +65,59 @@ export interface MListboxFocusChangeEventDetail {
  *   <button type="submit">Submit</button>
  * </form>
  * 
+ * @example Accessing selected items
+ * ```js
+ * const listbox = document.querySelector('m-listbox');
+ * 
+ * // Get the current value (single-select mode)
+ * console.log(listbox.value); // 'apple'
+ * 
+ * // Get all selected values (useful in multiple mode)
+ * console.log(listbox.selectedValues); // ['apple', 'banana']
+ * 
+ * // Get selected item elements
+ * listbox.selectedItems.forEach(item => {
+ *   console.log(item.textContent); // 'Apple', 'Banana'
+ *   console.log(item.value); // 'apple', 'banana'
+ * });
+ * ```
+ * 
+ * @example Programmatic selection
+ * ```js
+ * const listbox = document.querySelector('m-listbox');
+ * 
+ * // Select an item programmatically
+ * const appleItem = listbox.querySelector('[value="apple"]');
+ * listbox.select(appleItem);
+ * 
+ * // Navigate and select with methods
+ * listbox.selectFirst(); // Select first item
+ * listbox.selectNext();  // Select next item
+ * listbox.selectLast();  // Select last item
+ * ```
+ * 
+ * @example Listening to selection changes
+ * ```js
+ * const listbox = document.querySelector('m-listbox');
+ * 
+ * listbox.addEventListener('m-listbox-change', (e) => {
+ *   console.log('Selected values:', e.detail.selected);
+ * });
+ * 
+ * listbox.addEventListener('change', (e) => {
+ *   console.log('Standard change event fired');
+ *   console.log('Current value:', listbox.value);
+ * });
+ * ```
+ * 
  * @slot - The default slot accepts m-listbox-item elements
  * 
  * @attr {string} name - The form control name
  * @attr {boolean} multiple - Whether multiple items can be selected
  * 
- * @prop {string | null} value - The value of the first selected item
- * @prop {string[]} values - Array of all selected item values
+ * @prop {string | string[] | null} value - The value of the first selected item (or array in multiple mode)
+ * @prop {string[]} selectedValues - Array of all selected item values
+ * @prop {MListboxItem[]} selectedItems - Array of all selected item elements
  * @prop {boolean} multiple - Whether multiple selection is enabled
  * @prop {HTMLFormElement | null} form - The associated form element
  * @prop {string} name - The form control name
@@ -85,7 +131,7 @@ export interface MListboxFocusChangeEventDetail {
 export class MListbox extends MElement {
     static tagName = 'm-listbox';
     static formAssociated = true;
-    static observedAttributes = ['multiple', 'name', 'label'];
+    static observedAttributes = ['multiple', 'name', 'label', 'disabled', 'value'];
 
     @BindAttribute()
     label?: string;
@@ -95,6 +141,9 @@ export class MListbox extends MElement {
 
     @BindAttribute()
     name: string = '';
+
+    @BindAttribute()
+    disabled: boolean = false;
 
     @queryAll('m-listbox-item', { dom: "light" })
     private items!: MListboxItem[];
@@ -122,22 +171,29 @@ export class MListbox extends MElement {
     /*** ----------------------------
      *  Getters 
      * ----------------------------- */
-    private get selected(): MListboxItem[] {
+    /**
+     * Returns an array of all selected items.
+     */
+    get selectedItems(): MListboxItem[] {
         return this.items.filter(item => !!item.selected);
     }
 
     /**
      * Returns the value of the first selected item, or null if nothing is selected.
+     * In multiple mode, returns an array of all selected values.
      * Useful for single-select mode.
      */
-    get value(): string | null { return this.selected[0]?.value ?? null; }
+    get value(): string | string[] | null { 
+        if (this.multiple) return this.selectedValues;
+        return this.selectedItems[0]?.value ?? null; 
+    }
 
     /**
      * Returns an array of all selected item values.
      * Useful for multiple-select mode.
      */
-    get values(): string[] {
-        return this.selected.reduce<string[]>((acc, item) => {
+    get selectedValues(): string[] {
+        return this.selectedItems.reduce<string[]>((acc, item) => {
             if (item.value) acc.push(item.value);
             return acc;
         }, []);
@@ -164,13 +220,33 @@ export class MListbox extends MElement {
      *  Lifecycle
      * ----------------------------- */
     connectedCallback(): void {
-        this.setAttribute("tabIndex", "0");
         this.setAttribute("role", "listbox");
+        
+        if (this.multiple) {
+            this.setAttribute("aria-multiselectable", "true");
+        }
+        
+        if (this.disabled) {
+            this.setAttribute("aria-disabled", "true");
+            this.setAttribute("tabindex", "-1");
+        } else {
+            this.setAttribute("tabIndex", "0");
+        }
 
         this.addEventListener('keydown', this.handleKeydown);
         this.addEventListener('focus', this.handleFocus, true);
         this.addEventListener('blur', this.handleBlur, true);
         this.addEventListener('click', this.handleClick);
+        
+        const valueAttr = this.getAttribute('value');
+        if (valueAttr) {
+            requestAnimationFrame(() => {
+                const matchingItem = this.items.find(item => item.value === valueAttr);
+                if (matchingItem && !matchingItem.selected) {
+                    this.select(matchingItem);
+                }
+            });
+        }
     }
 
     disconnectedCallback(): void {
@@ -187,14 +263,32 @@ export class MListbox extends MElement {
         if (name === 'label') {
             this.setAttribute("aria-label", newValue || "")
         }
-        if (name === 'label') {
-            this.setAttribute("aria-label", newValue || "")
-        }
         if (name === 'multiple') {
             this.items.forEach(item => (item.selected = false));
             this.focusedElement = null;
             this.updateFormValue();
-            this.setAttribute("aria-multiselectable", String(!!newValue))
+            if (this.multiple) {
+                this.setAttribute("aria-multiselectable", "true");
+            } else {
+                this.removeAttribute("aria-multiselectable");
+            }
+        }
+        if (name === 'disabled') {
+            if (this.disabled) {
+                this.setAttribute("aria-disabled", "true");
+                this.setAttribute("tabindex", "-1");
+            } else {
+                this.removeAttribute("aria-disabled");
+                this.setAttribute("tabindex", "0");
+            }
+        }
+        if (name === 'value' && newValue) {
+            requestAnimationFrame(() => {
+                const matchingItem = this.items.find(item => item.value === newValue);
+                if (matchingItem && !matchingItem.selected) {
+                    this.select(matchingItem);
+                }
+            });
         }
     }
 
@@ -203,13 +297,13 @@ export class MListbox extends MElement {
      *  Form association
      * ----------------------------- */
     private updateFormValue(): void {
-        if (this.values.length === 0) {
+        if (this.selectedValues.length === 0) {
             this.internals.setFormValue(null);
-        } else if (this.values.length === 1) {
-            this.internals.setFormValue(this.values[0]);
+        } else if (this.selectedValues.length === 1) {
+            this.internals.setFormValue(this.selectedValues[0]);
         } else {
             const formData = new FormData();
-            for (const val of this.values) formData.append(this.name, val);
+            for (const val of this.selectedValues) formData.append(this.name, val);
             this.internals.setFormValue(formData);
         }
     }
@@ -342,11 +436,13 @@ export class MListbox extends MElement {
 
         this.dispatchEvent(
             new CustomEvent<MListboxChangeEventDetail>('m-listbox-change', {
-                detail: { selected: this.values },
+                detail: { selected: this.selectedValues },
                 bubbles: true,
                 composed: true,
             })
         );
+
+        this.dispatchEvent(new Event('change', { bubbles: true }));
 
         this.updateAriaLive();
         this.updateFormValue();
@@ -468,7 +564,7 @@ export class MListbox extends MElement {
             | MListboxItem
             | undefined;
 
-        if (item) {
+        if (item && !item.disabled) {
             if (!this.multiple) this.select(item);
             else {
                 this.setFocus(item);
@@ -483,7 +579,7 @@ export class MListbox extends MElement {
         }
 
         this.ariaLiveTimeout = setTimeout(() => {
-            const lastSelected = this.selected[this.selected.length - 1];
+            const lastSelected = this.selectedItems[this.selectedItems.length - 1];
             this.ariaLiveRegion.textContent = `Last selected ${lastSelected.textContent}`
         }, 1000);
     }
