@@ -1,6 +1,6 @@
 import { MElement } from "../utils/m-element";
 import { BindAttribute } from "../utils/reflect-attribute";
-import styles from "./listbox-item.css?inline";
+import styles from "./index.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -114,3 +114,5 @@ export class MListboxItem extends MElement {
         `;
     }
 }
+
+export default MListboxItem;

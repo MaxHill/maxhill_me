@@ -1,46 +1,12 @@
-import { MTab } from "./tab";
-import { MTabPanel } from "./tab-panel";
+import { MTab } from "../m-tab";
+import { MTabPanel } from "../m-tab-panel";
 import { BindAttribute } from "../utils/reflect-attribute";
 import { MElement } from "../utils/m-element";
 import { query } from "../utils/query";
-import styles from "./tab-list.css?inline";
+import { MTabShowEvent, MTabHideEvent } from "./events";
+import styles from "./index.css?inline";
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
-
-export interface MTabChangeEventDetail {
-    tab: MTab;
-    panel: MTabPanel;
-}
-
-/**
- * 
- * @class
- * @classdesc Event sent when tab becomes active
- */
-export class MTabShowEvent extends CustomEvent<MTabChangeEventDetail> {
-    constructor(detail: MTabChangeEventDetail) {
-        super('m-tab-show', {
-            detail,
-            bubbles: true,
-            composed: true
-        });
-    }
-}
-
-/**
- * 
- * @class
- * @classdesc Event sent when a tab is hidden
- */
-export class MTabHideEvent extends CustomEvent<MTabChangeEventDetail> {
-    constructor(detail: MTabChangeEventDetail) {
-        super('m-tab-hide', {
-            detail,
-            bubbles: true,
-            composed: true
-        });
-    }
-}
 
 /**
  * A tab list container that manages tabs and their associated panels with full keyboard navigation.
@@ -65,44 +31,6 @@ export class MTabHideEvent extends CustomEvent<MTabChangeEventDetail> {
  * 
  * @event m-tab-show - Fired when a tab panel becomes visible. Detail: MTabChangeEventDetail { tab: MTab, panel: MTabPanel }
  * @event m-tab-hide - Fired when a tab panel becomes hidden. Detail: MTabChangeEventDetail { tab: MTab, panel: MTabPanel }
- * 
- * @example
- * Basic (top)
- * <m-tab-list label="Example">
- *   <m-tab panel="tab1">Tab 1</m-tab>
- *   <m-tab panel="tab2">Tab 2</m-tab>
- *   <m-tab-panel name="tab1">Panel 1</m-tab-panel>
- *   <m-tab-panel name="tab2">Panel 2</m-tab-panel>
- * </m-tab-list>
- * 
- * @example
- * Bottom position
- * <m-tab-list label="Example" position="bottom">
- *   <m-tab panel="tab1">Tab 1</m-tab>
- *   <m-tab panel="tab2">Tab 2</m-tab>
- *   <m-tab-panel name="tab1">Panel 1</m-tab-panel>
- *   <m-tab-panel name="tab2">Panel 2</m-tab-panel>
- * </m-tab-list>
- * 
- * @example
- * Vertical (start)
- * <m-tab-list label="Example" position="start">
- *   <m-tab panel="tab1">Tab 1</m-tab>
- *   <m-tab panel="tab2">Tab 2</m-tab>
- *   <m-tab-panel name="tab1">Panel 1</m-tab-panel>
- *   <m-tab-panel name="tab2">Panel 2</m-tab-panel>
- * </m-tab-list>
- * 
- * @example
- * Disabled tabs
- * <m-tab-list label="Example">
- *   <m-tab panel="tab1">Tab 1</m-tab>
- *   <m-tab panel="tab2" disabled>Tab 2 (Disabled)</m-tab>
- *   <m-tab panel="tab3">Tab 3</m-tab>
- *   <m-tab-panel name="tab1">Panel 1</m-tab-panel>
- *   <m-tab-panel name="tab2">Panel 2</m-tab-panel>
- *   <m-tab-panel name="tab3">Panel 3</m-tab-panel>
- * </m-tab-list>
  */
 export class MTabList extends MElement {
     static tagName = 'm-tab-list';
@@ -292,3 +220,4 @@ export class MTabList extends MElement {
     }
 }
 
+export default MTabList;

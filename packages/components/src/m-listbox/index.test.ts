@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { MListbox } from './listbox';
-import { MListboxItem } from './listbox-item';
+import { MListbox } from './index';
+import { MListboxItem } from '../m-listbox-item';
 
 MListbox.define();
 MListboxItem.define();

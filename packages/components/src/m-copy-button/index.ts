@@ -1,5 +1,6 @@
 import { query } from "../utils/query";
 import styles from "./index.css?inline";
+import { CopySuccessEvent, CopyErrorEvent } from "./events";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -39,24 +40,6 @@ const DEFAULT_COPY_ICON = `
  * @csspart button - The button element
  * @csspart icon - Icon wrapper
  * @csspart feedback - Feedback tooltip
- * 
- * @example
- * Basic
- * <m-copy-button value="Hello World">
- *   Copy Text
- * </m-copy-button>
- * 
- * @example
- * Custom feedback
- * <m-copy-button value="npm install" feedback="Installed!">
- *   Copy command
- * </m-copy-button>
- * 
- * @example
- * Without icon
- * <m-copy-button value="code snippet" show-icon="false">
- *   Copy
- * </m-copy-button>
  */
 class MCopyButton extends HTMLElement {
     static observedAttributes = ["value", "show-icon", "feedback"];
@@ -129,11 +112,7 @@ class MCopyButton extends HTMLElement {
                 this.button.classList.add("copied");
 
                 this.dispatchEvent(
-                    new CustomEvent("copy-success", {
-                        detail: { value: this.value },
-                        bubbles: true,
-                        composed: true,
-                    }),
+                    new CopySuccessEvent({ value: this.value }),
                 );
 
                 this.button.addEventListener(
@@ -147,11 +126,7 @@ class MCopyButton extends HTMLElement {
                 console.error("Failed to copy:", err);
 
                 this.dispatchEvent(
-                    new CustomEvent("copy-error", {
-                        detail: { error: err },
-                        bubbles: true,
-                        composed: true,
-                    }),
+                    new CopyErrorEvent({ error: err as Error }),
                 );
             }
         });

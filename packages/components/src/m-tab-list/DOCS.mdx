@@ -1,0 +1,178 @@
+## Examples
+
+### Basic Usage (Top)
+
+A tab list with horizontal keyboard navigation.
+
+<m-tab-list label="Example">
+  <m-tab panel="tab1">Tab 1</m-tab>
+  <m-tab panel="tab2">Tab 2</m-tab>
+  <m-tab-panel name="tab1">Panel 1</m-tab-panel>
+  <m-tab-panel name="tab2">Panel 2</m-tab-panel>
+</m-tab-list>
+```html
+<m-tab-list label="Example">
+  <m-tab panel="tab1">Tab 1</m-tab>
+  <m-tab panel="tab2">Tab 2</m-tab>
+  <m-tab-panel name="tab1">Panel 1</m-tab-panel>
+  <m-tab-panel name="tab2">Panel 2</m-tab-panel>
+</m-tab-list>
+```
+
+### Bottom Position
+
+Place tabs at the bottom of the content.
+
+<m-tab-list label="Example" position="bottom">
+  <m-tab panel="tab1">Tab 1</m-tab>
+  <m-tab panel="tab2">Tab 2</m-tab>
+  <m-tab-panel name="tab1">Panel 1</m-tab-panel>
+  <m-tab-panel name="tab2">Panel 2</m-tab-panel>
+</m-tab-list>
+```html
+<m-tab-list label="Example" position="bottom">
+  <m-tab panel="tab1">Tab 1</m-tab>
+  <m-tab panel="tab2">Tab 2</m-tab>
+  <m-tab-panel name="tab1">Panel 1</m-tab-panel>
+  <m-tab-panel name="tab2">Panel 2</m-tab-panel>
+</m-tab-list>
+```
+
+### Vertical Layout (Start)
+
+A vertical tab list with keyboard navigation using up/down arrows or j/k.
+
+<m-tab-list label="Example" position="start">
+  <m-tab panel="tab1">Tab 1</m-tab>
+  <m-tab panel="tab2">Tab 2</m-tab>
+  <m-tab-panel name="tab1">Panel 1</m-tab-panel>
+  <m-tab-panel name="tab2">Panel 2</m-tab-panel>
+</m-tab-list>
+```html
+<m-tab-list label="Example" position="start">
+  <m-tab panel="tab1">Tab 1</m-tab>
+  <m-tab panel="tab2">Tab 2</m-tab>
+  <m-tab-panel name="tab1">Panel 1</m-tab-panel>
+  <m-tab-panel name="tab2">Panel 2</m-tab-panel>
+</m-tab-list>
+```
+
+### Disabled Tabs
+
+Disabled tabs cannot be selected or navigated to.
+
+<m-tab-list label="Example">
+  <m-tab panel="tab1">Tab 1</m-tab>
+  <m-tab panel="tab2" disabled>Tab 2 (Disabled)</m-tab>
+  <m-tab panel="tab3">Tab 3</m-tab>
+  <m-tab-panel name="tab1">Panel 1</m-tab-panel>
+  <m-tab-panel name="tab2">Panel 2</m-tab-panel>
+  <m-tab-panel name="tab3">Panel 3</m-tab-panel>
+</m-tab-list>
+```html
+<m-tab-list label="Example">
+  <m-tab panel="tab1">Tab 1</m-tab>
+  <m-tab panel="tab2" disabled>Tab 2 (Disabled)</m-tab>
+  <m-tab panel="tab3">Tab 3</m-tab>
+  <m-tab-panel name="tab1">Panel 1</m-tab-panel>
+  <m-tab-panel name="tab2">Panel 2</m-tab-panel>
+  <m-tab-panel name="tab3">Panel 3</m-tab-panel>
+</m-tab-list>
+```
+
+### Event Listening
+
+Listen to tab show and hide events.
+
+<div class="stack" data-gap="2">
+  <m-tab-list id="event-tabs" label="Event Example">
+    <m-tab panel="tab1">Tab 1</m-tab>
+    <m-tab panel="tab2">Tab 2</m-tab>
+    <m-tab panel="tab3">Tab 3</m-tab>
+    <m-tab-panel name="tab1">Panel 1</m-tab-panel>
+    <m-tab-panel name="tab2">Panel 2</m-tab-panel>
+    <m-tab-panel name="tab3">Panel 3</m-tab-panel>
+  </m-tab-list>
+  <div id="tab-event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised); min-height: 3rem;">
+    Switch tabs to see events...
+  </div>
+</div>
+
+{`<script>
+  const eventTabs = document.getElementById('event-tabs');
+  const tabEventOutput = document.getElementById('tab-event-output');
+  
+  eventTabs.addEventListener('m-tab-show', (e) => {
+    tabEventOutput.textContent = \`Tab shown: \${e.detail.tab.textContent} → Panel: \${e.detail.panel.name}\`;
+  });
+  
+  eventTabs.addEventListener('m-tab-hide', (e) => {
+    console.log('Tab hidden:', e.detail.tab.textContent);
+  });
+</script>`}
+```html
+<div class="stack" data-gap="2">
+  <m-tab-list id="event-tabs" label="Event Example">
+    <m-tab panel="tab1">Tab 1</m-tab>
+    <m-tab panel="tab2">Tab 2</m-tab>
+    <m-tab panel="tab3">Tab 3</m-tab>
+    <m-tab-panel name="tab1">Panel 1</m-tab-panel>
+    <m-tab-panel name="tab2">Panel 2</m-tab-panel>
+    <m-tab-panel name="tab3">Panel 3</m-tab-panel>
+  </m-tab-list>
+  <div id="tab-event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised); min-height: 3rem;">
+    Switch tabs to see events...
+  </div>
+</div>
+
+<script>
+  const eventTabs = document.getElementById('event-tabs');
+  const tabEventOutput = document.getElementById('tab-event-output');
+  
+  eventTabs.addEventListener('m-tab-show', (e) => {
+    tabEventOutput.textContent = `Tab shown: ${e.detail.tab.textContent} → Panel: ${e.detail.panel.name}`;
+  });
+  
+  eventTabs.addEventListener('m-tab-hide', (e) => {
+    console.log('Tab hidden:', e.detail.tab.textContent);
+  });
+</script>
+```
+
+## Attributes
+
+- **`tab`** (string): The currently active tab panel name
+- **`label`** (string): Accessible label for the tab list (sets aria-label)
+- **`position`** ("top"|"bottom"|"start"|"end"): Tab list orientation - top/bottom for horizontal, start/end for vertical
+
+## Slots
+
+- **tab**: Slot for `<m-tab>` elements (auto-assigned)
+- **tab-panel**: Slot for `<m-tab-panel>` elements (auto-assigned)
+
+## Events
+
+- **`m-tab-show`**: Fired when a tab panel becomes visible. Detail: `{ tab: MTab, panel: MTabPanel }`
+- **`m-tab-hide`**: Fired when a tab panel becomes hidden. Detail: `{ tab: MTab, panel: MTabPanel }`
+
+## Keyboard Navigation
+
+**Horizontal (top/bottom position):**
+- **Arrow Left/Right** or **h/l**: Navigate between tabs
+- **Home/End**: Jump to first/last tab
+
+**Vertical (start/end position):**
+- **Arrow Up/Down** or **j/k**: Navigate between tabs
+- **Home/End**: Jump to first/last tab
+
+## Accessibility
+
+- Full ARIA support with proper roles and states
+- Focus management follows ARIA tabs pattern
+- Keyboard navigation matches native tab behavior
+- Disabled tabs are properly announced to screen readers
+
+## See Also
+
+- [`<m-tab>`](/components/m-tab) - Individual tab button
+- [`<m-tab-panel>`](/components/m-tab-panel) - Content panel for tabs

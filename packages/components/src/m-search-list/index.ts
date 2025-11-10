@@ -33,37 +33,6 @@ baseStyleSheet.replaceSync(styles);
  * @cssstate initial - Applied when no search query has been entered
  * @cssstate match - Applied when a search query is entered and matches are found
  * @cssstate empty - Applied when a search query is entered and no matches are found
- * 
- * @example
- * Basic
- * <m-search-list>
- *   <input slot="controller" type="search" placeholder="Search...">
- *   <div data-keywords="javascript js">JavaScript</div>
- *   <div data-keywords="typescript ts">TypeScript</div>
- *   <div data-keywords="python py">Python</div>
- *   <p slot="empty">No match found</p>
- *   <p slot="initial">Search programming languages</p>
- * </m-search-list>
- * 
- * @example
- * With target selector
- * <m-search-list target="ul">
- *   <input slot="controller" type="search">
- *   <div>
- *     <ul>
- *       <li>Item 1</li>
- *       <li>Item 2</li>
- *     </ul>
- *   </div>
- * </m-search-list>
- * 
- * @example
- * Custom debounce
- * <m-search-list debounce="500">
- *   <input slot="controller" type="search">
- *   <div>Item 1</div>
- *   <div>Item 2</div>
- * </m-search-list>
  */
 export class MSearchList extends MElement {
     static tagName = 'm-search-list';

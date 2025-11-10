@@ -1,0 +1,82 @@
+import { MElement } from "../utils/m-element";
+import { BindAttribute } from "../utils/reflect-attribute";
+import { query, queryAll } from "../utils/query";
+import styles from "./index.css?inline";
+{{#if hasEvents}}
+import { {{componentNamePascal}}ChangeEvent } from "./events";
+{{/if}}
+
+const baseStyleSheet = new CSSStyleSheet();
+baseStyleSheet.replaceSync(styles);
+
+/**
+ * {{description}}
+ * 
+ * @customElement
+ * @tagname {{componentName}}
+ * 
+ * @slot - Default slot for component content
+ * 
+ * @attr {string} example - An example property
+ * 
+ * @prop {string} example - An example property
+{{#if hasEvents}}
+ * 
+ * @fires {{componentName}}-change - Fired when the example changes (detail: { example: string })
+{{/if}}
+ */
+export class {{componentNamePascal}} extends MElement {
+    static tagName = '{{componentName}}';
+    static observedAttributes = ['example'];
+
+    #shadowRoot: ShadowRoot;
+
+    @BindAttribute()
+    example: string = '';
+
+    @query('slot')
+    private defaultSlot!: HTMLSlotElement;
+
+    constructor() {
+        super();
+        this.#shadowRoot = this.attachShadow({ mode: 'open' });
+        this.#shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+    }
+
+    connectedCallback() {
+        this.render();
+        this.setupEventListeners();
+    }
+
+    disconnectedCallback() {
+        this.cleanupEventListeners();
+    }
+
+    attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
+        super.attributeChangedCallback(name, oldValue, newValue);
+    }
+
+    private setupEventListeners() {
+        // Add your event listeners here
+    }
+
+    private cleanupEventListeners() {
+        // Remove your event listeners here
+    }
+
+    private handleChange() {
+{{#if hasEvents}}
+        this.dispatchEvent(new {{componentNamePascal}}ChangeEvent({ example: this.example }));
+{{/if}}
+        this.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    private render() {
+        this.#shadowRoot.innerHTML = `
+            <p>{{componentName}}</p>
+            <slot></slot>
+        `;
+    }
+}
+
+export default {{componentNamePascal}};

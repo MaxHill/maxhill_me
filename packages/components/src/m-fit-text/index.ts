@@ -34,18 +34,6 @@ try {
  * @attr {boolean} font-display - Whether to use the display font family
  * 
  * @cssprop --max-font-size - Maximum font size constraint (default: infinity)
- * 
- * @example
- * Basic
- * <div class="box" data-padded="false">
- *   <m-fit-text>Text fits</m-fit-text>
- * </div>
- * 
- * @example
- * With display font
- * <div class="box" data-padded="false">
- *   <m-fit-text font-display>Hero Text</m-fit-text>
- * </div>
  */
 class MFitText extends HTMLElement {
     static observedAttributes = ['font-display'];
