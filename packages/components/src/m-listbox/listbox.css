@@ -1,3 +1,5 @@
+@import url('@maxhill/css/utils.css');
+
 :host {
     display: grid;
     gap: var(--size-1);
