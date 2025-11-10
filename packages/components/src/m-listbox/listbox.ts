@@ -54,8 +54,22 @@ export interface MListboxFocusChangeEventDetail {
  *   <m-listbox-item value="orange">Orange</m-listbox-item>
  * </m-listbox>
  * 
+ * @example Preselected value using selected attribute
+ * <m-listbox name="fruit">
+ *   <m-listbox-item value="apple">Apple</m-listbox-item>
+ *   <m-listbox-item value="pear" selected>Pear</m-listbox-item>
+ *   <m-listbox-item value="orange">Orange</m-listbox-item>
+ * </m-listbox>
+ * 
+ * @example Preselected value using value attribute
+ * <m-listbox name="fruit" value="pear">
+ *   <m-listbox-item value="apple">Apple</m-listbox-item>
+ *   <m-listbox-item value="pear">Pear</m-listbox-item>
+ *   <m-listbox-item value="orange">Orange</m-listbox-item>
+ * </m-listbox>
+ * 
  * @example Form integration
- * <form>
+ * <form id="fruit-form">
  *   <label>Select your favorite fruit:</label>
  *   <m-listbox name="favorite-fruit">
  *     <m-listbox-item value="apple">Apple</m-listbox-item>
@@ -63,7 +77,18 @@ export interface MListboxFocusChangeEventDetail {
  *     <m-listbox-item value="orange">Orange</m-listbox-item>
  *   </m-listbox>
  *   <button type="submit">Submit</button>
+ *   <div class="box"></div>
  * </form>
+ * ```js
+ * const form = document.getElementById('fruit-form');
+ * const box = form.querySelector('.box');
+ * 
+ * form.addEventListener('submit', (e) => {
+ *   e.preventDefault();
+ *   const formData = new FormData(form);
+ *   box.textContent = `Selected: ${formData.get('favorite-fruit')}`;
+ * });
+ * ```
  * 
  * @example Accessing selected items
  * ```js
