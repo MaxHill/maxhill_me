@@ -1,28 +1,28 @@
 import { MElement } from "../utils/m-element";
 import { BindAttribute } from "../utils/reflect-attribute";
-import styles from "./list-box-item.css?inline";
+import styles from "./listbox-item.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
 /**
- * A selectable item within an m-list-box component.
+ * A selectable item within an m-listbox component.
  * Represents a single option that can be selected, focused, and disabled.
  *
  * @customElement
- * @tagname m-list-box-item
+ * @tagname m-listbox-item
  * 
  * @example
- * <m-list-box name="fruit">
- *   <m-list-box-item value="apple">Apple</m-list-box-item>
- *   <m-list-box-item value="pear" selected>Pear</m-list-box-item>
- *   <m-list-box-item value="orange" disabled>Orange (out of stock)</m-list-box-item>
- * </m-list-box>
+ * <m-listbox name="fruit">
+ *   <m-listbox-item value="apple">Apple</m-listbox-item>
+ *   <m-listbox-item value="pear" selected>Pear</m-listbox-item>
+ *   <m-listbox-item value="orange" disabled>Orange (out of stock)</m-listbox-item>
+ * </m-listbox>
  * 
  * @slot - The default slot contains the visible content of the list item
  */
-export class MListBoxItem extends MElement {
-    static tagName = 'm-list-box-item';
+export class MListboxItem extends MElement {
+    static tagName = 'm-listbox-item';
     static observedAttributes = ['value', 'selected', 'focused', 'disabled'];
 
     /**

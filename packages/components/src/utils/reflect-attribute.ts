@@ -1,17 +1,3 @@
-export function reflectAttribute(
-    instance: HTMLElement,
-    attrName: string,
-    value: string | boolean | undefined
-): string | boolean | undefined {
-    if (value) {
-        instance.setAttribute(attrName, typeof value === 'boolean' ? '' : String(value));
-    } else {
-        instance.removeAttribute(attrName);
-    }
-    return value;
-}
-
-
 export function BindAttribute(options?: { 
   attribute?: string;
   converter?: (value: any) => string;

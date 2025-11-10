@@ -1,7 +1,8 @@
 import { MElement } from "../utils/m-element";
 import { BindAttribute } from "../utils/reflect-attribute";
-import type { MListBoxItem } from "./list-box-item";
-import styles from "./list-box.css?inline";
+import { queryAll } from "../utils/query";
+import type { MListboxItem } from "./listbox-item";
+import styles from "./listbox.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -9,9 +10,9 @@ baseStyleSheet.replaceSync(styles);
 /**
  * Event detail for m-listbox-select and m-listbox-unselected events
  */
-export interface MListBoxSelectEventDetail {
+export interface MListboxSelectEventDetail {
     /** The list box item that was selected or unselected */
-    item: MListBoxItem;
+    item: MListboxItem;
     /** Whether the item is now selected */
     selected: boolean;
 }
@@ -19,7 +20,7 @@ export interface MListBoxSelectEventDetail {
 /**
  * Event detail for m-listbox-change events
  */
-export interface MListBoxChangeEventDetail {
+export interface MListboxChangeEventDetail {
     /** Array of currently selected item values */
     selected: string[];
 }
@@ -27,9 +28,9 @@ export interface MListBoxChangeEventDetail {
 /**
  * Event detail for m-listbox-focus-change events
  */
-export interface MListBoxFocusChangeEventDetail {
+export interface MListboxFocusChangeEventDetail {
     /** The list box item that received focus, or null if focus was cleared */
-    item: MListBoxItem | null;
+    item: MListboxItem | null;
 }
 
 /**
@@ -37,34 +38,34 @@ export interface MListBoxFocusChangeEventDetail {
  * Supports keyboard navigation, form integration, and accessible selection patterns.
  * 
  * @customElement
- * @tagname m-list-box
+ * @tagname m-listbox
  * 
  * @example Basic usage
- * <m-list-box name="fruit">
- *   <m-list-box-item value="apple">Apple</m-list-box-item>
- *   <m-list-box-item value="pear">Pear</m-list-box-item>
- *   <m-list-box-item value="orange">Orange</m-list-box-item>
- * </m-list-box>
+ * <m-listbox name="fruit">
+ *   <m-listbox-item value="apple">Apple</m-listbox-item>
+ *   <m-listbox-item value="pear">Pear</m-listbox-item>
+ *   <m-listbox-item value="orange">Orange</m-listbox-item>
+ * </m-listbox>
  * 
  * @example Multiple selection
- * <m-list-box name="fruits" multiple>
- *   <m-list-box-item value="apple">Apple</m-list-box-item>
- *   <m-list-box-item value="pear">Pear</m-list-box-item>
- *   <m-list-box-item value="orange">Orange</m-list-box-item>
- * </m-list-box>
+ * <m-listbox name="fruits" multiple>
+ *   <m-listbox-item value="apple">Apple</m-listbox-item>
+ *   <m-listbox-item value="pear">Pear</m-listbox-item>
+ *   <m-listbox-item value="orange">Orange</m-listbox-item>
+ * </m-listbox>
  * 
  * @example Form integration
  * <form>
  *   <label>Select your favorite fruit:</label>
- *   <m-list-box name="favorite-fruit">
- *     <m-list-box-item value="apple">Apple</m-list-box-item>
- *     <m-list-box-item value="pear" selected>Pear</m-list-box-item>
- *     <m-list-box-item value="orange">Orange</m-list-box-item>
- *   </m-list-box>
+ *   <m-listbox name="favorite-fruit">
+ *     <m-listbox-item value="apple">Apple</m-listbox-item>
+ *     <m-listbox-item value="pear" selected>Pear</m-listbox-item>
+ *     <m-listbox-item value="orange">Orange</m-listbox-item>
+ *   </m-listbox>
  *   <button type="submit">Submit</button>
  * </form>
  * 
- * @slot - The default slot accepts m-list-box-item elements
+ * @slot - The default slot accepts m-listbox-item elements
  * 
  * @attr {string} name - The form control name
  * @attr {boolean} multiple - Whether multiple items can be selected
@@ -75,18 +76,27 @@ export interface MListBoxFocusChangeEventDetail {
  * @prop {HTMLFormElement | null} form - The associated form element
  * @prop {string} name - The form control name
  * 
- * @event m-listbox-select - Fired when an item is selected. Detail: { item: MListBoxItem, selected: boolean }
- * @event m-listbox-unselected - Fired when an item is unselected. Detail: { item: MListBoxItem, selected: boolean }
+ * @event m-listbox-select - Fired when an item is selected. Detail: { item: MListboxItem, selected: boolean }
+ * @event m-listbox-unselected - Fired when an item is unselected. Detail: { item: MListboxItem, selected: boolean }
  * @event m-listbox-change - Fired when the selection changes. Detail: { selected: string[] }
- * @event m-listbox-focus-change - Fired when focus moves to a different item. Detail: { item: MListBoxItem | null }
+ * @event m-listbox-focus-change - Fired when focus moves to a different item. Detail: { item: MListboxItem | null }
  * 
  */
-export class MListBox extends MElement {
-    static tagName = 'm-list-box';
+export class MListbox extends MElement {
+    static tagName = 'm-listbox';
     static formAssociated = true;
-    static observedAttributes = ['multiple'];
+    static observedAttributes = ['multiple', 'name'];
 
-    private focusedElement: MListBoxItem | null = null;
+    @BindAttribute()
+    multiple: boolean = false;
+
+    @BindAttribute()
+    name: string = '';
+
+    @queryAll('m-listbox-item', { dom: "light" })
+    private items!: MListboxItem[];
+
+    private focusedElement: MListboxItem | null = null;
     private internals: ElementInternals;
 
     constructor() {
@@ -117,9 +127,9 @@ export class MListBox extends MElement {
 
 
     attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
-        // TODO: will this really work
+        super.attributeChangedCallback(name, oldValue, newValue);
+        
         if (name === 'multiple') {
-            // Reset selection when switching modes
             this.items.forEach(item => (item.selected = false));
             this.focusedElement = null;
             this.updateFormValue();
@@ -129,11 +139,7 @@ export class MListBox extends MElement {
     /*** ----------------------------
      *  Getters / Form Accessors
      * ----------------------------- */
-    private get items(): MListBoxItem[] {
-        return Array.from(this.querySelectorAll<MListBoxItem>('m-list-box-item'));
-    }
-
-    private get selected(): MListBoxItem[] {
+    private get selected(): MListboxItem[] {
         return this.items.filter(item => !!item.selected);
     }
 
@@ -157,39 +163,10 @@ export class MListBox extends MElement {
     }
 
     /**
-     * Whether the listbox allows multiple selection.
-     * When true, arrow keys move focus without selecting.
-     * When false (default), arrow keys both move focus and select.
-     * 
-     * @attr multiple
-     */
-    get multiple(): boolean {
-        return this.hasAttribute('multiple');
-    }
-
-    set multiple(value: boolean) {
-        if (value) this.setAttribute('multiple', '');
-        else this.removeAttribute('multiple');
-    }
-
-    /**
      * Returns the associated form element, if any.
      */
     get form(): HTMLFormElement | null {
         return this.internals.form;
-    }
-
-    /**
-     * The name of the form control. Submitted with the form as part of a name/value pair.
-     * 
-     * @attr name
-     */
-    get name(): string {
-        return this.getAttribute('name') ?? '';
-    }
-
-    set name(value: string) {
-        this.setAttribute('name', value);
     }
 
     /*** ----------------------------
@@ -226,7 +203,7 @@ export class MListBox extends MElement {
      * 
      * @param item - The item to focus, or null to clear focus
      */
-    setFocus(item: MListBoxItem | null): void {
+    setFocus(item: MListboxItem | null): void {
         if (!item) return;
         if (this.focusedElement) this.focusedElement.removeAttribute('focused');
 
@@ -234,7 +211,7 @@ export class MListBox extends MElement {
         this.focusedElement = item;
 
         this.dispatchEvent(
-            new CustomEvent<MListBoxFocusChangeEventDetail>('m-listbox-focus-change', {
+            new CustomEvent<MListboxFocusChangeEventDetail>('m-listbox-focus-change', {
                 detail: { item },
                 bubbles: true,
                 composed: true,
@@ -299,7 +276,7 @@ export class MListBox extends MElement {
      * 
      * @param item - The item to select or toggle
      */
-    select(item: MListBoxItem | null): void {
+    select(item: MListboxItem | null): void {
         if (!item) return;
 
         if (!this.multiple) {
@@ -308,7 +285,7 @@ export class MListBox extends MElement {
                 if (i !== item && i.selected) {
                     i.selected = false;
                     this.dispatchEvent(
-                        new CustomEvent<MListBoxSelectEventDetail>('m-listbox-unselected', {
+                        new CustomEvent<MListboxSelectEventDetail>('m-listbox-unselected', {
                             detail: { item: i, selected: false },
                             bubbles: true,
                             composed: true,
@@ -326,7 +303,7 @@ export class MListBox extends MElement {
 
         const eventName = item.selected ? 'm-listbox-select' : 'm-listbox-unselected';
         this.dispatchEvent(
-            new CustomEvent<MListBoxSelectEventDetail>(eventName, {
+            new CustomEvent<MListboxSelectEventDetail>(eventName, {
                 detail: { item, selected: item.selected! },
                 bubbles: true,
                 composed: true,
@@ -334,7 +311,7 @@ export class MListBox extends MElement {
         );
 
         this.dispatchEvent(
-            new CustomEvent<MListBoxChangeEventDetail>('m-listbox-change', {
+            new CustomEvent<MListboxChangeEventDetail>('m-listbox-change', {
                 detail: { selected: this.values },
                 bubbles: true,
                 composed: true,
@@ -456,8 +433,8 @@ export class MListBox extends MElement {
     private handleClick = (event: MouseEvent) => {
         const item = event
             .composedPath()
-            .find(el => (el as HTMLElement).tagName === 'M-LIST-BOX-ITEM') as
-            | MListBoxItem
+            .find(el => (el as HTMLElement).tagName === 'M-LISTBOX-ITEM') as
+            | MListboxItem
             | undefined;
 
         if (item) {
