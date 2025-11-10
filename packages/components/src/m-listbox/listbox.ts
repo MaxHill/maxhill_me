@@ -68,6 +68,13 @@ export interface MListboxFocusChangeEventDetail {
  *   <m-listbox-item value="orange">Orange</m-listbox-item>
  * </m-listbox>
  * 
+ * @example Disabled listbox
+ * <m-listbox name="fruit" disabled>
+ *   <m-listbox-item value="apple">Apple</m-listbox-item>
+ *   <m-listbox-item value="pear" selected>Pear</m-listbox-item>
+ *   <m-listbox-item value="orange">Orange</m-listbox-item>
+ * </m-listbox>
+ * 
  * @example Form integration
  * <form id="fruit-form">
  *   <label>Select your favorite fruit:</label>
@@ -547,22 +554,42 @@ export class MListbox extends MElement {
                     break;
             }
         } else {
-            // multiple-select: arrows only focus
+            // multiple-select: arrows focus, shift+arrows extend selection
             switch (event.key) {
                 case 'ArrowDown':
-                    this.focusNext();
+                    if (event.shiftKey) {
+                        this.focusNext();
+                        this.selectFocused();
+                    } else {
+                        this.focusNext();
+                    }
                     event.preventDefault();
                     break;
                 case 'ArrowUp':
-                    this.focusPrev();
+                    if (event.shiftKey) {
+                        this.focusPrev();
+                        this.selectFocused();
+                    } else {
+                        this.focusPrev();
+                    }
                     event.preventDefault();
                     break;
                 case 'Home':
-                    this.focusFirst();
+                    if (event.shiftKey) {
+                        this.focusFirst();
+                        this.selectFocused();
+                    } else {
+                        this.focusFirst();
+                    }
                     event.preventDefault();
                     break;
                 case 'End':
-                    this.focusLast();
+                    if (event.shiftKey) {
+                        this.focusLast();
+                        this.selectFocused();
+                    } else {
+                        this.focusLast();
+                    }
                     event.preventDefault();
                     break;
                 case ' ':

@@ -2,6 +2,7 @@ import { MTab } from "./tab";
 import { MTabPanel } from "./tab-panel";
 import { BindAttribute } from "../utils/reflect-attribute";
 import { MElement } from "../utils/m-element";
+import { query } from "../utils/query";
 import styles from "./tab-list.css?inline";
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -117,7 +118,11 @@ export class MTabList extends MElement {
     position: "start"|"end"|"top"|"bottom" = 'top';
 
     #shadowRoot: ShadowRoot;
+    
+    @query("slot[name='tab']")
     private tabSlot!: HTMLSlotElement;
+
+    @query("slot[name='tab-panel']")
     private panelSlot!: HTMLSlotElement;
 
     constructor() {
@@ -130,8 +135,6 @@ export class MTabList extends MElement {
         this.setAttribute('role', 'tablist');
         this.updateOrientation();
         this.render();
-        this.tabSlot = this.#shadowRoot.querySelector("slot[name='tab']")!;
-        this.panelSlot = this.#shadowRoot.querySelector("slot[name='tab-panel']")!;
 
         this.classList.add("box")
         this.setAttribute("data-padded", "false")

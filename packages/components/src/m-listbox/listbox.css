@@ -7,3 +7,7 @@
     border: var(--border);
     border-radius: var(--radius-2);
 }
+
+:host([disabled]) {
+    opacity: 0.5;
+}
