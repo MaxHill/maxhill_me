@@ -5,11 +5,12 @@
     --_breakout-max-width: 1800px;
 
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: min(1fr, 100%);
     justify-items: center;
 
     & > * {
       width: min(var(--_content-max-width), calc(100% - (var(--_padding-inline) * 2)));
+      min-width: 0;
     }
 
     & > [data-width="breakout"] {

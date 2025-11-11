@@ -124,6 +124,7 @@ const navHierarchy = buildNavHierarchy(sortedDocs);
         {
             renderedDocs.map(({ doc, Content, metadata }) => (
                 <Document id={doc.data.htmlId} metadata={metadata}>
+                <h2 class="h1">{doc.data.title}</h2>
                     <Content />
                 </Document>
             ))
