@@ -12,13 +12,6 @@ baseStyleSheet.replaceSync(styles);
  * @customElement
  * @tagname m-listbox-item
  * 
- * @example
- * <m-listbox name="fruit">
- *   <m-listbox-item value="apple">Apple</m-listbox-item>
- *   <m-listbox-item value="pear" selected>Pear</m-listbox-item>
- *   <m-listbox-item value="orange" disabled>Orange (out of stock)</m-listbox-item>
- * </m-listbox>
- * 
  * @slot - The default slot contains the visible content of the list item
  */
 export class MListboxItem extends MElement {

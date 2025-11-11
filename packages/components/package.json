@@ -31,7 +31,6 @@
     "@custom-elements-manifest/analyzer": "^0.10.10",
     "@vitest/browser": "^4.0.6",
     "@wc-toolkit/cem-validator": "^1.0.3",
-    "@wc-toolkit/jsdoc-tags": "^1.1.0",
     "glob": "^11.0.3",
     "happy-dom": "^20.0.10",
     "rollup-plugin-string": "^3.0.0",
