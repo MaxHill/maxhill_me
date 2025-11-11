@@ -1,27 +1,4 @@
 @layer layouts {
-    .main-menu {
-        overflow-x: auto;
-        overflow-y: hidden;
-        scroll-snap-type: x mandatory;
-        scroll-padding-inline-end: 5vw;
-        display: grid;
-        grid-auto-flow: column;
-        grid-auto-columns: max-content;
-        scroll-behavior: smooth;
-
-        justify-content: space-between;
-        padding-inline: var(--size-2);
-        position: fixed;
-        width: 100%;
-        top: 0;
-        height: var(--menu-height);
-
-        &>nav {
-            a {
-                text-decoration: none;
-            }
-        }
-    }
 
     .design-system-page {
         height: 100dvh;
