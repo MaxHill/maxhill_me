@@ -1,0 +1,43 @@
+---
+title: Css restyle
+author: Max Hill
+date: 2025-11-11
+tags: [css]
+htmlId: doc-css-restyle
+---
+
+## Typesetting
+The `.typesetting` class creates consistent vertical rhythm for text-heavy content using CSS Grid.
+
+## Use Cases
+
+Apply `.typesetting` to containers with:
+
+- Articles and blog posts
+- Documentation pages
+- Long-form written content
+- Any content requiring consistent vertical rhythm
+
+<m-card>
+    <strong slot="title">Without .typesetting</strong>
+    <div>
+      # Article Title
+      ## Introduction
+      This is a paragraph without the typesetting class. Notice how the spacing feels inconsistent and elements appear cramped together.
+      ## Main Content
+      Another paragraph here to show the spacing issues when not using the typesetting utility.
+    </div>
+</m-card>
+
+<m-card>
+    <strong slot="title">With .typesetting</strong>
+    <div class="typesetting">
+      # Article Title
+      ## Introduction
+      This is a paragraph with the typesetting class applied. The spacing is consistent and creates a natural reading rhythm.
+      ## Main Content
+      Another paragraph demonstrating the improved vertical rhythm and breathing room between elements.
+    </div>
+</m-card>
+
+
