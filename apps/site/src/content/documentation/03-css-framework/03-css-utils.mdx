@@ -238,45 +238,42 @@ Available sizes: `000`, `00`, `1-15`, `fluid-1` through `fluid-10`, `auto`
 
 Padding utilities add space inside elements using the `[data-padding]` attribute.
 
-### All Sides
-
-<div
-  class="box exposed-grid"
-  data-variant="surface"
-  data-padded="false"
-  data-width="breakout"
->
-  <div data-padding="1">[data-padding="1"]</div>
-  <div data-padding="fluid-5">[data-padding="fluid-5"]</div>
-</div>
-
-### Inline
-
-<div
-  class="box exposed-grid"
-  data-variant="surface"
-  data-padded="false"
-  data-width="breakout"
->
-  <div data-padding="i-2">[data-padding="i-2"] (left & right)</div>
-  <div data-padding="is-3">[data-padding="is-3"] (left)</div>
-  <div data-padding="ie-3">[data-padding="ie-3"] (right)</div>
-  <div data-padding="i-fluid-3">[data-padding="i-fluid-3"]</div>
-</div>
-
-### Block
-
-<div
-  class="box exposed-grid"
-  data-variant="surface"
-  data-padded="false"
-  data-width="breakout"
->
-  <div data-padding="b-2">[data-padding="b-2"] (top & bottom)</div>
-  <div data-padding="bs-3">[data-padding="bs-3"] (top)</div>
-  <div data-padding="be-3">[data-padding="be-3"] (bottom)</div>
-  <div data-padding="b-fluid-3">[data-padding="b-fluid-3"]</div>
-</div>
+<m-tab-list label="Padding examples">
+  <m-tab panel="padding-all">All Sides</m-tab>
+  <m-tab panel="padding-inline">Inline</m-tab>
+  <m-tab panel="padding-block">Block</m-tab>
+  <m-tab-panel 
+    name="padding-all" 
+      class="exposed-grid"
+      style="display: grid;"
+      data-gap="2"
+    >
+      <div data-border="primary-mid" data-background="primary-softer" data-padding="3" style="width: max-content;">[data-padding="3"]</div>
+      <div data-border="primary-mid" data-background="primary-softer" data-padding="fluid-5" style="width: max-content;">[data-padding="fluid-5"]</div>
+  </m-tab-panel>
+  <m-tab-panel 
+    name="padding-inline" 
+    class="exposed-grid"
+    style="display: grid;"
+    data-gap="2"
+  >
+    <div data-border="primary-mid" data-background="primary-softer" data-padding="i-5" style="width: max-content;">[data-padding="i-5"] (left & right)</div>
+    <div data-border="primary-mid" data-background="primary-softer" data-padding="is-6" style="width: max-content;">[data-padding="is-6"] (left)</div>
+    <div data-border="primary-mid" data-background="primary-softer" data-padding="ie-6" style="width: max-content;">[data-padding="ie-6"] (right)</div>
+    <div data-border="primary-mid" data-background="primary-softer" data-padding="i-fluid-5" style="width: max-content;">[data-padding="i-fluid-5"]</div>
+  </m-tab-panel>
+  <m-tab-panel 
+    name="padding-block" 
+    class="exposed-grid"
+    style="display: grid;"
+    data-gap="2"
+  >
+    <div data-border="primary-mid" data-background="primary-softer" data-padding="b-5" style="width: max-content;">[data-padding="b-5"] (top & bottom)</div>
+    <div data-border="primary-mid" data-background="primary-softer" data-padding="bs-6" style="width: max-content;">[data-padding="bs-6"] (top)</div>
+    <div data-border="primary-mid" data-background="primary-softer" data-padding="be-6" style="width: max-content;">[data-padding="be-6"] (bottom)</div>
+    <div data-border="primary-mid" data-background="primary-softer" data-padding="b-fluid-5" style="width: max-content;">[data-padding="b-fluid-5"]</div>
+  </m-tab-panel>
+</m-tab-list>
 
 Available sizes: `000`, `00`, `1-15`, `fluid-1` through `fluid-10`
 
@@ -287,20 +284,66 @@ Available sizes: `000`, `00`, `1-15`, `fluid-1` through `fluid-10`
 
 Controls main-axis alignment (horizontal in row, vertical in column).
 
-- `[data-justify="start"]` — align items to start
-- `[data-justify="center"]` — center items
-- `[data-justify="end"]` — align items to end
-- `[data-justify="between"]` — space between items
-- `[data-justify="around"]` — space around items
-- `[data-justify="evenly"]` — even space distribution
+<m-tab-list label="Justify content examples">
+  <m-tab panel="justify-center">Center</m-tab>
+  <m-tab panel="justify-start">Start</m-tab>
+  <m-tab panel="justify-end">End</m-tab>
+  <m-tab panel="justify-between">Between</m-tab>
+  <m-tab panel="justify-around">Around</m-tab>
+  <m-tab panel="justify-evenly">Evenly</m-tab>
+  <m-tab-panel name="justify-center" style="display: flex; height: 150px;" data-justify="center">
+    <div class="box">[data-justify="center"]</div>
+  </m-tab-panel>
+  <m-tab-panel name="justify-start" style="display: flex; height: 150px;" data-justify="start">
+    <div class="box">[data-justify="start"]</div>
+  </m-tab-panel>
+  <m-tab-panel name="justify-end" style="display: flex; height: 150px;" data-justify="end">
+    <div class="box">[data-justify="end"]</div>
+  </m-tab-panel>
+  <m-tab-panel name="justify-between" style="display: flex; height: 150px;" data-justify="between">
+    <div class="box">Item</div>
+    <div class="box">[data-justify="between"]</div>
+    <div class="box">Item</div>
+  </m-tab-panel>
+  <m-tab-panel name="justify-around" style="display: flex; height: 150px;" data-justify="around">
+    <div class="box">Item</div>
+    <div class="box">[data-justify="around"]</div>
+    <div class="box">Item</div>
+  </m-tab-panel>
+  <m-tab-panel name="justify-evenly" style="display: flex; height: 150px;" data-justify="evenly">
+    <div class="box">Item</div>
+    <div class="box">[data-justify="evenly"]</div>
+    <div class="box">Item</div>
+  </m-tab-panel>
+</m-tab-list>
 
 ## Align Items
 
 Controls cross-axis alignment (vertical in row, horizontal in column).
 
-- `[data-align="start"]` — align items to start
-- `[data-align="center"]` — center items
-- `[data-align="end"]` — align items to end
-- `[data-align="baseline"]` — align items to text baseline
-- `[data-align="stretch"]` — stretch items to fill container
+<m-tab-list label="Align items examples">
+  <m-tab panel="align-center">Center</m-tab>
+  <m-tab panel="align-start">Start</m-tab>
+  <m-tab panel="align-end">End</m-tab>
+  <m-tab panel="align-baseline">Baseline</m-tab>
+  <m-tab panel="align-stretch">Stretch</m-tab>
+  <m-tab-panel name="align-center" style="display: flex; height: 150px;" data-align="center" data-gap="2">
+    <div class="box">[data-align="center"]</div>
+  </m-tab-panel>
+  <m-tab-panel name="align-start" style="display: flex; height: 150px;" data-align="start" data-gap="2">
+    <div class="box">[data-align="start"]</div>
+  </m-tab-panel>
+  <m-tab-panel name="align-end" style="display: flex; height: 150px;" data-align="end" data-gap="2">
+    <div class="box">[data-align="end"]</div>
+  </m-tab-panel>
+  <m-tab-panel name="align-baseline" style="display: flex; height: 150px;" data-align="baseline" data-gap="2">
+    <div class="box" style="font-size: 2rem;">Large</div>
+    <div class="box">[data-align="baseline"]</div>
+    <div class="box" style="font-size: 0.75rem;">Small</div>
+  </m-tab-panel>
+  <m-tab-panel name="align-stretch" style="display: flex; height: 150px;" data-align="stretch" data-gap="2">
+  <div class="box">[data-align="stretch"]</div>
+  <div class="box">[data-align="stretch"]</div>
+  </m-tab-panel>
+</m-tab-list>
 
