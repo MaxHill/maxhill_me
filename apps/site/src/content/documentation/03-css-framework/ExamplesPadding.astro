@@ -1,34 +1,36 @@
 <m-tab-list label="Padding examples">
   <m-tab panel="padding-all">All Sides</m-tab>
-  <m-tab panel="padding-inline">Inline</m-tab>
-  <m-tab panel="padding-block">Block</m-tab>
   <m-tab-panel 
     name="padding-all" 
       class="exposed-grid padding-panel"
       data-gap="2"
     >
-      <div class="box" data-padding="3">[data-padding="3"]</div>
-      <div class="box" data-padding="fluid-4">[data-padding="fluid-5"]</div>
+      <div class="box" data-padded="false" data-padding="3">[data-padding="3"]</div>
+      <div class="box" data-padded="false" data-padding="fluid-4">[data-padding="fluid-5"]</div>
   </m-tab-panel>
+
+  <m-tab panel="padding-inline">Inline</m-tab>
   <m-tab-panel 
     name="padding-inline" 
     class="exposed-grid padding-panel"
     data-gap="2"
   >
-    <div class="box" data-padding="i-5">[data-padding="i-5"]</div>
-    <div class="box" data-padding="is-6">[data-padding="is-6"]</div>
-    <div class="box" data-padding="ie-6">[data-padding="ie-6"]</div>
-    <div class="box" data-padding="i-fluid-5">[data-padding="i-fluid-5"]</div>
+    <div class="box" data-padded="false" data-padding="i-5">[data-padding="i-5"]</div>
+    <div class="box" data-padded="false" data-padding="is-6">[data-padding="is-6"]</div>
+    <div class="box" data-padded="false" data-padding="ie-6">[data-padding="ie-6"]</div>
+    <div class="box" data-padded="false" data-padding="i-fluid-5">[data-padding="i-fluid-5"]</div>
   </m-tab-panel>
+
+  <m-tab panel="padding-block">Block</m-tab>
   <m-tab-panel 
     name="padding-block" 
     class="exposed-grid padding-panel"
     data-gap="2"
   >
-    <div class="box" data-padding="b-5">[data-padding="b-5"]</div>
-    <div class="box" data-padding="bs-6">[data-padding="bs-6"]</div>
-    <div class="box" data-padding="be-6">[data-padding="be-6"]</div>
-    <div class="box" data-padding="b-fluid-5">[data-padding="b-fluid-5"]</div>
+    <div class="box" data-padded="false" data-padding="b-5">[data-padding="b-5"]</div>
+    <div class="box" data-padded="false" data-padding="bs-6">[data-padding="bs-6"]</div>
+    <div class="box" data-padded="false" data-padding="be-6">[data-padding="be-6"]</div>
+    <div class="box" data-padded="false" data-padding="b-fluid-5">[data-padding="b-fluid-5"]</div>
   </m-tab-panel>
 </m-tab-list>
 
