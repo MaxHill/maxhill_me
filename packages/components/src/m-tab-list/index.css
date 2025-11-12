@@ -13,6 +13,8 @@
         border-width: var(--border-width);
         background: var(--color-surface);
         display: flex;
+        overflow-x: auto;
+        scrollbar-width: thin;
     }
 }
 
@@ -33,6 +35,8 @@
     grid-template-columns: auto 1fr;
     [part="tab"] {
         flex-direction: column;
+        overflow-x: visible;
+        overflow-y: auto;
     }
 }
 :host([position="end"]) {
@@ -43,5 +47,7 @@
     [part="tab"] {
         grid-area: tab;
         flex-direction: column;
+        overflow-x: visible;
+        overflow-y: auto;
     }
 }
