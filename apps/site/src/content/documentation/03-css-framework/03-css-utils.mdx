@@ -8,6 +8,15 @@ htmlId: doc-css-utils
 
 Utility classes for spacing, borders, and layout. All utilities use logical properties for better internationalization support.
 
+## Structure
+
+CSS utilities provide low-level styling primitives through data attributes. Instead of utility classes like `.p-3` or `.bg-surface`,
+you use attributes like `data-padding="3"` and `data-background="surface"`.
+
+This approach keeps markup semantic while maintaining the flexibility of utility-first styling. All utility values map directly to
+tokens from the design system, ensuring consistency across your interface.
+
+
 ## Directional Suffixes
 
 Utilities support directional variants using logical property naming:
@@ -115,28 +124,28 @@ Background utilities apply background colors using the `[data-background]` attri
   <m-tab panel="neutral">Neutral</m-tab>
   <m-tab panel="constructive">Constructive</m-tab>
   <m-tab panel="destructive">Destructive</m-tab>
-  <m-tab-panel name="primary" padded="false" class="stack" data-gap="0">
+  <m-tab-panel name="primary" data-padded="false" class="stack" data-gap="0">
     <p data-background="primary-softer" data-padding="2" data-text="on-primary-soft">[data-background="primary-softer"] [data-text="on-primary-soft"]</p>
     <p data-background="primary-soft" data-padding="2" data-text="on-primary-soft">[data-background="primary-soft"] [data-text="on-primary-soft"]</p>
     <p data-background="primary-mid" data-padding="2" data-text="on-primary-mid">[data-background="primary-mid"] [data-text="on-primary-mid"]</p>
     <p data-background="primary-loud" data-padding="2" data-text="on-primary-loud">[data-background="primary-loud"] [data-text="on-primary-loud"]</p>
     <p data-background="primary-louder" data-padding="2" data-text="on-primary-loud">[data-background="primary-louder"] [data-text="on-primary-loud"]</p>
   </m-tab-panel>
-  <m-tab-panel name="neutral" padded="false" class="stack" data-gap="0">
+  <m-tab-panel name="neutral" data-padded="false" class="stack" data-gap="0">
     <p data-background="neutral-softer" data-padding="2" data-text="on-neutral-soft">[data-background="neutral-softer"] [data-text="on-neutral-soft"]</p>
     <p data-background="neutral-soft" data-padding="2" data-text="on-neutral-soft">[data-background="neutral-soft"] [data-text="on-neutral-soft"]</p>
     <p data-background="neutral-mid" data-padding="2" data-text="on-neutral-mid">[data-background="neutral-mid"] [data-text="on-neutral-mid"]</p>
     <p data-background="neutral-loud" data-padding="2" data-text="on-neutral-loud">[data-background="neutral-loud"] [data-text="on-neutral-loud"]</p>
     <p data-background="neutral-louder" data-padding="2" data-text="on-neutral-loud">[data-background="neutral-louder"] [data-text="on-neutral-loud"]</p>
   </m-tab-panel>
-  <m-tab-panel name="constructive" padded="false" class="stack" data-gap="0">
+  <m-tab-panel name="constructive" data-padded="false" class="stack" data-gap="0">
     <p data-background="constructive-softer" data-padding="2" data-text="on-constructive-soft">[data-background="constructive-softer"] [data-text="on-constructive-soft"]</p>
     <p data-background="constructive-soft" data-padding="2" data-text="on-constructive-soft">[data-background="constructive-soft"] [data-text="on-constructive-soft"]</p>
     <p data-background="constructive-mid" data-padding="2" data-text="on-constructive-mid">[data-background="constructive-mid"] [data-text="on-constructive-mid"]</p>
     <p data-background="constructive-loud" data-padding="2" data-text="on-constructive-loud">[data-background="constructive-loud"] [data-text="on-constructive-loud"]</p>
     <p data-background="constructive-louder" data-padding="2" data-text="on-constructive-loud">[data-background="constructive-louder"] [data-text="on-constructive-loud"]</p>
   </m-tab-panel>
-  <m-tab-panel name="destructive" padded="false" class="stack" data-gap="0">
+  <m-tab-panel name="destructive" data-padded="false" class="stack" data-gap="0">
     <p data-background="destructive-softer" data-padding="2" data-text="on-destructive-soft">[data-background="destructive-softer"] [data-text="on-destructive-soft"]</p>
     <p data-background="destructive-soft" data-padding="2" data-text="on-destructive-soft">[data-background="destructive-soft"] [data-text="on-destructive-soft"]</p>
     <p data-background="destructive-mid" data-padding="2" data-text="on-destructive-mid">[data-background="destructive-mid"] [data-text="on-destructive-mid"]</p>
