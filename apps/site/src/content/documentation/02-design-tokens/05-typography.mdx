@@ -9,6 +9,15 @@ htmlId: doc-typography
 import FontFamilyDisplay from "./FontFamilyDisplay.astro";
 
 Our typography system uses monospace fonts for a technical, precise aesthetic.
+For ui elements the typescale is limited to 4 sizes. `--h1`,`--h2`,`--p` and `--p2`. This 
+combined with text color provides enough visual hierarcy for normal ui.
+
+Long form text like the documentation you're reading now might need a bigger 
+typescale and for that usecase `.typesetting` exists, see [#doc-css-restyle](#doc-css-restyle)
+
+---
+
+
 
 ## Font Families
 
@@ -33,7 +42,7 @@ Our typography system uses monospace fonts for a technical, precise aesthetic.
 The type scale provides consistent sizing across all text elements:
 
 <div
-  class="box stack2"
+  class="box stack"
   data-width="breakout"
   data-variant="surface"
   data-gap="5"
