@@ -1,0 +1,47 @@
+:root {
+    --color-input-fill: var(--color-surface);
+    --color-input-stroke: var(--color-stroke);
+    --color-input-text: var(--color-primary-text-on-soft);
+
+    /* --color-input-fill-focus: var(--color-primary-fill-softer); */
+    --color-input-stroke-focus: var(--color-primary-stroke-softer);
+    --color-input-text-focus: var(--color-primary-text-on-soft);
+
+    --radius-input: var(--radius-1);
+}
+
+@layer base {
+
+    .input-description {
+        font: var(--p2);
+        color: var(--color-text-softer);
+    }
+    label {
+        color: var(--color-text-mid);
+        font-family: var(--ff-display);
+    }
+
+    input[type="text"],
+    input[type="search"],
+    input[type="number"],
+    textarea {
+        font: inherit;
+
+        /* Shape */
+        border-radius: var(--radius-input);
+        padding-inline: var(--size-1);
+        padding-block: var(--size-1);
+
+        /* Color */
+        background: var(--color-input-fill);
+        border: var(--border-width) solid var(--color-input-stroke);
+        color: var(--color-input-text);
+
+        &:focus {
+            outline-offset: calc(var(--outline-size) * -1);
+            background: var(--color-input-fill-focus);
+            border-color: var(--color-input-stroke-focus);
+            color: var(--color-input-text-focus);
+        }
+    }
+}

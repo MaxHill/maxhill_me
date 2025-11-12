@@ -105,5 +105,12 @@
         --border-width: 1px;
         --border: var(--border-width) solid var(--color-stroke);
         --border-strong: var(--border-width) solid var(--color-stroke-strong);
+
+        /*  ------------------------------------------------------------------------
+        /*  Input                                                                     
+        /*  ------------------------------------------------------------------------ */
+
+
+        --color-input-fill-focus: color-mix(in oklab, var(--color-primary-900), black 55%);
     }
 }
