@@ -1,0 +1,47 @@
+.grid {
+    display: grid;
+
+    grid-auto-rows: 1fr;
+    grid-template-columns: 1fr;
+
+    &[data-cols="1"] { grid-template-columns: 1fr; }
+    &[data-cols="2"]  { grid-template-columns: repeat(2, 1fr); }
+    &[data-cols="3"]  { grid-template-columns: repeat(3, 1fr); }
+    &[data-cols="4"]  { grid-template-columns: repeat(4, 1fr); }
+    &[data-cols="5"]  { grid-template-columns: repeat(5, 1fr); }
+    &[data-cols="6"]  { grid-template-columns: repeat(6, 1fr); }
+    &[data-cols="7"]  { grid-template-columns: repeat(7, 1fr); }
+    &[data-cols="8"]  { grid-template-columns: repeat(8, 1fr); }
+    &[data-cols="9"]  { grid-template-columns: repeat(9, 1fr); }
+    &[data-cols="10"] { grid-template-columns: repeat(10, 1fr); }
+    &[data-cols="11"] { grid-template-columns: repeat(11, 1fr); }
+    &[data-cols="12"] { grid-template-columns: repeat(12, 1fr); }
+
+
+    >  [data-span="1"]  { grid-column: span 1; }
+    >  [data-span="2"]  { grid-column: span 2; }
+    >  [data-span="3"]  { grid-column: span 3; }
+    >  [data-span="4"]  { grid-column: span 4; }
+    >  [data-span="5"]  { grid-column: span 5; }
+    >  [data-span="6"]  { grid-column: span 6; }
+    >  [data-span="7"]  { grid-column: span 7; }
+    >  [data-span="8"]  { grid-column: span 8; }
+    >  [data-span="9"]  { grid-column: span 9; }
+    >  [data-span="10"] { grid-column: span 10; }
+    >  [data-span="11"] { grid-column: span 11; }
+    >  [data-span="12"] { grid-column: span 12; }
+
+
+    >  [data-row-span="1"]  { grid-row: span 1; }
+    >  [data-row-span="2"]  { grid-row: span 2; }
+    >  [data-row-span="3"]  { grid-row: span 3; }
+    >  [data-row-span="4"]  { grid-row: span 4; }
+    >  [data-row-span="5"]  { grid-row: span 5; }
+    >  [data-row-span="6"]  { grid-row: span 6; }
+    >  [data-row-span="7"]  { grid-row: span 7; }
+    >  [data-row-span="8"]  { grid-row: span 8; }
+    >  [data-row-span="9"]  { grid-row: span 9; }
+    >  [data-row-span="10"] { grid-row: span 10; }
+    >  [data-row-span="11"] { grid-row: span 11; }
+    >  [data-row-span="12"] { grid-row: span 12; }
+}

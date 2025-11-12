@@ -9,6 +9,40 @@ htmlId: doc-css-layou-primitives
 A set of layout primitives that can be used to build interfaces with.
 
 ---
+## Grid
+Flexible grid layout with configurable columns and spanning capabilities.
+
+- `.grid` — creates a grid layout (defaults to 1 column)
+- `[data-cols="1-12"]` — set number of columns
+- `[data-span="1-12"]` — span multiple columns
+- `[data-row-span="1-12"]` — span multiple rows
+
+Combine with `[data-gap]` for spacing between grid items,
+or combine with `[data-justify]` and `[data-align]` for cell alignment.
+
+### Basic 3 col grid
+<div class="grid" data-cols="3" data-gap="2">
+    <div class="box"></div>
+    <div class="box"></div>
+    <div class="box"></div>
+</div>
+
+### Columnd spanning
+<div class="grid" data-cols="3" data-gap="2">
+    <div class="box" data-span="2"></div>
+    <div class="box"></div>
+</div>
+
+### Row and columnd spanning
+<div class="grid" data-cols="3" data-gap="2">
+    <div class="box" data-row-span="2"></div>
+    <div class="box"></div>
+    <div class="box"></div>
+    <div class="box" data-span="2"></div>
+</div>
+
+
+---
 ## Collection
 
 Responsive grid layout that automatically adapts to available space. Items wrap to new rows when needed.
@@ -61,14 +95,14 @@ Full-width grid layout with centered content area and optional breakout zones. P
 - `[data-width="breakout"]` — wider than content, but not full-width
 - `[data-width="full"]` — spans entire viewport width
 
-<div class="box content-grid" data-gap="2" data-width="full" style="width:70%; --_content-max-width: 50%; --_breakout-max-width: 60%; ">
+<div class="box content-grid" data-gap="2" data-width="full" style="width:70%; --_content-max-width: 70%; --_breakout-max-width: 85%; " data-padded="false">
   <div class="box" data-variant="surface">
     .content-grid (content width, default)
   </div>
   <div class="box" data-width="breakout" data-variant="accent">
     .content-grid [data-width="breakout"]
   </div>
-  <div class="box" data-width="full" data-variant="surface">
+  <div class="box" data-width="full" data-variant="surface" >
     .content-grid [data-width="full"]
   </div>
 </div>
@@ -208,141 +242,3 @@ Combine with `[data-gap]`, `[data-align]`, and `[data-justify]` attributes for s
     more content
   </div>
 </section>
-
---- 
-## Stack2 (Grid-based) [DEPRICATED]
-
-Grid-based alternative to Stack. Uses `display: grid` with `grid-auto-flow` instead of flexbox.
-
-- `.stack2` — vertical stack (row, default)
-- `.stack2[data-direction="row"]` — horizontal stack (column)
-
-Combine with `[data-gap]`, `[data-align]`, and `[data-justify]` attributes for spacing and alignment.
-
-<section class="box stack2" data-width="breakout" data-variant="surface">
-  <div class="box" data-variant="surface-raised">
-    .stack2
-  </div>
-  <div class="box" data-variant="surface-raised">
-    .stack2
-  </div>
-</section>
-
-<section
-  class="box stack2"
-  data-gap="3"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box" data-variant="surface-raised">
-    .stack2 [data-gap="3"]
-  </div>
-  <div class="box" data-variant="surface-raised">
-    .stack2 [data-gap="3"]
-  </div>
-</section>
-
-<section
-  class="box stack2"
-  data-direction="row"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box" data-variant="surface-lowered">
-    .stack2 [data-direction="row"]
-  </div>
-  <div class="box" data-variant="surface-raised">
-    .stack2 [data-direction="row"]
-  </div>
-</section>
-
-<section
-  class="box stack2"
-  data-direction="row"
-  data-gap="3"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box" data-variant="surface-raised">
-    .stack2 [data-direction="row"] [data-gap="3"]
-  </div>
-  <div class="box" data-variant="surface-raised">
-    .stack2 [data-direction="row"] [data-gap="3"]
-    <br />
-    more content
-  </div>
-</section>
-
-<section
-  class="box stack2"
-  data-direction="row"
-  data-gap="3"
-  data-align="start"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box" data-variant="surface-raised">
-    .stack2 [data-direction="row"] [data-align="start"]
-  </div>
-  <div class="box" data-variant="surface-raised">
-    .stack2 [data-direction="row"] [data-align="start"]
-    <br />
-    more content
-  </div>
-</section>
-
-<section
-  class="box stack2"
-  data-direction="row"
-  data-gap="3"
-  data-align="end"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box" data-variant="surface-raised">
-    .stack2 [data-direction="row"] [data-align="end"]
-  </div>
-  <div class="box" data-variant="surface-raised">
-    .stack2 [data-direction="row"] [data-align="end"]
-    <br />
-    more content
-  </div>
-</section>
-
-<section
-  class="box stack2"
-  data-direction="row"
-  data-gap="3"
-  data-justify="center"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box" data-variant="surface-raised">
-    .stack2 [data-direction="row"] [data-justify="center"]
-  </div>
-  <div class="box" data-variant="surface-raised">
-    .stack2 [data-direction="row"] [data-justify="center"]
-    <br />
-    more content
-  </div>
-</section>
-
-<section
-  class="box stack2"
-  data-direction="row"
-  data-gap="3"
-  data-align="stretch"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box" data-variant="surface-raised">
-    .stack2 [data-direction="row"] [data-align="stretch"] [data-gap="3"]
-  </div>
-  <div class="box" data-variant="surface-raised">
-    .stack2 [data-direction="row"] [data-align="stretch"] [data-gap="3"]
-    <br />
-    more content
-  </div>
-</section>
-
----
