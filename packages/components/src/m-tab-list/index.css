@@ -5,6 +5,7 @@
     --border-width: 0 0 2px 0;
     display: grid;
     grid-template-rows: max-content;
+    overflow: clip;
 
     [part="tab"] {
         border-style: solid;

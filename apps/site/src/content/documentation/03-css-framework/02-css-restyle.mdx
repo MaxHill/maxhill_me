@@ -6,10 +6,21 @@ tags: [css]
 htmlId: doc-css-restyle
 ---
 
-## Typesetting
-The `.typesetting` class creates consistent vertical rhythm for text-heavy content using CSS Grid.
+import { Code } from 'astro:components';
 
-## Use Cases
+## Typesetting
+
+The `.typesetting` class creates consistent vertical rhythm for text-heavy content using CSS Grid. It styles headings, paragraphs, code blocks, horizontal rules, and maintains proper spacing between all elements.
+
+### Features
+
+- All heading levels (h1-h6) with appropriate sizing
+- Inline code and code blocks with styled borders
+- Horizontal rules for section breaks
+- Consistent vertical rhythm using `1rlh` gap
+- Extra spacing before headings for visual hierarchy
+
+### Use Cases
 
 Apply `.typesetting` to containers with:
 
@@ -18,26 +29,61 @@ Apply `.typesetting` to containers with:
 - Long-form written content
 - Any content requiring consistent vertical rhythm
 
-<m-card>
-    <strong slot="title">Without .typesetting</strong>
-    <div>
-      # Article Title
-      ## Introduction
-      This is a paragraph without the typesetting class. Notice how the spacing feels inconsistent and elements appear cramped together.
-      ## Main Content
-      Another paragraph here to show the spacing issues when not using the typesetting utility.
-    </div>
-</m-card>
+### Comparison
 
-<m-card>
-    <strong slot="title">With .typesetting</strong>
+<m-tab-list label="Typesetting comparison">
+  <m-tab panel="with">With .typesetting</m-tab>
+  <m-tab panel="without">Without .typesetting</m-tab>
+  
+  <m-tab-panel name="with">
     <div class="typesetting">
-      # Article Title
-      ## Introduction
-      This is a paragraph with the typesetting class applied. The spacing is consistent and creates a natural reading rhythm.
-      ## Main Content
-      Another paragraph demonstrating the improved vertical rhythm and breathing room between elements.
+      <h1>Heading 1 - Main Title</h1>
+      <p>This is a paragraph demonstrating body text flow with consistent spacing and readability.</p>
+      
+      <h2>Heading 2 - Section Title</h2>
+      <p>Lorem ipsum with some <code>inline code</code> showing proper vertical rhythm.</p>
+      
+      <h3>Heading 3 - Subsection</h3>
+      <h4>Heading 4</h4>
+      <h5>Heading 5</h5>
+      <h6>Heading 6</h6>
+      
+      <hr />
+
+```javascript
+function example() {
+  return "Code blocks styled nicely";
+}
+```
+
+      <p>Final paragraph showing consistent vertical rhythm in action.</p>
     </div>
-</m-card>
+  </m-tab-panel>
+  
+  <m-tab-panel name="without">
+    <div>
+      <h1>Heading 1 - Main Title</h1>
+      <p>This is a paragraph demonstrating body text flow without proper spacing.</p>
+      
+      <h2>Heading 2 - Section Title</h2>
+      <p>Lorem ipsum with some <code>inline code</code> showing inconsistent spacing.</p>
+      
+      <h3>Heading 3 - Subsection</h3>
+      <h4>Heading 4</h4>
+      <h5>Heading 5</h5>
+      <h6>Heading 6</h6>
+      
+      <hr />
+
+```javascript
+function example() {
+  return "Code blocks cramped";
+}
+```
+
+      <p>Final paragraph showing poor vertical rhythm.</p>
+    </div>
+  </m-tab-panel>
+</m-tab-list>
 
 
