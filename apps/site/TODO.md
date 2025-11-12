@@ -1,6 +1,23 @@
-- [ ] Move raw font's out of public folder.
-- [ ] Fix intersection observer bug in design-system.astro: On wide 
-    screens when multiple elements are visible, clicking the next-to-last
-    nav item incorrectly shows the last element as active. The observer needs
-    to properly determine which element should be active when multiple elements
-    meet the threshold simultaneously.
+- [x] Extract CSS Utils examples into separate Astro components
+  - [x] Create ExamplesMargin.astro in apps/site/src/content/documentation/03-css-framework/
+    - Extract lines 190-245 from 03-css-utils.mdx (the m-tab-list with margin examples)
+  - [x] Create ExamplesPadding.astro in apps/site/src/content/documentation/03-css-framework/
+    - Extract lines 254-289 from 03-css-utils.mdx (the m-tab-list with padding examples)
+  - [x] Create ExamplesBorder.astro in apps/site/src/content/documentation/03-css-framework/
+    - Extract lines 44-79 from 03-css-utils.mdx (the m-tab-list with border examples)
+  - [x] Create ExamplesBackground.astro in apps/site/src/content/documentation/03-css-framework/
+    - Extract lines 119-152 from 03-css-utils.mdx (the m-tab-list with background color families)
+  - [x] Create ExamplesPlacement.astro in apps/site/src/content/documentation/03-css-framework/
+    - Extract lines 300-361 from 03-css-utils.mdx (both justify-content and align-items m-tab-lists)
+  - [x] Update 03-css-utils.mdx to import and use the new components
+  - [x] Phase 2: Remove inline styles in favor of Astro <style> blocks
+    - [x] ExamplesMargin.astro - Move inline styles to <style> block
+    - [x] ExamplesPadding.astro - Move inline styles to <style> block
+    - [x] ExamplesBorder.astro - Move inline styles to <style> block
+    - [x] ExamplesBackground.astro - Move inline styles to <style> block (no inline styles present)
+    - [x] ExamplesPlacement.astro - Move inline styles to <style> block
+- [x] Phase 3: Standardize ExamplesMargin.astro and ExamplesPadding.astro
+  - [x] Make the outer `.box` elements in ExamplesMargin.astro shrink to fit their content
+  - [x] Add `width: max-content` styling to outer boxes for better margin visualization
+  - [x] Replace `data-border` and `data-background` attributes in ExamplesPadding.astro with `.box` class
+  - [x] Both components now use consistent `.box` elements with `width: max-content` behavior

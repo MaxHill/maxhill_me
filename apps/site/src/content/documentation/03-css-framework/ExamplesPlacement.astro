@@ -1,0 +1,84 @@
+---
+---
+<section>
+  <h2>Justify Content</h2>
+  <p>Controls main-axis alignment (horizontal in row, vertical in column).</p>
+  <m-tab-list label="Justify content examples">
+    <m-tab panel="justify-center">Center</m-tab>
+    <m-tab panel="justify-start">Start</m-tab>
+    <m-tab panel="justify-end">End</m-tab>
+    <m-tab panel="justify-between">Between</m-tab>
+    <m-tab panel="justify-around">Around</m-tab>
+    <m-tab panel="justify-evenly">Evenly</m-tab>
+    <m-tab-panel name="justify-center" class="justify-panel" data-justify="center">
+      <div class="box">[data-justify="center"]</div>
+    </m-tab-panel>
+    <m-tab-panel name="justify-start" class="justify-panel" data-justify="start">
+      <div class="box">[data-justify="start"]</div>
+    </m-tab-panel>
+    <m-tab-panel name="justify-end" class="justify-panel" data-justify="end">
+      <div class="box">[data-justify="end"]</div>
+    </m-tab-panel>
+    <m-tab-panel name="justify-between" class="justify-panel" data-justify="between">
+      <div class="box">Item</div>
+      <div class="box">[data-justify="between"]</div>
+      <div class="box">Item</div>
+    </m-tab-panel>
+    <m-tab-panel name="justify-around" class="justify-panel" data-justify="around">
+      <div class="box">Item</div>
+      <div class="box">[data-justify="around"]</div>
+      <div class="box">Item</div>
+    </m-tab-panel>
+    <m-tab-panel name="justify-evenly" class="justify-panel" data-justify="evenly">
+      <div class="box">Item</div>
+      <div class="box">[data-justify="evenly"]</div>
+      <div class="box">Item</div>
+    </m-tab-panel>
+  </m-tab-list>
+</section>
+
+<section>
+  <h2>Align Items</h2>
+  <p>Controls cross-axis alignment (vertical in row, horizontal in column).</p>
+  <m-tab-list label="Align items examples">
+    <m-tab panel="align-center">Center</m-tab>
+    <m-tab panel="align-start">Start</m-tab>
+    <m-tab panel="align-end">End</m-tab>
+    <m-tab panel="align-baseline">Baseline</m-tab>
+    <m-tab panel="align-stretch">Stretch</m-tab>
+    <m-tab-panel name="align-center" class="align-panel" data-align="center" data-gap="2">
+      <div class="box">[data-align="center"]</div>
+    </m-tab-panel>
+    <m-tab-panel name="align-start" class="align-panel" data-align="start" data-gap="2">
+      <div class="box">[data-align="start"]</div>
+    </m-tab-panel>
+    <m-tab-panel name="align-end" class="align-panel" data-align="end" data-gap="2">
+      <div class="box">[data-align="end"]</div>
+    </m-tab-panel>
+    <m-tab-panel name="align-baseline" class="align-panel" data-align="baseline" data-gap="2">
+      <div class="box large-text">Large</div>
+      <div class="box">[data-align="baseline"]</div>
+      <div class="box small-text">Small</div>
+    </m-tab-panel>
+    <m-tab-panel name="align-stretch" class="align-panel" data-align="stretch" data-gap="2">
+    <div class="box">[data-align="stretch"]</div>
+    <div class="box">[data-align="stretch"]</div>
+    </m-tab-panel>
+  </m-tab-list>
+</section>
+
+<style>
+  .justify-panel,
+  .align-panel {
+    display: flex;
+    height: 150px;
+  }
+
+  .large-text {
+    font-size: 2rem;
+  }
+
+  .small-text {
+    font-size: 0.75rem;
+  }
+</style>

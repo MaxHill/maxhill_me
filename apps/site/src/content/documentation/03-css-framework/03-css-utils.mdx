@@ -6,6 +6,12 @@ tags: [css, framework]
 htmlId: doc-css-utils
 ---
 
+import ExamplesBorder from './ExamplesBorder.astro';
+import ExamplesBackground from './ExamplesBackground.astro';
+import ExamplesMargin from './ExamplesMargin.astro';
+import ExamplesPadding from './ExamplesPadding.astro';
+import ExamplesPlacement from './ExamplesPlacement.astro';
+
 Utility classes for spacing, borders, and layout. All utilities use logical properties for better internationalization support.
 
 ## Structure
@@ -41,42 +47,7 @@ Most utilities support these size scales:
 
 Border utilities add borders to elements using the `[data-border]` attribute. Combine with `[data-variant]` for different looks.
 
-<m-tab-list label="Border examples">
-  <m-tab panel="default">Default</m-tab>
-  <m-tab panel="inline">Inline</m-tab>
-  <m-tab panel="block">Block</m-tab>
-  <m-tab panel="variants">Variants</m-tab>
-  <m-tab-panel name="default" style="display: grid; place-items: center;">
-    <div data-border style="width: 80%;">[data-border]</div>
-  </m-tab-panel>
-  <m-tab-panel name="inline" class="stack" data-gap="2" style="place-items: center;">
-    <div data-border="i" style="width: 80%;">[data-border="i"]</div>
-    <div data-border="is" style="width: 80%;">[data-border="is"]</div>
-    <div data-border="ie" style="width: 80%;">[data-border="ie"]</div>
-  </m-tab-panel>
-  <m-tab-panel name="block" class="stack" data-gap="2" style="place-items: center;">
-    <div data-border="b" style="width: 80%;">[data-border="b"]</div>
-    <div data-border="bs" style="width: 80%;">[data-border="bs"]</div>
-    <div data-border="be" style="width: 80%;">[data-border="be"]</div>
-  </m-tab-panel>
-  <m-tab-panel name="variants" class="stack" data-gap="2" style="place-items: center;">
-    <div data-border data-variant="strong" data-padding="2" style="width: 80%;">
-      [data-border] [data-variant="strong"]
-    </div>
-    <div data-border data-variant="primary" data-padding="2" style="width: 80%;">
-      [data-border] [data-variant="primary"]
-    </div>
-    <div data-border data-variant="neutral" data-padding="2" style="width: 80%;">
-      [data-border] [data-variant="neutral"]
-    </div>
-    <div data-border data-variant="constructive" data-padding="2" style="width: 80%;">
-      [data-border] [data-variant="constructive"]
-    </div>
-    <div data-border data-variant="destructive" data-padding="2" style="width: 80%;">
-      [data-border] [data-variant="destructive"]
-    </div>
-  </m-tab-panel>
-</m-tab-list>
+<ExamplesBorder />
 
 ---
 ## Text Colors
@@ -116,40 +87,7 @@ Background utilities apply background colors using the `[data-background]` attri
 
 ### Color Families
 
-<m-tab-list label="Background color families">
-  <m-tab panel="primary">Primary</m-tab>
-  <m-tab panel="neutral">Neutral</m-tab>
-  <m-tab panel="constructive">Constructive</m-tab>
-  <m-tab panel="destructive">Destructive</m-tab>
-  <m-tab-panel name="primary" data-padded="false" class="stack" data-gap="0">
-    <p data-background="primary-softer" data-padding="2" data-text="on-primary-soft">[data-background="primary-softer"] [data-text="on-primary-soft"]</p>
-    <p data-background="primary-soft" data-padding="2" data-text="on-primary-soft">[data-background="primary-soft"] [data-text="on-primary-soft"]</p>
-    <p data-background="primary-mid" data-padding="2" data-text="on-primary-mid">[data-background="primary-mid"] [data-text="on-primary-mid"]</p>
-    <p data-background="primary-loud" data-padding="2" data-text="on-primary-loud">[data-background="primary-loud"] [data-text="on-primary-loud"]</p>
-    <p data-background="primary-louder" data-padding="2" data-text="on-primary-loud">[data-background="primary-louder"] [data-text="on-primary-loud"]</p>
-  </m-tab-panel>
-  <m-tab-panel name="neutral" data-padded="false" class="stack" data-gap="0">
-    <p data-background="neutral-softer" data-padding="2" data-text="on-neutral-soft">[data-background="neutral-softer"] [data-text="on-neutral-soft"]</p>
-    <p data-background="neutral-soft" data-padding="2" data-text="on-neutral-soft">[data-background="neutral-soft"] [data-text="on-neutral-soft"]</p>
-    <p data-background="neutral-mid" data-padding="2" data-text="on-neutral-mid">[data-background="neutral-mid"] [data-text="on-neutral-mid"]</p>
-    <p data-background="neutral-loud" data-padding="2" data-text="on-neutral-loud">[data-background="neutral-loud"] [data-text="on-neutral-loud"]</p>
-    <p data-background="neutral-louder" data-padding="2" data-text="on-neutral-loud">[data-background="neutral-louder"] [data-text="on-neutral-loud"]</p>
-  </m-tab-panel>
-  <m-tab-panel name="constructive" data-padded="false" class="stack" data-gap="0">
-    <p data-background="constructive-softer" data-padding="2" data-text="on-constructive-soft">[data-background="constructive-softer"] [data-text="on-constructive-soft"]</p>
-    <p data-background="constructive-soft" data-padding="2" data-text="on-constructive-soft">[data-background="constructive-soft"] [data-text="on-constructive-soft"]</p>
-    <p data-background="constructive-mid" data-padding="2" data-text="on-constructive-mid">[data-background="constructive-mid"] [data-text="on-constructive-mid"]</p>
-    <p data-background="constructive-loud" data-padding="2" data-text="on-constructive-loud">[data-background="constructive-loud"] [data-text="on-constructive-loud"]</p>
-    <p data-background="constructive-louder" data-padding="2" data-text="on-constructive-loud">[data-background="constructive-louder"] [data-text="on-constructive-loud"]</p>
-  </m-tab-panel>
-  <m-tab-panel name="destructive" data-padded="false" class="stack" data-gap="0">
-    <p data-background="destructive-softer" data-padding="2" data-text="on-destructive-soft">[data-background="destructive-softer"] [data-text="on-destructive-soft"]</p>
-    <p data-background="destructive-soft" data-padding="2" data-text="on-destructive-soft">[data-background="destructive-soft"] [data-text="on-destructive-soft"]</p>
-    <p data-background="destructive-mid" data-padding="2" data-text="on-destructive-mid">[data-background="destructive-mid"] [data-text="on-destructive-mid"]</p>
-    <p data-background="destructive-loud" data-padding="2" data-text="on-destructive-loud">[data-background="destructive-loud"] [data-text="on-destructive-loud"]</p>
-    <p data-background="destructive-louder" data-padding="2" data-text="on-destructive-loud">[data-background="destructive-louder"] [data-text="on-destructive-loud"]</p>
-  </m-tab-panel>
-</m-tab-list>
+<ExamplesBackground />
 
 ---
 ## Gaps
@@ -161,7 +99,6 @@ Gap utilities control spacing between flex or grid items. Works with any layout 
   class="box"
   data-gap="3"
   data-variant="surface"
-  data-width="breakout"
 >
   <div class="box">data-gap="3"</div>
   <div class="box">data-gap="3"</div>
@@ -173,7 +110,6 @@ Gap utilities control spacing between flex or grid items. Works with any layout 
   class="box"
   data-gap="fluid-3"
   data-variant="surface"
-  data-width="breakout"
 >
   <div class="box">data-gap="fluid-3"</div>
   <div class="box">data-gap="fluid-3"</div>
@@ -187,49 +123,7 @@ Available sizes: `000`, `00`, `1-15`, `fluid-1` through `fluid-10`
 
 Margin utilities add space outside elements using the `[data-margin]` attribute. Supports all directional variants and includes `auto` for centering.
 
-### All Sides
-
-<div
-  class="box"
-  data-variant="surface"
-  data-padded="false"
-  data-width="breakout"
->
-  <div data-border data-margin="1">
-    [data-margin="1"]
-  </div>
-  <div data-border data-margin="fluid-5">
-    [data-margin="fluid-5"]
-  </div>
-</div>
-
-### Inline
-
-<div
-  class="box exposed-grid"
-  data-variant="surface"
-  data-padded="false"
-  data-width="breakout"
->
-  <div data-margin="i-2">[data-margin="i-2"] (left & right)</div>
-  <div data-margin="is-3">[data-margin="is-3"] (left)</div>
-  <div data-margin="ie-3">[data-margin="ie-3"] (right)</div>
-  <div data-margin="i-fluid-3">[data-margin="i-fluid-3"]</div>
-</div>
-
-### Block
-
-<div
-  class="box exposed-grid"
-  data-variant="surface"
-  data-padded="false"
-  data-width="breakout"
->
-  <div data-margin="b-2">[data-margin="b-2"] (top & bottom)</div>
-  <div data-margin="bs-3">[data-margin="bs-3"] (top)</div>
-  <div data-margin="be-3">[data-margin="be-3"] (bottom)</div>
-  <div data-margin="b-fluid-3">[data-margin="b-fluid-3"]</div>
-</div>
+<ExamplesMargin />
 
 Available sizes: `000`, `00`, `1-15`, `fluid-1` through `fluid-10`, `auto`
 
@@ -238,112 +132,12 @@ Available sizes: `000`, `00`, `1-15`, `fluid-1` through `fluid-10`, `auto`
 
 Padding utilities add space inside elements using the `[data-padding]` attribute.
 
-<m-tab-list label="Padding examples">
-  <m-tab panel="padding-all">All Sides</m-tab>
-  <m-tab panel="padding-inline">Inline</m-tab>
-  <m-tab panel="padding-block">Block</m-tab>
-  <m-tab-panel 
-    name="padding-all" 
-      class="exposed-grid"
-      style="display: grid;"
-      data-gap="2"
-    >
-      <div data-border="primary-mid" data-background="primary-softer" data-padding="3" style="width: max-content;">[data-padding="3"]</div>
-      <div data-border="primary-mid" data-background="primary-softer" data-padding="fluid-4" style="width: max-content;">[data-padding="fluid-5"]</div>
-  </m-tab-panel>
-  <m-tab-panel 
-    name="padding-inline" 
-    class="exposed-grid"
-    style="display: grid;"
-    data-gap="2"
-  >
-    <div data-border="primary-mid" data-background="primary-softer" data-padding="i-5" style="width: max-content;">[data-padding="i-5"]</div>
-    <div data-border="primary-mid" data-background="primary-softer" data-padding="is-6" style="width: max-content;">[data-padding="is-6"]</div>
-    <div data-border="primary-mid" data-background="primary-softer" data-padding="ie-6" style="width: max-content;">[data-padding="ie-6"]</div>
-    <div data-border="primary-mid" data-background="primary-softer" data-padding="i-fluid-5" style="width: max-content;">[data-padding="i-fluid-5"]</div>
-  </m-tab-panel>
-  <m-tab-panel 
-    name="padding-block" 
-    class="exposed-grid"
-    style="display: grid;"
-    data-gap="2"
-  >
-    <div data-border="primary-mid" data-background="primary-softer" data-padding="b-5" style="width: max-content;">[data-padding="b-5"]</div>
-    <div data-border="primary-mid" data-background="primary-softer" data-padding="bs-6" style="width: max-content;">[data-padding="bs-6"]</div>
-    <div data-border="primary-mid" data-background="primary-softer" data-padding="be-6" style="width: max-content;">[data-padding="be-6"]</div>
-    <div data-border="primary-mid" data-background="primary-softer" data-padding="b-fluid-5" style="width: max-content;">[data-padding="b-fluid-5"]</div>
-  </m-tab-panel>
-</m-tab-list>
+<ExamplesPadding />
 
 Available sizes: `000`, `00`, `1-15`, `fluid-1` through `fluid-10`
 
 ---
 ## Placement
 
-## Justify Content
-
-Controls main-axis alignment (horizontal in row, vertical in column).
-
-<m-tab-list label="Justify content examples">
-  <m-tab panel="justify-center">Center</m-tab>
-  <m-tab panel="justify-start">Start</m-tab>
-  <m-tab panel="justify-end">End</m-tab>
-  <m-tab panel="justify-between">Between</m-tab>
-  <m-tab panel="justify-around">Around</m-tab>
-  <m-tab panel="justify-evenly">Evenly</m-tab>
-  <m-tab-panel name="justify-center" style="display: flex; height: 150px;" data-justify="center">
-    <div class="box">[data-justify="center"]</div>
-  </m-tab-panel>
-  <m-tab-panel name="justify-start" style="display: flex; height: 150px;" data-justify="start">
-    <div class="box">[data-justify="start"]</div>
-  </m-tab-panel>
-  <m-tab-panel name="justify-end" style="display: flex; height: 150px;" data-justify="end">
-    <div class="box">[data-justify="end"]</div>
-  </m-tab-panel>
-  <m-tab-panel name="justify-between" style="display: flex; height: 150px;" data-justify="between">
-    <div class="box">Item</div>
-    <div class="box">[data-justify="between"]</div>
-    <div class="box">Item</div>
-  </m-tab-panel>
-  <m-tab-panel name="justify-around" style="display: flex; height: 150px;" data-justify="around">
-    <div class="box">Item</div>
-    <div class="box">[data-justify="around"]</div>
-    <div class="box">Item</div>
-  </m-tab-panel>
-  <m-tab-panel name="justify-evenly" style="display: flex; height: 150px;" data-justify="evenly">
-    <div class="box">Item</div>
-    <div class="box">[data-justify="evenly"]</div>
-    <div class="box">Item</div>
-  </m-tab-panel>
-</m-tab-list>
-
-## Align Items
-
-Controls cross-axis alignment (vertical in row, horizontal in column).
-
-<m-tab-list label="Align items examples">
-  <m-tab panel="align-center">Center</m-tab>
-  <m-tab panel="align-start">Start</m-tab>
-  <m-tab panel="align-end">End</m-tab>
-  <m-tab panel="align-baseline">Baseline</m-tab>
-  <m-tab panel="align-stretch">Stretch</m-tab>
-  <m-tab-panel name="align-center" style="display: flex; height: 150px;" data-align="center" data-gap="2">
-    <div class="box">[data-align="center"]</div>
-  </m-tab-panel>
-  <m-tab-panel name="align-start" style="display: flex; height: 150px;" data-align="start" data-gap="2">
-    <div class="box">[data-align="start"]</div>
-  </m-tab-panel>
-  <m-tab-panel name="align-end" style="display: flex; height: 150px;" data-align="end" data-gap="2">
-    <div class="box">[data-align="end"]</div>
-  </m-tab-panel>
-  <m-tab-panel name="align-baseline" style="display: flex; height: 150px;" data-align="baseline" data-gap="2">
-    <div class="box" style="font-size: 2rem;">Large</div>
-    <div class="box">[data-align="baseline"]</div>
-    <div class="box" style="font-size: 0.75rem;">Small</div>
-  </m-tab-panel>
-  <m-tab-panel name="align-stretch" style="display: flex; height: 150px;" data-align="stretch" data-gap="2">
-  <div class="box">[data-align="stretch"]</div>
-  <div class="box">[data-align="stretch"]</div>
-  </m-tab-panel>
-</m-tab-list>
+<ExamplesPlacement />
 
