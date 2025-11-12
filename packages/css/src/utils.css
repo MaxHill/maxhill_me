@@ -4,6 +4,7 @@
 @import "utils/margin.css";
 @import "utils/padding.css";
 @import "utils/background.css";
+@import "utils/text.css";
 @import "utils/typesetting.css";
 
 @layer utils {

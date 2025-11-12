@@ -14,19 +14,24 @@ baseStyleSheet.replaceSync(styles);
  * 
  * @attr {string} name - Unique identifier for this panel, referenced by m-tab's panel attribute
  * @attr {boolean} visible - Whether this panel is currently visible
+ * @attr {boolean} padded - Whether the panel has padding (default: true)
  * 
  * @prop {string} name - Unique identifier for this panel, referenced by m-tab's panel attribute
  * @prop {boolean} visible - Whether this panel is currently visible
+ * @prop {boolean} padded - Whether the panel has padding (default: true)
  */
 export class MTabPanel extends MElement {
     static tagName = 'm-tab-panel';
-    static observedAttributes = ["visible", "name"]
+    static observedAttributes = ["visible", "name", "padded"]
 
     @BindAttribute()
     name: string = "";
 
     @BindAttribute()
     visible: boolean = false;
+
+    @BindAttribute()
+    padded: boolean = true;
 
     #shadowRoot: ShadowRoot;
 

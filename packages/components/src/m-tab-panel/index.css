@@ -1,6 +1,13 @@
 :host {
+    --_padding-block: var(--size-3);
+    --_padding-inline: var(--size-3);
     padding: var(--_padding-block) var(--_padding-inline);
 }
+
+:host([padded="false"]) {
+    padding: 0;
+}
+
 :host(:not([visible])) {
-    display: none;
+    display: none !important;
 }

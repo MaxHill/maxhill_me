@@ -48,8 +48,11 @@ The type scale provides consistent sizing across all text elements:
   data-gap="5"
 >
   <div>
-    <h1>Heading 1</h1>
-    <code>2rem bold / 1.1 (Departure Mono)</code>
+    <div class="stack" data-direction="row" data-gap="2">
+        <h1>Heading 1</h1>
+        <m-copy-button value="--h1">--h1</m-copy-button>
+    </div>
+    <p data-text="weak">2rem bold / 1.1 (Departure Mono)</p>
   </div>
   <div>
     <h2>Heading 2</h2>
@@ -61,33 +64,8 @@ The type scale provides consistent sizing across all text elements:
   </div>
   <div>
     <p class="text-small">Small text for captions and secondary information.</p>
+
     <code>0.875rem regular / 1.4 (IBM Plex Mono)</code>
   </div>
 </div>
-
-## Typesetting container
-
-The `.typesetting` class is used for long-form written content like articles, blog posts, and documentation. It automatically manages vertical rhythm and spacing between text elements.
-
-<m-card>
-    <strong slot="title">Without .typesetting</strong>
-    <div>
-      # Article Title
-      ## Introduction
-      This is a paragraph without the typesetting class. Notice how the spacing feels inconsistent and elements appear cramped together.
-      ## Main Content
-      Another paragraph here to show the spacing issues when not using the typesetting utility.
-    </div>
-</m-card>
-
-<m-card>
-    <strong slot="title">With .typesetting</strong>
-    <div class="typesetting">
-      # Article Title
-      ## Introduction
-      This is a paragraph with the typesetting class applied. The spacing is consistent and creates a natural reading rhythm.
-      ## Main Content
-      Another paragraph demonstrating the improved vertical rhythm and breathing room between elements.
-    </div>
-</m-card>
 

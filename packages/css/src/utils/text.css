@@ -1,0 +1,21 @@
+@layer utils {
+  [data-text="on-primary-soft"] { color: var(--color-primary-text-on-soft); }
+  [data-text="on-primary-mid"] { color: var(--color-primary-text-on-mid); }
+  [data-text="on-primary-loud"] { color: var(--color-primary-text-on-loud); }
+
+  [data-text="on-neutral-soft"] { color: var(--color-neutral-text-on-soft); }
+  [data-text="on-neutral-mid"] { color: var(--color-neutral-text-on-mid); }
+  [data-text="on-neutral-loud"] { color: var(--color-neutral-text-on-loud); }
+
+  [data-text="on-constructive-soft"] { color: var(--color-constructive-text-on-soft); }
+  [data-text="on-constructive-mid"] { color: var(--color-constructive-text-on-mid); }
+  [data-text="on-constructive-loud"] { color: var(--color-constructive-text-on-loud); }
+
+  [data-text="on-destructive-soft"] { color: var(--color-destructive-text-on-soft); }
+  [data-text="on-destructive-mid"] { color: var(--color-destructive-text-on-mid); }
+  [data-text="on-destructive-loud"] { color: var(--color-destructive-text-on-loud); }
+
+  [data-text=""] { color: var(--color-text); }
+  [data-text="mid"] { color: var(--color-text-mid); }
+  [data-text="softer"] { color: var(--color-text-softer); }
+}

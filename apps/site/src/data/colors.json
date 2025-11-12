@@ -9,24 +9,17 @@
     },
     {
       "category": "Text",
-      "name": "color-text-weak",
-      "description": "Weak text color. Used for e.g. introduction paragraphs and help texts that are coupled with form elements.",
+      "name": "color-text-mid",
+      "description": "Mid text color. Used for e.g. introduction paragraphs and help texts that are coupled with form elements.",
       "light": "var(--f-color-gray), 20%",
       "dark": "38, 50%, 85%"
     },
     {
       "category": "Text",
-      "name": "color-text-weaker",
-      "description": "Weaker text color. Used for e.g. disabled buttons, footers, table headings, captions and placeholder texts.",
+      "name": "color-text-softer",
+      "description": "Softer text color. Used for e.g. disabled buttons, footers, table headings, captions and placeholder texts.",
       "light": "var(--f-color-gray), 50%",
       "dark": "38, 30%, 70%"
-    },
-    {
-      "category": "Text",
-      "name": "color-text-weakest",
-      "description": "Weakest text color. Used for e.g. disabled input text and placeholder text in focused inputs.",
-      "light": "var(--f-color-gray), 50%",
-      "dark": "38, 10%, 55%"
     },
     {
       "category": "Text",
