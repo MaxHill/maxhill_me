@@ -1,0 +1,53 @@
+<m-tab-list label="Border examples">
+  <m-tab panel="default">Default</m-tab>
+  <m-tab panel="inline">Inline</m-tab>
+  <m-tab panel="block">Block</m-tab>
+  <m-tab panel="variants">Variants</m-tab>
+  <m-tab-panel name="default" class="default-panel">
+    <div data-border class="bordered-item">[data-border]</div>
+  </m-tab-panel>
+  <m-tab-panel name="inline" class="stack inline-panel" data-gap="2">
+    <div data-border="i" class="bordered-item">[data-border="i"]</div>
+    <div data-border="is" class="bordered-item">[data-border="is"]</div>
+    <div data-border="ie" class="bordered-item">[data-border="ie"]</div>
+  </m-tab-panel>
+  <m-tab-panel name="block" class="stack block-panel" data-gap="2">
+    <div data-border="b" class="bordered-item">[data-border="b"]</div>
+    <div data-border="bs" class="bordered-item">[data-border="bs"]</div>
+    <div data-border="be" class="bordered-item">[data-border="be"]</div>
+  </m-tab-panel>
+  <m-tab-panel name="variants" class="stack variants-panel" data-gap="2">
+    <div data-border data-variant="strong" data-padding="2" class="bordered-item">
+      [data-border] [data-variant="strong"]
+    </div>
+    <div data-border data-variant="primary" data-padding="2" class="bordered-item">
+      [data-border] [data-variant="primary"]
+    </div>
+    <div data-border data-variant="neutral" data-padding="2" class="bordered-item">
+      [data-border] [data-variant="neutral"]
+    </div>
+    <div data-border data-variant="constructive" data-padding="2" class="bordered-item">
+      [data-border] [data-variant="constructive"]
+    </div>
+    <div data-border data-variant="destructive" data-padding="2" class="bordered-item">
+      [data-border] [data-variant="destructive"]
+    </div>
+  </m-tab-panel>
+</m-tab-list>
+
+<style>
+  .default-panel {
+    display: grid;
+    place-items: center;
+  }
+
+  .inline-panel,
+  .block-panel,
+  .variants-panel {
+    place-items: center;
+  }
+
+  .bordered-item {
+    width: 80%;
+  }
+</style>

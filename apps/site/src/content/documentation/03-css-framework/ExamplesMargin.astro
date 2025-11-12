@@ -1,0 +1,75 @@
+<m-tab-list label="Margin examples">
+    <m-tab panel="margin-all">All Sides</m-tab>
+    <m-tab panel="margin-inline">Inline</m-tab>
+    <m-tab panel="margin-block">Block</m-tab>
+    <m-tab-panel name="margin-all" class="margin-panel" data-gap="2">
+        <div class="box outer-box" data-padded="false">
+            <div class="box" data-margin="3" data-variant="surface">
+                [data-margin="3"]
+            </div>
+        </div>
+        <div class="box outer-box" data-padded="false">
+            <div class="box" data-margin="fluid-5" data-variant="surface">
+                [data-margin="fluid-5"]
+            </div>
+        </div>
+    </m-tab-panel>
+    <m-tab-panel name="margin-inline" class="margin-panel" data-gap="2">
+        <div class="box outer-box" data-padded="false">
+            <div class="box" data-margin="i-3" data-variant="surface">
+                [data-margin="i-2"]
+            </div>
+        </div>
+        <div class="box outer-box" data-padded="false">
+            <div class="box" data-margin="is-3" data-variant="surface">
+                [data-margin="is-3"]
+            </div>
+        </div>
+        <div class="box outer-box" data-padded="false">
+            <div class="box" data-margin="ie-3" data-variant="surface">
+                [data-margin="ie-3"]
+            </div>
+        </div>
+        <div class="box outer-box" data-padded="false">
+            <div class="box" data-margin="i-fluid-3" data-variant="surface">
+                [data-margin="i-fluid-3"]
+            </div>
+        </div>
+    </m-tab-panel>
+    <m-tab-panel name="margin-block" class="margin-panel" data-gap="2">
+        <div class="box outer-box" data-padded="false">
+            <div class="box" data-margin="b-2" data-variant="surface">
+                [data-margin="b-2"]
+            </div>
+        </div>
+        <div class="box outer-box" data-padded="false">
+            <div class="box" data-margin="bs-3" data-variant="surface">
+                [data-margin="bs-3"]
+            </div>
+        </div>
+        <div class="box outer-box" data-padded="false">
+            <div class="box" data-margin="be-3" data-variant="surface">
+                [data-margin="be-3"]
+            </div>
+        </div>
+        <div class="box outer-box" data-padded="false">
+            <div class="box" data-margin="b-fluid-3" data-variant="surface">
+                [data-margin="b-fluid-3"]
+            </div>
+        </div>
+    </m-tab-panel>
+</m-tab-list>
+
+<style>
+    .margin-panel {
+        display: grid;
+        place-items: center;
+    }
+
+    .margin-panel .box,
+    .margin-panel .outer-box {
+        width: max-content;
+    }
+
+
+</style>
