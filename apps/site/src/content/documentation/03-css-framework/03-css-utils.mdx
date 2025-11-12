@@ -41,45 +41,42 @@ Most utilities support these size scales:
 
 Border utilities add borders to elements using the `[data-border]` attribute. Combine with `[data-variant]` for different looks.
 
-### Default
-
-<div data-border>[data-border]</div>
-
-### Inline
-
-<div data-border="i">[data-border="i"]</div>
-<div data-border="is">[data-border="is"]</div>
-<div data-border="ie">[data-border="ie"]</div>
-
-### Block
-
-<div data-border="b">[data-border="b"]</div>
-<div data-border="bs">[data-border="bs"]</div>
-<div data-border="be">[data-border="be"]</div>
-
-### Border Variants
-
-Use `[data-variant]` to apply different border styles:
-
-<div data-border data-variant="strong" data-padding="2">
-  [data-border] [data-variant="strong"]
-</div>
-
-<div data-border data-variant="primary" data-padding="2">
-  [data-border] [data-variant="primary"]
-</div>
-
-<div data-border data-variant="neutral" data-padding="2">
-  [data-border] [data-variant="neutral"]
-</div>
-
-<div data-border data-variant="constructive" data-padding="2">
-  [data-border] [data-variant="constructive"]
-</div>
-
-<div data-border data-variant="destructive" data-padding="2">
-  [data-border] [data-variant="destructive"]
-</div>
+<m-tab-list label="Border examples">
+  <m-tab panel="default">Default</m-tab>
+  <m-tab panel="inline">Inline</m-tab>
+  <m-tab panel="block">Block</m-tab>
+  <m-tab panel="variants">Variants</m-tab>
+  <m-tab-panel name="default" style="display: grid; place-items: center;">
+    <div data-border style="width: 80%;">[data-border]</div>
+  </m-tab-panel>
+  <m-tab-panel name="inline" class="stack" data-gap="2" style="place-items: center;">
+    <div data-border="i" style="width: 80%;">[data-border="i"]</div>
+    <div data-border="is" style="width: 80%;">[data-border="is"]</div>
+    <div data-border="ie" style="width: 80%;">[data-border="ie"]</div>
+  </m-tab-panel>
+  <m-tab-panel name="block" class="stack" data-gap="2" style="place-items: center;">
+    <div data-border="b" style="width: 80%;">[data-border="b"]</div>
+    <div data-border="bs" style="width: 80%;">[data-border="bs"]</div>
+    <div data-border="be" style="width: 80%;">[data-border="be"]</div>
+  </m-tab-panel>
+  <m-tab-panel name="variants" class="stack" data-gap="2" style="place-items: center;">
+    <div data-border data-variant="strong" data-padding="2" style="width: 80%;">
+      [data-border] [data-variant="strong"]
+    </div>
+    <div data-border data-variant="primary" data-padding="2" style="width: 80%;">
+      [data-border] [data-variant="primary"]
+    </div>
+    <div data-border data-variant="neutral" data-padding="2" style="width: 80%;">
+      [data-border] [data-variant="neutral"]
+    </div>
+    <div data-border data-variant="constructive" data-padding="2" style="width: 80%;">
+      [data-border] [data-variant="constructive"]
+    </div>
+    <div data-border data-variant="destructive" data-padding="2" style="width: 80%;">
+      [data-border] [data-variant="destructive"]
+    </div>
+  </m-tab-panel>
+</m-tab-list>
 
 ---
 ## Text Colors
