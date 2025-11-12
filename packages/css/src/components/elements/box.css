@@ -1,13 +1,16 @@
 @layer components {
     :where(.box)
     {
-        --_color-background: var(--color-background);
+        --_box-fill: var(--color-background);
+        --_box-stroke: var(--color-stroke);
+        --_box-text: var(--color-text);
 
         text-decoration: none;
-        color: hsl(var(--color-text));
-        background-color: var(--_color-background);
+        color: var(--_box-text);
+        background-color: var(--_box-fill);
         box-shadow: var(--shadow);
         border: var(--border);
+        border-color: var(--_box-stroke);
         border-radius: var(--radius-2);
         padding: var(--size-fluid-1);
         gap: 0;
@@ -21,11 +24,59 @@
         }
 
         &[data-variant="surface"] {
-            --_color-background: var(--color-surface);
+            --_box-fill: var(--color-surface);
         }
 
         &[data-variant="surface-raised"] {
-            --_color-background: var(--color-surface-raised);
+            --_box-fill: var(--color-surface-raised);
+        }
+
+        &[data-variant="primary-mid"] {
+            --_box-fill: var(--color-primary-fill-mid);
+            --_box-stroke: var(--color-primary-stroke-mid);
+            --_box-text: var(--color-primary-text-on-mid);
+        }
+
+        &[data-variant="neutral-mid"] {
+            --_box-fill: var(--color-neutral-fill-mid);
+            --_box-stroke: var(--color-neutral-stroke-mid);
+            --_box-text: var(--color-neutral-text-on-mid);
+        }
+
+        &[data-variant="constructive-mid"] {
+            --_box-fill: var(--color-constructive-fill-mid);
+            --_box-stroke: var(--color-constructive-stroke-mid);
+            --_box-text: var(--color-constructive-text-on-mid);
+        }
+
+        &[data-variant="destructive-mid"] {
+            --_box-fill: var(--color-destructive-fill-mid);
+            --_box-stroke: var(--color-destructive-stroke-mid);
+            --_box-text: var(--color-destructive-text-on-mid);
+        }
+
+        &[data-variant="primary-soft"] {
+            --_box-fill: var(--color-primary-fill-soft);
+            --_box-stroke: var(--color-primary-stroke-soft);
+            --_box-text: var(--color-primary-text-on-soft);
+        }
+
+        &[data-variant="neutral-soft"] {
+            --_box-fill: var(--color-neutral-fill-soft);
+            --_box-stroke: var(--color-neutral-stroke-soft);
+            --_box-text: var(--color-neutral-text-on-soft);
+        }
+
+        &[data-variant="constructive-soft"] {
+            --_box-fill: var(--color-constructive-fill-soft);
+            --_box-stroke: var(--color-constructive-stroke-soft);
+            --_box-text: var(--color-constructive-text-on-soft);
+        }
+
+        &[data-variant="destructive-soft"] {
+            --_box-fill: var(--color-destructive-fill-soft);
+            --_box-stroke: var(--color-destructive-stroke-soft);
+            --_box-text: var(--color-destructive-text-on-soft);
         }
     }
 }
