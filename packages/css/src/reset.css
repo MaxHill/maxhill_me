@@ -1,3 +1,5 @@
+@import "./restyle/inputs.css";
+
 @layer reset {
     /* Box sizing rules */
     *,
