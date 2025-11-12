@@ -71,9 +71,8 @@
         /*  Colors - Text                                                                     
         /*  ------------------------------------------------------------------------ */
         --color-text: color-mix(in oklch, var(--gray-seed), var(--tint-loud) 60%);
-        --color-text-weak: color-mix(in oklch, var(--gray-seed), var(--tint-loud) 50%);
-        --color-text-weaker: color-mix(in oklch, var(--gray-seed), var(--tint-loud) 30%);
-        --color-text-weakest: color-mix(in oklch, var(--gray-seed), var(--tint-soft) 10%);
+        --color-text-mid: color-mix(in oklch, var(--gray-seed), var(--tint-loud) 50%);
+        --color-text-softer: color-mix(in oklch, var(--gray-seed), var(--tint-loud) 30%);
 
         --color-text-link: var(--color-primary-text-colorful);
         
@@ -98,7 +97,7 @@
         --color-button-hover: var(--color-primary-fill-softer);
         --color-button-active: var(--color-primary-fill-loud);
 
-        --color-icon: var(--color-text-weak);
+        --color-icon: var(--color-text-mid);
         --color-icon-hover: var(--color-text);
 
         --focus-shadow: 0 0 0 var(--size-1) var(--color-primary-stroke-mid);
