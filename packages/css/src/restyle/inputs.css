@@ -3,9 +3,13 @@
     --color-input-stroke: var(--color-stroke);
     --color-input-text: var(--color-primary-text-on-soft);
 
-    /* --color-input-fill-focus: var(--color-primary-fill-softer); */
     --color-input-stroke-focus: var(--color-primary-stroke-softer);
     --color-input-text-focus: var(--color-primary-text-on-soft);
+
+
+    --color-input-fill-error: var(--color-surface);
+    --color-input-stroke-focus-error: var(--color-destructive-stroke-mid);
+    --color-input-text-focus-error: var(--color-destructive-text-on-soft);
 
     --radius-input: var(--radius-1);
 }
@@ -15,6 +19,13 @@
     .input-description {
         font: var(--p2);
         color: var(--color-text-softer);
+    }
+    .error-message {
+        border-radius: var(--radius-input);
+        color: var(--color-destructive-text-on-soft);
+        background-color: var(--color-destructive-fill-soft);
+        border: var(--border-width) solid var(--color-destructive-stroke-soft);
+        padding-inline: var(--size-2);
     }
     label {
         color: var(--color-text-mid);
@@ -36,12 +47,19 @@
         background: var(--color-input-fill);
         border: var(--border-width) solid var(--color-input-stroke);
         color: var(--color-input-text);
+        outline-offset: calc(var(--outline-size) * -1);
 
         &:focus {
-            outline-offset: calc(var(--outline-size) * -1);
             background: var(--color-input-fill-focus);
             border-color: var(--color-input-stroke-focus);
             color: var(--color-input-text-focus);
+        }
+
+        &[aria-invalid="true"]{
+            background: var(--color-input-fill-focus-error);
+            border-color: var(--color-input-stroke-focus-error);
+            outline-color: var(--color-input-stroke-focus-error);
+            color: var(--color-input-text-focus-error);
         }
     }
 }
