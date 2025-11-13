@@ -16,9 +16,23 @@
 
 
     <div class="stack" data-gap="1">
-        <label for="example-input-kitchen-sink">Text input kitchen sink</label>
-        <p class="p2 input-description">Description...</p>
-        <input id="example-input-kitchen-sink" type="text" />
-        <p class="p2" data-text="on-destructive-soft" data-background="destructive-soft">Something is wrong</p>
+        <label for="example-input-kitchen-sink">
+            Text input kitchen sink
+            <p class="input-description">Description...</p>
+        </label>
+        <input 
+            id="example-input-kitchen-sink" 
+            name="kitchen-sink"
+            type="text" 
+            aria-invalid="true"
+            aria-errormessage="kitchen-sink-error-message"
+        />
+        <p 
+            id="kitchen-sink-error-message"
+            aria-live="true"
+            class="p2 error-message" 
+        >Something is wrong</p>
     </div>
+
+    <m-input label="Text input kitchen sink"
 </div>
