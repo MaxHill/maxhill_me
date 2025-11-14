@@ -1,9 +1,8 @@
 import { MElement } from "../utils/m-element";
 import { BindAttribute } from "../utils/reflect-attribute";
-import { query } from "../utils/query";
 import styles from "./index.css?inline";
 import { MCommandChangeEvent } from "./events";
-import { keyboardManager } from "../utils/keyboard-manager";
+import { keyboardManager, UnregisterCommandFn } from "../utils/keyboard-manager";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -27,6 +26,7 @@ export class MCommand extends MElement {
     static observedAttributes = ['example'];
 
     private _shadowRoot: ShadowRoot;
+    private unregister!: UnregisterCommandFn;
 
     @BindAttribute()
     example: string = '';
@@ -40,17 +40,15 @@ export class MCommand extends MElement {
     connectedCallback() {
         this.render();
         this.dispatchEvent(new MCommandChangeEvent({ example: this.example }));
-        keyboardManager.addEventListener("change", this.handleChange);
+        this.unregister = keyboardManager.register("<C-t>", this.handleChange);
         console.log("Connected");
     }
     disconnectedCallback() {
-        keyboardManager.removeEventListener('change', this.handleChange);
+        this.unregister();
     }
 
-    private handleChange = (_event: Event) => {
-        console.log(keyboardManager.combo)
-        console.log(keyboardManager.isPressed("S"));
-        console.log("control+b y match", keyboardManager.comboMatch("control+b y"))
+    private handleChange = () => {
+        console.log("ctrl+t pressed");
     }
 
     private render() {
