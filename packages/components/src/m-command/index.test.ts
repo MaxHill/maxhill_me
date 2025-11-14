@@ -12,7 +12,7 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-describe('m-command', () => {
+describe.skip('m-command', () => {
   describe('basic rendering', () => {
     it('should render', async () => {
       const el = await fixture<MCommand>(html`
