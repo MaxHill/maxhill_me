@@ -97,6 +97,10 @@ export class MInput extends MElement {
 
     // Value property - does NOT sync back to attribute (native behavior)
     get value(): string {
+        // If _value is not set but value attribute exists, use it (for initial setup)
+        if (!this._value && this.hasAttribute('value')) {
+            this._value = this.getAttribute('value') || '';
+        }
         return this._value;
     }
 
@@ -108,55 +112,37 @@ export class MInput extends MElement {
             this.inputElement.value = this._value;
         }
         this.updateFormValue();
-        
-        if (['required', 'disabled', 'readonly', 'minlength', 'maxlength', 'pattern', 'value'].includes('value')) {
-            this.updateAriaAttributes();
-        }
+        this.updateAriaAttributes();
     }
 
-    @BindAttribute({ attribute: 'default-value' })
     defaultValue: string = '';
 
-    @BindAttribute()
     label: string = '';
 
-    @BindAttribute()
     placeholder: string = '';
 
-    @BindAttribute()
     type: 'text' | 'email' | 'password' | 'tel' | 'url' | 'search' = 'text';
 
-    @BindAttribute()
     name: string = '';
 
-    @BindAttribute()
     required: boolean = false;
 
-    @BindAttribute()
     disabled: boolean = false;
 
-    @BindAttribute()
     readOnly: boolean = false;
 
-    @BindAttribute({ attribute: 'minlength' })
-    minlength: number | undefined = 0;
+    minlength: number | undefined = undefined;
 
-    @BindAttribute({ attribute: 'maxlength' })
-    maxlength: number | undefined = 0;
+    maxlength: number | undefined = undefined;
 
-    @BindAttribute()
     pattern: string = '';
 
-    @BindAttribute()
     autocomplete: string = '';
 
-    @BindAttribute({ attribute: 'error-message' })
     errorMessage: string = '';
 
-    @query('input')
     private inputElement!: HTMLInputElement;
-    
-    @query('.error')
+
     private errorElement!: HTMLElement;
 
     constructor() {
@@ -168,7 +154,58 @@ export class MInput extends MElement {
     }
 
     connectedCallback() {
+        // Initialize properties from attributes if not already set
+        if (this.hasAttribute('value') && !this._value) {
+            this._value = this.getAttribute('value') || '';
+        }
+        if (this.hasAttribute('default-value') && !this.defaultValue) {
+            this.defaultValue = this.getAttribute('default-value') || '';
+        }
+        if (this.hasAttribute('label') && !this.label) {
+            this.label = this.getAttribute('label') || '';
+        }
+        if (this.hasAttribute('placeholder') && !this.placeholder) {
+            this.placeholder = this.getAttribute('placeholder') || '';
+        }
+        if (this.hasAttribute('type')) {
+            this.type = (this.getAttribute('type') as any) || 'text';
+        }
+        if (this.hasAttribute('name') && !this.name) {
+            this.name = this.getAttribute('name') || '';
+        }
+        if (this.hasAttribute('required')) {
+            this.required = true;
+        }
+        if (this.hasAttribute('disabled')) {
+            this.disabled = true;
+        }
+        if (this.hasAttribute('readonly')) {
+            this.readOnly = true;
+        }
+        if (this.hasAttribute('minlength')) {
+            this.minlength = Number(this.getAttribute('minlength'));
+        }
+        if (this.hasAttribute('maxlength')) {
+            this.maxlength = Number(this.getAttribute('maxlength'));
+        }
+        if (this.hasAttribute('pattern') && !this.pattern) {
+            this.pattern = this.getAttribute('pattern') || '';
+        }
+        if (this.hasAttribute('autocomplete') && !this.autocomplete) {
+            this.autocomplete = this.getAttribute('autocomplete') || '';
+        }
+        if (this.hasAttribute('error-message') && !this.errorMessage) {
+            this.errorMessage = this.getAttribute('error-message') || '';
+        }
+
         this.render();
+        this.syncAttributesToInput();
+
+        // Sync value to input element after render
+        if (this.inputElement && this.inputElement.value !== this._value) {
+            this.inputElement.value = this._value;
+        }
+
         this.updateFormValue();
         this.updateAriaAttributes();
         
@@ -182,16 +219,62 @@ export class MInput extends MElement {
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
 
-        if (name === 'value') {
-            // Only update from attribute if it's being set (not removed)
-            if (newValue !== null) {
-                this._value = newValue as string;
-                if (this.inputElement && this.inputElement.value !== this._value) {
-                    this.inputElement.value = this._value;
+        // Handle attribute changes
+        switch (name) {
+            case 'value':
+                if (newValue !== null) {
+                    this._value = newValue as string;
+                    if (this.inputElement && this.inputElement.value !== this._value) {
+                        this.inputElement.value = this._value;
+                    }
+                    this.updateFormValue();
                 }
-                this.updateFormValue();
-            }
+                // Native input doesn't reflect value to attribute
+                this.removeAttribute('value');
+                break;
+            case 'default-value':
+                this.defaultValue = newValue as string;
+                break;
+            case 'label':
+                this.label = newValue as string;
+                break;
+            case 'placeholder':
+                this.placeholder = newValue as string;
+                break;
+            case 'type':
+                this.type = newValue as 'text' | 'email' | 'password' | 'tel' | 'url' | 'search';
+                break;
+            case 'name':
+                this.name = newValue as string;
+                break;
+            case 'required':
+                this.required = newValue !== null;
+                break;
+            case 'disabled':
+                this.disabled = newValue !== null;
+                break;
+            case 'readonly':
+                this.readOnly = newValue !== null;
+                break;
+            case 'minlength':
+                this.minlength = newValue ? Number(newValue) : undefined;
+                break;
+            case 'maxlength':
+                this.maxlength = newValue ? Number(newValue) : undefined;
+                break;
+            case 'pattern':
+                this.pattern = newValue as string;
+                break;
+            case 'autocomplete':
+                this.autocomplete = newValue as string;
+                break;
+            case 'error-message':
+                this.errorMessage = newValue as string;
+                break;
         }
+
+        // Sync attributes to internal input element
+        this.syncAttributesToInput();
 
         if (['required', 'disabled', 'readonly', 'readOnly', 'minlength', 'maxlength', 'pattern', 'value'].includes(name)) {
             this.updateAriaAttributes();
@@ -201,7 +284,7 @@ export class MInput extends MElement {
     private render() {
         this._shadowRoot.innerHTML = `
             <label for="${this.inputId}">${this.label}</label>
-            <input 
+            <input
                 id="${this.inputId}"
                 type="${this.type}"
                 placeholder="${this.placeholder}"
@@ -217,13 +300,47 @@ export class MInput extends MElement {
             />
             <div class="error" role="alert" aria-live="polite"></div>
         `;
-        
-        // @query decorator now provides inputElement and errorElement
+
+        this.inputElement = this._shadowRoot.querySelector('input') as HTMLInputElement;
+        this.errorElement = this._shadowRoot.querySelector('.error') as HTMLElement;
+
         this.inputElement.addEventListener('input', this.handleInput.bind(this));
         this.inputElement.addEventListener('change', this.handleChange.bind(this));
         this.inputElement.addEventListener('blur', this.handleBlur.bind(this));
         this.inputElement.addEventListener('focus', this.handleFocus.bind(this));
         this.inputElement.addEventListener('select', this.handleSelect.bind(this));
+    }
+
+    private syncAttributesToInput() {
+        if (!this.inputElement) return;
+
+        // Sync all relevant attributes to the internal input element
+        this.inputElement.type = this.type;
+        this.inputElement.placeholder = this.placeholder;
+        this.inputElement.name = this.name;
+        this.inputElement.required = this.required;
+        this.inputElement.disabled = this.disabled;
+        this.inputElement.readOnly = this.readOnly;
+        
+        if (this.minlength !== undefined) {
+            this.inputElement.minLength = this.minlength;
+        } else {
+            this.inputElement.removeAttribute('minlength');
+        }
+        
+        if (this.maxlength !== undefined) {
+            this.inputElement.maxLength = this.maxlength;
+        } else {
+            this.inputElement.removeAttribute('maxlength');
+        }
+        
+        if (this.pattern) {
+            this.inputElement.pattern = this.pattern;
+        } else {
+            this.inputElement.removeAttribute('pattern');
+        }
+        
+        this.inputElement.autocomplete = this.autocomplete as any;
     }
 
     private handleInput(event: Event) {
@@ -351,15 +468,17 @@ export class MInput extends MElement {
 
     public checkValidity(): boolean {
         if (!this.inputElement) return true;
+
+        // Punt validation completely to the internal input element
         return this.inputElement.checkValidity();
     }
 
     public reportValidity(): boolean {
         if (!this.inputElement) return true;
-        
-        const isValid = this.inputElement.checkValidity();
+
+        const isValid = this.inputElement.reportValidity();
         this.validateInput();
-        
+
         return isValid;
     }
 
@@ -380,34 +499,35 @@ export class MInput extends MElement {
     }
 
     get validity(): ValidityState {
-        return this.inputElement?.validity || ({
-            valid: true,
-            valueMissing: false,
-            typeMismatch: false,
-            patternMismatch: false,
-            tooLong: false,
-            tooShort: false,
-            rangeUnderflow: false,
-            rangeOverflow: false,
-            stepMismatch: false,
-            badInput: false,
-            customError: false
-        } as ValidityState);
+        if (!this.inputElement) {
+            return {
+                valid: true,
+                valueMissing: false,
+                typeMismatch: false,
+                patternMismatch: false,
+                tooLong: false,
+                tooShort: false,
+                rangeUnderflow: false,
+                rangeOverflow: false,
+                stepMismatch: false,
+                badInput: false,
+                customError: false
+            } as ValidityState;
+        }
+
+        // Punt validity to the internal input element
+        return this.inputElement.validity;
     }
 
     get validationMessage(): string {
         if (!this.inputElement) return '';
-        
-        // If we have a triggered validation and invalid state, return the error message
-        if (this.validationTriggered && !this.inputElement.validity.valid) {
-            return this.getErrorMessage();
-        }
-        
+
+        // Return the native input's validationMessage without triggering validation
         return this.inputElement.validationMessage || '';
     }
 
     get willValidate(): boolean {
-        return this.inputElement?.willValidate || false;
+        return !this.disabled && (this.inputElement?.willValidate || false);
     }
 
     get labels(): NodeList {

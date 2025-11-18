@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { html, fixture } from '../utils/test-helpers';
+import { expect } from "@esm-bundle/chai";
+import { html, fixture } from '@open-wc/testing';
 import { MInput } from './index';
 
 MInput.define();
@@ -19,11 +19,11 @@ describe('m-input', () => {
         <m-input></m-input>
       `);
 
-      expect(el).toBeInstanceOf(MInput);
-      expect(el.value).toBe('');
-      expect(el.type).toBe('text');
-      expect(el.required).toBe(false);
-      expect(el.disabled).toBe(false);
+      expect(el).to.be.instanceOf(MInput);
+      expect(el.value).to.equal('');
+      expect(el.type).to.equal('text');
+      expect(el.required).to.equal(false);
+      expect(el.disabled).to.equal(false);
     });
 
     it('should render with label', async () => {
@@ -32,7 +32,7 @@ describe('m-input', () => {
       `);
 
       const label = el.shadowRoot?.querySelector('label');
-      expect(label?.textContent).toBe('Email');
+      expect(label?.textContent).to.equal('Email');
     });
 
     it('should render with value', async () => {
@@ -40,9 +40,9 @@ describe('m-input', () => {
         <m-input value="test@example.com"></m-input>
       `);
 
-      expect(el.value).toBe('test@example.com');
+      expect(el.value).to.equal('test@example.com');
       const input = el.shadowRoot?.querySelector('input');
-      expect(input?.value).toBe('test@example.com');
+      expect(input?.value).to.equal('test@example.com');
     });
 
     it('should have unique input ID', async () => {
@@ -54,11 +54,11 @@ describe('m-input', () => {
       const label1 = el1.shadowRoot?.querySelector('label');
       const label2 = el2.shadowRoot?.querySelector('label');
 
-      expect(input1?.id).toBeTruthy();
-      expect(input2?.id).toBeTruthy();
-      expect(input1?.id).not.toBe(input2?.id);
-      expect(label1?.getAttribute('for')).toBe(input1?.id);
-      expect(label2?.getAttribute('for')).toBe(input2?.id);
+      expect(input1?.id).to.be.ok;
+      expect(input2?.id).to.be.ok;
+      expect(input1?.id).not.to.equal(input2?.id);
+      expect(label1?.getAttribute('for')).to.equal(input1?.id);
+      expect(label2?.getAttribute('for')).to.equal(input2?.id);
     });
   });
 
@@ -80,8 +80,8 @@ describe('m-input', () => {
       input.value = 'test';
       input.dispatchEvent(new Event('input', { bubbles: true }));
 
-      expect(eventFired).toBe(true);
-      expect(eventDetail.value).toBe('test');
+      expect(eventFired).to.be.true;
+      expect(eventDetail.value).to.equal('test');
     });
 
     it('should dispatch m-input-change on change', async () => {
@@ -101,8 +101,8 @@ describe('m-input', () => {
       input.value = 'test';
       input.dispatchEvent(new Event('change', { bubbles: true }));
 
-      expect(eventFired).toBe(true);
-      expect(eventDetail.value).toBe('test');
+      expect(eventFired).to.be.true;
+      expect(eventDetail.value).to.equal('test');
     });
 
     it('should dispatch m-input-blur on blur', async () => {
@@ -119,7 +119,7 @@ describe('m-input', () => {
       const input = el.shadowRoot?.querySelector('input')!;
       input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
 
-      expect(eventFired).toBe(true);
+      expect(eventFired).to.be.true;
     });
 
     it('should dispatch m-input-focus on focus', async () => {
@@ -136,7 +136,7 @@ describe('m-input', () => {
       const input = el.shadowRoot?.querySelector('input')!;
       input.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
 
-      expect(eventFired).toBe(true);
+      expect(eventFired).to.be.true;
     });
 
     it('should dispatch m-input-select with selected text', async () => {
@@ -156,8 +156,8 @@ describe('m-input', () => {
       input.setSelectionRange(0, 5);
       input.dispatchEvent(new Event('select', { bubbles: true }));
 
-      expect(selectEventFired).toBe(true);
-      expect(selectedValue).toBe('hello');
+      expect(selectEventFired).to.be.true;
+      expect(selectedValue).to.equal('hello');
     });
   });
 
@@ -168,8 +168,8 @@ describe('m-input', () => {
       `);
 
       const errorEl = el.shadowRoot?.querySelector('.error');
-      expect(errorEl?.textContent).toBe('');
-      expect(errorEl?.style.display).not.toBe('block');
+      expect(errorEl?.textContent).to.equal('');
+      expect(errorEl?.style.display).not.to.equal('block');
     });
 
     it('should NOT validate on blur', async () => {
@@ -183,7 +183,7 @@ describe('m-input', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
 
       const errorEl = el.shadowRoot?.querySelector('.error');
-      expect(errorEl?.textContent).toBe('');
+      expect(errorEl?.textContent).to.equal('');
     });
 
     it('should NOT validate on change', async () => {
@@ -198,7 +198,7 @@ describe('m-input', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
 
       const errorEl = el.shadowRoot?.querySelector('.error');
-      expect(errorEl?.textContent).toBe('');
+      expect(errorEl?.textContent).to.equal('');
     });
 
     it('should validate when reportValidity() is called', async () => {
@@ -208,9 +208,9 @@ describe('m-input', () => {
 
       const isValid = el.reportValidity();
 
-      expect(isValid).toBe(false);
+      expect(isValid).to.be.false;
       const errorEl = el.shadowRoot?.querySelector('.error');
-      expect(errorEl?.textContent).not.toBe('');
+      expect(errorEl?.textContent).not.to.equal('');
     });
 
     it('should validate when checkValidity() is called', async () => {
@@ -220,7 +220,7 @@ describe('m-input', () => {
 
       const isValid = el.checkValidity();
 
-      expect(isValid).toBe(false);
+      expect(isValid).to.be.false;
     });
   });
 
@@ -240,8 +240,8 @@ describe('m-input', () => {
 
       el.reportValidity();
 
-      expect(invalidEventFired).toBe(true);
-      expect(validationMessage).toBeTruthy();
+      expect(invalidEventFired).to.be.true;
+      expect(validationMessage).to.be.ok;
     });
 
     it('should dispatch m-input-valid event on successful validation', async () => {
@@ -257,7 +257,7 @@ describe('m-input', () => {
 
       el.reportValidity();
 
-      expect(validEventFired).toBe(true);
+      expect(validEventFired).to.be.true;
     });
   });
 
@@ -270,7 +270,7 @@ describe('m-input', () => {
       el.reportValidity();
 
       const errorEl = el.shadowRoot?.querySelector('.error');
-      expect(errorEl?.textContent).toBe('This field is mandatory');
+      expect(errorEl?.textContent).to.equal('This field is mandatory');
     });
 
     it('should use native validation message when error-message not provided', async () => {
@@ -281,8 +281,8 @@ describe('m-input', () => {
       el.reportValidity();
 
       const errorEl = el.shadowRoot?.querySelector('.error');
-      expect(errorEl?.textContent).toBeTruthy();
-      expect(errorEl?.textContent).not.toBe('');
+      expect(errorEl?.textContent).to.be.ok;
+      expect(errorEl?.textContent).not.to.equal('');
     });
   });
 
@@ -295,8 +295,8 @@ describe('m-input', () => {
       el.reportValidity();
 
       const errorEl = el.shadowRoot?.querySelector('.error');
-      expect(errorEl?.style.display).toBe('block');
-      expect(errorEl?.textContent).toBeTruthy();
+      expect(errorEl?.style.display).to.equal('block');
+      expect(errorEl?.textContent).to.be.ok;
     });
 
     it('should hide error message after validation passes', async () => {
@@ -305,15 +305,15 @@ describe('m-input', () => {
       `);
 
       el.reportValidity();
-      expect(el.shadowRoot?.querySelector('.error')?.style.display).toBe('block');
+      expect(el.shadowRoot?.querySelector('.error')?.style.display).to.equal('block');
 
       el.value = 'valid';
       await new Promise(resolve => setTimeout(resolve, 0));
       el.reportValidity();
 
       const errorEl = el.shadowRoot?.querySelector('.error');
-      expect(errorEl?.style.display).toBe('none');
-      expect(errorEl?.textContent).toBe('');
+      expect(errorEl?.style.display).to.equal('none');
+      expect(errorEl?.textContent).to.equal('');
     });
 
     it('should update aria-invalid based on validation state', async () => {
@@ -326,14 +326,14 @@ describe('m-input', () => {
       // ElementInternals ARIA doesn't reflect to attributes, it works at the accessibility tree level
       // We can verify by checking that validation works and error state is shown
       const errorEl = el.shadowRoot?.querySelector('.error');
-      expect(errorEl?.textContent?.trim()).toBeTruthy();
+      expect(errorEl?.textContent?.trim()).to.be.ok;
 
       el.value = 'valid';
       await new Promise(resolve => setTimeout(resolve, 0));
       el.reportValidity();
 
       // Error should be hidden after valid input
-      expect(errorEl?.style.display).toBe('none');
+      expect(errorEl?.style.display).to.equal('none');
     });
   });
 
@@ -346,7 +346,7 @@ describe('m-input', () => {
       el.focus();
 
       const input = el.shadowRoot?.querySelector('input');
-      expect(document.activeElement).toBe(el);
+      expect(document.activeElement).to.equal(el);
     });
 
     it('should blur input when blur() is called', async () => {
@@ -357,7 +357,7 @@ describe('m-input', () => {
       el.focus();
       el.blur();
 
-      expect(document.activeElement).not.toBe(el);
+      expect(document.activeElement).not.to.equal(el);
     });
   });
 
