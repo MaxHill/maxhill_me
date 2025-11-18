@@ -1,19 +1,9 @@
-import { MElement } from "../utils/m-element";
+import { MInputListElement } from "../utils/m-input-list-element";
 import { BindAttribute } from "../utils/reflect-attribute";
 import { query } from "../utils/query";
 import styles from "./index.css?inline";
 import MInput from "../m-input";
 import MOption from "../m-option";
-import { 
-  getItems, 
-  getSelectedItems, 
-  getSelectedValues, 
-  focusNext, 
-  focusPrev,
-  focusFirst,
-  computeSelection, 
-  focusLast
-} from "../utils/list-options-manager";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -39,7 +29,7 @@ baseStyleSheet.replaceSync(styles);
  * 
  * @fires m-combobox-change - Fired when the selection changes
  */
-export class MCombobox extends MElement {
+export class MCombobox extends MInputListElement {
     static tagName = 'm-combobox';
     static formAssociated = true;
     static observedAttributes = ['name', 'disabled', 'multiple', 'value', 'label'];
@@ -68,37 +58,10 @@ export class MCombobox extends MElement {
     @query('m-input')
     private inputElement!: MInput;
 
-    private _focusedElement: MOption | null = null;
-    set focusedElement(el: MOption | null) {
-        if (this._focusedElement) {
-            this._focusedElement.focused = false;
-        }
-        
-        this._focusedElement = el;
-        
-        if (el) {
-            el.focused = true;
-            this.setAttribute("aria-activedescendant", el.id);
-        } else {
-            this.removeAttribute("aria-activedescendant");
-        }
-    }
 
-    get focusedElement() { return this._focusedElement; }
 
-    private get items() { 
-        return getItems<MOption>(
-            this,
-            "[data-match='false']"
-        ); 
-    }
-
-    get selectedItems(): MOption[] { 
-        return getSelectedItems(this.items); 
-    }
-
-    get selectedValues(): string[] { 
-        return getSelectedValues(this.items); 
+    protected getItemsSkipSelector(): string {
+        return "[data-match='false']";
     }
 
     get value(): string | string[] | null {
@@ -166,85 +129,16 @@ export class MCombobox extends MElement {
         this.setAttribute("aria-expanded", "false");
     }
 
-    /*** ----------------------------
-     *  Focus Management
-     * ----------------------------- */
-    /**
-     * Sets focus to a specific list box item.
-     * Removes focus from the previously focused item and dispatches a focus-change event.
-     * 
-     * @param item - The item to focus, or null to clear focus
-     */
-    setFocus(item: MOption | null): void {
-        if (!item) return;
-        if (this.focusedElement) this.focusedElement.removeAttribute('focused');
-
-        item.focused = true
-        this.focusedElement = item;
-
-        // TODO: Add event here
-        // this.dispatchEvent(
-            // new MComboboxFocusChangeEvent({ item })
-        // );
-    }
-
-    /**
-     * Moves focus to the first item in the list.
-     */
-    focusFirst(): void {
-        this.setFocus(focusFirst(this.items));
-    }
-
-    /**
-     * Moves focus to the last item in the list.
-     */
-    focusLast(): void {
-        this.setFocus(focusLast(this.items));
-    }
-
-    /**
-     * Moves focus to the next item in the list.
-     * Wraps around to the first item if at the end.
-     */
-    focusNext(): void {
-        const next =focusNext(this.items, this.focusedElement);
-        this.setFocus(next);
-    }
-
-    /**
-     * Moves focus to the previous item in the list.
-     * Wraps around to the last item if at the beginning.
-     */
-    focusPrev(): void {
-        this.setFocus(focusPrev(this.items, this.focusedElement));
-    }
-
-    /**
-     * Clears focus from the currently focused item.
-     */
-    focusBlur(): void {
-        if (this.focusedElement) {
-            this.focusedElement.removeAttribute('focused');
-            this.focusedElement = null;
-        }
-    }
-
 
     /*** ----------------------------
      *  Selection Management
      * ----------------------------- */
-    private select(item: MOption): void {
+    select(item: MOption): void {
         if (!item) return;
 
-        const result = computeSelection(
-            item,
-            this.items,
-            this.selectedItems,
-            this.focusedElement,
-            { multiple: this.multiple }
-        );
+        const result = this.computeSelection(item);
 
-        result.itemsToDeselect.forEach(i => {
+        result.itemsToDeselect.forEach((i: MOption) => {
             i.selected = false;
             // TODO: send event
             // this.dispatchEvent(
@@ -283,47 +177,6 @@ export class MCombobox extends MElement {
         );
 
         this.updateFormValue();
-    }
-
-    /**
-     * Selects the currently focused item.
-     */
-    selectFocused(): void {
-        if (this.focusedElement) this.select(this.focusedElement);
-    }
-
-    /**
-     * Selects the first item in the list.
-     */
-    selectFirst(): void {
-        const first = focusFirst(this.items);
-        if (first) this.select(first);
-    }
-
-    /**
-     * Selects the last item in the list.
-     */
-    selectLast(): void {
-        const last = focusLast(this.items);
-        if (last) this.select(last);
-    }
-
-    /**
-     * Selects the next item in the list.
-     * Wraps around to the first item if at the end.
-     */
-    selectNext(): void {
-        const next = focusNext(this.items, this.focusedElement);
-        if (next) this.select(next);
-    }
-
-    /**
-     * Selects the previous item in the list.
-     * Wraps around to the last item if at the beginning.
-     */
-    selectPrev(): void {
-        const prev = focusPrev(this.items, this.focusedElement);
-        if (prev) this.select(prev);
     }
 
 
@@ -389,30 +242,6 @@ export class MCombobox extends MElement {
                 this.setFocus(item);
                 this.select(item);
             }
-        }
-    };
-
-    private handleMouseOver = (event: MouseEvent) => {
-        const item = event
-            .composedPath()
-            .find(el => (el as HTMLElement).tagName === 'M-OPTION') as
-            | MOption
-            | undefined;
-
-        if (item && !item.disabled && this.focusedElement !== item) {
-            this.setFocus(item);
-        }
-    };
-
-    private handleMouseOut = (event: MouseEvent) => {
-        const item = event
-            .composedPath()
-            .find(el => (el as HTMLElement).tagName === 'M-OPTION') as
-            | MOption
-            | undefined;
-
-        if (item && !item.disabled && this.focusedElement === item) {
-            this.focusBlur();
         }
     };
 

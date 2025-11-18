@@ -1,9 +1,8 @@
-import { MElement } from "../utils/m-element";
+import { MInputListElement } from "../utils/m-input-list-element";
 import { BindAttribute } from "../utils/reflect-attribute";
 import { query } from "../utils/query";
 import type { MOption } from "../m-option";
 import { MListboxSelectEvent, MListboxUnselectedEvent, MListboxChangeEvent, MListboxFocusChangeEvent } from "./events";
-import { getItems, getSelectedItems, getSelectedValues, focusFirst, focusLast, focusNext, focusPrev, computeSelection } from "../utils/list-options-manager";
 import styles from "./index.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -34,7 +33,7 @@ baseStyleSheet.replaceSync(styles);
  * @event m-listbox-focus-change - Fired when focus moves to a different item. Detail: { item: MOption | null }
  * 
  */
-export class MListbox extends MElement {
+export class MListbox extends MInputListElement {
     static tagName = 'm-listbox';
     static formAssociated = true;
     static observedAttributes = ['multiple', 'name', 'label', 'disabled', 'value', 'skip'];
@@ -59,20 +58,6 @@ export class MListbox extends MElement {
     private ariaLiveTimeout?: ReturnType<typeof setTimeout>;
     private originalTabIndex: string | null = null;
 
-    private _focusedElement: MOption | null = null;
-    set focusedElement(el: MOption | null) {
-        this._focusedElement = el;
-        if (el) {
-            this.setAttribute("aria-activedescendant", el?.id)
-        } else {
-            this.removeAttribute("aria-activedescendant")
-        }
-
-    }
-    get focusedElement() {
-        return this._focusedElement;
-    }
-
     private internals: ElementInternals;
 
     /*** ----------------------------
@@ -80,30 +65,20 @@ export class MListbox extends MElement {
      * ----------------------------- */
 
     /**
-     * Returns an array of all items.
+     * Returns the skip selector for filtering items in the list.
      */
-    private get items() { return getItems<MOption>(this, this.skip); }
-
-    /**
-     * Returns an array of all selected items.
-     */
-    get selectedItems(): MOption[] { return getSelectedItems(this.items); }
-
-    /**
-     * Returns the value of the first selected item, or null if nothing is selected.
-     * In multiple mode, returns an array of all selected values.
-     * Useful for single-select mode.
-     */
-    get value(): string | string[] | null { 
-        if (this.multiple) return this.selectedValues;
-        return this.selectedItems[0]?.value ?? null; 
+    protected getItemsSkipSelector(): string | undefined {
+        return this.skip;
     }
 
     /**
-     * Returns an array of all selected item values.
-     * Useful for multiple-select mode.
+     * Hook called when focus changes to a new item.
      */
-    get selectedValues(): string[] { return getSelectedValues(this.items); }
+    protected onFocusChange(item: MOption | null): void {
+        if (item) {
+            this.dispatchEvent(new MListboxFocusChangeEvent({ item }));
+        }
+    }
 
     /**
      * Returns the associated form element, if any.
@@ -239,66 +214,7 @@ export class MListbox extends MElement {
         this.disabled = disabled;
     }
 
-    /*** ----------------------------
-     *  Focus Management
-     * ----------------------------- */
-    /**
-     * Sets focus to a specific list box item.
-     * Removes focus from the previously focused item and dispatches a focus-change event.
-     * 
-     * @param item - The item to focus, or null to clear focus
-     */
-    setFocus(item: MOption | null): void {
-        if (!item) return;
-        if (this.focusedElement) this.focusedElement.removeAttribute('focused');
 
-        item.focused = true
-        this.focusedElement = item;
-
-        this.dispatchEvent(
-            new MListboxFocusChangeEvent({ item })
-        );
-    }
-
-    /**
-     * Moves focus to the first item in the list.
-     */
-    focusFirst(): void {
-        this.setFocus(focusFirst(this.items));
-    }
-
-    /**
-     * Moves focus to the last item in the list.
-     */
-    focusLast(): void {
-        this.setFocus(focusLast(this.items));
-    }
-
-    /**
-     * Moves focus to the next item in the list.
-     * Wraps around to the first item if at the end.
-     */
-    focusNext(): void {
-        this.setFocus(focusNext(this.items, this.focusedElement));
-    }
-
-    /**
-     * Moves focus to the previous item in the list.
-     * Wraps around to the last item if at the beginning.
-     */
-    focusPrev(): void {
-        this.setFocus(focusPrev(this.items, this.focusedElement));
-    }
-
-    /**
-     * Clears focus from the currently focused item.
-     */
-    focusBlur(): void {
-        if (this.focusedElement) {
-            this.focusedElement.removeAttribute('focused');
-            this.focusedElement = null;
-        }
-    }
 
     /*** ----------------------------
      *  Selection Management
@@ -314,13 +230,7 @@ export class MListbox extends MElement {
     select(item: MOption | null): void {
         if (!item) return;
 
-        const result = computeSelection(
-            item,
-            this.items,
-            this.selectedItems,
-            this.focusedElement,
-            { multiple: this.multiple }
-        );
+        const result = this.computeSelection(item);
 
         result.itemsToDeselect.forEach(i => {
             i.selected = false;
@@ -353,46 +263,7 @@ export class MListbox extends MElement {
         this.updateFormValue();
     }
 
-    /**
-     * Selects the currently focused item.
-     */
-    selectFocused(): void {
-        if (this.focusedElement) this.select(this.focusedElement);
-    }
 
-    /**
-     * Selects the first item in the list.
-     */
-    selectFirst(): void {
-        const first = focusFirst(this.items);
-        if (first) this.select(first);
-    }
-
-    /**
-     * Selects the last item in the list.
-     */
-    selectLast(): void {
-        const last = focusLast(this.items);
-        if (last) this.select(last);
-    }
-
-    /**
-     * Selects the next item in the list.
-     * Wraps around to the first item if at the end.
-     */
-    selectNext(): void {
-        const next = focusNext(this.items, this.focusedElement);
-        if (next) this.select(next);
-    }
-
-    /**
-     * Selects the previous item in the list.
-     * Wraps around to the last item if at the beginning.
-     */
-    selectPrev(): void {
-        const prev = focusPrev(this.items, this.focusedElement);
-        if (prev) this.select(prev);
-    }
 
     /*** ----------------------------
      *  Event Handlers
@@ -496,29 +367,7 @@ export class MListbox extends MElement {
         }
     };
 
-    private handleMouseOver = (event: MouseEvent) => {
-        const item = event
-            .composedPath()
-            .find(el => (el as HTMLElement).tagName === 'M-OPTION') as
-            | MOption
-            | undefined;
 
-        if (item && !item.disabled && this.focusedElement !== item) {
-            this.setFocus(item);
-        }
-    };
-
-    private handleMouseOut = (event: MouseEvent) => {
-        const item = event
-            .composedPath()
-            .find(el => (el as HTMLElement).tagName === 'M-OPTION') as
-            | MOption
-            | undefined;
-
-        if (item && !item.disabled && this.focusedElement === item) {
-            this.focusBlur();
-        }
-    };
 
     private updateAriaLive() {
         if (this.ariaLiveTimeout) {
