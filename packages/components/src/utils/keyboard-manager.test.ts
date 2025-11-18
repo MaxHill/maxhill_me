@@ -1,4 +1,5 @@
-import { assert, beforeEach, describe, it } from "vitest";
+import { expect } from "@esm-bundle/chai";
+
 import { keyboardManager } from "./keyboard-manager";
 
 describe("keyboard-manager", () => {
@@ -62,7 +63,7 @@ describe("keyboard-manager", () => {
 
         tests.forEach(([event, expected]) => {
             const result = (keyboardManager as any).parseKey(event);
-            assert.equal(result, expected)
+            expect(result).to.equal(expected)
         });
     });
 
@@ -71,8 +72,7 @@ describe("keyboard-manager", () => {
             const handler = () => console.log("a pressed")
             const unregister = keyboardManager.register("a", handler)
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 { children: { "a": { _handler: handler, preventDefault: false } }, preventDefault: false }
             )
 
@@ -83,8 +83,7 @@ describe("keyboard-manager", () => {
             const handler = () => console.log("a pressed")
             const unregister = keyboardManager.register("ab", handler)
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 {
                     children: {
                         "a": {
@@ -104,8 +103,7 @@ describe("keyboard-manager", () => {
             const unregister1 = keyboardManager.register("ab", handler)
             const unregister2 = keyboardManager.register("bb", handler)
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 {
                     children: {
                         "a": {
@@ -130,8 +128,7 @@ describe("keyboard-manager", () => {
             const unregister1 = keyboardManager.register("ab", handler)
             const unregister2 = keyboardManager.register("ac", handler)
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 {
                     children: {
                         "a": {
@@ -156,8 +153,7 @@ describe("keyboard-manager", () => {
             keyboardManager.register("a", handler1)
             keyboardManager.register("ab", handler2)
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 {
                     children: {
                         "a": {
@@ -178,13 +174,11 @@ describe("keyboard-manager", () => {
             const handler2 = () => console.log("second")
             keyboardManager.register("a", handler1)
 
-            assert.throws(
-                () => keyboardManager.register("a", handler2),
+            expect(() => keyboardManager.register("a", handler2)).to.throw(
                 /Keymap conflict/
             )
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 { children: { "a": { _handler: handler1, preventDefault: false } }, preventDefault: false }
             )
         })
@@ -195,8 +189,7 @@ describe("keyboard-manager", () => {
             keyboardManager.register("a", handler1)
             keyboardManager.register("b", handler2)
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 {
                     children: {
                         "a": { _handler: handler1, preventDefault: false },
@@ -211,8 +204,7 @@ describe("keyboard-manager", () => {
             const handler = () => { };
             const unregister = keyboardManager.register("<C-a>", handler)
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 { children: { "<C-a>": { _handler: handler, preventDefault: false } }, preventDefault: false }
             )
 
@@ -223,8 +215,7 @@ describe("keyboard-manager", () => {
             const handler = () => { }
             const unregister = keyboardManager.register("a<CR>b", handler)
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 {
                     children: {
                         "a": {
@@ -250,8 +241,7 @@ describe("keyboard-manager", () => {
             const handler = () => { }
             const unregister = keyboardManager.register("a<CR>b<Esc>", handler)
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 {
                     children: {
                         "a": {
@@ -282,8 +272,7 @@ describe("keyboard-manager", () => {
             const handler = () => { }
             const unregister = keyboardManager.register("<CR>abc", handler)
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 {
                     children: {
                         "<CR>": {
@@ -314,8 +303,7 @@ describe("keyboard-manager", () => {
             const handler = () => { }
             const unregister = keyboardManager.register("a<C-S-x>b", handler)
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 {
                     children: {
                         "a": {
@@ -343,15 +331,13 @@ describe("keyboard-manager", () => {
             const handler = () => { }
             const unregister = keyboardManager.register("a", handler);
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 { children: { "a": { _handler: handler, preventDefault: false } }, preventDefault: false }
             )
 
             unregister();
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 { children: {}, preventDefault: false }
             )
         })
@@ -360,15 +346,13 @@ describe("keyboard-manager", () => {
             const handler = () => { }
             const unregister = keyboardManager.register("<C-a>", handler)
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 { children: { "<C-a>": { _handler: handler, preventDefault: false } }, preventDefault: false }
             )
 
             unregister()
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 { children: {}, preventDefault: false }
             )
         })
@@ -377,15 +361,21 @@ describe("keyboard-manager", () => {
             const handler = () => { }
             const unregister = keyboardManager.register("a<CR>b", handler)
 
-            assert.deepEqual(
-                keyboardManager.commands.children?.["a"]?.children?.["<CR>"]?.children?.["b"],
+            expect(
+                keyboardManager.commands.children?.["a"]?.children?.["<CR>"]?.children?.["b"]
+            ).to.deep.equal(
                 { _handler: handler, preventDefault: false }
             )
 
             unregister()
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
+                { children: {}, preventDefault: false }
+            )
+
+            unregister()
+
+            expect(keyboardManager.commands).to.deep.equal(
                 { children: {}, preventDefault: false }
             )
         })
@@ -398,8 +388,7 @@ describe("keyboard-manager", () => {
 
             unregister1()
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 {
                     children: {
                         "a": {
@@ -422,8 +411,7 @@ describe("keyboard-manager", () => {
 
             unregister2()
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 {
                     children: {
                         "a": {
@@ -445,8 +433,7 @@ describe("keyboard-manager", () => {
             const unregister = keyboardManager.register("b", () => { })
             unregister()
 
-            assert.deepEqual(
-                keyboardManager.commands,
+            expect(keyboardManager.commands).to.deep.equal(
                 commands
             )
         })
@@ -455,59 +442,61 @@ describe("keyboard-manager", () => {
     describe("parseCommand", () => {
         it("simple string - single character", () => {
             const result = (keyboardManager as any).parseCommand("a")
-            assert.deepEqual(result, ["a"])
+            expect(result).to.deep.equal(["a"])
         })
 
         it("simple string - multiple characters", () => {
             const result = (keyboardManager as any).parseCommand("abc")
-            assert.deepEqual(result, ["a", "b", "c"])
+            expect(result).to.deep.equal(["a", "b", "c"])
         })
 
         it("single special key", () => {
             const result = (keyboardManager as any).parseCommand("<CR>")
-            assert.deepEqual(result, ["<CR>"])
+            expect(result).to.deep.equal(["<CR>"])
         })
 
         it("special key with characters before", () => {
             const result = (keyboardManager as any).parseCommand("a<CR>")
-            assert.deepEqual(result, ["a", "<CR>"])
+            expect(result).to.deep.equal(["a", "<CR>"])
         })
 
         it("special key with characters after", () => {
             const result = (keyboardManager as any).parseCommand("<CR>b")
-            assert.deepEqual(result, ["<CR>", "b"])
+            expect(result).to.deep.equal(["<CR>", "b"])
         })
 
         it("special key in the middle", () => {
             const result = (keyboardManager as any).parseCommand("a<CR>b")
-            assert.deepEqual(result, ["a", "<CR>", "b"])
+            expect(result).to.deep.equal(["a", "<CR>", "b"])
         })
 
         it("multiple special keys", () => {
             const result = (keyboardManager as any).parseCommand("<C-a><C-b>")
-            assert.deepEqual(result, ["<C-a>", "<C-b>"])
+            expect(result).to.deep.equal(["<C-a>", "<C-b>"])
         })
 
         it("complex command with multiple special keys and characters", () => {
             const result = (keyboardManager as any).parseCommand("a<CR>b<Esc>c")
-            assert.deepEqual(result, ["a", "<CR>", "b", "<Esc>", "c"])
+            expect(result).to.deep.equal(["a", "<CR>", "b", "<Esc>", "c"])
         })
 
         it("empty string returns empty array", () => {
             const result = (keyboardManager as any).parseCommand("")
-            assert.deepEqual(result, [])
+            expect(result).to.deep.equal([])
         })
 
         it("throws error on unclosed bracket", () => {
-            assert.throws(
-                () => (keyboardManager as any).parseCommand("a<CR"),
+            expect(
+                () => (keyboardManager as any).parseCommand("a<CR")
+            ).to.throw(
                 /Unclosed bracket/
             )
         })
 
         it("throws error on unclosed bracket at start", () => {
-            assert.throws(
-                () => (keyboardManager as any).parseCommand("<CR"),
+            expect(
+                () => (keyboardManager as any).parseCommand("<CR")
+            ).to.throw(
                 /Unclosed bracket/
             )
         })
@@ -526,8 +515,8 @@ describe("keyboard-manager", () => {
 
             keyboardManager.handleKey("a")
 
-            assert.equal(executed, true)
-            assert.deepEqual(keyboardManager.currentSequence, [])
+            expect(executed).to.equal(true)
+            expect(keyboardManager.currentSequence).to.deep.equal([])
         })
 
         it("multi-character sequence executes after completion", () => {
@@ -549,13 +538,13 @@ describe("keyboard-manager", () => {
             }
 
             keyboardManager.handleKey("a")
-            assert.equal(executed, false)
+            expect(executed).to.equal(false)
 
             keyboardManager.handleKey("b")
-            assert.equal(executed, false)
+            expect(executed).to.equal(false)
 
             keyboardManager.handleKey("c")
-            assert.equal(executed, true)
+            expect(executed).to.equal(true)
         })
 
         it("partial sequence interrupted resets", () => {
@@ -573,20 +562,19 @@ describe("keyboard-manager", () => {
             }
 
             keyboardManager.handleKey("a")
-            assert.deepEqual(keyboardManager.currentSequence, ["a"])
+            expect(keyboardManager.currentSequence).to.deep.equal(["a"])
 
             keyboardManager.handleKey("x")
-            assert.equal(executed, false)
-            assert.deepEqual(keyboardManager.currentSequence, [])
+            expect(executed).to.equal(false)
+            expect(keyboardManager.currentSequence).to.deep.equal([])
         })
 
-        it("branch node (has children) sets timeout", (context) => {
+        it("branch node (has children) sets timeout", () => {
             return new Promise((resolve) => {
                 keyboardManager.comboTimeoutDuration = 50
                 let executed = false
                 const handler = () => {
                     executed = true
-                    resolve()
                 }
 
                 keyboardManager.commands = {
@@ -602,10 +590,11 @@ describe("keyboard-manager", () => {
 
                 keyboardManager.handleKey("a")
 
-                assert.equal(executed, false)
+                expect(executed).to.equal(false)
 
                 setTimeout(() => {
-                    assert.equal(executed, true)
+                    expect(executed).to.equal(true)
+                    resolve()
                 }, 100)
             })
         })
@@ -622,10 +611,10 @@ describe("keyboard-manager", () => {
             }
 
             keyboardManager.handleKey("a")
-            assert.equal(count, 1)
+            expect(count).to.equal(1)
 
             keyboardManager.handleKey("b")
-            assert.equal(count, 2)
+            expect(count).to.equal(2)
         })
 
         it("invalid first character resets", () => {
@@ -637,7 +626,7 @@ describe("keyboard-manager", () => {
 
             keyboardManager.handleKey("x")
 
-            assert.deepEqual(keyboardManager.currentSequence, [])
+            expect(keyboardManager.currentSequence).to.deep.equal([])
         })
 
         it("empty command tree with input resets", () => {
@@ -645,7 +634,7 @@ describe("keyboard-manager", () => {
 
             keyboardManager.handleKey("a")
 
-            assert.deepEqual(keyboardManager.currentSequence, [])
+            expect(keyboardManager.currentSequence).to.deep.equal([])
         })
 
         it("typing same command twice executes twice", () => {
@@ -659,13 +648,13 @@ describe("keyboard-manager", () => {
             }
 
             keyboardManager.handleKey("a")
-            assert.equal(count, 1)
+            expect(count).to.equal(1)
 
             keyboardManager.handleKey("a")
-            assert.equal(count, 2)
+            expect(count).to.equal(2)
         })
 
-        it("partial sequence timeout resets", (context) => {
+        it("partial sequence timeout resets", () => {
             return new Promise<void>((resolve) => {
                 keyboardManager.comboTimeoutDuration = 50
 
@@ -680,10 +669,10 @@ describe("keyboard-manager", () => {
                 }
 
                 keyboardManager.handleKey("a")
-                assert.deepEqual(keyboardManager.currentSequence, ["a"])
+                expect(keyboardManager.currentSequence).to.deep.equal(["a"])
 
                 setTimeout(() => {
-                    assert.deepEqual(keyboardManager.currentSequence, [])
+                    expect(keyboardManager.currentSequence).to.deep.equal([])
                     resolve()
                 }, 100)
             })
@@ -716,17 +705,17 @@ describe("keyboard-manager", () => {
 
             const eventA = mockEvent('a', 'KeyA');
             (keyboardManager as any).onKeyDown(eventA);
-            assert.equal(executedWith, true);
-            assert.equal(eventA.preventDefaultFn.called, true);
+            expect(executedWith).to.equal(true);
+            expect(eventA.preventDefaultFn.called).to.equal(true);
 
             const eventB = mockEvent('b', 'KeyB');
             (keyboardManager as any).onKeyDown(eventB);
-            assert.equal(executedWithout, true);
-            assert.equal(eventB.preventDefaultFn.called, false);
+            expect(executedWithout).to.equal(true);
+            expect(eventB.preventDefaultFn.called).to.equal(false);
 
             const eventX = mockEvent('x', 'KeyX');
             (keyboardManager as any).onKeyDown(eventX);
-            assert.equal(eventX.preventDefaultFn.called, false);
+            expect(eventX.preventDefaultFn.called).to.equal(false);
         });
 
         it("multi-key sequence calls preventDefault on all keys", () => {
@@ -737,18 +726,18 @@ describe("keyboard-manager", () => {
 
             const eventA = mockEvent('a', 'KeyA');
             (keyboardManager as any).onKeyDown(eventA);
-            assert.equal(executed, false);
-            assert.equal(eventA.preventDefaultFn.called, true);
+            expect(executed).to.equal(false);
+            expect(eventA.preventDefaultFn.called).to.equal(true);
 
             const eventB = mockEvent('b', 'KeyB');
             (keyboardManager as any).onKeyDown(eventB);
-            assert.equal(executed, false);
-            assert.equal(eventB.preventDefaultFn.called, true);
+            expect(executed).to.equal(false);
+            expect(eventB.preventDefaultFn.called).to.equal(true);
 
             const eventC = mockEvent('c', 'KeyC');
             (keyboardManager as any).onKeyDown(eventC);
-            assert.equal(executed, true);
-            assert.equal(eventC.preventDefaultFn.called, true);
+            expect(executed).to.equal(true);
+            expect(eventC.preventDefaultFn.called).to.equal(true);
         });
 
         it("shared prefix - preventDefault takes precedence", () => {
@@ -762,12 +751,12 @@ describe("keyboard-manager", () => {
 
             const eventX = mockEvent('x', 'KeyX');
             (keyboardManager as any).onKeyDown(eventX);
-            assert.equal(eventX.preventDefaultFn.called, true);
+            expect(eventX.preventDefaultFn.called).to.equal(true);
 
             const eventY = mockEvent('y', 'KeyY');
             (keyboardManager as any).onKeyDown(eventY);
-            assert.equal(executedXY, true);
-            assert.equal(eventY.preventDefaultFn.called, true);
+            expect(executedXY).to.equal(true);
+            expect(eventY.preventDefaultFn.called).to.equal(true);
         });
 
         it("shared prefix - registration order independence", () => {
@@ -781,12 +770,12 @@ describe("keyboard-manager", () => {
 
             const eventX = mockEvent('x', 'KeyX');
             (keyboardManager as any).onKeyDown(eventX);
-            assert.equal(eventX.preventDefaultFn.called, true);
+            expect(eventX.preventDefaultFn.called).to.equal(true);
 
             const eventY = mockEvent('y', 'KeyY');
             (keyboardManager as any).onKeyDown(eventY);
-            assert.equal(executedXY, true);
-            assert.equal(eventY.preventDefaultFn.called, true);
+            expect(executedXY).to.equal(true);
+            expect(eventY.preventDefaultFn.called).to.equal(true);
         });
     });
 
@@ -808,7 +797,7 @@ describe("keyboard-manager", () => {
             const event = mockEvent('a', 'KeyA');
             (keyboardManager as any).onKeyDown(event)
 
-            assert.equal(executed, true)
+            expect(executed).to.equal(true)
         })
 
         it("key sequence with Enter executes handler", () => {
@@ -818,11 +807,11 @@ describe("keyboard-manager", () => {
 
             const event1 = mockEvent('a', 'KeyA');
             (keyboardManager as any).onKeyDown(event1)
-            assert.equal(executed, false)
+            expect(executed).to.equal(false)
 
             const event2 = mockEvent('Enter', 'Enter');
             (keyboardManager as any).onKeyDown(event2)
-            assert.equal(executed, true)
+            expect(executed).to.equal(true)
         })
 
         it("Ctrl+s shortcut executes handler", () => {
@@ -833,7 +822,7 @@ describe("keyboard-manager", () => {
             const event = mockEvent('s', 'KeyS', { ctrl: true });
             (keyboardManager as any).onKeyDown(event)
 
-            assert.equal(executed, true)
+            expect(executed).to.equal(true)
         })
 
         it("complex sequence with modifiers and special keys", () => {
@@ -843,15 +832,15 @@ describe("keyboard-manager", () => {
 
             const event1 = mockEvent('g', 'KeyG');
             (keyboardManager as any).onKeyDown(event1)
-            assert.equal(executed, false)
+            expect(executed).to.equal(false)
 
             const event2 = mockEvent('a', 'KeyA', { ctrl: true });
             (keyboardManager as any).onKeyDown(event2)
-            assert.equal(executed, false)
+            expect(executed).to.equal(false)
 
             const event3 = mockEvent('Enter', 'Enter');
             (keyboardManager as any).onKeyDown(event3)
-            assert.equal(executed, true)
+            expect(executed).to.equal(true)
         })
 
         it("Control key press is ignored", () => {
@@ -862,8 +851,8 @@ describe("keyboard-manager", () => {
             const event = mockEvent('Control', 'ControlLeft', { ctrl: true });
             (keyboardManager as any).onKeyDown(event)
 
-            assert.equal(executed, false)
-            assert.deepEqual(keyboardManager.currentSequence, [])
+            expect(executed).to.equal(false)
+            expect(keyboardManager.currentSequence).to.deep.equal([])
         })
 
         it("wrong sequence resets and doesn't execute", () => {
@@ -873,12 +862,12 @@ describe("keyboard-manager", () => {
 
             const event1 = mockEvent('a', 'KeyA');
             (keyboardManager as any).onKeyDown(event1)
-            assert.deepEqual(keyboardManager.currentSequence, ["a"])
+            expect(keyboardManager.currentSequence).to.deep.equal(["a"])
 
             const event2 = mockEvent('x', 'KeyX');
             (keyboardManager as any).onKeyDown(event2)
-            assert.deepEqual(keyboardManager.currentSequence, [])
-            assert.equal(executed, false)
+            expect(keyboardManager.currentSequence).to.deep.equal([])
+            expect(executed).to.equal(false)
         })
 
         it("Shift+A produces uppercase A", () => {
@@ -889,7 +878,7 @@ describe("keyboard-manager", () => {
             const event = mockEvent('A', 'KeyA', { shift: true });
             (keyboardManager as any).onKeyDown(event)
 
-            assert.equal(executed, true)
+            expect(executed).to.equal(true)
         })
 
         it("special characters like < > are parsed correctly", () => {
@@ -900,7 +889,7 @@ describe("keyboard-manager", () => {
             const event = mockEvent('<', 'Comma', { shift: true });
             (keyboardManager as any).onKeyDown(event)
 
-            assert.equal(executed, true)
+            expect(executed).to.equal(true)
         })
     })
 })
