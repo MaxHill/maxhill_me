@@ -45,9 +45,6 @@ export default {
       tsx: false,
       target: 'auto',
       tsconfig: './tsconfig.json',
-      define: {
-        'process.env.NODE_ENV': '"production"',
-      },
     }),
     cssInlinePlugin(),
   ],
