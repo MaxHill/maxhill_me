@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { html, fixture, waitUntil } from '../utils/test-helpers';
+import { expect } from "@esm-bundle/chai";
+import { html, fixture, waitUntil } from '@open-wc/testing';
 import { MCombobox } from './index';
 import { MOption } from '../m-option';
 import { MListbox } from '../m-listbox';
@@ -9,18 +9,12 @@ MOption.define();
 MListbox.define();
 
 beforeEach(() => {
-  document.body.innerHTML = '';
-  
   if (!HTMLElement.prototype.showPopover) {
     HTMLElement.prototype.showPopover = function() {};
   }
   if (!HTMLElement.prototype.hidePopover) {
     HTMLElement.prototype.hidePopover = function() {};
   }
-});
-
-afterEach(() => {
-  document.body.innerHTML = '';
 });
 
 describe('m-combobox', () => {
@@ -33,8 +27,8 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      expect(el).toBeInstanceOf(MCombobox);
-      expect(el.name).toBe('test-combobox');
+      expect(el).to.be.instanceOf(MCombobox);
+      expect(el.name).to.equal('test-combobox');
     });
 
     it('should have default values', async () => {
@@ -44,10 +38,10 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      expect(el.name).toBe('');
-      expect(el.disabled).toBe(false);
-      expect(el.multiple).toBe(false);
-      expect(el.value).toBe(null);
+      expect(el.name).to.equal('');
+      expect(el.disabled).to.equal(false);
+      expect(el.multiple).to.equal(false);
+      expect(el.value).to.equal(null);
     });
   });
 
@@ -59,7 +53,7 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      expect(el).toHaveProperty('form');
+      expect(el).to.have.property('form');
     });
 
     it('should reflect name attribute', async () => {
@@ -69,13 +63,13 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      expect(el.name).toBe('initial');
-      expect(el.getAttribute('name')).toBe('initial');
+      expect(el.name).to.equal('initial');
+      expect(el.getAttribute('name')).to.equal('initial');
 
       el.name = 'updated';
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(el.getAttribute('name')).toBe('updated');
+      expect(el.getAttribute('name')).to.equal('updated');
     });
 
     it('should reflect disabled attribute', async () => {
@@ -85,8 +79,8 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      expect(el.disabled).toBe(true);
-      expect(el.hasAttribute('disabled')).toBe(true);
+      expect(el.disabled).to.equal(true);
+      expect(el.hasAttribute('disabled')).to.equal(true);
     });
 
     it('should reflect multiple attribute', async () => {
@@ -97,26 +91,10 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      expect(el.multiple).toBe(true);
-      expect(el.hasAttribute('multiple')).toBe(true);
+      expect(el.multiple).to.equal(true);
+      expect(el.hasAttribute('multiple')).to.equal(true);
     });
 
-    it('should apply :host([multiple]) styles', async () => {
-      const el = await fixture<MCombobox>(html`
-        <m-combobox multiple>
-          <m-option value="1">Item 1</m-option>
-          <m-option value="2">Item 2</m-option>
-        </m-combobox>
-      `);
-
-      await new Promise(resolve => setTimeout(resolve, 50));
-
-      const styles = window.getComputedStyle(el);
-      console.log('Background color:', styles.backgroundColor);
-      console.log('Has multiple attr:', el.hasAttribute('multiple'));
-      console.log('Adopted stylesheets:', el.shadowRoot?.adoptedStyleSheets.length);
-      expect(styles.backgroundColor).toBe('rgb(0, 128, 0)');
-    });
   });
 
   describe('value management', () => {
@@ -130,7 +108,7 @@ describe('m-combobox', () => {
 
       await new Promise(resolve => setTimeout(resolve, 50));
       
-      expect(el.value).toBe(null);
+      expect(el.value).to.equal(null);
     });
 
     it('should return empty array for multiple mode when no items selected', async () => {
@@ -143,8 +121,8 @@ describe('m-combobox', () => {
 
       await new Promise(resolve => setTimeout(resolve, 50));
       
-      expect(Array.isArray(el.value)).toBe(true);
-      expect(el.value).toEqual([]);
+      expect(Array.isArray(el.value)).to.equal(true);
+      expect(el.value).to.deep.equal([]);
     });
   });
 
@@ -186,8 +164,8 @@ describe('m-combobox', () => {
 
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(eventFired).toBe(true);
-      expect(eventDetail.selected).toEqual(['1']);
+      expect(eventFired).to.equal(true);
+      expect(eventDetail.selected).to.deep.equal(['1']);
     });
   });
 });

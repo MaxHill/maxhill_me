@@ -1,16 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { html, fixture, waitUntil } from '../utils/test-helpers';
+import { expect } from "@esm-bundle/chai";
+
+import { html, fixture, waitUntil } from '@open-wc/testing';
 import { MCommand } from './index';
 
 MCommand.define();
-
-beforeEach(() => {
-  document.body.innerHTML = '';
-});
-
-afterEach(() => {
-  document.body.innerHTML = '';
-});
 
 describe.skip('m-command', () => {
   describe('basic rendering', () => {
@@ -21,8 +14,8 @@ describe.skip('m-command', () => {
         </m-command>
       `);
 
-      expect(el).toBeInstanceOf(MCommand);
-      expect(el.example).toBe('test');
+      expect(el).to.be.instanceOf(MCommand);
+      expect(el.example).to.equal('test');
     });
 
     it('should have default example', async () => {
@@ -30,7 +23,7 @@ describe.skip('m-command', () => {
         <m-command>Test</m-command>
       `);
 
-      expect(el.example).toBe('');
+      expect(el.example).to.equal('');
     });
   });
 
@@ -40,13 +33,13 @@ describe.skip('m-command', () => {
         <m-command example="initial">Test</m-command>
       `);
 
-      expect(el.example).toBe('initial');
-      expect(el.getAttribute('example')).toBe('initial');
+      expect(el.example).to.equal('initial');
+      expect(el.getAttribute('example')).to.equal('initial');
 
       el.example = 'updated';
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(el.getAttribute('example')).toBe('updated');
+      expect(el.getAttribute('example')).to.equal('updated');
     });
   });
 
@@ -67,8 +60,8 @@ describe.skip('m-command', () => {
       el.example = 'changed';
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(eventFired).toBe(true);
-      expect(eventDetail.example).toBe('changed');
+      expect(eventFired).to.equal(true);
+      expect(eventDetail.example).to.equal('changed');
     });
 
     it('should dispatch standard change event', async () => {
@@ -85,7 +78,7 @@ describe.skip('m-command', () => {
       el.example = 'changed';
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      expect(changeEventFired).toBe(true);
+      expect(changeEventFired).to.equal(true);
     });
   });
 });

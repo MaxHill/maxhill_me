@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { expect } from "@esm-bundle/chai";
+
 import {
   getItems,
   getSelectedItems,
@@ -33,7 +34,7 @@ describe('list-options-manager', () => {
         <m-option value="3">Three</m-option>
       `;
       const items = getItems(container);
-      expect(items).toHaveLength(3);
+      expect(items).to.have.lengthOf(3);
     });
 
     it('should filter items using skip selector', () => {
@@ -44,13 +45,13 @@ describe('list-options-manager', () => {
         <m-option value="3">Three</m-option>
       `;
       const items = getItems(container, '.skip');
-      expect(items).toHaveLength(2);
+      expect(items).to.have.lengthOf(2);
     });
 
     it('should return empty array for no items', () => {
       const container = document.createElement('div');
       const items = getItems(container);
-      expect(items).toHaveLength(0);
+      expect(items).to.have.lengthOf(0);
     });
   });
 
@@ -62,9 +63,9 @@ describe('list-options-manager', () => {
         new MockElement('3', true),
       ];
       const selected = getSelectedItems(items);
-      expect(selected).toHaveLength(2);
-      expect(selected[0].value).toBe('2');
-      expect(selected[1].value).toBe('3');
+      expect(selected).to.have.lengthOf(2);
+      expect(selected[0].value).to.equal('2');
+      expect(selected[1].value).to.equal('3');
     });
 
     it('should return empty array when nothing selected', () => {
@@ -73,7 +74,7 @@ describe('list-options-manager', () => {
         new MockElement('2', false),
       ];
       const selected = getSelectedItems(items);
-      expect(selected).toHaveLength(0);
+      expect(selected).to.have.lengthOf(0);
     });
   });
 
@@ -85,7 +86,7 @@ describe('list-options-manager', () => {
         new MockElement('3', true),
       ];
       const values = getSelectedValues(items);
-      expect(values).toEqual(['2', '3']);
+      expect(values).to.deep.equal(['2', '3']);
     });
 
     it('should skip items without values', () => {
@@ -94,7 +95,7 @@ describe('list-options-manager', () => {
         { selected: true, value: '2' },
       ];
       const values = getSelectedValues(items);
-      expect(values).toEqual(['2']);
+      expect(values).to.deep.equal(['2']);
     });
 
     it('should return empty array when nothing selected', () => {
@@ -103,7 +104,7 @@ describe('list-options-manager', () => {
         new MockElement('2', false),
       ];
       const values = getSelectedValues(items);
-      expect(values).toEqual([]);
+      expect(values).to.deep.equal([]);
     });
   });
 
@@ -115,12 +116,12 @@ describe('list-options-manager', () => {
         new MockElement('3'),
       ];
       const first = focusFirst(items);
-      expect(first?.value).toBe('1');
+      expect(first?.value).to.equal('1');
     });
 
     it('should return null for empty list', () => {
       const first = focusFirst([]);
-      expect(first).toBeNull();
+      expect(first).to.be.null;
     });
   });
 
@@ -132,12 +133,12 @@ describe('list-options-manager', () => {
         new MockElement('3'),
       ];
       const last = focusLast(items);
-      expect(last?.value).toBe('3');
+      expect(last?.value).to.equal('3');
     });
 
     it('should return null for empty list', () => {
       const last = focusLast([]);
-      expect(last).toBeNull();
+      expect(last).to.be.null;
     });
   });
 
@@ -150,22 +151,22 @@ describe('list-options-manager', () => {
 
     it('should return next item', () => {
       const next = focusNext(items, items[0]);
-      expect(next?.value).toBe('2');
+      expect(next?.value).to.equal('2');
     });
 
     it('should wrap to first item at end', () => {
       const next = focusNext(items, items[2]);
-      expect(next?.value).toBe('1');
+      expect(next?.value).to.equal('1');
     });
 
     it('should return first item when currentFocus is null', () => {
       const next = focusNext(items, null);
-      expect(next?.value).toBe('1');
+      expect(next?.value).to.equal('1');
     });
 
     it('should return null for empty list', () => {
       const next = focusNext([], null);
-      expect(next).toBeNull();
+      expect(next).to.be.null;
     });
   });
 
@@ -178,22 +179,22 @@ describe('list-options-manager', () => {
 
     it('should return previous item', () => {
       const prev = focusPrev(items, items[1]);
-      expect(prev?.value).toBe('1');
+      expect(prev?.value).to.equal('1');
     });
 
     it('should wrap to last item at beginning', () => {
       const prev = focusPrev(items, items[0]);
-      expect(prev?.value).toBe('3');
+      expect(prev?.value).to.equal('3');
     });
 
     it('should return last item when currentFocus is null', () => {
       const prev = focusPrev(items, null);
-      expect(prev?.value).toBe('3');
+      expect(prev?.value).to.equal('3');
     });
 
     it('should return null for empty list', () => {
       const prev = focusPrev([], null);
-      expect(prev).toBeNull();
+      expect(prev).to.be.null;
     });
   });
 
@@ -213,10 +214,10 @@ describe('list-options-manager', () => {
         { multiple: false }
       );
 
-      expect(result.itemToSelect).toBe(items[1]);
-      expect(result.itemsToDeselect).toEqual([items[0]]);
-      expect(result.shouldToggle).toBe(false);
-      expect(result.newFocusTarget).toBe(items[1]);
+      expect(result.itemToSelect).to.equal(items[1]);
+      expect(result.itemsToDeselect).to.deep.equal([items[0]]);
+      expect(result.shouldToggle).to.equal(false);
+      expect(result.newFocusTarget).to.equal(items[1]);
     });
 
     it('should have empty deselect list when nothing was selected', () => {
@@ -228,9 +229,9 @@ describe('list-options-manager', () => {
         { multiple: false }
       );
 
-      expect(result.itemToSelect).toBe(items[1]);
-      expect(result.itemsToDeselect).toEqual([]);
-      expect(result.shouldToggle).toBe(false);
+      expect(result.itemToSelect).to.equal(items[1]);
+      expect(result.itemsToDeselect).to.deep.equal([]);
+      expect(result.shouldToggle).to.equal(false);
     });
   });
 
@@ -250,10 +251,10 @@ describe('list-options-manager', () => {
         { multiple: true }
       );
 
-      expect(result.itemToSelect).toBe(items[2]);
-      expect(result.itemsToDeselect).toEqual([]);
-      expect(result.shouldToggle).toBe(true);
-      expect(result.newFocusTarget).toBe(items[1]);
+      expect(result.itemToSelect).to.equal(items[2]);
+      expect(result.itemsToDeselect).to.deep.equal([]);
+      expect(result.shouldToggle).to.equal(true);
+      expect(result.newFocusTarget).to.equal(items[1]);
     });
 
     it('should preserve current focus', () => {
@@ -265,7 +266,7 @@ describe('list-options-manager', () => {
         { multiple: true }
       );
 
-      expect(result.newFocusTarget).toBe(items[2]);
+      expect(result.newFocusTarget).to.equal(items[2]);
     });
   });
 });

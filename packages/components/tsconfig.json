@@ -11,7 +11,8 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "experimentalDecorators": false,
-    "useDefineForClassFields": false
+    "useDefineForClassFields": false,
+    "types": ["mocha"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]

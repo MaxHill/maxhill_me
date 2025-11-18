@@ -1,18 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { html, fixture, waitUntil } from '../utils/test-helpers';
+import { expect } from "@esm-bundle/chai";
+
+import { html, fixture, waitUntil } from '@open-wc/testing';
 import { MListbox } from './index';
 import { MOption } from '../m-option';
 
 MListbox.define();
 MOption.define();
-
-beforeEach(() => {
-  document.body.innerHTML = '';
-});
-
-afterEach(() => {
-  document.body.innerHTML = '';
-});
 
 describe('m-listbox', () => {
   describe('ARIA roles and attributes', () => {
@@ -23,7 +16,7 @@ describe('m-listbox', () => {
         </m-listbox>
       `);
 
-      expect(el.getAttribute('role')).toBe('listbox');
+      expect(el.getAttribute('role')).to.equal('listbox');
     });
 
     it('should have tabindex="0" by default', async () => {
@@ -33,7 +26,7 @@ describe('m-listbox', () => {
         </m-listbox>
       `);
 
-      expect(el.getAttribute('tabindex')).toBe('0');
+      expect(el.getAttribute('tabindex')).to.equal('0');
     });
 
     it('should set aria-multiselectable="true" when multiple', async () => {
@@ -43,7 +36,7 @@ describe('m-listbox', () => {
         </m-listbox>
       `);
 
-      expect(el.getAttribute('aria-multiselectable')).toBe('true');
+      expect(el.getAttribute('aria-multiselectable')).to.equal('true');
     });
 
     it('should not have aria-multiselectable when single select', async () => {
@@ -53,7 +46,7 @@ describe('m-listbox', () => {
         </m-listbox>
       `);
 
-      expect(el.hasAttribute('aria-multiselectable')).toBe(false);
+      expect(el.hasAttribute('aria-multiselectable')).to.equal(false);
     });
 
     it('should set aria-disabled="true" when disabled', async () => {
@@ -63,8 +56,8 @@ describe('m-listbox', () => {
         </m-listbox>
       `);
 
-      expect(el.getAttribute('aria-disabled')).toBe('true');
-      expect(el.getAttribute('tabindex')).toBe('-1');
+      expect(el.getAttribute('aria-disabled')).to.equal('true');
+      expect(el.getAttribute('tabindex')).to.equal('-1');
     });
   });
 
@@ -79,7 +72,7 @@ describe('m-listbox', () => {
       await waitUntil(() => el.querySelectorAll('m-option').length === 1);
       const item = el.querySelector('m-option') as MOption;
 
-      expect(item.getAttribute('role')).toBe('option');
+      expect(item.getAttribute('role')).to.equal('option');
     });
 
     it('should set aria-selected="true" on selected item', async () => {
@@ -95,8 +88,8 @@ describe('m-listbox', () => {
       const appleItem = items[0] as MOption;
       const pearItem = items[1] as MOption;
 
-      expect(appleItem.getAttribute('aria-selected')).toBe('true');
-      expect(pearItem.getAttribute('aria-selected')).toBe('false');
+      expect(appleItem.getAttribute('aria-selected')).to.equal('true');
+      expect(pearItem.getAttribute('aria-selected')).to.equal('false');
     });
 
     it('should set aria-selected="false" on unselected items', async () => {
@@ -109,7 +102,7 @@ describe('m-listbox', () => {
       await waitUntil(() => el.querySelectorAll('m-option').length === 1);
       const item = el.querySelector('m-option') as MOption;
 
-      expect(item.getAttribute('aria-selected')).toBe('false');
+      expect(item.getAttribute('aria-selected')).to.equal('false');
     });
 
     it('should not have tabindex on items', async () => {
@@ -122,7 +115,7 @@ describe('m-listbox', () => {
       await waitUntil(() => el.querySelectorAll('m-option').length === 1);
       const item = el.querySelector('m-option') as MOption;
 
-      expect(item.hasAttribute('tabindex')).toBe(false);
+      expect(item.hasAttribute('tabindex')).to.equal(false);
     });
   });
 
@@ -147,7 +140,7 @@ describe('m-listbox', () => {
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
 
       await waitUntil(() => el.getAttribute('aria-activedescendant') === secondItem.id);
-      expect(el.getAttribute('aria-activedescendant')).toBe(secondItem.id);
+      expect(el.getAttribute('aria-activedescendant')).to.equal(secondItem.id);
     });
 
     it('should move focus to previous option with ArrowUp', async () => {
@@ -181,7 +174,7 @@ describe('m-listbox', () => {
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
       await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
       
-      expect(el.getAttribute('aria-activedescendant')).toBe(firstItem.id);
+      expect(el.getAttribute('aria-activedescendant')).to.equal(firstItem.id);
     });
 
     it('should move focus to last option with End', async () => {
@@ -201,7 +194,7 @@ describe('m-listbox', () => {
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
 
       await waitUntil(() => el.getAttribute('aria-activedescendant') === lastItem.id);
-      expect(el.getAttribute('aria-activedescendant')).toBe(lastItem.id);
+      expect(el.getAttribute('aria-activedescendant')).to.equal(lastItem.id);
     });
 
     it('should select focused option with Space', async () => {
@@ -221,8 +214,8 @@ describe('m-listbox', () => {
       
       el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
 
-      expect(el.value).toBe('apple');
-      expect(firstItem.getAttribute('aria-selected')).toBe('true');
+      expect(el.value).to.equal('apple');
+      expect(firstItem.getAttribute('aria-selected')).to.equal('true');
     });
 
     it('should select focused option with Enter', async () => {
@@ -244,8 +237,8 @@ describe('m-listbox', () => {
       
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 
-      expect(el.value).toBe('banana');
-      expect(secondItem.getAttribute('aria-selected')).toBe('true');
+      expect(el.value).to.equal('banana');
+      expect(secondItem.getAttribute('aria-selected')).to.equal('true');
     });
 
     it('should wrap to first item when ArrowDown is pressed on last item', async () => {
@@ -268,7 +261,7 @@ describe('m-listbox', () => {
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
       await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
 
-      expect(el.getAttribute('aria-activedescendant')).toBe(firstItem.id);
+      expect(el.getAttribute('aria-activedescendant')).to.equal(firstItem.id);
     });
 
     it('should wrap to last item when ArrowUp is pressed on first item', async () => {
@@ -291,7 +284,7 @@ describe('m-listbox', () => {
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
       await waitUntil(() => el.getAttribute('aria-activedescendant') === lastItem.id);
 
-      expect(el.getAttribute('aria-activedescendant')).toBe(lastItem.id);
+      expect(el.getAttribute('aria-activedescendant')).to.equal(lastItem.id);
     });
 
     it('should set :state(focus) on virtually focused item', async () => {
@@ -310,14 +303,14 @@ describe('m-listbox', () => {
       el.focus();
       await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
       
-      expect((firstItem as any)._internals.states.has('focus')).toBe(true);
-      expect((secondItem as any)._internals.states.has('focus')).toBe(false);
+      expect((firstItem as any)._internals.states.has('focus')).to.equal(true);
+      expect((secondItem as any)._internals.states.has('focus')).to.equal(false);
 
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
       await waitUntil(() => el.getAttribute('aria-activedescendant') === secondItem.id);
 
-      expect((firstItem as any)._internals.states.has('focus')).toBe(false);
-      expect((secondItem as any)._internals.states.has('focus')).toBe(true);
+      expect((firstItem as any)._internals.states.has('focus')).to.equal(false);
+      expect((secondItem as any)._internals.states.has('focus')).to.equal(true);
     });
   });
 
@@ -336,9 +329,9 @@ describe('m-listbox', () => {
 
       appleItem.click();
 
-      expect(el.value).toBe('apple');
-      expect(appleItem.selected).toBe(true);
-      expect(appleItem.getAttribute('aria-selected')).toBe('true');
+      expect(el.value).to.equal('apple');
+      expect(appleItem.selected).to.equal(true);
+      expect(appleItem.getAttribute('aria-selected')).to.equal('true');
     });
 
     it('should set virtual focus on click', async () => {
@@ -357,9 +350,9 @@ describe('m-listbox', () => {
       bananaItem.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
       bananaItem.click();
 
-      expect(el.getAttribute('aria-activedescendant')).toBe(bananaItem.id);
-      expect((bananaItem as any)._internals.states.has('focus')).toBe(true);
-      expect((appleItem as any)._internals.states.has('focus')).toBe(false);
+      expect(el.getAttribute('aria-activedescendant')).to.equal(bananaItem.id);
+      expect((bananaItem as any)._internals.states.has('focus')).to.equal(true);
+      expect((appleItem as any)._internals.states.has('focus')).to.equal(false);
     });
 
     it('should only allow one selection at a time', async () => {
@@ -376,12 +369,12 @@ describe('m-listbox', () => {
       const bananaItem = items[1] as MOption;
 
       appleItem.click();
-      expect(el.value).toBe('apple');
+      expect(el.value).to.equal('apple');
 
       bananaItem.click();
-      expect(el.value).toBe('banana');
-      expect(appleItem.getAttribute('aria-selected')).toBe('false');
-      expect(bananaItem.getAttribute('aria-selected')).toBe('true');
+      expect(el.value).to.equal('banana');
+      expect(appleItem.getAttribute('aria-selected')).to.equal('false');
+      expect(bananaItem.getAttribute('aria-selected')).to.equal('true');
     });
 
     it('should dispatch change event when value changes', async () => {
@@ -401,7 +394,7 @@ describe('m-listbox', () => {
 
       item.click();
 
-      expect(changeEventFired).toBe(true);
+      expect(changeEventFired).to.equal(true);
     });
   });
 
@@ -421,12 +414,12 @@ describe('m-listbox', () => {
       const bananaItem = items[1] as MOption;
 
       appleItem.click();
-      expect(el.value).toEqual(['apple']);
+      expect(el.value).to.deep.equal(['apple']);
 
       bananaItem.click();
-      expect(el.value).toEqual(['apple', 'banana']);
-      expect(appleItem.getAttribute('aria-selected')).toBe('true');
-      expect(bananaItem.getAttribute('aria-selected')).toBe('true');
+      expect(el.value).to.deep.equal(['apple', 'banana']);
+      expect(appleItem.getAttribute('aria-selected')).to.equal('true');
+      expect(bananaItem.getAttribute('aria-selected')).to.equal('true');
     });
 
     it('should toggle selection on click in multiple mode', async () => {
@@ -440,12 +433,12 @@ describe('m-listbox', () => {
       const item = el.querySelector('m-option') as MOption;
 
       item.click();
-      expect(el.value).toEqual(['apple']);
-      expect(item.getAttribute('aria-selected')).toBe('true');
+      expect(el.value).to.deep.equal(['apple']);
+      expect(item.getAttribute('aria-selected')).to.equal('true');
 
       item.click();
-      expect(el.value).toEqual([]);
-      expect(item.getAttribute('aria-selected')).toBe('false');
+      expect(el.value).to.deep.equal([]);
+      expect(item.getAttribute('aria-selected')).to.equal('false');
     });
 
     it('should toggle selection with Space in multiple mode', async () => {
@@ -460,12 +453,12 @@ describe('m-listbox', () => {
       const items = el.querySelectorAll('m-option');
       const appleItem = items[0] as MOption;
 
-      appleItem.focus();
+      el.setFocus(appleItem);
       el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
-      expect(el.value).toEqual(['apple']);
+      expect(el.value).to.deep.equal(['apple']);
 
       el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
-      expect(el.value).toEqual([]);
+      expect(el.value).to.deep.equal([]);
     });
   });
 
@@ -483,7 +476,7 @@ describe('m-listbox', () => {
       await waitUntil(() => form.querySelectorAll('m-option').length === 2);
       const formData = new FormData(form);
 
-      expect(formData.get('fruit')).toBe('apple');
+      expect(formData.get('fruit')).to.equal('apple');
     });
 
     it('should update form value when selection changes', async () => {
@@ -504,7 +497,7 @@ describe('m-listbox', () => {
       bananaItem.click();
 
       const formData = new FormData(form);
-      expect(formData.get('fruit')).toBe('banana');
+      expect(formData.get('fruit')).to.equal('banana');
     });
 
     it.skip('should handle disabled state from form', async () => {
@@ -520,8 +513,8 @@ describe('m-listbox', () => {
       const listBox = form.querySelector('m-listbox') as MListbox;
 
       listBox.disabled = true;
-      expect(listBox.getAttribute('aria-disabled')).toBe('true');
-      expect(listBox.getAttribute('tabindex')).toBe('-1');
+      expect(listBox.getAttribute('aria-disabled')).to.equal('true');
+      expect(listBox.getAttribute('tabindex')).to.equal('-1');
     });
   });
 
@@ -540,8 +533,8 @@ describe('m-listbox', () => {
 
       appleItem.click();
 
-      expect(el.value).toBe(null);
-      expect(appleItem.getAttribute('aria-selected')).toBe('false');
+      expect(el.value).to.equal(null);
+      expect(appleItem.getAttribute('aria-selected')).to.equal('false');
     });
 
     it('should set aria-disabled="true" on disabled items', async () => {
@@ -554,7 +547,7 @@ describe('m-listbox', () => {
       await waitUntil(() => el.querySelectorAll('m-option').length === 1);
       const item = el.querySelector('m-option') as MOption;
 
-      expect(item.getAttribute('aria-disabled')).toBe('true');
+      expect(item.getAttribute('aria-disabled')).to.equal('true');
     });
   });
 });
