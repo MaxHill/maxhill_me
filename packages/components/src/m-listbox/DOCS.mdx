@@ -5,17 +5,17 @@
 A simple listbox with keyboard navigation and single selection.
 
 <m-listbox name="fruit">
-  <m-listbox-item value="apple">Apple</m-listbox-item>
-  <m-listbox-item value="pear">Pear</m-listbox-item>
-  <m-listbox-item value="orange">Orange</m-listbox-item>
-  <m-listbox-item value="banana">Banana</m-listbox-item>
+  <m-option value="apple">Apple</m-option>
+  <m-option value="pear">Pear</m-option>
+  <m-option value="orange">Orange</m-option>
+  <m-option value="banana">Banana</m-option>
 </m-listbox>
 ```html
 <m-listbox name="fruit">
-  <m-listbox-item value="apple">Apple</m-listbox-item>
-  <m-listbox-item value="pear">Pear</m-listbox-item>
-  <m-listbox-item value="orange">Orange</m-listbox-item>
-  <m-listbox-item value="banana">Banana</m-listbox-item>
+  <m-option value="apple">Apple</m-option>
+  <m-option value="pear">Pear</m-option>
+  <m-option value="orange">Orange</m-option>
+  <m-option value="banana">Banana</m-option>
 </m-listbox>
 ```
 
@@ -24,19 +24,19 @@ A simple listbox with keyboard navigation and single selection.
 Allow users to select multiple items using Space/Enter keys. Hold Shift while using arrow keys for extended selection.
 
 <m-listbox name="fruits" multiple>
-  <m-listbox-item value="apple">Apple</m-listbox-item>
-  <m-listbox-item value="pear">Pear</m-listbox-item>
-  <m-listbox-item value="orange">Orange</m-listbox-item>
-  <m-listbox-item value="banana">Banana</m-listbox-item>
-  <m-listbox-item value="grape">Grape</m-listbox-item>
+  <m-option value="apple">Apple</m-option>
+  <m-option value="pear">Pear</m-option>
+  <m-option value="orange">Orange</m-option>
+  <m-option value="banana">Banana</m-option>
+  <m-option value="grape">Grape</m-option>
 </m-listbox>
 ```html
 <m-listbox name="fruits" multiple>
-  <m-listbox-item value="apple">Apple</m-listbox-item>
-  <m-listbox-item value="pear">Pear</m-listbox-item>
-  <m-listbox-item value="orange">Orange</m-listbox-item>
-  <m-listbox-item value="banana">Banana</m-listbox-item>
-  <m-listbox-item value="grape">Grape</m-listbox-item>
+  <m-option value="apple">Apple</m-option>
+  <m-option value="pear">Pear</m-option>
+  <m-option value="orange">Orange</m-option>
+  <m-option value="banana">Banana</m-option>
+  <m-option value="grape">Grape</m-option>
 </m-listbox>
 ```
 
@@ -45,30 +45,30 @@ Allow users to select multiple items using Space/Enter keys. Hold Shift while us
 Using the `selected` attribute on items:
 
 <m-listbox name="preselected-fruit-1">
-  <m-listbox-item value="apple">Apple</m-listbox-item>
-  <m-listbox-item value="pear" selected>Pear</m-listbox-item>
-  <m-listbox-item value="orange">Orange</m-listbox-item>
+  <m-option value="apple">Apple</m-option>
+  <m-option value="pear" selected>Pear</m-option>
+  <m-option value="orange">Orange</m-option>
 </m-listbox>
 ```html
 <m-listbox name="preselected-fruit-1">
-  <m-listbox-item value="apple">Apple</m-listbox-item>
-  <m-listbox-item value="pear" selected>Pear</m-listbox-item>
-  <m-listbox-item value="orange">Orange</m-listbox-item>
+  <m-option value="apple">Apple</m-option>
+  <m-option value="pear" selected>Pear</m-option>
+  <m-option value="orange">Orange</m-option>
 </m-listbox>
 ```
 
 Or using the `value` attribute on the listbox:
 
 <m-listbox name="preselected-fruit-2" value="orange">
-  <m-listbox-item value="apple">Apple</m-listbox-item>
-  <m-listbox-item value="pear">Pear</m-listbox-item>
-  <m-listbox-item value="orange">Orange</m-listbox-item>
+  <m-option value="apple">Apple</m-option>
+  <m-option value="pear">Pear</m-option>
+  <m-option value="orange">Orange</m-option>
 </m-listbox>
 ```html
 <m-listbox name="preselected-fruit-2" value="orange">
-  <m-listbox-item value="apple">Apple</m-listbox-item>
-  <m-listbox-item value="pear">Pear</m-listbox-item>
-  <m-listbox-item value="orange">Orange</m-listbox-item>
+  <m-option value="apple">Apple</m-option>
+  <m-option value="pear">Pear</m-option>
+  <m-option value="orange">Orange</m-option>
 </m-listbox>
 ```
 
@@ -77,15 +77,15 @@ Or using the `value` attribute on the listbox:
 A disabled listbox prevents user interaction:
 
 <m-listbox name="disabled-fruit" disabled>
-  <m-listbox-item value="apple">Apple</m-listbox-item>
-  <m-listbox-item value="pear" selected>Pear</m-listbox-item>
-  <m-listbox-item value="orange">Orange</m-listbox-item>
+  <m-option value="apple">Apple</m-option>
+  <m-option value="pear" selected>Pear</m-option>
+  <m-option value="orange">Orange</m-option>
 </m-listbox>
 ```html
 <m-listbox name="disabled-fruit" disabled>
-  <m-listbox-item value="apple">Apple</m-listbox-item>
-  <m-listbox-item value="pear" selected>Pear</m-listbox-item>
-  <m-listbox-item value="orange">Orange</m-listbox-item>
+  <m-option value="apple">Apple</m-option>
+  <m-option value="pear" selected>Pear</m-option>
+  <m-option value="orange">Orange</m-option>
 </m-listbox>
 ```
 
@@ -96,10 +96,10 @@ The listbox is form-associated and works seamlessly with standard form submissio
 <form id="fruit-form" class="stack" data-gap="2">
   <label for="favorite-fruit">Select your favorite fruit:</label>
   <m-listbox id="favorite-fruit" name="favorite-fruit">
-    <m-listbox-item value="apple">Apple</m-listbox-item>
-    <m-listbox-item value="pear" selected>Pear</m-listbox-item>
-    <m-listbox-item value="orange">Orange</m-listbox-item>
-    <m-listbox-item value="banana">Banana</m-listbox-item>
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear" selected>Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+    <m-option value="banana">Banana</m-option>
   </m-listbox>
   <button type="submit">Submit</button>
   <div id="form-result" class="box" style="padding: var(--size-2); background: var(--color-surface-raised);"></div>
@@ -119,10 +119,10 @@ The listbox is form-associated and works seamlessly with standard form submissio
 <form id="fruit-form" class="stack" data-gap="2">
   <label for="favorite-fruit">Select your favorite fruit:</label>
   <m-listbox id="favorite-fruit" name="favorite-fruit">
-    <m-listbox-item value="apple">Apple</m-listbox-item>
-    <m-listbox-item value="pear" selected>Pear</m-listbox-item>
-    <m-listbox-item value="orange">Orange</m-listbox-item>
-    <m-listbox-item value="banana">Banana</m-listbox-item>
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear" selected>Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+    <m-option value="banana">Banana</m-option>
   </m-listbox>
   <button type="submit">Submit</button>
   <div id="form-result" class="box" style="padding: var(--size-2); background: var(--color-surface-raised);"></div>
@@ -146,10 +146,10 @@ Listen to selection changes with the `m-listbox-change` event:
 
 <div class="stack" data-gap="2">
   <m-listbox id="event-listbox" name="event-example" multiple>
-    <m-listbox-item value="apple">Apple</m-listbox-item>
-    <m-listbox-item value="pear">Pear</m-listbox-item>
-    <m-listbox-item value="orange">Orange</m-listbox-item>
-    <m-listbox-item value="banana">Banana</m-listbox-item>
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear">Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+    <m-option value="banana">Banana</m-option>
   </m-listbox>
   <div id="event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised); min-height: 3rem;">
     Select items to see the event output...
@@ -171,10 +171,10 @@ Listen to selection changes with the `m-listbox-change` event:
 ```html
 <div class="stack" data-gap="2">
   <m-listbox id="event-listbox" name="event-example" multiple>
-    <m-listbox-item value="apple">Apple</m-listbox-item>
-    <m-listbox-item value="pear">Pear</m-listbox-item>
-    <m-listbox-item value="orange">Orange</m-listbox-item>
-    <m-listbox-item value="banana">Banana</m-listbox-item>
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear">Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+    <m-option value="banana">Banana</m-option>
   </m-listbox>
   <div id="event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised); min-height: 3rem;">
     Select items to see the event output...
@@ -204,7 +204,7 @@ Listen to selection changes with the `m-listbox-change` event:
 
 ## Slots
 
-- **default**: Accepts `<m-listbox-item>` elements
+- **default**: Accepts `<m-option>` elements
 
 ## Events
 
@@ -237,4 +237,4 @@ Listen to selection changes with the `m-listbox-change` event:
 
 ## See Also
 
-- [`<m-listbox-item>`](/components/m-listbox-item) - Individual listbox item
+- [`<m-option>`](/components/m-option) - Individual listbox item

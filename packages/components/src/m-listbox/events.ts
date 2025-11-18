@@ -1,7 +1,7 @@
-import type { MListboxItem } from "../m-listbox-item";
+import type { MOption } from "../m-option";
 
 export interface MListboxSelectEventDetail {
-    item: MListboxItem;
+    item: MOption;
     selected: boolean;
 }
 
@@ -40,7 +40,7 @@ export class MListboxChangeEvent extends CustomEvent<MListboxChangeEventDetail> 
 }
 
 export interface MListboxFocusChangeEventDetail {
-    item: MListboxItem | null;
+    item: MOption | null;
 }
 
 export class MListboxFocusChangeEvent extends CustomEvent<MListboxFocusChangeEventDetail> {

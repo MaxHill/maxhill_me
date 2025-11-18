@@ -9,6 +9,7 @@
     background-color: var(--_color-background);
     box-shadow: var(--shadow);
     border: var(--border);
+    corner-shape: squircle;
     border-radius: var(--radius-2);
     max-width: 100%;
     height: min-content;

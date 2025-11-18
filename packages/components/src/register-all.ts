@@ -1,4 +1,6 @@
 import MCard from './m-card';
+import MCombobox from './m-combobox';
+import MCommandPalette from './m-command-palette';
 import MCommand from './m-command';
 import MCopyButton from './m-copy-button';
 import { MSearchList } from './m-search-list';
@@ -8,7 +10,7 @@ import MTabList from './m-tab-list';
 import MTab from './m-tab';
 import MTabPanel from './m-tab-panel';
 import MListbox from './m-listbox';
-import MListboxItem from './m-listbox-item';
+import MOption from './m-option';
 
 export function registerAll() {
   MCard.define();
@@ -23,9 +25,13 @@ export function registerAll() {
   MSearchList.define();
 
   MListbox.define();
-  MListboxItem.define();
+  MOption.define();
 
   MCommand.define();
+  MCommandPalette.define();
+
+  MCombobox.define();
+
 }
 
 registerAll();

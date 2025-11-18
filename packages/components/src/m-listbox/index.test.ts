@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { html, fixture, waitUntil } from '../utils/test-helpers';
 import { MListbox } from './index';
-import { MListboxItem } from '../m-listbox-item';
+import { MOption } from '../m-option';
 
 MListbox.define();
-MListboxItem.define();
+MOption.define();
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -19,7 +19,7 @@ describe('m-listbox', () => {
     it('should have role="listbox"', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
         </m-listbox>
       `);
 
@@ -29,7 +29,7 @@ describe('m-listbox', () => {
     it('should have tabindex="0" by default', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
         </m-listbox>
       `);
 
@@ -39,7 +39,7 @@ describe('m-listbox', () => {
     it('should set aria-multiselectable="true" when multiple', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox multiple>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
         </m-listbox>
       `);
 
@@ -49,7 +49,7 @@ describe('m-listbox', () => {
     it('should not have aria-multiselectable when single select', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
         </m-listbox>
       `);
 
@@ -59,7 +59,7 @@ describe('m-listbox', () => {
     it('should set aria-disabled="true" when disabled', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox disabled>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
         </m-listbox>
       `);
 
@@ -72,12 +72,12 @@ describe('m-listbox', () => {
     it('should have role="option" on items', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 1);
-      const item = el.querySelector('m-listbox-item') as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 1);
+      const item = el.querySelector('m-option') as MOption;
 
       expect(item.getAttribute('role')).toBe('option');
     });
@@ -85,15 +85,15 @@ describe('m-listbox', () => {
     it('should set aria-selected="true" on selected item', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox value="apple">
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="pear">Pear</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
+          <m-option value="pear">Pear</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
-      const items = el.querySelectorAll('m-listbox-item');
-      const appleItem = items[0] as MListboxItem;
-      const pearItem = items[1] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      const items = el.querySelectorAll('m-option');
+      const appleItem = items[0] as MOption;
+      const pearItem = items[1] as MOption;
 
       expect(appleItem.getAttribute('aria-selected')).toBe('true');
       expect(pearItem.getAttribute('aria-selected')).toBe('false');
@@ -102,12 +102,12 @@ describe('m-listbox', () => {
     it('should set aria-selected="false" on unselected items', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 1);
-      const item = el.querySelector('m-listbox-item') as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 1);
+      const item = el.querySelector('m-option') as MOption;
 
       expect(item.getAttribute('aria-selected')).toBe('false');
     });
@@ -115,12 +115,12 @@ describe('m-listbox', () => {
     it('should not have tabindex on items', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 1);
-      const item = el.querySelector('m-listbox-item') as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 1);
+      const item = el.querySelector('m-option') as MOption;
 
       expect(item.hasAttribute('tabindex')).toBe(false);
     });
@@ -130,16 +130,16 @@ describe('m-listbox', () => {
     it('should move focus to next option with ArrowDown', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
-          <m-listbox-item value="orange">Orange</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
+          <m-option value="orange">Orange</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 3);
-      const items = el.querySelectorAll('m-listbox-item');
-      const firstItem = items[0] as MListboxItem;
-      const secondItem = items[1] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 3);
+      const items = el.querySelectorAll('m-option');
+      const firstItem = items[0] as MOption;
+      const secondItem = items[1] as MOption;
 
       el.focus();
       await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
@@ -153,17 +153,17 @@ describe('m-listbox', () => {
     it('should move focus to previous option with ArrowUp', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
-          <m-listbox-item value="orange">Orange</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
+          <m-option value="orange">Orange</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 3);
-      const items = el.querySelectorAll('m-listbox-item');
-      const firstItem = items[0] as MListboxItem;
-      const secondItem = items[1] as MListboxItem;
-      const thirdItem = items[2] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 3);
+      const items = el.querySelectorAll('m-option');
+      const firstItem = items[0] as MOption;
+      const secondItem = items[1] as MOption;
+      const thirdItem = items[2] as MOption;
 
       el.focus();
       await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
@@ -187,15 +187,15 @@ describe('m-listbox', () => {
     it('should move focus to last option with End', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
-          <m-listbox-item value="orange">Orange</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
+          <m-option value="orange">Orange</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 3);
-      const items = el.querySelectorAll('m-listbox-item');
-      const lastItem = items[2] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 3);
+      const items = el.querySelectorAll('m-option');
+      const lastItem = items[2] as MOption;
 
       el.focus();
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
@@ -207,14 +207,14 @@ describe('m-listbox', () => {
     it('should select focused option with Space', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox name="fruit">
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
-      const items = el.querySelectorAll('m-listbox-item');
-      const firstItem = items[0] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      const items = el.querySelectorAll('m-option');
+      const firstItem = items[0] as MOption;
 
       el.focus();
       await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
@@ -228,15 +228,15 @@ describe('m-listbox', () => {
     it('should select focused option with Enter', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox name="fruit">
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
-      const items = el.querySelectorAll('m-listbox-item');
-      const firstItem = items[0] as MListboxItem;
-      const secondItem = items[1] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      const items = el.querySelectorAll('m-option');
+      const firstItem = items[0] as MOption;
+      const secondItem = items[1] as MOption;
 
       el.focus();
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
@@ -251,15 +251,15 @@ describe('m-listbox', () => {
     it('should wrap to first item when ArrowDown is pressed on last item', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
-      const items = el.querySelectorAll('m-listbox-item');
-      const firstItem = items[0] as MListboxItem;
-      const lastItem = items[1] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      const items = el.querySelectorAll('m-option');
+      const firstItem = items[0] as MOption;
+      const lastItem = items[1] as MOption;
 
       el.focus();
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
@@ -274,15 +274,15 @@ describe('m-listbox', () => {
     it('should wrap to last item when ArrowUp is pressed on first item', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
-      const items = el.querySelectorAll('m-listbox-item');
-      const firstItem = items[0] as MListboxItem;
-      const lastItem = items[1] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      const items = el.querySelectorAll('m-option');
+      const firstItem = items[0] as MOption;
+      const lastItem = items[1] as MOption;
 
       el.focus();
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
@@ -297,15 +297,15 @@ describe('m-listbox', () => {
     it('should set :state(focus) on virtually focused item', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
-      const items = el.querySelectorAll('m-listbox-item');
-      const firstItem = items[0] as MListboxItem;
-      const secondItem = items[1] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      const items = el.querySelectorAll('m-option');
+      const firstItem = items[0] as MOption;
+      const secondItem = items[1] as MOption;
 
       el.focus();
       await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
@@ -325,14 +325,14 @@ describe('m-listbox', () => {
     it('should select item on click', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox name="fruit">
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
-      const items = el.querySelectorAll('m-listbox-item');
-      const appleItem = items[0] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      const items = el.querySelectorAll('m-option');
+      const appleItem = items[0] as MOption;
 
       appleItem.click();
 
@@ -344,15 +344,15 @@ describe('m-listbox', () => {
     it('should set virtual focus on click', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox name="fruit">
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
-      const items = el.querySelectorAll('m-listbox-item');
-      const appleItem = items[0] as MListboxItem;
-      const bananaItem = items[1] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      const items = el.querySelectorAll('m-option');
+      const appleItem = items[0] as MOption;
+      const bananaItem = items[1] as MOption;
 
       bananaItem.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
       bananaItem.click();
@@ -365,15 +365,15 @@ describe('m-listbox', () => {
     it('should only allow one selection at a time', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox name="fruit">
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
-      const items = el.querySelectorAll('m-listbox-item');
-      const appleItem = items[0] as MListboxItem;
-      const bananaItem = items[1] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      const items = el.querySelectorAll('m-option');
+      const appleItem = items[0] as MOption;
+      const bananaItem = items[1] as MOption;
 
       appleItem.click();
       expect(el.value).toBe('apple');
@@ -387,12 +387,12 @@ describe('m-listbox', () => {
     it('should dispatch change event when value changes', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox name="fruit">
-          <m-listbox-item value="apple">Apple</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 1);
-      const item = el.querySelector('m-listbox-item') as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 1);
+      const item = el.querySelector('m-option') as MOption;
 
       let changeEventFired = false;
       el.addEventListener('change', () => {
@@ -409,16 +409,16 @@ describe('m-listbox', () => {
     it('should allow multiple selections', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox name="fruits" multiple>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
-          <m-listbox-item value="orange">Orange</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
+          <m-option value="orange">Orange</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 3);
-      const items = el.querySelectorAll('m-listbox-item');
-      const appleItem = items[0] as MListboxItem;
-      const bananaItem = items[1] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 3);
+      const items = el.querySelectorAll('m-option');
+      const appleItem = items[0] as MOption;
+      const bananaItem = items[1] as MOption;
 
       appleItem.click();
       expect(el.value).toEqual(['apple']);
@@ -432,12 +432,12 @@ describe('m-listbox', () => {
     it('should toggle selection on click in multiple mode', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox name="fruits" multiple>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 1);
-      const item = el.querySelector('m-listbox-item') as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 1);
+      const item = el.querySelector('m-option') as MOption;
 
       item.click();
       expect(el.value).toEqual(['apple']);
@@ -451,14 +451,14 @@ describe('m-listbox', () => {
     it('should toggle selection with Space in multiple mode', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox name="fruits" multiple>
-          <m-listbox-item value="apple">Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
-      const items = el.querySelectorAll('m-listbox-item');
-      const appleItem = items[0] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      const items = el.querySelectorAll('m-option');
+      const appleItem = items[0] as MOption;
 
       appleItem.focus();
       el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
@@ -474,13 +474,13 @@ describe('m-listbox', () => {
       const form = await fixture<HTMLFormElement>(html`
         <form>
           <m-listbox name="fruit" value="apple">
-            <m-listbox-item value="apple">Apple</m-listbox-item>
-            <m-listbox-item value="banana">Banana</m-listbox-item>
+            <m-option value="apple">Apple</m-option>
+            <m-option value="banana">Banana</m-option>
           </m-listbox>
         </form>
       `);
 
-      await waitUntil(() => form.querySelectorAll('m-listbox-item').length === 2);
+      await waitUntil(() => form.querySelectorAll('m-option').length === 2);
       const formData = new FormData(form);
 
       expect(formData.get('fruit')).toBe('apple');
@@ -490,16 +490,16 @@ describe('m-listbox', () => {
       const form = await fixture<HTMLFormElement>(html`
         <form>
           <m-listbox name="fruit">
-            <m-listbox-item value="apple">Apple</m-listbox-item>
-            <m-listbox-item value="banana">Banana</m-listbox-item>
+            <m-option value="apple">Apple</m-option>
+            <m-option value="banana">Banana</m-option>
           </m-listbox>
         </form>
       `);
 
-      await waitUntil(() => form.querySelectorAll('m-listbox-item').length === 2);
+      await waitUntil(() => form.querySelectorAll('m-option').length === 2);
       const listBox = form.querySelector('m-listbox') as MListbox;
-      const items = form.querySelectorAll('m-listbox-item');
-      const bananaItem = items[1] as MListboxItem;
+      const items = form.querySelectorAll('m-option');
+      const bananaItem = items[1] as MOption;
 
       bananaItem.click();
 
@@ -511,12 +511,12 @@ describe('m-listbox', () => {
       const form = await fixture<HTMLFormElement>(html`
         <form>
           <m-listbox name="fruit">
-            <m-listbox-item value="apple">Apple</m-listbox-item>
+            <m-option value="apple">Apple</m-option>
           </m-listbox>
         </form>
       `);
 
-      await waitUntil(() => form.querySelectorAll('m-listbox-item').length === 1);
+      await waitUntil(() => form.querySelectorAll('m-option').length === 1);
       const listBox = form.querySelector('m-listbox') as MListbox;
 
       listBox.disabled = true;
@@ -529,14 +529,14 @@ describe('m-listbox', () => {
     it('should not select disabled items', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox name="fruit">
-          <m-listbox-item value="apple" disabled>Apple</m-listbox-item>
-          <m-listbox-item value="banana">Banana</m-listbox-item>
+          <m-option value="apple" disabled>Apple</m-option>
+          <m-option value="banana">Banana</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 2);
-      const items = el.querySelectorAll('m-listbox-item');
-      const appleItem = items[0] as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      const items = el.querySelectorAll('m-option');
+      const appleItem = items[0] as MOption;
 
       appleItem.click();
 
@@ -547,12 +547,12 @@ describe('m-listbox', () => {
     it('should set aria-disabled="true" on disabled items', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
-          <m-listbox-item value="apple" disabled>Apple</m-listbox-item>
+          <m-option value="apple" disabled>Apple</m-option>
         </m-listbox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-listbox-item').length === 1);
-      const item = el.querySelector('m-listbox-item') as MListboxItem;
+      await waitUntil(() => el.querySelectorAll('m-option').length === 1);
+      const item = el.querySelector('m-option') as MOption;
 
       expect(item.getAttribute('aria-disabled')).toBe('true');
     });

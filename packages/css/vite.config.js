@@ -18,6 +18,23 @@ async function getEntryPoints() {
     }
   }
   
+  async function addComponentFiles(dir, prefix) {
+    const items = await readdir(resolve(__dirname, dir), { withFileTypes: true });
+    
+    for (const item of items) {
+      if (item.isDirectory()) {
+        await addComponentFiles(`${dir}/${item.name}`, `${prefix}/${item.name}`);
+      } else if (item.isFile() && item.name.endsWith('.css') && !item.name.includes('DOCS')) {
+        const name = item.name.replace('.css', '');
+        const entryName = `${prefix}/${name}`;
+        entries[entryName] = resolve(__dirname, `${dir}/${item.name}`);
+      }
+    }
+  }
+  
+  await addComponentFiles('src/components/elements', 'components/elements');
+  await addComponentFiles('src/components/layouts', 'components/layouts');
+  
   return entries;
 }
 

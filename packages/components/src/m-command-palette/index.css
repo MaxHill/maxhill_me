@@ -1,0 +1,6 @@
+:host {
+}
+
+m-option[data-match="false"] {
+    display: none;
+}

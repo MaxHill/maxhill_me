@@ -1,7 +1,7 @@
 // query.ts
 
 type QueryOptions = {
-    dom: "shadow" | "light";
+    dom: "shadow" | "light" | "document";
 }
 
 export function query(selector: string, options?: QueryOptions) {
@@ -13,7 +13,13 @@ export function query(selector: string, options?: QueryOptions) {
     context.addInitializer(function () {
       Object.defineProperty(this, context.name, {
         get(this: HTMLElement) {
-          const dom = (options?.dom ?? "shadow") === "shadow" ? this.shadowRoot : this;
+            let dom:  null | ShadowRoot | Document = this.shadowRoot;
+            if(options && options.dom === "light") {
+                dom = this as unknown as ShadowRoot;
+            }
+            if (options && options.dom === "document") {
+                dom = document;
+            }
           return dom?.querySelector(selector) ?? null;
         },
         enumerable: true,
@@ -36,7 +42,13 @@ export function queryAll(selector: string, options?: QueryOptions) {
     context.addInitializer(function () {
       Object.defineProperty(this, context.name, {
         get(this: HTMLElement) {
-          const dom = (options?.dom ?? "shadow") === "shadow" ? this.shadowRoot : this;
+            let dom:  null | ShadowRoot | Document = this.shadowRoot;
+            if(options && options.dom === "light") {
+                dom = this as unknown as ShadowRoot;
+            }
+            if (options && options.dom === "document") {
+                dom = document;
+            }
           return Array.from(dom?.querySelectorAll(selector) ?? []);
         },
         enumerable: true,

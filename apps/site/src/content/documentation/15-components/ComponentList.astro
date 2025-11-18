@@ -210,6 +210,13 @@ const components = docEntries.map((docsEntry) => {
     }
 </m-search-list>
 
+<script>
+import { registerCommand } from '@maxhill/components/m-command';
+
+// Make registerCommand available globally for examples
+(window as any).registerCommand = registerCommand;
+</script>
+
 <style>
     :global([data-match="false"]) {
         display: none;

@@ -44,7 +44,7 @@ export class MSearchList extends MElement {
     private debounceTimeout?: ReturnType<typeof setTimeout>;
 
     private _internals: ElementInternals;
-    
+
     @query('slot:not([name])')
     private defaultSlot!: HTMLSlotElement;
 
@@ -67,25 +67,30 @@ export class MSearchList extends MElement {
     debounce: number = 150;
 
     #shadowRoot: ShadowRoot;
-    
+
     @query('#results')
     #ariaLiveRegion!: HTMLDivElement;
 
     get input(): HTMLInputElement | null {
-        const input = this.querySelector('input');
-        if (!input) {
-            throw new Error("No input element found");
-        }
+        let input = this.querySelector('input');
+        if (!input) { input = this.querySelector("m-input") }
+        if (!input) { throw new Error("No input or m-input element found"); }
+
         return input as HTMLInputElement;
     }
 
     get items(): Element[] {
         if (this.target) {
             const targetElement = this.querySelector(this.target);
+
             if (!targetElement) {
                 return [];
             }
-            return [...targetElement.children];
+            if(targetElement instanceof HTMLSlotElement) {
+                return targetElement.assignedElements();
+            } else {
+            return [...targetElement.querySelectorAll(':scope > *')];
+            }
         }
         return [...this.children].filter(el => !el.hasAttribute('slot'));
     }
@@ -129,7 +134,7 @@ export class MSearchList extends MElement {
 
     private handleInput = (e: Event) => {
         const input = e.target as HTMLInputElement;
-        
+
         if (this.debounceTimeout) {
             clearTimeout(this.debounceTimeout);
         }
@@ -142,10 +147,11 @@ export class MSearchList extends MElement {
     private searchItems(query: string) {
         let matchCount = 0;
         const totalCount = this.items.length;
+        console.log(this.items)
 
         for (const item of this.items) {
-            const keywords = item.getAttribute("data-keywords");
-            const text = item.textContent;
+            const keywords = item.getAttribute("data-keywords") || "";
+            const text = item.textContent || "";
             const match = query ? fuzzySearch(query, text + " " + keywords) : true;
             if (match) {
                 item.setAttribute("data-match", "true")
