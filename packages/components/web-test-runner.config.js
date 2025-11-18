@@ -45,6 +45,9 @@ export default {
       tsx: false,
       target: 'auto',
       tsconfig: './tsconfig.json',
+      define: {
+        'process.env.NODE_ENV': '"production"',
+      },
     }),
     cssInlinePlugin(),
   ],
@@ -61,6 +64,11 @@ export default {
   browsers: [
     playwrightLauncher({ product: 'chromium' }),
   ],
+  filterBrowserLogs: (log) => {
+    return !log.args.some(arg => 
+      typeof arg === 'string' && arg.includes('Lit is in dev mode')
+    );
+  },
   testsFinishTimeout: 30000,
   browserStartTimeout: 30000,
   testRunnerHtml: testFramework => `
