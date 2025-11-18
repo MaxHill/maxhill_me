@@ -3,11 +3,25 @@ import BaseLayout from "../components/layouts/BaseLayout.astro"
 ---
 
 <BaseLayout title="Design System">
-<h1>Hello</h1>
-
-<my-compo>This is the content dude...</my-compo>
+    <main>
+    <m-fit-text font-display>Max Hill</m-fit-text>
+    </main>
 </BaseLayout>
 
 <script>
     import "../components/compo.ts";
 </script>
+
+<style>
+    main {
+        height: 100dvh;
+        width: 100dvw;
+        display: flex;
+        place-items: center;
+    }
+    m-fit-text {
+        width: 100%;
+        place-items: center;
+    } 
+
+</style>

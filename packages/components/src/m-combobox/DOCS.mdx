@@ -1,0 +1,71 @@
+## Overview
+
+A form-associated combobox component that combines a search input with a listbox for filtering and selecting options.
+
+## Examples
+
+### Basic Usage
+
+<form>
+  <m-combobox name="fruit" label="Choose a fruit">
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear">Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+    <m-option value="banana">Banana</m-option>
+  </m-combobox>
+</form>
+
+```html
+<form>
+  <m-combobox name="fruit" label="Choose a fruit">
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear">Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+    <m-option value="banana">Banana</m-option>
+  </m-combobox>
+</form>
+```
+
+### Multiple Selection
+
+<form>
+  <m-combobox name="toppings" label="Choose toppings" multiple>
+    <m-option value="cheese">Cheese</m-option>
+    <m-option value="pepperoni">Pepperoni</m-option>
+    <m-option value="mushrooms">Mushrooms</m-option>
+    <m-option value="olives">Olives</m-option>
+  </m-combobox>
+</form>
+
+```html
+<form>
+  <m-combobox name="toppings" label="Choose toppings" multiple>
+    <m-option value="cheese">Cheese</m-option>
+    <m-option value="pepperoni">Pepperoni</m-option>
+    <m-option value="mushrooms">Mushrooms</m-option>
+    <m-option value="olives">Olives</m-option>
+  </m-combobox>
+</form>
+```
+
+## Attributes
+
+- **`name`** (string): The form control name
+- **`label`** (string): Accessible label for the combobox
+- **`disabled`** (boolean): Whether the combobox is disabled
+- **`multiple`** (boolean): Whether multiple options can be selected
+- **`value`** (string): The value of the selected option (or comma-separated values in multiple mode)
+
+## Slots
+
+- **default**: Accepts `<m-option>` elements
+
+## Events
+
+- **`m-combobox-change`**: Fired when the selection changes. Detail: `{ selected: string[] }`
+
+## See Also
+
+- [`<m-option>`](/components/m-option) - Individual option element
+- [`<m-search-list>`](/components/m-search-list) - Search and filter functionality
+

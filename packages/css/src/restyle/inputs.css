@@ -11,7 +11,7 @@
     --color-input-stroke-focus-error: var(--color-destructive-stroke-mid);
     --color-input-text-focus-error: var(--color-destructive-text-on-soft);
 
-    --radius-input: var(--radius-1);
+    --radius-input: var(--radius-2);
 }
 
 @layer base {
@@ -21,6 +21,7 @@
         color: var(--color-text-softer);
     }
     .error-message {
+        corner-shape: squircle;
         border-radius: var(--radius-input);
         color: var(--color-destructive-text-on-soft);
         background-color: var(--color-destructive-fill-soft);
@@ -39,6 +40,7 @@
         font: inherit;
 
         /* Shape */
+        corner-shape: squircle;
         border-radius: var(--radius-input);
         padding-inline: var(--size-1);
         padding-block: var(--size-1);

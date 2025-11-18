@@ -73,7 +73,7 @@ describe("keyboard-manager", () => {
 
             assert.deepEqual(
                 keyboardManager.commands,
-                { children: { "a": { _handler: handler } } }
+                { children: { "a": { _handler: handler, preventDefault: false } }, preventDefault: false }
             )
 
             unregister();
@@ -88,9 +88,11 @@ describe("keyboard-manager", () => {
                 {
                     children: {
                         "a": {
-                            children: { "b": { _handler: handler } },
+                            children: { "b": { _handler: handler, preventDefault: false } },
+                            preventDefault: false
                         }
-                    }
+                    },
+                    preventDefault: false
                 }
             )
 
@@ -107,12 +109,15 @@ describe("keyboard-manager", () => {
                 {
                     children: {
                         "a": {
-                            children: { "b": { _handler: handler } },
+                            children: { "b": { _handler: handler, preventDefault: false } },
+                            preventDefault: false
                         },
                         "b": {
-                            children: { "b": { _handler: handler } },
+                            children: { "b": { _handler: handler, preventDefault: false } },
+                            preventDefault: false
                         }
-                    }
+                    },
+                    preventDefault: false
                 }
             )
 
@@ -131,11 +136,13 @@ describe("keyboard-manager", () => {
                     children: {
                         "a": {
                             children: {
-                                "b": { _handler: handler },
-                                "c": { _handler: handler }
+                                "b": { _handler: handler, preventDefault: false },
+                                "c": { _handler: handler, preventDefault: false }
                             },
+                            preventDefault: false
                         },
-                    }
+                    },
+                    preventDefault: false
                 }
             )
 
@@ -156,23 +163,29 @@ describe("keyboard-manager", () => {
                         "a": {
                             _handler: handler1,
                             children: {
-                                "b": { _handler: handler2 }
-                            }
+                                "b": { _handler: handler2, preventDefault: false }
+                            },
+                            preventDefault: false
                         }
-                    }
+                    },
+                    preventDefault: false
                 }
             )
         })
 
-        it("same command registered twice", () => {
+        it("same command registered twice throws error", () => {
             const handler1 = () => console.log("first")
             const handler2 = () => console.log("second")
             keyboardManager.register("a", handler1)
-            keyboardManager.register("a", handler2)
+
+            assert.throws(
+                () => keyboardManager.register("a", handler2),
+                /Keymap conflict/
+            )
 
             assert.deepEqual(
                 keyboardManager.commands,
-                { children: { "a": { _handler: handler2 } } }
+                { children: { "a": { _handler: handler1, preventDefault: false } }, preventDefault: false }
             )
         })
 
@@ -186,9 +199,10 @@ describe("keyboard-manager", () => {
                 keyboardManager.commands,
                 {
                     children: {
-                        "a": { _handler: handler1 },
-                        "b": { _handler: handler2 }
-                    }
+                        "a": { _handler: handler1, preventDefault: false },
+                        "b": { _handler: handler2, preventDefault: false }
+                    },
+                    preventDefault: false
                 }
             )
         })
@@ -199,7 +213,7 @@ describe("keyboard-manager", () => {
 
             assert.deepEqual(
                 keyboardManager.commands,
-                { children: { "<C-a>": { _handler: handler } } }
+                { children: { "<C-a>": { _handler: handler, preventDefault: false } }, preventDefault: false }
             )
 
             unregister();
@@ -217,12 +231,15 @@ describe("keyboard-manager", () => {
                             children: {
                                 "<CR>": {
                                     children: {
-                                        "b": { _handler: handler }
-                                    }
+                                        "b": { _handler: handler, preventDefault: false }
+                                    },
+                                    preventDefault: false
                                 }
-                            }
+                            },
+                            preventDefault: false
                         }
-                    }
+                    },
+                    preventDefault: false
                 }
             )
 
@@ -243,14 +260,18 @@ describe("keyboard-manager", () => {
                                     children: {
                                         "b": {
                                             children: {
-                                                "<Esc>": { _handler: handler }
-                                            }
+                                                "<Esc>": { _handler: handler, preventDefault: false }
+                                            },
+                                            preventDefault: false
                                         }
-                                    }
+                                    },
+                                    preventDefault: false
                                 }
-                            }
+                            },
+                            preventDefault: false
                         }
-                    }
+                    },
+                    preventDefault: false
                 }
             )
 
@@ -271,14 +292,18 @@ describe("keyboard-manager", () => {
                                     children: {
                                         "b": {
                                             children: {
-                                                "c": { _handler: handler }
-                                            }
+                                                "c": { _handler: handler, preventDefault: false }
+                                            },
+                                            preventDefault: false
                                         }
-                                    }
+                                    },
+                                    preventDefault: false
                                 }
-                            }
+                            },
+                            preventDefault: false
                         }
-                    }
+                    },
+                    preventDefault: false
                 }
             )
 
@@ -297,12 +322,15 @@ describe("keyboard-manager", () => {
                             children: {
                                 "<C-S-x>": {
                                     children: {
-                                        "b": { _handler: handler }
-                                    }
+                                        "b": { _handler: handler, preventDefault: false }
+                                    },
+                                    preventDefault: false
                                 }
-                            }
+                            },
+                            preventDefault: false
                         }
-                    }
+                    },
+                    preventDefault: false
                 }
             )
 
@@ -313,20 +341,18 @@ describe("keyboard-manager", () => {
     describe("unregister", () => {
         it("unregister simple command", () => {
             const handler = () => { }
-            keyboardManager.register("a", handler)
-            keyboardManager.register("a", handler)
+            const unregister = keyboardManager.register("a", handler);
 
             assert.deepEqual(
                 keyboardManager.commands,
-                { children: { "a": { _handler: handler } } }
+                { children: { "a": { _handler: handler, preventDefault: false } }, preventDefault: false }
             )
 
-            const unregister = keyboardManager.register("a", handler);
             unregister();
 
             assert.deepEqual(
                 keyboardManager.commands,
-                { children: {} }
+                { children: {}, preventDefault: false }
             )
         })
 
@@ -336,14 +362,14 @@ describe("keyboard-manager", () => {
 
             assert.deepEqual(
                 keyboardManager.commands,
-                { children: { "<C-a>": { _handler: handler } } }
+                { children: { "<C-a>": { _handler: handler, preventDefault: false } }, preventDefault: false }
             )
 
             unregister()
 
             assert.deepEqual(
                 keyboardManager.commands,
-                { children: {} }
+                { children: {}, preventDefault: false }
             )
         })
 
@@ -353,14 +379,14 @@ describe("keyboard-manager", () => {
 
             assert.deepEqual(
                 keyboardManager.commands.children?.["a"]?.children?.["<CR>"]?.children?.["b"],
-                { _handler: handler }
+                { _handler: handler, preventDefault: false }
             )
 
             unregister()
 
             assert.deepEqual(
                 keyboardManager.commands,
-                { children: {} }
+                { children: {}, preventDefault: false }
             )
         })
 
@@ -378,10 +404,12 @@ describe("keyboard-manager", () => {
                     children: {
                         "a": {
                             children: {
-                                "<Esc>": { _handler: handler2 }
-                            }
+                                "<Esc>": { _handler: handler2, preventDefault: false }
+                            },
+                            preventDefault: false
                         }
-                    }
+                    },
+                    preventDefault: false
                 }
             )
         })
@@ -400,9 +428,11 @@ describe("keyboard-manager", () => {
                     children: {
                         "a": {
                             _handler: handler1,
-                            children: {}
+                            children: {},
+                            preventDefault: false
                         }
-                    }
+                    },
+                    preventDefault: false
                 }
             )
         })
@@ -659,6 +689,106 @@ describe("keyboard-manager", () => {
             })
         })
     })
+
+    describe("preventDefault behavior", () => {
+        const mockEvent = (key: string, code: string, modifiers: { ctrl?: boolean; alt?: boolean; shift?: boolean; meta?: boolean } = {}) => {
+            const preventDefaultFn = { called: false };
+            return {
+                key,
+                code,
+                ctrlKey: modifiers.ctrl || false,
+                altKey: modifiers.alt || false,
+                shiftKey: modifiers.shift || false,
+                metaKey: modifiers.meta || false,
+                preventDefault: () => { preventDefaultFn.called = true },
+                preventDefaultFn
+            } as any;
+        };
+
+        it("basic preventDefault with flag, without flag, and unmatched keys", () => {
+            let executedWith = false;
+            let executedWithout = false;
+            const handlerWith = () => { executedWith = true };
+            const handlerWithout = () => { executedWithout = true };
+
+            keyboardManager.register("a", handlerWith, true);
+            keyboardManager.register("b", handlerWithout, false);
+
+            const eventA = mockEvent('a', 'KeyA');
+            (keyboardManager as any).onKeyDown(eventA);
+            assert.equal(executedWith, true);
+            assert.equal(eventA.preventDefaultFn.called, true);
+
+            const eventB = mockEvent('b', 'KeyB');
+            (keyboardManager as any).onKeyDown(eventB);
+            assert.equal(executedWithout, true);
+            assert.equal(eventB.preventDefaultFn.called, false);
+
+            const eventX = mockEvent('x', 'KeyX');
+            (keyboardManager as any).onKeyDown(eventX);
+            assert.equal(eventX.preventDefaultFn.called, false);
+        });
+
+        it("multi-key sequence calls preventDefault on all keys", () => {
+            let executed = false;
+            const handler = () => { executed = true };
+
+            keyboardManager.register("abc", handler, true);
+
+            const eventA = mockEvent('a', 'KeyA');
+            (keyboardManager as any).onKeyDown(eventA);
+            assert.equal(executed, false);
+            assert.equal(eventA.preventDefaultFn.called, true);
+
+            const eventB = mockEvent('b', 'KeyB');
+            (keyboardManager as any).onKeyDown(eventB);
+            assert.equal(executed, false);
+            assert.equal(eventB.preventDefaultFn.called, true);
+
+            const eventC = mockEvent('c', 'KeyC');
+            (keyboardManager as any).onKeyDown(eventC);
+            assert.equal(executed, true);
+            assert.equal(eventC.preventDefaultFn.called, true);
+        });
+
+        it("shared prefix - preventDefault takes precedence", () => {
+            let executedXY = false;
+            let executedXZ = false;
+            const handlerXY = () => { executedXY = true };
+            const handlerXZ = () => { executedXZ = true };
+
+            keyboardManager.register("xy", handlerXY, false);
+            keyboardManager.register("xz", handlerXZ, true);
+
+            const eventX = mockEvent('x', 'KeyX');
+            (keyboardManager as any).onKeyDown(eventX);
+            assert.equal(eventX.preventDefaultFn.called, true);
+
+            const eventY = mockEvent('y', 'KeyY');
+            (keyboardManager as any).onKeyDown(eventY);
+            assert.equal(executedXY, true);
+            assert.equal(eventY.preventDefaultFn.called, true);
+        });
+
+        it("shared prefix - registration order independence", () => {
+            let executedXY = false;
+            let executedXZ = false;
+            const handlerXY = () => { executedXY = true };
+            const handlerXZ = () => { executedXZ = true };
+
+            keyboardManager.register("xz", handlerXZ, true);
+            keyboardManager.register("xy", handlerXY, false);
+
+            const eventX = mockEvent('x', 'KeyX');
+            (keyboardManager as any).onKeyDown(eventX);
+            assert.equal(eventX.preventDefaultFn.called, true);
+
+            const eventY = mockEvent('y', 'KeyY');
+            (keyboardManager as any).onKeyDown(eventY);
+            assert.equal(executedXY, true);
+            assert.equal(eventY.preventDefaultFn.called, true);
+        });
+    });
 
     describe("Integration: onKeyDown → parseKey → handleKey flow", () => {
         const mockEvent = (key: string, code: string, modifiers: { ctrl?: boolean; alt?: boolean; shift?: boolean; meta?: boolean } = {}) => ({

@@ -1,8 +1,11 @@
+import { MKeyboardMangerChangeEvent } from "./keyboard-manager-events";
+
 /**
  * Trie data structure for commands
  */
-type Commands = {
-    _handler?: () => void
+export type Commands = {
+    _handler?: (e: KeyboardEvent) => void
+    preventDefault: boolean
     children?: Record<string, Commands>
 }
 
@@ -15,12 +18,11 @@ class KeyboardManager extends EventTarget {
     private comboTimeout?: ReturnType<typeof setTimeout>;
     combo?: string;
 
-    commands: Commands = { children: {} };
+    commands: Commands = { children: {}, preventDefault: false };
     currentSequence: string[] = [];
     comboTimeoutDuration = 1000;
 
     constructor() {
-        console.log("Constructor")
         super();
         if (KeyboardManager.instance) return KeyboardManager.instance;
         KeyboardManager.instance = this;
@@ -29,16 +31,28 @@ class KeyboardManager extends EventTarget {
         document.addEventListener('keydown', e => this.onKeyDown(e));
     }
 
-    register(command: string, handler: () => void) {
+    register(command: string, handler: (e: KeyboardEvent) => void, preventDefault = false) {
         const keys = this.parseCommand(command);
 
         const leafNode = keys.reduce((node, key) => {
             node.children = node.children || {};
-            node.children[key] = node.children[key] || {};
+            node.children[key] = node.children[key] || { preventDefault: false };
+            node.children[key].preventDefault = node.children[key].preventDefault || preventDefault;
             return node.children[key];
         }, this.commands);
 
+        if (leafNode._handler) {
+            throw new Error(
+                `[KeyboardManager] Keymap conflict: Command "${command}" is already registered. ` +
+                `Please unregister the existing handler before registering a new one.`
+            );
+        }
+
         leafNode._handler = handler;
+
+        document.dispatchEvent(new MKeyboardMangerChangeEvent({
+            commands: this.commands
+        }));
         return () => this.unregister(command);
     }
 
@@ -48,10 +62,12 @@ class KeyboardManager extends EventTarget {
         let node = this.commands;
 
         for (let key of keys) {
-            // Char does not exist
-            if (!node.children) { return false };
-            // Sequence doesn't exist - nothing to unregister
-            if (!node.children[key]) { return false; }
+            if (!node.children) { 
+                return false;
+            }
+            if (!node.children[key]) { 
+                return false; 
+            }
 
             path.push({ parent: node, key: key });
             node = node.children[key];
@@ -72,21 +88,23 @@ class KeyboardManager extends EventTarget {
             } else {
                 break;
             }
-
         }
+
+        document.dispatchEvent(new MKeyboardMangerChangeEvent({
+            commands: this.commands
+        }));
     }
 
     clear() {
-        this.commands = { children: {} };
+        this.commands = { children: {}, preventDefault: false };
         this.currentSequence = [];
         this.pressed.clear();
         clearTimeout(this.comboTimeout);
     }
 
-    handleKey(key: string) {
+    handleKey(key: string, e: KeyboardEvent) {
         this.currentSequence.push(key);
 
-        console.log("handle:", this.currentSequence, this.commands)
         // Navigate the tree
         let node = this.commands;
         for (let k of this.currentSequence) {
@@ -96,20 +114,20 @@ class KeyboardManager extends EventTarget {
                 return;
             }
             node = node.children[k];
+            if(node.preventDefault) {e.preventDefault()}
         }
 
         const handler = node._handler;
         const hasChildren = !!node.children && !!Object.keys(node.children).length;
-        console.log("found:", handler)
 
         if (handler && !hasChildren) {
-            this.execute(handler)
+            this.execute(handler, e)
         } else if (handler && hasChildren) {
-            this.setTimeout(handler)
+            this.setTimeout(handler, e)
         } else if (!handler && hasChildren) {
             this.setTimeout(() => {
                 this.reset(); // Timeout - abandon partial sequence
-            });
+            }, e);
         }
 
     }
@@ -120,22 +138,25 @@ class KeyboardManager extends EventTarget {
     }
 
     // TODO: send current sequence as argument to handler
-    private execute(handler: () => void) {
+    private execute(handler: (e: KeyboardEvent) => void, e: KeyboardEvent) {
         clearTimeout(this.comboTimeout);
-        handler();
+        handler(e);
         this.reset();
     }
 
-    private setTimeout(handler: () => void) {
+    private setTimeout(handler: (e: KeyboardEvent) => void, e: KeyboardEvent) {
         clearTimeout(this.comboTimeout);
-        this.comboTimeout = setTimeout(handler, this.comboTimeoutDuration);
+        this.comboTimeout = setTimeout(() => handler(e), this.comboTimeoutDuration);
     }
 
     private onKeyDown(e: KeyboardEvent) {
         const key = e.key.toLowerCase()
 
         if (key === "control") { return }
-        this.handleKey(this.parseKey(e));
+        if (key === "alt") { return }
+        if (key === "meta") { return }
+        if (key === "shift") { return }
+        this.handleKey(this.parseKey(e), e);
     }
 
     private parseCommand(command: string): string[] {

@@ -6,16 +6,16 @@ const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
 /**
- * A selectable item within an m-listbox component.
+ * A selectable option within list-based components (m-listbox, m-combobox, etc).
  * Represents a single option that can be selected, focused, and disabled.
  *
  * @customElement
- * @tagname m-listbox-item
+ * @tagname m-option
  * 
- * @slot - The default slot contains the visible content of the list item
+ * @slot - The default slot contains the visible content of the option
  */
-export class MListboxItem extends MElement {
-    static tagName = 'm-listbox-item';
+export class MOption extends MElement {
+    static tagName = 'm-option';
     static observedAttributes = ['value', 'selected', 'focused', 'disabled'];
 
     /**
@@ -64,7 +64,7 @@ export class MListboxItem extends MElement {
 
     connectedCallback() {
          if (!this.id) {
-            this.id = `listbox-item-${crypto.randomUUID()}`;
+            this.id = `option-${crypto.randomUUID()}`;
         }
         this.render();
         this.setAttribute('role', 'option');
@@ -108,4 +108,4 @@ export class MListboxItem extends MElement {
     }
 }
 
-export default MListboxItem;
+export default MOption;

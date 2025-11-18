@@ -11,6 +11,7 @@
         box-shadow: var(--shadow);
         border: var(--border);
         border-color: var(--_box-stroke);
+        corner-shape: squircle;
         border-radius: var(--radius-2);
         padding: var(--size-fluid-1);
         gap: 0;

@@ -1,8 +1,9 @@
 import { MElement } from "../utils/m-element";
 import { BindAttribute } from "../utils/reflect-attribute";
-import { query, queryAll } from "../utils/query";
-import type { MListboxItem } from "../m-listbox-item";
+import { query } from "../utils/query";
+import type { MOption } from "../m-option";
 import { MListboxSelectEvent, MListboxUnselectedEvent, MListboxChangeEvent, MListboxFocusChangeEvent } from "./events";
+import { getItems, getSelectedItems, getSelectedValues, focusFirst, focusLast, focusNext, focusPrev, computeSelection } from "../utils/list-options-manager";
 import styles from "./index.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -15,28 +16,28 @@ baseStyleSheet.replaceSync(styles);
  * @customElement
  * @tagname m-listbox
  * 
- * @slot - The default slot accepts m-listbox-item elements
+ * @slot - The default slot accepts m-option elements
  * 
  * @attr {string} name - The form control name
  * @attr {boolean} multiple - Whether multiple items can be selected
  * 
  * @prop {string | string[] | null} value - The value of the first selected item (or array in multiple mode)
  * @prop {string[]} selectedValues - Array of all selected item values
- * @prop {MListboxItem[]} selectedItems - Array of all selected item elements
+ * @prop {MOption[]} selectedItems - Array of all selected item elements
  * @prop {boolean} multiple - Whether multiple selection is enabled
  * @prop {HTMLFormElement | null} form - The associated form element
  * @prop {string} name - The form control name
  * 
- * @event m-listbox-select - Fired when an item is selected. Detail: { item: MListboxItem, selected: boolean }
- * @event m-listbox-unselected - Fired when an item is unselected. Detail: { item: MListboxItem, selected: boolean }
+ * @event m-listbox-select - Fired when an item is selected. Detail: { item: MOption, selected: boolean }
+ * @event m-listbox-unselected - Fired when an item is unselected. Detail: { item: MOption, selected: boolean }
  * @event m-listbox-change - Fired when the selection changes. Detail: { selected: string[] }
- * @event m-listbox-focus-change - Fired when focus moves to a different item. Detail: { item: MListboxItem | null }
+ * @event m-listbox-focus-change - Fired when focus moves to a different item. Detail: { item: MOption | null }
  * 
  */
 export class MListbox extends MElement {
     static tagName = 'm-listbox';
     static formAssociated = true;
-    static observedAttributes = ['multiple', 'name', 'label', 'disabled', 'value'];
+    static observedAttributes = ['multiple', 'name', 'label', 'disabled', 'value', 'skip'];
 
     @BindAttribute()
     label?: string;
@@ -48,17 +49,18 @@ export class MListbox extends MElement {
     name: string = '';
 
     @BindAttribute()
-    disabled: boolean = false;
+    skip?: string 
 
-    @queryAll('m-listbox-item', { dom: "light" })
-    private items!: MListboxItem[];
+    @BindAttribute()
+    disabled: boolean = false;
 
     @query('#last-selected')
     private ariaLiveRegion!: HTMLDivElement;
     private ariaLiveTimeout?: ReturnType<typeof setTimeout>;
+    private originalTabIndex: string | null = null;
 
-    private _focusedElement: MListboxItem | null = null;
-    set focusedElement(el: MListboxItem | null) {
+    private _focusedElement: MOption | null = null;
+    set focusedElement(el: MOption | null) {
         this._focusedElement = el;
         if (el) {
             this.setAttribute("aria-activedescendant", el?.id)
@@ -76,12 +78,16 @@ export class MListbox extends MElement {
     /*** ----------------------------
      *  Getters 
      * ----------------------------- */
+
+    /**
+     * Returns an array of all items.
+     */
+    private get items() { return getItems<MOption>(this, this.skip); }
+
     /**
      * Returns an array of all selected items.
      */
-    get selectedItems(): MListboxItem[] {
-        return this.items.filter(item => !!item.selected);
-    }
+    get selectedItems(): MOption[] { return getSelectedItems(this.items); }
 
     /**
      * Returns the value of the first selected item, or null if nothing is selected.
@@ -97,12 +103,7 @@ export class MListbox extends MElement {
      * Returns an array of all selected item values.
      * Useful for multiple-select mode.
      */
-    get selectedValues(): string[] {
-        return this.selectedItems.reduce<string[]>((acc, item) => {
-            if (item.value) acc.push(item.value);
-            return acc;
-        }, []);
-    }
+    get selectedValues(): string[] { return getSelectedValues(this.items); }
 
     /**
      * Returns the associated form element, if any.
@@ -118,7 +119,9 @@ export class MListbox extends MElement {
         `;
         shadow.adoptedStyleSheets = [baseStyleSheet];
         this.internals = this.attachInternals();
-        this.tabIndex = 0;
+        if (!this.hasAttribute("tabindex")) {
+            this.tabIndex = 0;
+        }
     }
 
     /*** ----------------------------
@@ -133,15 +136,16 @@ export class MListbox extends MElement {
         
         if (this.disabled) {
             this.setAttribute("aria-disabled", "true");
+            this.originalTabIndex = this.getAttribute("tabindex");
             this.setAttribute("tabindex", "-1");
-        } else {
-            this.setAttribute("tabIndex", "0");
         }
 
         this.addEventListener('keydown', this.handleKeydown);
         this.addEventListener('focus', this.handleFocus, true);
         this.addEventListener('blur', this.handleBlur, true);
         this.addEventListener('click', this.handleClick);
+        this.addEventListener('mouseover', this.handleMouseOver);
+        this.addEventListener('mouseout', this.handleMouseOut);
         
         const valueAttr = this.getAttribute('value');
         if (valueAttr) {
@@ -159,6 +163,8 @@ export class MListbox extends MElement {
         this.removeEventListener('focus', this.handleFocus, true);
         this.removeEventListener('blur', this.handleBlur, true);
         this.removeEventListener('click', this.handleClick);
+        this.removeEventListener('mouseover', this.handleMouseOver);
+        this.removeEventListener('mouseout', this.handleMouseOut);
     }
 
 
@@ -181,10 +187,16 @@ export class MListbox extends MElement {
         if (name === 'disabled') {
             if (this.disabled) {
                 this.setAttribute("aria-disabled", "true");
+                this.originalTabIndex = this.getAttribute("tabindex");
                 this.setAttribute("tabindex", "-1");
             } else {
                 this.removeAttribute("aria-disabled");
-                this.setAttribute("tabindex", "0");
+                if (this.originalTabIndex !== null) {
+                    this.setAttribute("tabindex", this.originalTabIndex);
+                    this.originalTabIndex = null;
+                } else if (!this.hasAttribute("tabindex")) {
+                    this.setAttribute("tabindex", "0");
+                }
             }
         }
         if (name === 'value' && newValue) {
@@ -223,6 +235,10 @@ export class MListbox extends MElement {
         this.updateFormValue();
     }
 
+    formDisabledCallback(disabled: boolean): void {
+        this.disabled = disabled;
+    }
+
     /*** ----------------------------
      *  Focus Management
      * ----------------------------- */
@@ -232,7 +248,7 @@ export class MListbox extends MElement {
      * 
      * @param item - The item to focus, or null to clear focus
      */
-    setFocus(item: MListboxItem | null): void {
+    setFocus(item: MOption | null): void {
         if (!item) return;
         if (this.focusedElement) this.focusedElement.removeAttribute('focused');
 
@@ -248,14 +264,14 @@ export class MListbox extends MElement {
      * Moves focus to the first item in the list.
      */
     focusFirst(): void {
-        this.setFocus(this.items[0] ?? null);
+        this.setFocus(focusFirst(this.items));
     }
 
     /**
      * Moves focus to the last item in the list.
      */
     focusLast(): void {
-        this.setFocus(this.items[this.items.length - 1] ?? null);
+        this.setFocus(focusLast(this.items));
     }
 
     /**
@@ -263,10 +279,7 @@ export class MListbox extends MElement {
      * Wraps around to the first item if at the end.
      */
     focusNext(): void {
-        if (!this.focusedElement) return this.focusFirst();
-        const idx = this.items.indexOf(this.focusedElement);
-        const next = this.items[idx + 1] ?? this.items[0];
-        this.setFocus(next);
+        this.setFocus(focusNext(this.items, this.focusedElement));
     }
 
     /**
@@ -274,10 +287,7 @@ export class MListbox extends MElement {
      * Wraps around to the last item if at the beginning.
      */
     focusPrev(): void {
-        if (!this.focusedElement) return this.focusLast();
-        const idx = this.items.indexOf(this.focusedElement);
-        const prev = this.items[idx - 1] ?? this.items[this.items.length - 1];
-        this.setFocus(prev);
+        this.setFocus(focusPrev(this.items, this.focusedElement));
     }
 
     /**
@@ -301,25 +311,31 @@ export class MListbox extends MElement {
      * 
      * @param item - The item to select or toggle
      */
-    select(item: MListboxItem | null): void {
+    select(item: MOption | null): void {
         if (!item) return;
 
-        if (!this.multiple) {
-            // single-select mode: reset others
-            this.items.forEach(i => {
-                if (i !== item && i.selected) {
-                    i.selected = false;
-                    this.dispatchEvent(
-                        new MListboxUnselectedEvent({ item: i, selected: false })
-                    );
-                }
-            });
-            // select new item
-            item.selected = true;
-            this.setFocus(item); // focus always = selection
-        } else {
-            // multiple mode: toggle selection
+        const result = computeSelection(
+            item,
+            this.items,
+            this.selectedItems,
+            this.focusedElement,
+            { multiple: this.multiple }
+        );
+
+        result.itemsToDeselect.forEach(i => {
+            i.selected = false;
+            this.dispatchEvent(
+                new MListboxUnselectedEvent({ item: i, selected: false })
+            );
+        });
+
+        if (result.shouldToggle) {
             item.selected = !item.selected;
+        } else {
+            item.selected = true;
+            if (result.newFocusTarget) {
+                this.setFocus(result.newFocusTarget);
+            }
         }
 
         const EventClass = item.selected ? MListboxSelectEvent : MListboxUnselectedEvent;
@@ -348,14 +364,16 @@ export class MListbox extends MElement {
      * Selects the first item in the list.
      */
     selectFirst(): void {
-        if (this.items[0]) this.select(this.items[0]);
+        const first = focusFirst(this.items);
+        if (first) this.select(first);
     }
 
     /**
      * Selects the last item in the list.
      */
     selectLast(): void {
-        if (this.items.length) this.select(this.items[this.items.length - 1]);
+        const last = focusLast(this.items);
+        if (last) this.select(last);
     }
 
     /**
@@ -363,10 +381,8 @@ export class MListbox extends MElement {
      * Wraps around to the first item if at the end.
      */
     selectNext(): void {
-        if (!this.focusedElement) return this.selectFirst();
-        const idx = this.items.indexOf(this.focusedElement);
-        const next = this.items[idx + 1] ?? this.items[0];
-        this.select(next);
+        const next = focusNext(this.items, this.focusedElement);
+        if (next) this.select(next);
     }
 
     /**
@@ -374,10 +390,8 @@ export class MListbox extends MElement {
      * Wraps around to the last item if at the beginning.
      */
     selectPrev(): void {
-        if (!this.focusedElement) return this.selectLast();
-        const idx = this.items.indexOf(this.focusedElement);
-        const prev = this.items[idx - 1] ?? this.items[this.items.length - 1];
-        this.select(prev);
+        const prev = focusPrev(this.items, this.focusedElement);
+        if (prev) this.select(prev);
     }
 
     /*** ----------------------------
@@ -469,8 +483,8 @@ export class MListbox extends MElement {
     private handleClick = (event: MouseEvent) => {
         const item = event
             .composedPath()
-            .find(el => (el as HTMLElement).tagName === 'M-LISTBOX-ITEM') as
-            | MListboxItem
+            .find(el => (el as HTMLElement).tagName === 'M-OPTION') as
+            | MOption
             | undefined;
 
         if (item && !item.disabled) {
@@ -479,6 +493,30 @@ export class MListbox extends MElement {
                 this.setFocus(item);
                 this.select(item);
             }
+        }
+    };
+
+    private handleMouseOver = (event: MouseEvent) => {
+        const item = event
+            .composedPath()
+            .find(el => (el as HTMLElement).tagName === 'M-OPTION') as
+            | MOption
+            | undefined;
+
+        if (item && !item.disabled && this.focusedElement !== item) {
+            this.setFocus(item);
+        }
+    };
+
+    private handleMouseOut = (event: MouseEvent) => {
+        const item = event
+            .composedPath()
+            .find(el => (el as HTMLElement).tagName === 'M-OPTION') as
+            | MOption
+            | undefined;
+
+        if (item && !item.disabled && this.focusedElement === item) {
+            this.focusBlur();
         }
     };
 

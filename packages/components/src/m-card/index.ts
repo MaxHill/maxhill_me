@@ -1,3 +1,6 @@
+import { MElement } from "../utils/m-element";
+import { query } from "../utils/query";
+import { BindAttribute } from "../utils/reflect-attribute";
 import styles from "./index.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -17,14 +20,22 @@ baseStyleSheet.replaceSync(styles);
  * @attr {boolean} data-padded - Applies padding to the card
  * @attr {"outline"} data-variant - The visual variant of the card
  * @attr {boolean} data-subgrid - Enables CSS subgrid layout for the card
+ * 
+ * @prop {boolean} subgrid - Whether the card uses CSS subgrid layout
  */
-class MCard extends HTMLElement {
-    static observedAttributes = [
-        "data-rounded",
-        "data-padded",
-        "data-variant",
-        "data-subgrid",
-    ];
+class MCard extends MElement {
+    static tagName = 'm-card';
+    static observedAttributes = [ "data-subgrid"];
+
+    @BindAttribute({ attribute: 'data-subgrid' })
+    subgrid: boolean = false;
+
+
+    @query('[slot="title"]', {dom: "light"})
+    private titleSlot!: HTMLSlotElement;
+
+    @query('[slot="footer"]', {dom: "light"})
+    private footerSlot!: HTMLSlotElement;
 
     constructor() {
         super();
@@ -35,22 +46,21 @@ class MCard extends HTMLElement {
         this.render();
     }
 
-    attributeChangedCallback() {
-        this.render();
+    attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
+        super.attributeChangedCallback(name, oldValue, newValue);
+        if (this.shadowRoot) {
+            this.render();
+        }
     }
 
     render() {
         if (!this.shadowRoot) return;
-
-        const hasTitle = this.querySelector('[slot="title"]');
-        const hasFooter = this.querySelector('[slot="footer"]');
-        const rowCount = 1 + (hasTitle ? 1 : 0) + (hasFooter ? 1 : 0);
-        const useSubgrid = this.getAttribute("data-subgrid") === "true";
+        const rowCount = 1 + (this.titleSlot ? 1 : 0) + (this.footerSlot ? 1 : 0);
 
         const dynamicStyleSheet = new CSSStyleSheet();
         dynamicStyleSheet.replaceSync(`
           :host {
-            ${useSubgrid
+            ${this.subgrid
                 ? `
               grid-template-rows: subgrid; 
               grid-row: span ${rowCount};
@@ -62,19 +72,12 @@ class MCard extends HTMLElement {
         this.shadowRoot.adoptedStyleSheets = [baseStyleSheet, dynamicStyleSheet];
 
         this.shadowRoot.innerHTML = `
-          ${hasTitle ? '<div class="title"><slot name="title"></slot></div>' : ""}
+          ${this.titleSlot ? '<div class="title"><slot name="title"></slot></div>' : ""}
           <div class="content-wrapper">
             <slot></slot>
           </div>
-          ${hasFooter ? '<div class="footer"><slot name="footer"></slot></div>' : ""}
+          ${this.footerSlot ? '<div class="footer"><slot name="footer"></slot></div>' : ""}
         `;
-    }
-
-    static define(tag = 'm-card', registry = customElements) {
-        if (!registry.get(tag)) {
-            registry.define(tag, this);
-        }
-        return this;
     }
 }
 

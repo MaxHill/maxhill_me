@@ -29,7 +29,7 @@ export class {{componentNamePascal}} extends MElement {
     static tagName = '{{componentName}}';
     static observedAttributes = ['example'];
 
-    private shadowRoot: ShadowRoot;
+    private _shadowRoot: ShadowRoot;
 
     @BindAttribute()
     example: string = '';
@@ -39,8 +39,8 @@ export class {{componentNamePascal}} extends MElement {
 
     constructor() {
         super();
-        this.shadowRoot = this.attachShadow({ mode: 'open' });
-        this.shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+        this._shadowRoot = this.attachShadow({ mode: 'open' });
+        this._shadowRoot.adoptedStyleSheets = [baseStyleSheet];
     }
 
     connectedCallback() {
@@ -49,7 +49,7 @@ export class {{componentNamePascal}} extends MElement {
     }
 
     private render() {
-        this.shadowRoot.innerHTML = `
+        this._shadowRoot.innerHTML = `
             <p>{{componentName}}</p>
             <slot></slot>
         `;

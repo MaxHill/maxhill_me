@@ -1,27 +1,183 @@
+## Overview
+
+The `m-command` component allows you to bind keyboard shortcuts to common actions like navigation, opening/closing dialogs and popovers, and focusing elements. Commands can be triggered programmatically or via keyboard shortcuts.
+
 ## Examples
 
-### Basic Usage
+### Navigate
 
-A simple m-command example.
-
-<m-command example="test">
-  Default content
+Use the `navigate` command to navigate to a different URL when a keyboard shortcut is pressed.
+<m-command 
+    command="navigate" 
+    commandfor="/design-system#hero" 
+    keys="<C-b>1">
+  Command+b1
+</m-command>
+<m-command command="navigate" commandfor="/design-system#doc-components" keys="<C-b>2">
+  Command+b2
 </m-command>
 ```html
-<m-command example="test">
+<m-command name="toStart" command="navigate" commandfor="/design-system#hero" keys="<C-b>1">
+  Default content
+</m-command>
+<m-command name="toComponents" command="navigate" commandfor="/design-system#doc-components" keys="<C-b>2">
   Default content
 </m-command>
 ```
 
+### Dialog
+
+Control HTML `<dialog>` elements with keyboard shortcuts. Use `show-modal` to open a dialog as a modal, and `close` to dismiss it.
+
+<dialog id="example-dialog">I'm an example dialog</dialog>
+
+<m-command command="show-modal" commandfor="#example-dialog" keys="<C-b>o">
+  Command+b o (open)
+</m-command>
+
+<m-command command="close" commandfor="#example-dialog" keys="<C-b>c">
+  Command+b c (close)
+</m-command>
+
+```html
+<dialog id="example-dialog">I'm an example dialog</dialog>
+
+<m-command command="show-modal" commandfor="#example-dialog" keys="<C-b>o">
+  Command+b o (open)
+</m-command>
+
+<m-command command="close" commandfor="#example-dialog" keys="<C-b>c">
+  Command+b c (close)
+</m-command>
+```
+
+### Popover
+
+Control elements with the `popover` attribute using keyboard shortcuts. You can show, hide, or toggle popovers programmatically.
+
+<div id="example-popover" popover>I'm a popover</div>
+
+<m-command command="show-popover" commandfor="#example-popover" keys="<C-b>s">
+  Command+b s (show)
+</m-command>
+
+<m-command command="hide-popover" commandfor="#example-popover" keys="<C-b>h">
+  Command+b h (hide)
+</m-command>
+
+<m-command command="toggle-popover" commandfor="#example-popover" keys="<C-b>t">
+  Command+b t (toggle)
+</m-command>
+
+```html
+<div id="example-popover" popover>I'm a popover</div>
+
+<m-command command="show-popover" commandfor="#example-popover" keys="<C-b>s">
+  Command+b s (show)
+</m-command>
+
+<m-command command="hide-popover" commandfor="#example-popover" keys="<C-b>h">
+  Command+b h (hide)
+</m-command>
+
+<m-command command="toggle-popover" commandfor="#example-popover" keys="<C-b>t">
+  Command+b t (toggle)
+</m-command>
+```
+
+### Focus
+
+Move keyboard focus to a specific element using the `focus` command. This is useful for creating keyboard navigation shortcuts.
+
+<input id="example-input" type="text" placeholder="Focus me with Command+b f" />
+
+<m-command command="focus" commandfor="#example-input" keys="<C-b>f">
+  Command+b f (focus)
+</m-command>
+
+```html
+<input id="example-input" type="text" placeholder="Focus me with Command+b f" />
+
+<m-command command="focus" commandfor="#example-input" keys="<C-b>f">
+  Command+b f (focus)
+</m-command>
+```
+
+### Custom Commands
+
+For custom logic, you can register a custom command function. This allows you to execute arbitrary JavaScript when a keyboard shortcut is pressed.
+
+#### Using registerCommand - Minimal
+
+```javascript
+import { registerCommand } from '@maxhill/components/m-command';
+
+// Minimal configuration
+registerCommand({
+  keys: '<C-b>x',
+  customCommand: () => console.log('Custom action!')
+}, 'body');
+```
+
+Try it in the browser console:
+```javascript
+// registerCommand is available globally on this page
+registerCommand({
+  keys: '<C-b>x',
+  customCommand: () => alert('Custom action from console!')
+}, 'body');
+```
+
+#### Using registerCommand - Kitchen Sink
+
+```javascript
+import { registerCommand } from '@maxhill/components/m-command';
+
+// Full configuration with all options
+const unregister = registerCommand({
+  id: 'myCustomAction',
+  command: 'custom',
+  commandfor: '#some-element',
+  keys: '<C-b>x',
+  customCommand: () => {
+    console.log('Custom action executed!');
+    // Your custom logic here
+  }
+}, 'body');
+
+// Later, to remove the command:
+// unregister();
+```
+
+#### Using customCommand property
+
+```html
+<m-command id="custom-cmd" keys="<C-b>y">
+  Command+b y (custom)
+</m-command>
+
+<script>
+  const cmd = document.getElementById('custom-cmd');
+  cmd.customCommand = () => {
+    alert('Custom command triggered!');
+    // Your custom logic here
+  };
+</script>
+```
+
+
 ## Attributes
 
-- **`example`** (string): An example property
+- **`command`** (string): The action to perform. One of: `navigate`, `show-modal`, `close`, `request-close`, `show-popover`, `hide-popover`, `toggle-popover`, `focus`, or `custom`. Default: `custom`
+- **`commandfor`** (string): A CSS selector for the target element, or a URL (for navigate command)
+- **`keys`** (string): Keyboard shortcut that triggers the command (e.g., `<C-b>1` for Ctrl+b then 1)
+- **`actionName`** (string): Optional name for the action, used in error messages
 
 ## Slots
 
-- **default**: Default slot for component content
+- **default**: Content to display (typically used to show the keyboard shortcut hint)
 
 ## Events
 
-- **`m-command-change`**: Fired when the example changes. Detail: `{ example: string }`
+- **`m-command-trigger`**: Fired when the command is triggered. Detail: `{ action: string, target: string }`
 
