@@ -4,7 +4,7 @@ import { query } from "../utils/query";
 import styles from "./index.css?inline";
 import MInput from "../m-input";
 import MOption from "../m-option";
-import { autoUpdate, computePosition, flip, offset, shift, size } from "@floating-ui/dom";
+import { autoUpdate, computePosition, flip, offset, size } from "@floating-ui/dom";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -126,9 +126,9 @@ export class MCombobox extends MInputListElement {
         computePosition(this, this.popoverElement, {
             placement: 'bottom',
             middleware: [
-                offset(6), flip(), shift({ padding: 5 }),
+                offset(6), flip(),
                 size({
-                    apply({ rects, availableWidth, availableHeight, elements }) {
+                    apply({ rects, availableHeight, elements }) {
                         // Change styles, e.g.
                         Object.assign(elements.floating.style, {
                             width: `${rects.reference.width}px`,
@@ -158,6 +158,7 @@ export class MCombobox extends MInputListElement {
     private _hidePopover(): void {
         this.popoverElement?.hidePopover();
         this.popoverCleanup && this.popoverCleanup();
+        this.focusBlur();
         this.setAttribute("aria-expanded", "false");
     }
 
@@ -189,7 +190,6 @@ export class MCombobox extends MInputListElement {
 
         // TODO: extract to own method
         if (this.multiple) {
-            // this.multiSelectListElement.textContent = item.textContent?.trim() || '';
             this.renderMultiselect();
         } else if (!this.multiple && this.selectedValues.length > 0) {
             this.inputElement.value = item.textContent?.trim() || '';
@@ -258,7 +258,10 @@ export class MCombobox extends MInputListElement {
     //  Event Handlers
     //  ------------------------------------------------------------------------ 
     private handleFocus = (_e: Event) => { this._showPopover(); }
-    private handleBlur = (_e: Event) => { this._hidePopover(); }
+    private handleBlur = (_e: Event) => {
+        this.resetInputValue();
+        this._hidePopover();
+    }
     private handleInput = (_e: Event) => { this._showPopover(); }
 
     private handleClick = (event: MouseEvent) => {
@@ -306,10 +309,21 @@ export class MCombobox extends MInputListElement {
             e.preventDefault();
             e.stopPropagation();
             if (this.popoverElement.matches(':popover-open')) {
+                this.resetInputValue();
                 this._hidePopover();
             }
         }
     }
+
+    private resetInputValue() {
+        if (this.multiple) {
+            this.inputElement.value = "";
+        } else {
+            this.inputElement.value = this.selectedItems[0]?.textContent || "";
+        }
+    }
+
+
 
     private renderMultiselect() {
         this.multiSelectListElement.innerHTML = this.selectedItems.reduce((acc, i) => {
