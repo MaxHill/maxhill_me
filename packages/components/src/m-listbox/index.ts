@@ -53,9 +53,6 @@ export class MListbox extends MInputListElement {
     @BindAttribute()
     disabled: boolean = false;
 
-    @query('#last-selected')
-    private ariaLiveRegion!: HTMLDivElement;
-    private ariaLiveTimeout?: ReturnType<typeof setTimeout>;
     private originalTabIndex: string | null = null;
 
     private internals: ElementInternals;
@@ -88,10 +85,7 @@ export class MListbox extends MInputListElement {
     constructor() {
         super();
         const shadow = this.attachShadow({ mode: 'open' });
-        shadow.innerHTML = `
-            <slot></slot>
-            <div id="last-selected" class="visually-hidden" role="region" aria-live="polite"></div>
-        `;
+        shadow.innerHTML = `<slot></slot>`;
         shadow.adoptedStyleSheets = [baseStyleSheet];
         this.internals = this.attachInternals();
         if (!this.hasAttribute("tabindex")) {
@@ -259,7 +253,6 @@ export class MListbox extends MInputListElement {
 
         this.dispatchEvent(new Event('change', { bubbles: true }));
 
-        this.updateAriaLive();
         this.updateFormValue();
     }
 
@@ -368,17 +361,6 @@ export class MListbox extends MInputListElement {
     };
 
 
-
-    private updateAriaLive() {
-        if (this.ariaLiveTimeout) {
-            clearTimeout(this.ariaLiveTimeout);
-        }
-
-        this.ariaLiveTimeout = setTimeout(() => {
-            const lastSelected = this.selectedItems[this.selectedItems.length - 1];
-            this.ariaLiveRegion.textContent = `Last selected ${lastSelected.textContent}`
-        }, 1000);
-    }
 }
 
 export default MListbox;

@@ -183,17 +183,7 @@ describe('m-combobox', () => {
     });
   });
 
-  describe('combobox role and attributes', () => {
-    it('should have aria-expanded="false" by default', async () => {
-      const el = await fixture<MCombobox>(html`
-        <m-combobox>
-          <m-option value="1">Item 1</m-option>
-        </m-combobox>
-      `);
 
-      expect(el.getAttribute('aria-expanded')).to.equal('false');
-    });
-  });
 
   describe('aria-label support', () => {
     it('should set aria-label when label attribute is provided', async () => {

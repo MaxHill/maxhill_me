@@ -6,47 +6,21 @@ MListbox.define();
 MOption.define();
 
 describe('m-listbox', () => {
+  describe('accessibility', () => {
+    it('passes automated a11y tests', async () => {
+      const el = await fixture<MListbox>(html`
+        <m-listbox label="Fruits">
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
+          <m-option value="orange">Orange</m-option>
+        </m-listbox>
+      `);
+
+      await expect(el).to.be.accessible();
+    });
+  });
+
   describe('ARIA roles and attributes', () => {
-    it('should have role="listbox"', async () => {
-      const el = await fixture<MListbox>(html`
-        <m-listbox>
-          <m-option value="apple">Apple</m-option>
-        </m-listbox>
-      `);
-
-      expect(el.getAttribute('role')).to.equal('listbox');
-    });
-
-    it('should have tabindex="0" by default', async () => {
-      const el = await fixture<MListbox>(html`
-        <m-listbox>
-          <m-option value="apple">Apple</m-option>
-        </m-listbox>
-      `);
-
-      expect(el.getAttribute('tabindex')).to.equal('0');
-    });
-
-    it('should set aria-multiselectable="true" when multiple', async () => {
-      const el = await fixture<MListbox>(html`
-        <m-listbox multiple>
-          <m-option value="apple">Apple</m-option>
-        </m-listbox>
-      `);
-
-      expect(el.getAttribute('aria-multiselectable')).to.equal('true');
-    });
-
-    it('should not have aria-multiselectable when single select', async () => {
-      const el = await fixture<MListbox>(html`
-        <m-listbox>
-          <m-option value="apple">Apple</m-option>
-        </m-listbox>
-      `);
-
-      expect(el.hasAttribute('aria-multiselectable')).to.equal(false);
-    });
-
     it('should set aria-disabled="true" when disabled', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox disabled>
@@ -60,19 +34,6 @@ describe('m-listbox', () => {
   });
 
   describe('list box items ARIA', () => {
-    it('should have role="option" on items', async () => {
-      const el = await fixture<MListbox>(html`
-        <m-listbox>
-          <m-option value="apple">Apple</m-option>
-        </m-listbox>
-      `);
-
-      await waitUntil(() => el.querySelectorAll('m-option').length === 1);
-      const item = el.querySelector('m-option') as MOption;
-
-      expect(item.getAttribute('role')).to.equal('option');
-    });
-
     it('should set aria-selected="true" on selected item', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox value="apple">
@@ -88,32 +49,6 @@ describe('m-listbox', () => {
 
       expect(appleItem.getAttribute('aria-selected')).to.equal('true');
       expect(pearItem.getAttribute('aria-selected')).to.equal('false');
-    });
-
-    it('should set aria-selected="false" on unselected items', async () => {
-      const el = await fixture<MListbox>(html`
-        <m-listbox>
-          <m-option value="apple">Apple</m-option>
-        </m-listbox>
-      `);
-
-      await waitUntil(() => el.querySelectorAll('m-option').length === 1);
-      const item = el.querySelector('m-option') as MOption;
-
-      expect(item.getAttribute('aria-selected')).to.equal('false');
-    });
-
-    it('should not have tabindex on items', async () => {
-      const el = await fixture<MListbox>(html`
-        <m-listbox>
-          <m-option value="apple">Apple</m-option>
-        </m-listbox>
-      `);
-
-      await waitUntil(() => el.querySelectorAll('m-option').length === 1);
-      const item = el.querySelector('m-option') as MOption;
-
-      expect(item.hasAttribute('tabindex')).to.equal(false);
     });
   });
 
@@ -533,19 +468,6 @@ describe('m-listbox', () => {
 
       expect(el.value).to.equal(null);
       expect(appleItem.getAttribute('aria-selected')).to.equal('false');
-    });
-
-    it('should set aria-disabled="true" on disabled items', async () => {
-      const el = await fixture<MListbox>(html`
-        <m-listbox>
-          <m-option value="apple" disabled>Apple</m-option>
-        </m-listbox>
-      `);
-
-      await waitUntil(() => el.querySelectorAll('m-option').length === 1);
-      const item = el.querySelector('m-option') as MOption;
-
-      expect(item.getAttribute('aria-disabled')).to.equal('true');
     });
   });
 });

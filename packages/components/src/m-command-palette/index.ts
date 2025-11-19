@@ -70,8 +70,11 @@ export class MCommandPalette extends MElement {
         this._shadowRoot.innerHTML = `
             <form>
                 <m-search-list target="m-listbox">
-                    <input type="search"/>
-                    <m-listbox name="command" skip="[data-match='false']">
+                    <label>
+                        Search commands
+                        <input type="search"/>
+                    </label>
+                    <m-listbox name="command" skip="[data-match='false']" label="Commands">
                         ${this.commandElements.reduce((acc, e) => `${acc}<m-option value="${e.id}">${e.id}</m-option>`, "")}
                     </m-listbox>
                 </m-search-list>
