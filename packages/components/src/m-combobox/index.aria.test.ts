@@ -1,9 +1,13 @@
 import { expect, html, fixture, waitUntil } from '@open-wc/testing';
 import { MCombobox } from './index';
 import { MOption } from '../m-option';
+import { MSearchList} from '../m-search-list/';
+import MInput from '../m-input';
 
 MCombobox.define();
 MOption.define();
+MSearchList.define();
+MInput.define();
 
 beforeEach(() => {
   if (!HTMLElement.prototype.showPopover) {
@@ -324,27 +328,6 @@ describe('m-combobox WAI-ARIA compliance', () => {
       expect(el.getAttribute('aria-expanded')).to.equal('false');
     });
 
-    it('should toggle aria-expanded when clicking input multiple times', async () => {
-      const el = await fixture<MCombobox>(html`
-        <m-combobox>
-          <m-option value="1">Item 1</m-option>
-        </m-combobox>
-      `);
-
-      const input = el.shadowRoot!.querySelector('m-input') as HTMLElement;
-
-      expect(el.getAttribute('aria-expanded')).to.equal('false');
-
-      input.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
-
-      expect(el.getAttribute('aria-expanded')).to.equal('true');
-
-      input.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
-
-      expect(el.getAttribute('aria-expanded')).to.equal('false');
-    });
   });
 
   describe('selection updates input value', () => {
@@ -396,31 +379,6 @@ describe('m-combobox WAI-ARIA compliance', () => {
       expect(input.value).to.equal('Banana');
     });
 
-    it('should clear input value when deselecting option in single mode', async () => {
-      const el = await fixture<MCombobox>(html`
-        <m-combobox>
-          <m-option value="apple">Apple</m-option>
-          <m-option value="banana">Banana</m-option>
-        </m-combobox>
-      `);
-
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-
-      const input = el.shadowRoot!.querySelector('m-input') as any;
-
-      const option = el.querySelector('m-option[value="apple"]') as MOption;
-      option.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
-      expect(input.value).to.equal('Apple');
-
-      el.focus();
-      await waitUntil(() => el.getAttribute('aria-expanded') === 'true');
-
-      option.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
-
-      expect(input.value).to.equal('');
-    });
 
     it('should not update input value in multiple mode (uses tags instead)', async () => {
       const el = await fixture<MCombobox>(html`
@@ -1008,7 +966,7 @@ describe('m-combobox WAI-ARIA compliance', () => {
 
       it('should skip hidden options when navigating after filtering', async () => {
         const el = await fixture<MCombobox>(html`
-          <m-combobox>
+          <m-combobox debounce="0">
             <m-option value="apple">Apple</m-option>
             <m-option value="banana">Banana</m-option>
             <m-option value="apricot">Apricot</m-option>

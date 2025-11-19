@@ -15,7 +15,8 @@ export function getItems<T extends Element>(
   host: Element,
   skipSelector?: string
 ): T[] {
-  const selector = skipSelector ? `m-option:not(${skipSelector})` : 'm-option';
+    const baseSelector = "m-option:not([hidden]):not([disabled])"
+  const selector = skipSelector ? `${baseSelector}:not(${skipSelector})` : baseSelector;
   return Array.from(host.querySelectorAll(selector)) as T[];
 }
 

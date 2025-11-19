@@ -36,7 +36,7 @@ baseStyleSheet.replaceSync(styles);
  */
 export class MSearchList extends MElement {
     static tagName = 'm-search-list';
-    static observedAttributes = ['target'];
+    static observedAttributes = ['target', 'debounce'];
 
     private state: "initial" | "searching" | "empty" = "initial"
     private resultsMessage: string = '';
@@ -44,6 +44,12 @@ export class MSearchList extends MElement {
     private debounceTimeout?: ReturnType<typeof setTimeout>;
 
     private _internals: ElementInternals;
+
+    @BindAttribute()
+    target?: string;
+
+    @BindAttribute()
+    debounce: number = 150;
 
     @query('slot:not([name])')
     private defaultSlot!: HTMLSlotElement;
@@ -60,11 +66,6 @@ export class MSearchList extends MElement {
         return this.initialSlot && this.initialSlot.assignedElements().length > 0
     }
 
-    @BindAttribute()
-    target?: string;
-
-    @BindAttribute()
-    debounce: number = 150;
 
     #shadowRoot: ShadowRoot;
 
@@ -147,7 +148,6 @@ export class MSearchList extends MElement {
     private searchItems(query: string) {
         let matchCount = 0;
         const totalCount = this.items.length;
-        console.log(this.items)
 
         for (const item of this.items) {
             const keywords = item.getAttribute("data-keywords") || "";

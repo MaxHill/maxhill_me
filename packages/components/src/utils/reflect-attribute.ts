@@ -126,6 +126,7 @@ export function UpdatesAttribute(options?: {
       if (!existingGetter) {
         this[privateKey] = initialValue;
       }
+      
       return initialValue;
     };
   };
@@ -137,7 +138,6 @@ export function handleAttributeChange(element: HTMLElement, name: string, newVal
   
   if (mapping) {
     const { propertyKey, type } = mapping;
-    const privateKey = Symbol.for(`_${propertyKey}`);
     
     let propertyValue: any;
     if (type === 'boolean') {
@@ -148,6 +148,6 @@ export function handleAttributeChange(element: HTMLElement, name: string, newVal
       propertyValue = newValue || '';
     }
     
-    (element as any)[privateKey] = propertyValue;
+    (element as any)[propertyKey] = propertyValue;
   }
 }
