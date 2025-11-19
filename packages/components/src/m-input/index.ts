@@ -115,30 +115,43 @@ export class MInput extends MElement {
         this.updateAriaAttributes();
     }
 
+    @BindAttribute({ attribute: 'default-value' })
     defaultValue: string = '';
 
+    @BindAttribute()
     label: string = '';
 
+    @BindAttribute()
     placeholder: string = '';
 
+    @BindAttribute()
     type: 'text' | 'email' | 'password' | 'tel' | 'url' | 'search' = 'text';
 
+    @BindAttribute()
     name: string = '';
 
+    @BindAttribute()
     required: boolean = false;
 
+    @BindAttribute()
     disabled: boolean = false;
 
+    @BindAttribute({ attribute: 'readonly' })
     readOnly: boolean = false;
 
+    // Not using @BindAttribute() because typeof undefined prevents proper number type detection
+    // Handled manually in attributeChangedCallback instead
     minlength: number | undefined = undefined;
 
     maxlength: number | undefined = undefined;
 
+    @BindAttribute()
     pattern: string = '';
 
+    @BindAttribute()
     autocomplete: string = '';
 
+    @BindAttribute({ attribute: 'error-message' })
     errorMessage: string = '';
 
     private inputElement!: HTMLInputElement;
@@ -154,48 +167,8 @@ export class MInput extends MElement {
     }
 
     connectedCallback() {
-        // Initialize properties from attributes if not already set
         if (this.hasAttribute('value') && !this._value) {
             this._value = this.getAttribute('value') || '';
-        }
-        if (this.hasAttribute('default-value') && !this.defaultValue) {
-            this.defaultValue = this.getAttribute('default-value') || '';
-        }
-        if (this.hasAttribute('label') && !this.label) {
-            this.label = this.getAttribute('label') || '';
-        }
-        if (this.hasAttribute('placeholder') && !this.placeholder) {
-            this.placeholder = this.getAttribute('placeholder') || '';
-        }
-        if (this.hasAttribute('type')) {
-            this.type = (this.getAttribute('type') as any) || 'text';
-        }
-        if (this.hasAttribute('name') && !this.name) {
-            this.name = this.getAttribute('name') || '';
-        }
-        if (this.hasAttribute('required')) {
-            this.required = true;
-        }
-        if (this.hasAttribute('disabled')) {
-            this.disabled = true;
-        }
-        if (this.hasAttribute('readonly')) {
-            this.readOnly = true;
-        }
-        if (this.hasAttribute('minlength')) {
-            this.minlength = Number(this.getAttribute('minlength'));
-        }
-        if (this.hasAttribute('maxlength')) {
-            this.maxlength = Number(this.getAttribute('maxlength'));
-        }
-        if (this.hasAttribute('pattern') && !this.pattern) {
-            this.pattern = this.getAttribute('pattern') || '';
-        }
-        if (this.hasAttribute('autocomplete') && !this.autocomplete) {
-            this.autocomplete = this.getAttribute('autocomplete') || '';
-        }
-        if (this.hasAttribute('error-message') && !this.errorMessage) {
-            this.errorMessage = this.getAttribute('error-message') || '';
         }
 
         this.render();
@@ -219,61 +192,25 @@ export class MInput extends MElement {
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
 
-        // Handle attribute changes
-        switch (name) {
-            case 'value':
-                if (newValue !== null) {
-                    this._value = newValue as string;
-                    if (this.inputElement && this.inputElement.value !== this._value) {
-                        this.inputElement.value = this._value;
-                    }
-                    this.updateFormValue();
+        if (name === 'value') {
+            if (newValue !== null) {
+                this._value = newValue as string;
+                if (this.inputElement && this.inputElement.value !== this._value) {
+                    this.inputElement.value = this._value;
                 }
-                // Native input doesn't reflect value to attribute
-                this.removeAttribute('value');
-                break;
-            case 'default-value':
-                this.defaultValue = newValue as string;
-                break;
-            case 'label':
-                this.label = newValue as string;
-                break;
-            case 'placeholder':
-                this.placeholder = newValue as string;
-                break;
-            case 'type':
-                this.type = newValue as 'text' | 'email' | 'password' | 'tel' | 'url' | 'search';
-                break;
-            case 'name':
-                this.name = newValue as string;
-                break;
-            case 'required':
-                this.required = newValue !== null;
-                break;
-            case 'disabled':
-                this.disabled = newValue !== null;
-                break;
-            case 'readonly':
-                this.readOnly = newValue !== null;
-                break;
-            case 'minlength':
-                this.minlength = newValue ? Number(newValue) : undefined;
-                break;
-            case 'maxlength':
-                this.maxlength = newValue ? Number(newValue) : undefined;
-                break;
-            case 'pattern':
-                this.pattern = newValue as string;
-                break;
-            case 'autocomplete':
-                this.autocomplete = newValue as string;
-                break;
-            case 'error-message':
-                this.errorMessage = newValue as string;
-                break;
+                this.updateFormValue();
+            }
+            this.removeAttribute('value');
         }
 
-        // Sync attributes to internal input element
+        if (name === 'minlength') {
+            this.minlength = newValue ? Number(newValue) : undefined;
+        }
+        
+        if (name === 'maxlength') {
+            this.maxlength = newValue ? Number(newValue) : undefined;
+        }
+
         this.syncAttributesToInput();
 
         if (['required', 'disabled', 'readonly', 'readOnly', 'minlength', 'maxlength', 'pattern', 'value'].includes(name)) {
