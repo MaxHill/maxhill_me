@@ -12,6 +12,16 @@ afterEach(() => {
 });
 
 describe('m-input', () => {
+  describe('accessibility', () => {
+    it('passes automated a11y tests', async () => {
+      const el = await fixture<MInput>(html`
+        <m-input label="Email"></m-input>
+      `);
+
+      await expect(el).to.be.accessible();
+    });
+  });
+
   describe('basic rendering', () => {
     it('should render with default values', async () => {
       const el = await fixture<MInput>(html`
@@ -50,14 +60,10 @@ describe('m-input', () => {
 
       const input1 = el1.shadowRoot?.querySelector('input');
       const input2 = el2.shadowRoot?.querySelector('input');
-      const label1 = el1.shadowRoot?.querySelector('label');
-      const label2 = el2.shadowRoot?.querySelector('label');
 
       expect(input1?.id).to.be.ok;
       expect(input2?.id).to.be.ok;
       expect(input1?.id).not.to.equal(input2?.id);
-      expect(label1?.getAttribute('for')).to.equal(input1?.id);
-      expect(label2?.getAttribute('for')).to.equal(input2?.id);
     });
   });
 
