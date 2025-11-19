@@ -4,6 +4,7 @@ import { query } from "../utils/query";
 import styles from "./index.css?inline";
 import MInput from "../m-input";
 import MOption from "../m-option";
+import { autoUpdate, computePosition, flip, offset, shift, size } from "@floating-ui/dom";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -48,6 +49,7 @@ export class MCombobox extends MInputListElement {
 
     private _shadowRoot: ShadowRoot;
     private internals: ElementInternals;
+    private popoverCleanup?: () => void;
 
     @query('#popover')
     private popoverElement!: HTMLDivElement;
@@ -86,11 +88,11 @@ export class MCombobox extends MInputListElement {
         this.setAttribute("role", "combobox");
         this.setAttribute("aria-haspopup", "listbox");
         this.setAttribute("aria-expanded", "false");
-        
+
         if (this.popoverElement) {
             this.setAttribute("aria-controls", "popover");
         }
-        
+
         if (!this.hasAttribute("tabindex")) {
             this.setAttribute("tabindex", "0");
         }
@@ -119,13 +121,43 @@ export class MCombobox extends MInputListElement {
     /*** ----------------------------
      *  Popover Management
      * ----------------------------- */
+    private updatePosition = () => {
+        console.log(this)
+        computePosition(this, this.popoverElement, {
+            placement: 'bottom',
+            middleware: [
+                offset(6), flip(), shift({ padding: 5 }),
+                size({
+                    apply({ rects, availableWidth, availableHeight, elements }) {
+                        // Change styles, e.g.
+                        Object.assign(elements.floating.style, {
+                            width: `${rects.reference.width}px`,
+                            maxHeight: `${Math.max(0, availableHeight)}px`,
+                        });
+                    },
+                }),
+            ],
+        }).then(({ x, y }) => {
+            Object.assign(this.popoverElement.style, {
+                left: `${x}px`,
+                top: `${y}px`,
+            });
+        });
+    }
     private _showPopover(): void {
         this.popoverElement?.showPopover();
         this.setAttribute("aria-expanded", "true");
+
+        this.popoverCleanup = autoUpdate(
+            this,
+            this.popoverElement,
+            this.updatePosition,
+        );
     }
 
     private _hidePopover(): void {
         this.popoverElement?.hidePopover();
+        this.popoverCleanup && this.popoverCleanup();
         this.setAttribute("aria-expanded", "false");
     }
 
@@ -227,7 +259,7 @@ export class MCombobox extends MInputListElement {
     //  ------------------------------------------------------------------------ 
     private handleFocus = (_e: Event) => { this._showPopover(); }
     private handleBlur = (_e: Event) => { this._hidePopover(); }
-    private handleInput = (_e: Event) => {this._showPopover(); }
+    private handleInput = (_e: Event) => { this._showPopover(); }
 
     private handleClick = (event: MouseEvent) => {
         const item = event
@@ -247,14 +279,14 @@ export class MCombobox extends MInputListElement {
 
     private handleKeydown = (e: Event) => {
         const event = e as KeyboardEvent;
-        
+
         if (
             event.key === "ArrowDown" ||
             (event.key === "n" && event.ctrlKey)
         ) {
             e.preventDefault();
             e.stopPropagation();
-            this._showPopover(); 
+            this._showPopover();
             this.focusNext();
         } else if (
             event.key === "ArrowUp" ||
@@ -262,7 +294,7 @@ export class MCombobox extends MInputListElement {
         ) {
             e.preventDefault();
             e.stopPropagation();
-            this._showPopover(); 
+            this._showPopover();
             this.focusPrev();
         } else if (event.key === "Enter") {
             e.preventDefault();
@@ -282,7 +314,7 @@ export class MCombobox extends MInputListElement {
     private renderMultiselect() {
         this.multiSelectListElement.innerHTML = this.selectedItems.reduce((acc, i) => {
             return `${acc}<li>${i.textContent.trim()}</li>`
-        },"")
+        }, "")
     }
 
     private render() {
