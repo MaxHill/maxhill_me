@@ -13,6 +13,8 @@ import {
   type SelectionResult
 } from "./list-options-manager";
 
+
+// TODO: Add required and minimum validation
 export abstract class MInputListElement extends MElement {
   @BindAttribute()
   disabled: boolean = false;
