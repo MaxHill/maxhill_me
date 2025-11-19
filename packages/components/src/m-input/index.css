@@ -1,5 +1,5 @@
 :host {
-    display: block;
+    display: grid;
 }
 
 label {
@@ -11,7 +11,6 @@ label {
 }
 
 input {
-    width: 100%;
     padding: var(--size-2) var(--size-3);
     font: var(--p);
     color: hsl(var(--color-text));

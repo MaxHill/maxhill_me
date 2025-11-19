@@ -1,6 +1,5 @@
 import { MElement } from "../utils/m-element";
 import { BindAttribute } from "../utils/reflect-attribute";
-import { query } from "../utils/query";
 import styles from "./index.css?inline";
 import {
     MInputChangeEvent,

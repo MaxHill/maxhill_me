@@ -1,19 +1,23 @@
 :host {
-    display: block;
+    display: grid;
 }
 
 :host([multiple]) { 
-    display: flex;
+    display: grid;
 }
 
-/* :host([multiple]) #multi-select-list { */
-/*     display: block; */
-/*     background: orange; */
-/*     width: 100px; */
-/*     height: 1lh; */
-/* } */
+m-input {
+    width: 100%;
+}
 
 .box {
+     width: max-content;
+      position: absolute;
+      top: 0;
+      left: 0;
+      margin: 0;
+      box-sizing: border-box;
+      overflow: scroll;
     text-decoration: none;
     background-color: var(--color-background, white);
     box-shadow: var(--shadow, 0 1px 3px rgba(0,0,0,0.1));
@@ -23,12 +27,6 @@
     padding: var(--size-fluid-1, 1rem);
 }
 
-m-listbox {
-    display: none;
-    &:popover-open {
-        display: grid;
-    }
-}
 
 m-option[data-match="false"][aria-selected="false"] {
     display: none;
