@@ -1,93 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { html, fixture, waitUntil } from '../utils/test-helpers';
+import { expect, html, fixture } from '@open-wc/testing';
 import { {{componentNamePascal}} } from './index';
 
 {{componentNamePascal}}.define();
 
-beforeEach(() => {
-  document.body.innerHTML = '';
-});
-
-afterEach(() => {
-  document.body.innerHTML = '';
-});
-
 describe('{{componentName}}', () => {
-  describe('basic rendering', () => {
-    it('should render', async () => {
-      const el = await fixture<{{componentNamePascal}}>(html`
-        <{{componentName}} example="test">
-          Test content
-        </{{componentName}}>
+  describe('accessibility', () => {
+    it('should be accessible', async () => {
+      const el = await fixture(html`
+        <{{componentName}}>Test content</{{componentName}}>
       `);
 
-      expect(el).toBeInstanceOf({{componentNamePascal}});
-      expect(el.example).toBe('test');
-    });
-
-    it('should have default example', async () => {
-      const el = await fixture<{{componentNamePascal}}>(html`
-        <{{componentName}}>Test</{{componentName}}>
-      `);
-
-      expect(el.example).toBe('');
+      await expect(el).to.be.accessible();
     });
   });
-
-  describe('attributes', () => {
-    it('should reflect example attribute', async () => {
-      const el = await fixture<{{componentNamePascal}}>(html`
-        <{{componentName}} example="initial">Test</{{componentName}}>
-      `);
-
-      expect(el.example).toBe('initial');
-      expect(el.getAttribute('example')).toBe('initial');
-
-      el.example = 'updated';
-      await new Promise(resolve => setTimeout(resolve, 0));
-
-      expect(el.getAttribute('example')).toBe('updated');
-    });
-  });
-
-{{#if hasEvents}}
-  describe('events', () => {
-    it('should dispatch {{componentName}}-change event', async () => {
-      const el = await fixture<{{componentNamePascal}}>(html`
-        <{{componentName}} example="initial">Test</{{componentName}}>
-      `);
-
-      let eventFired = false;
-      let eventDetail: any;
-
-      el.addEventListener('{{componentName}}-change', (e: Event) => {
-        eventFired = true;
-        eventDetail = (e as CustomEvent).detail;
-      });
-
-      el.example = 'changed';
-      await new Promise(resolve => setTimeout(resolve, 0));
-
-      expect(eventFired).toBe(true);
-      expect(eventDetail.example).toBe('changed');
-    });
-
-    it('should dispatch standard change event', async () => {
-      const el = await fixture<{{componentNamePascal}}>(html`
-        <{{componentName}} example="initial">Test</{{componentName}}>
-      `);
-
-      let changeEventFired = false;
-
-      el.addEventListener('change', () => {
-        changeEventFired = true;
-      });
-
-      el.example = 'changed';
-      await new Promise(resolve => setTimeout(resolve, 0));
-
-      expect(changeEventFired).toBe(true);
-    });
-  });
-{{/if}}
 });
