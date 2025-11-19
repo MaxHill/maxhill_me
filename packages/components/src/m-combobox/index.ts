@@ -1,9 +1,10 @@
 import { MInputListElement } from "../utils/m-input-list-element";
-import { BindAttribute, UpdatesAttribute } from "../utils/reflect-attribute";
+import { BindAttribute } from "../utils/reflect-attribute";
 import { query } from "../utils/query";
 import styles from "./index.css?inline";
 import MInput from "../m-input";
 import MOption from "../m-option";
+import { MOptionSelectedChangeEvent } from "../m-option/events";
 import { autoUpdate, computePosition, flip, offset, size } from "@floating-ui/dom";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -33,7 +34,7 @@ baseStyleSheet.replaceSync(styles);
 export class MCombobox extends MInputListElement {
     static tagName = 'm-combobox';
     static formAssociated = true;
-    static observedAttributes = ['name', 'disabled', 'multiple', 'value', 'label'];
+    static observedAttributes = ['name', 'disabled', 'multiple', 'value', 'label', 'debounce'];
 
     @BindAttribute()
     name: string = '';
@@ -45,8 +46,10 @@ export class MCombobox extends MInputListElement {
     multiple: boolean = false;
 
     @BindAttribute()
-    @UpdatesAttribute({ attribute: 'aria-label' })
-    label?: string;
+    label: string = "";
+
+    @BindAttribute()
+    debounce: number = 150;
 
     private _shadowRoot: ShadowRoot;
     private internals: ElementInternals;
@@ -99,11 +102,16 @@ export class MCombobox extends MInputListElement {
             this.setAttribute("tabindex", "0");
         }
 
+        if (this.label) {
+            this.setAttribute("aria-label", this.label);
+        }
+
         this.addEventListener("keydown", this.handleKeydown);
         this.addEventListener("input", this.handleInput);
         this.addEventListener("click", this.handleClick);
         this.addEventListener("mouseover", this.handleMouseOver);
         this.addEventListener("mouseout", this.handleMouseOut);
+        this.addEventListener("m-option-selected-change", this.handleOptionSelectedChange);
 
         this.addEventListener("focus", this.handleFocus, true);
         this.addEventListener("blur", this.handleBlur, true);
@@ -115,19 +123,28 @@ export class MCombobox extends MInputListElement {
         this.removeEventListener("click", this.handleClick);
         this.removeEventListener("mouseover", this.handleMouseOver);
         this.removeEventListener("mouseout", this.handleMouseOut);
+        this.removeEventListener("m-option-selected-change", this.handleOptionSelectedChange);
 
         this.removeEventListener("focus", this.handleFocus, true);
         this.removeEventListener("blur", this.handleBlur, true);
+
+        this.popoverCleanup && this.popoverCleanup();
     }
 
     attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
         super.attributeChangedCallback(name, oldValue, newValue);
 
-        if (name === 'label' && this.inputElement) {
+        if (name === 'label') {
             if (newValue) {
-                this.inputElement.setAttribute("label", newValue);
+                this.setAttribute("aria-label", newValue);
+                if (this.inputElement) {
+                    this.inputElement.setAttribute("label", newValue);
+                }
             } else {
-                this.inputElement.removeAttribute("label");
+                this.removeAttribute("aria-label");
+                if (this.inputElement) {
+                    this.inputElement.removeAttribute("label");
+                }
             }
         }
     }
@@ -136,7 +153,6 @@ export class MCombobox extends MInputListElement {
      *  Popover Management
      * ----------------------------- */
     private updatePosition = () => {
-        console.log(this)
         computePosition(this, this.popoverElement, {
             placement: 'bottom',
             middleware: [
@@ -180,6 +196,16 @@ export class MCombobox extends MInputListElement {
     /*** ----------------------------
      *  Selection Management
      * ----------------------------- */
+    private syncInputFromSelection(): void {
+        if (this.multiple) {
+            this.renderMultiselect();
+        } else if (!this.multiple && this.selectedValues.length > 0) {
+            this.inputElement.value = this.selectedItems[0]?.textContent?.trim() || '';
+        } else if (!this.multiple && this.selectedValues.length === 0) {
+            this.inputElement.value = '';
+        }
+    }
+
     select(item: MOption): void {
         if (!item) return;
 
@@ -202,15 +228,10 @@ export class MCombobox extends MInputListElement {
             }
         }
 
-        // TODO: extract to own method
-        if (this.multiple) {
-            this.renderMultiselect();
-        } else if (!this.multiple && this.selectedValues.length > 0) {
-            this.inputElement.value = item.textContent?.trim() || '';
-        } else if (!this.multiple && result.itemsToDeselect.length > 0) {
-            this.inputElement.value = '';
+        this.syncInputFromSelection();
+        if (!this.multiple) {
+            this._hidePopover();
         }
-        this._hidePopover();
 
         // TODO: update events
         // const EventClass = item.selected ? MListboxSelectEvent : MListboxUnselectedEvent;
@@ -271,6 +292,10 @@ export class MCombobox extends MInputListElement {
     //  ------------------------------------------------------------------------
     //  Event Handlers
     //  ------------------------------------------------------------------------ 
+    private handleOptionSelectedChange = (_e: Event) => {
+        this.syncInputFromSelection();
+    }
+
     private handleFocus = (_e: Event) => { this._showPopover(); }
     private handleBlur = (_e: Event) => {
         this.resetInputValue();
@@ -295,6 +320,7 @@ export class MCombobox extends MInputListElement {
     };
 
     private handleKeydown = (e: Event) => {
+        if (this.disabled) return;
         const event = e as KeyboardEvent;
 
         if (
@@ -313,6 +339,12 @@ export class MCombobox extends MInputListElement {
             e.stopPropagation();
             this._showPopover();
             this.focusPrev();
+        } else if (event.key === "Home") {
+            this.focusFirst();
+            event.preventDefault();
+        } else if (event.key === "End") {
+            this.focusLast();
+            event.preventDefault();
         } else if (event.key === "Enter") {
             e.preventDefault();
             e.stopPropagation();
@@ -347,7 +379,7 @@ export class MCombobox extends MInputListElement {
 
     private render() {
         this._shadowRoot.innerHTML = `
-            <m-search-list target="#popover slot">
+            <m-search-list debounce="${this.debounce}" target="#popover slot">
                 <div slot="controller" id="multi-select-list" slot="control"></div>
                 <m-input type="text" ${this.label ? `label="${this.label}"` : ''}></m-input>
 

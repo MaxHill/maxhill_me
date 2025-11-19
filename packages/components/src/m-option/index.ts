@@ -1,6 +1,7 @@
 import { MElement } from "../utils/m-element";
 import { BindAttribute } from "../utils/reflect-attribute";
 import styles from "./index.css?inline";
+import { MOptionSelectedChangeEvent } from "./events";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -77,6 +78,9 @@ export class MOption extends MElement {
 
         if (name === 'selected') {
             this.setAttribute('aria-selected', String(this.selected));
+            this.dispatchEvent(
+                new MOptionSelectedChangeEvent({ selected: this.selected })
+            );
         }
 
         if (name === 'disabled') {
