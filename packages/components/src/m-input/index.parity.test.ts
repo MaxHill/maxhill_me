@@ -1,5 +1,4 @@
-import { expect } from "@esm-bundle/chai";
-import { html, fixture } from '@open-wc/testing';
+import { expect, html, fixture } from '@open-wc/testing';
 import { MInput } from './index';
 
 MInput.define();

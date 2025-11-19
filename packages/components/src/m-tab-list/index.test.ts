@@ -1,5 +1,4 @@
-import { expect } from "@esm-bundle/chai";
-import { html, fixture, waitUntil } from '@open-wc/testing';
+import { expect, html, fixture, waitUntil } from '@open-wc/testing';
 import { MTabList } from './index';
 import { MTab } from '../m-tab';
 import { MTabPanel } from '../m-tab-panel';

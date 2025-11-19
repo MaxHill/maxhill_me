@@ -1,5 +1,4 @@
-import { expect } from "@esm-bundle/chai";
-import { html, fixture, waitUntil } from '@open-wc/testing';
+import { expect, html, fixture, waitUntil } from '@open-wc/testing';
 import { MCombobox } from './index';
 import { MOption } from '../m-option';
 import { MListbox } from '../m-listbox';

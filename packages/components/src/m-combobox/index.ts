@@ -1,5 +1,5 @@
 import { MInputListElement } from "../utils/m-input-list-element";
-import { BindAttribute } from "../utils/reflect-attribute";
+import { BindAttribute, UpdatesAttribute } from "../utils/reflect-attribute";
 import { query } from "../utils/query";
 import styles from "./index.css?inline";
 import MInput from "../m-input";
@@ -45,6 +45,7 @@ export class MCombobox extends MInputListElement {
     multiple: boolean = false;
 
     @BindAttribute()
+    @UpdatesAttribute({ attribute: 'aria-label' })
     label?: string;
 
     private _shadowRoot: ShadowRoot;
@@ -88,6 +89,7 @@ export class MCombobox extends MInputListElement {
         this.setAttribute("role", "combobox");
         this.setAttribute("aria-haspopup", "listbox");
         this.setAttribute("aria-expanded", "false");
+        this.setAttribute("aria-autocomplete", "list");
 
         if (this.popoverElement) {
             this.setAttribute("aria-controls", "popover");
@@ -116,6 +118,18 @@ export class MCombobox extends MInputListElement {
 
         this.removeEventListener("focus", this.handleFocus, true);
         this.removeEventListener("blur", this.handleBlur, true);
+    }
+
+    attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
+        super.attributeChangedCallback(name, oldValue, newValue);
+
+        if (name === 'label' && this.inputElement) {
+            if (newValue) {
+                this.inputElement.setAttribute("label", newValue);
+            } else {
+                this.inputElement.removeAttribute("label");
+            }
+        }
     }
 
     /*** ----------------------------
@@ -335,7 +349,7 @@ export class MCombobox extends MInputListElement {
         this._shadowRoot.innerHTML = `
             <m-search-list target="#popover slot">
                 <div slot="controller" id="multi-select-list" slot="control"></div>
-                <m-input type="text" role="combobox"></m-input>
+                <m-input type="text" ${this.label ? `label="${this.label}"` : ''}></m-input>
 
                 <div 
                     id="popover"
@@ -344,7 +358,6 @@ export class MCombobox extends MInputListElement {
                     tabindex="-1"
                     popover="manual"
                     ${this.multiple ? 'aria-multiselectable="true"' : ''}
-                    ${this.label ? `aria-label="${this.label}"` : ''}
                 >
                     <slot></slot>
                 </div>
