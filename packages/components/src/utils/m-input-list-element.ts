@@ -1,20 +1,20 @@
 import { MElement } from "./m-element";
 import { BindAttribute } from "./reflect-attribute";
 import type { MOption } from "../m-option";
-import {
-  getItems,
-  getSelectedItems,
-  getSelectedValues,
-  focusFirst,
-  focusLast,
-  focusNext,
-  focusPrev,
-  computeSelection,
-  type SelectionResult
-} from "./list-options-manager";
 
+interface OptionLike {
+  selected?: boolean;
+  value?: string;
+  disabled?: boolean;
+}
 
-// TODO: Add required and minimum validation
+interface SelectionResult<T> {
+  itemToSelect: T;
+  itemsToDeselect: T[];
+  shouldToggle: boolean;
+  newFocusTarget: T | null;
+}
+
 export abstract class MInputListElement extends MElement {
   @BindAttribute()
   disabled: boolean = false;
@@ -43,16 +43,36 @@ export abstract class MInputListElement extends MElement {
 
   protected abstract getItemsSkipSelector(): string | undefined;
 
+  private getItems(): MOption[] {
+    const baseSelector = "m-option:not([hidden]):not([disabled])";
+    const skipSelector = this.getItemsSkipSelector();
+    const selector = skipSelector ? `${baseSelector}:not(${skipSelector})` : baseSelector;
+    return Array.from(this.querySelectorAll(selector)) as MOption[];
+  }
+
+  private getSelectedItems(items: MOption[]): MOption[] {
+    return items.filter(item => !!item.selected);
+  }
+
+  private getSelectedValues(items: OptionLike[]): string[] {
+    return items.reduce<string[]>((acc, item) => {
+      if (item.selected && item.value) {
+        acc.push(item.value);
+      }
+      return acc;
+    }, []);
+  }
+
   get items(): MOption[] {
-    return getItems<MOption>(this, this.getItemsSkipSelector());
+    return this.getItems();
   }
 
   get selectedItems(): MOption[] {
-    return getSelectedItems(this.items);
+    return this.getSelectedItems(this.items);
   }
 
   get selectedValues(): string[] {
-    return getSelectedValues(this.items);
+    return this.getSelectedValues(this.items);
   }
 
   get value(): string | string[] | null {
@@ -63,6 +83,26 @@ export abstract class MInputListElement extends MElement {
   /*** ----------------------------
    *  Focus Management
    * ----------------------------- */
+  private focusFirstItem(items: MOption[]): MOption | null {
+    return items[0] ?? null;
+  }
+
+  private focusLastItem(items: MOption[]): MOption | null {
+    return items[items.length - 1] ?? null;
+  }
+
+  private focusNextItem(items: MOption[], currentFocus: MOption | null): MOption | null {
+    if (!currentFocus) return this.focusFirstItem(items);
+    const idx = items.indexOf(currentFocus);
+    return items[idx + 1] ?? items[0] ?? null;
+  }
+
+  private focusPrevItem(items: MOption[], currentFocus: MOption | null): MOption | null {
+    if (!currentFocus) return this.focusLastItem(items);
+    const idx = items.indexOf(currentFocus);
+    return items[idx - 1] ?? items[items.length - 1] ?? null;
+  }
+
   setFocus(item: MOption | null): void {
     if (!item) return;
     if (this.focusedElement) this.focusedElement.removeAttribute('focused');
@@ -72,20 +112,20 @@ export abstract class MInputListElement extends MElement {
   }
 
   focusFirst(): void {
-    this.setFocus(focusFirst(this.items));
+    this.setFocus(this.focusFirstItem(this.items));
   }
 
   focusLast(): void {
-    this.setFocus(focusLast(this.items));
+    this.setFocus(this.focusLastItem(this.items));
   }
 
   focusNext(): void {
-    const next = focusNext(this.items, this.focusedElement);
+    const next = this.focusNextItem(this.items, this.focusedElement);
     this.setFocus(next);
   }
 
   focusPrev(): void {
-    this.setFocus(focusPrev(this.items, this.focusedElement));
+    this.setFocus(this.focusPrevItem(this.items, this.focusedElement));
   }
 
   focusBlur(): void {
@@ -98,6 +138,25 @@ export abstract class MInputListElement extends MElement {
   /*** ----------------------------
    *  Selection Management
    * ----------------------------- */
+  protected computeSelection(item: MOption): SelectionResult<MOption> {
+    if (!this.multiple) {
+      const itemsToDeselect = this.selectedItems.filter(i => i !== item);
+      return {
+        itemToSelect: item,
+        itemsToDeselect,
+        shouldToggle: false,
+        newFocusTarget: item,
+      };
+    } else {
+      return {
+        itemToSelect: item,
+        itemsToDeselect: [],
+        shouldToggle: true,
+        newFocusTarget: this.focusedElement,
+      };
+    }
+  }
+
   select(item: MOption): void {
     if (!item) return;
 
@@ -122,33 +181,23 @@ export abstract class MInputListElement extends MElement {
   }
 
   selectFirst(): void {
-    const first = focusFirst(this.items);
+    const first = this.focusFirstItem(this.items);
     if (first) this.select(first);
   }
 
   selectLast(): void {
-    const last = focusLast(this.items);
+    const last = this.focusLastItem(this.items);
     if (last) this.select(last);
   }
 
   selectNext(): void {
-    const next = focusNext(this.items, this.focusedElement);
+    const next = this.focusNextItem(this.items, this.focusedElement);
     if (next) this.select(next);
   }
 
   selectPrev(): void {
-    const prev = focusPrev(this.items, this.focusedElement);
+    const prev = this.focusPrevItem(this.items, this.focusedElement);
     if (prev) this.select(prev);
-  }
-
-  protected computeSelection(item: MOption): SelectionResult<MOption> {
-    return computeSelection(
-      item,
-      this.items,
-      this.selectedItems,
-      this.focusedElement,
-      { multiple: this.multiple }
-    );
   }
 
   /*** ----------------------------
