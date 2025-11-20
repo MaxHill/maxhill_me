@@ -27,6 +27,38 @@ An email input that validates the format automatically.
 <m-input label="Email Address" type="email" required></m-input>
 ```
 
+### Start and End
+<m-input label="Email Address" type="email" required>
+<span slot="start">Start</span>
+</m-input>
+```html
+<m-input label="Email Address" type="email" required>
+<span slot="start">Start</span>
+</m-input>
+```
+
+End
+<m-input label="Email Address" type="email" required>
+<span slot="end">End</span>
+</m-input>
+```html
+<m-input label="Email Address" type="email" required>
+<span slot="end">End</span>
+</m-input>
+```
+
+Start & End
+<m-input label="Email Address" type="email" required>
+<span slot="start">Start</span>
+<span slot="end">End</span>
+</m-input>
+```html
+<m-input label="Email Address" type="email" required>
+<span slot="start">Start</span>
+<span slot="end">Start</span>
+</m-input>
+```
+
 ### With Pattern Validation
 
 An input that validates against a specific pattern (e.g., phone number).
@@ -103,7 +135,6 @@ An input that displays a value but cannot be edited.
 ```
 
 ### Form Integration
-
 Inputs work seamlessly with native forms and submit only validation.
 
 <form id="example-form">
@@ -131,10 +162,12 @@ document.querySelector('#example-form').addEventListener('submit', (e) => {
 
 Trigger validation programmatically using the validation API.
 
-<m-input id="validate-example" label="Email" type="email" required></m-input>
-<button onclick="document.querySelector('#validate-example').reportValidity()">
-  Validate
-</button>
+<form>
+    <m-input id="validate-example" label="Email" type="email" required></m-input>
+    <button onclick="document.querySelector('#validate-example').reportValidity()">
+      Validate
+    </button>
+</form>
 ```html
 <m-input id="validate-example" label="Email" type="email" required></m-input>
 <button onclick="document.querySelector('#validate-example').reportValidity()">
