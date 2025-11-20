@@ -220,20 +220,24 @@ export class MInput extends MElement {
     private render() {
         this._shadowRoot.innerHTML = `
             <label for="${this.inputId}">${this.label}</label>
-            <input
-                id="${this.inputId}"
-                type="${this.type}"
-                placeholder="${this.placeholder}"
-                value="${this.value}"
-                name="${this.name}"
-                ${this.required ? 'required' : ''}
-                ${this.disabled ? 'disabled' : ''}
-                ${this.readOnly ? 'readonly' : ''}
-                ${this.minlength ? `minlength="${this.minlength}"` : ''}
-                ${this.maxlength ? `maxlength="${this.maxlength}"` : ''}
-                ${this.pattern ? `pattern="${this.pattern}"` : ''}
-                ${this.autocomplete ? `autocomplete="${this.autocomplete}"` : ''}
-            />
+            <div class="input-wrapper">
+                <slot name="start"></slot>
+                <input
+                    id="${this.inputId}"
+                    type="${this.type}"
+                    placeholder="${this.placeholder}"
+                    value="${this.value}"
+                    name="${this.name}"
+                    ${this.required ? 'required' : ''}
+                    ${this.disabled ? 'disabled' : ''}
+                    ${this.readOnly ? 'readonly' : ''}
+                    ${this.minlength ? `minlength="${this.minlength}"` : ''}
+                    ${this.maxlength ? `maxlength="${this.maxlength}"` : ''}
+                    ${this.pattern ? `pattern="${this.pattern}"` : ''}
+                    ${this.autocomplete ? `autocomplete="${this.autocomplete}"` : ''}
+                />
+                <slot name="end"></slot>
+            </div>
             <div class="error" role="alert" aria-live="polite"></div>
         `;
 
@@ -412,7 +416,7 @@ export class MInput extends MElement {
     public reportValidity(): boolean {
         if (!this.inputElement) return true;
 
-        const isValid = this.inputElement.reportValidity();
+        const isValid = this.inputElement.checkValidity();
         this.validateInput();
 
         return isValid;
