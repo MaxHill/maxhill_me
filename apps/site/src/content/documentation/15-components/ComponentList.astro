@@ -1,280 +1,52 @@
 ---
-import customElements from "@maxhill/components/custom-elements.json";
-import { marked } from "marked";
 import { getCollection } from "astro:content";
-import { getComponentByTagName, getComponentPublicProperties, getComponentPublicMethods, getComponentEventsWithType, getCustomEventDetailTypes } from "@wc-toolkit/cem-utilities";
 
-const docEntries = await getCollection('componentDocs');
+const docEntries = await getCollection("componentDocs");
 
-const docsModules = import.meta.glob('../../../../../../packages/components/src/*/DOCS.mdx', { eager: true });
+const components = docEntries
+    .map((docsEntry) => {
+        const tagName = docsEntry.id.split("/").slice(-2, -1)[0];
 
-const components = docEntries.map((docsEntry) => {
-    const tagName = docsEntry.id.split('/').slice(-2, -1)[0];
-    
-    if (!tagName) {
-        return null;
-    }
-    
-    const component = getComponentByTagName(customElements, tagName);
-    
-    if (!component) {
-        return null;
-    }
-    
-    const properties = getComponentPublicProperties(component);
-    const methods = getComponentPublicMethods(component);
-    const events = getComponentEventsWithType(component, { overrideCustomEventType: true });
-    const customEventDetailTypes = getCustomEventDetailTypes(component);
-    const publicMembers = component.members?.filter((m: any) => !m.static && m.privacy !== 'private') || [];
-    
-    const docsModulePath = `../../../../../../packages/components/src/${tagName}/DOCS.mdx`;
-    const DocsModule = docsModules[docsModulePath];
-    
-    return {
-        ...component,
-        properties,
-        methods,
-        events,
-        customEventDetailTypes,
-        publicMembers,
-        DocsModule,
-    };
-}).filter(Boolean);
+        if (!tagName) {
+            return null;
+        }
+
+        return {
+            tagName,
+            componentPath: tagName.substring(2),
+        };
+    })
+    .filter(Boolean);
 ---
 
-<m-search-list class="content-grid" data-width="full">
+<m-search-list
+    class="content-grid"
+    data-gap="3"
+    data-width="full"
+    target=".collection"
+>
+    <label class="stack" data-gap="1" for="search-components" slot="controller"
+        >Search components
+        <input id="search-components" slot="controller" type="search" />
+    </label>
 
-    <label for="search-components" slot="controller">Search components</label>
-    <input id="search-components" slot="controller" type="search"/>
-{
-    components.map((component) => (
-        <details  data-keywords={component.tagName || component.name}>
-            <summary>&lt;{component.tagName || component.name}&gt;</summary>
-            {component.description && (
-                <div set:html={marked.parse(component.description)} />
-            )}
-
-            {component.DocsModule && (
-                <>
-                    <component.DocsModule.default />
-                </>
-            )}
-
-            {component.properties && component.properties.length > 0 && (
-                    <>
-                        <h4>Properties</h4>
-                        <div class="table-wrapper">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th class="name">Name</th>
-                                        <th class="type">Type</th>
-                                        <th class="description">Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {component.properties.map((prop: any) => (
-                                        <tr>
-                                            <td class="name">
-                                                <m-copy-button value={prop.name}>
-                                                    {prop.name}
-                                                </m-copy-button>
-                                            </td>
-                                            <td class="type">{prop.type?.text}</td>
-                                            <td class="description">{prop.description}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </>
-            )}
-
-            {component.methods && component.methods.length > 0 && (
-                    <>
-                        <h4>Methods</h4>
-                        <div class="table-wrapper">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th class="name">Name</th>
-                                        <th class="type">Type</th>
-                                        <th class="description">Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {component.methods.map((method: any) => (
-                                        <tr>
-                                            <td class="name">
-                                                <m-copy-button value={method.name}>
-                                                    {method.name}
-                                                </m-copy-button>
-                                            </td>
-                                            <td class="type">{method.type?.text}</td>
-                                            <td class="description">{method.description}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </>
-            )}
-
-            {component.events && component.events.length > 0 && (
-                    <>
-                        <h4>Events</h4>
-                        <div class="table-wrapper">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th class="name">Name</th>
-                                        <th class="type">Type</th>
-                                        <th class="description">Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {component.events.map((event: any) => (
-                                        <tr>
-                                            <td class="name">
-                                                <m-copy-button value={event.name}>
-                                                    {event.name}
-                                                </m-copy-button>
-                                            </td>
-                                            <td class="type">{event.type?.text}</td>
-                                            <td class="description">{event.description}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </>
-            )}
-
-            {component.slots && component.slots.length > 0 && (
-                    <>
-                        <h4>Slots</h4>
-                        <div class="table-wrapper">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th class="name">Name</th>
-                                        <th class="description">Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {component.slots.map((slot: any) => (
-                                        <tr>
-                                            <td class="name">
-                                                <m-copy-button value={`slot="${slot.name || ''}"`}>
-                                                    slot="{slot.name || '(default)'}"
-                                                </m-copy-button>
-                                            </td>
-                                            <td class="description">{slot.description}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </>
-            )}
-
-            {component.cssParts && component.cssParts.length > 0 && (
-                    <>
-                        <h4>CSS Parts</h4>
-                        <div class="table-wrapper">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {component.cssParts.map((part: any) => (
-                                        <tr>
-                                            <td>
-                                                <m-copy-button value={`::part(${part.name})`}>
-                                                    ::part({part.name})
-                                                </m-copy-button>
-                                            </td>
-                                            <td>{part.description}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </>
-            )}
-        </details>
-    ))
-    }
+    <div class="collection" data-gap="2" data-size="9">
+        {
+            components.map((component) => (
+                <a
+                    href={`/components/${component.componentPath}`}
+                    class="box"
+                    data-keywords={component.tagName}
+                >
+                    &lt;{component.tagName}&gt;
+                </a>
+            ))
+        }
+    </div>
 </m-search-list>
-
-<script>
-import { registerCommand } from '@maxhill/components/m-command';
-
-// Make registerCommand available globally for examples
-(window as any).registerCommand = registerCommand;
-</script>
 
 <style>
     :global([data-match="false"]) {
         display: none;
     }
-
-    summary {
-        padding-block: var(--size-2);
-        background-color: var(--color-surface-raised);
-        border-top: var(--border);
-    }
-
-    details {
-        /* display: content; */
-
-        &[data-match="false"] {
-            display: none;
-        }
-    }
-
-    .table-wrapper {
-        overflow-x: auto;
-        width: 100%;
-    }
-
-    table {
-        width: max-content;
-        border-collapse: collapse;
-        
-        th, td {
-            text-align: left;
-            padding: var(--size-2);
-        }
-
-        th {
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        tr {
-            border-bottom: var(--border);
-        }
-
-        th:nth-child(1), td:nth-child(1),
-        th:nth-child(2), td:nth-child(2) {
-            width: max-content;
-            white-space: nowrap;
-        }
-
-        th:nth-child(3), td:nth-child(3) {
-            width: max-content;
-            max-width: var(--size-content-1);
-        }
-
-        td {
-            m-copy-button {
-                font-size: var(--font-size-1);
-            }
-        }
-    }
-
 </style>
