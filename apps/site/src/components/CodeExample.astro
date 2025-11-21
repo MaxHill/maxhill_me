@@ -1,0 +1,55 @@
+---
+import { Code } from "astro:components";
+
+export interface Props {
+    html?: string;
+    css?: string;
+    js?: string;
+}
+
+const { html = "", css = "", js = "" } = Astro.props;
+
+const codeBlock = [
+    html,
+    js && `<script>\n${js}\n</script>`,
+    css && `<style>\n${css}\n</style>`
+].filter(Boolean).join('\n\n');
+---
+
+<div class="box" data-padded="false">
+    {css && <style set:html={css} />}
+    {html && <div data-padding="2" set:html={html} />}
+
+    {
+        js && (
+            <script define:vars={{ js }} is:inline>
+                eval(js);
+            </script>
+        )
+    }
+
+    <details>
+        <summary data-padding="2" data-border="bs">Code</summary>
+        <div data-padding="2">
+            <Code code={codeBlock} lang="html" />
+        </div>
+    </details>
+</div>
+
+<style>
+    pre {
+        padding: var(--size-2);
+        margin: 0;
+        overflow-x: auto;
+    }
+
+    details > div {
+        display: grid;
+        gap: var(--size-2);
+        min-width: 0;
+    }
+    
+    details > div > div {
+        min-width: 0;
+    }
+</style>
