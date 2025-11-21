@@ -1,136 +1,77 @@
+import CodeExample from '../../../../apps/site/src/components/CodeExample.astro';
+
 ## Examples
 
 ### Basic Usage
 
 A simple copy button that copies text to the clipboard.
 
-<m-copy-button value="Hello World">
+<CodeExample html={`<m-copy-button value="Hello World">
   Copy Text
-</m-copy-button>
-```html
-<m-copy-button value="Hello World">
-  Copy Text
-</m-copy-button>
-```
+</m-copy-button>`} />
 
 ### Custom Feedback Message
 
 Change the feedback message shown after successful copy.
 
-<m-copy-button value="npm install @maxhill/components" feedback="Command copied!">
+<CodeExample html={`<m-copy-button value="npm install @maxhill/components" feedback="Command copied!">
   Copy Install Command
-</m-copy-button>
-```html
-<m-copy-button value="npm install @maxhill/components" feedback="Command copied!">
-  Copy Install Command
-</m-copy-button>
-```
+</m-copy-button>`} />
 
 ### Without Icon
 
 Hide the copy icon by setting `show-icon="false"`.
 
-<m-copy-button value="code snippet example" show-icon="false">
+<CodeExample html={`<m-copy-button value="code snippet example" show-icon="false">
   Copy
-</m-copy-button>
-```html
-<m-copy-button value="code snippet example" show-icon="false">
-  Copy
-</m-copy-button>
-```
+</m-copy-button>`} />
 
 ### Custom Icon
 
 Provide your own icon using the `icon` slot.
 
-<m-copy-button value="custom icon text">
+<CodeExample html={`<m-copy-button value="custom icon text">
   <span slot="icon">📋</span>
   Copy with Custom Icon
-</m-copy-button>
-```html
-<m-copy-button value="custom icon text">
-  <span slot="icon">📋</span>
-  Copy with Custom Icon
-</m-copy-button>
-```
+</m-copy-button>`} />
 
 ### Event Listening
 
 Listen for copy success and error events.
 
-<div class="stack" data-gap="2">
+<CodeExample html={`<div class="stack" data-gap="2">
   <m-copy-button id="event-copy" value="Event example text">
     Copy Text
   </m-copy-button>
   <div id="copy-event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised);">
     Click the button to see events...
   </div>
-</div>
+</div>`} js={`const eventCopy = document.getElementById('event-copy');
+const copyEventOutput = document.getElementById('copy-event-output');
 
-{`<script>
-  const eventCopy = document.getElementById('event-copy');
-  const copyEventOutput = document.getElementById('copy-event-output');
-  
-  eventCopy.addEventListener('copy-success', (e) => {
-    copyEventOutput.textContent = \`✓ Copied: "\${e.detail.value}"\`;
-  });
-  
-  eventCopy.addEventListener('copy-error', (e) => {
-    copyEventOutput.textContent = \`✗ Error: \${e.detail.error.message}\`;
-  });
-</script>`}
-```html
-<div class="stack" data-gap="2">
-  <m-copy-button id="event-copy" value="Event example text">
-    Copy Text
-  </m-copy-button>
-  <div id="copy-event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised);">
-    Click the button to see events...
-  </div>
-</div>
+eventCopy.addEventListener('copy-success', (e) => {
+  copyEventOutput.textContent = \`✓ Copied: "\${e.detail.value}"\`;
+});
 
-<script>
-  const eventCopy = document.getElementById('event-copy');
-  const copyEventOutput = document.getElementById('copy-event-output');
-  
-  eventCopy.addEventListener('copy-success', (e) => {
-    copyEventOutput.textContent = `✓ Copied: "${e.detail.value}"`;
-  });
-  
-  eventCopy.addEventListener('copy-error', (e) => {
-    copyEventOutput.textContent = `✗ Error: ${e.detail.error.message}`;
-  });
-</script>
-```
+eventCopy.addEventListener('copy-error', (e) => {
+  copyEventOutput.textContent = \`✗ Error: \${e.detail.error.message}\`;
+});`} />
 
 ### Copying Code Snippets
 
 Useful for documentation sites with code examples.
 
-<div class="stack" data-gap="2">
+<CodeExample html={`<div class="stack" data-gap="2">
   <pre class="box" style="position: relative; padding: var(--size-3); background: var(--color-surface-raised);">
     <m-copy-button 
-      value="const greeting = 'Hello, World!';\nconsole.log(greeting);" 
+      value="const greeting = 'Hello, World!';\\nconsole.log(greeting);" 
       style="position: absolute; top: var(--size-2); right: var(--size-2);"
       show-icon="true">
     </m-copy-button>
     <code>const greeting = 'Hello, World!';
 console.log(greeting);</code>
   </pre>
-</div>
-```html
-<div class="stack" data-gap="2">
-  <pre class="box" style="position: relative; padding: var(--size-3); background: var(--color-surface-raised);">
-    <m-copy-button 
-      value="const greeting = 'Hello, World!';\nconsole.log(greeting);" 
-      style="position: absolute; top: var(--size-2); right: var(--size-2);"
-      show-icon="true">
-    </m-copy-button>
-    <code>const greeting = 'Hello, World!';
-console.log(greeting);</code>
-  </pre>
-</div>
-```
+</div>`} />
 
 ## Usage Notes
 

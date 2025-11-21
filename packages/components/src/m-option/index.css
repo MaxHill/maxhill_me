@@ -3,16 +3,16 @@
     padding: var(--size-2);
     cursor: pointer;
     border-radius: var(--radius-2);
+    color: var(--color-text);
 }
 
 
 :host(:state(focus)) {
-    /* outline: 2px solid var(--color-primary-border-mid); */
-    /* outline: 2px solid var(--color-primary-fill-mid); */
-    /* outline-offset: -2px; */
     background: var(--color-neutral-fill-soft);
+    color: var(--color-neutral-text-on-soft);
 }
 
 :host([aria-selected="true"]) {
     background: var(--color-primary-fill-mid);
+    color: var(--color-primary-text-on-mid);
 }

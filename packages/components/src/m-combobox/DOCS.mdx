@@ -1,3 +1,5 @@
+import CodeExample from '../../../../apps/site/src/components/CodeExample.astro';
+
 ## Overview
 
 A form-associated combobox component that combines a search input with a listbox for filtering and selecting options.
@@ -6,47 +8,25 @@ A form-associated combobox component that combines a search input with a listbox
 
 ### Basic Usage
 
-<form>
+<CodeExample html={`<form>
   <m-combobox name="fruit" label="Choose a fruit">
     <m-option value="apple">Apple</m-option>
     <m-option value="pear">Pear</m-option>
     <m-option value="orange">Orange</m-option>
     <m-option value="banana">Banana</m-option>
   </m-combobox>
-</form>
-
-```html
-<form>
-  <m-combobox name="fruit" label="Choose a fruit">
-    <m-option value="apple">Apple</m-option>
-    <m-option value="pear">Pear</m-option>
-    <m-option value="orange">Orange</m-option>
-    <m-option value="banana">Banana</m-option>
-  </m-combobox>
-</form>
-```
+</form>`} />
 
 ### Multiple Selection
 
-<form>
+<CodeExample html={`<form>
   <m-combobox name="toppings" label="Choose toppings" multiple>
     <m-option value="cheese">Cheese</m-option>
     <m-option value="pepperoni">Pepperoni</m-option>
     <m-option value="mushrooms">Mushrooms</m-option>
     <m-option value="olives">Olives</m-option>
   </m-combobox>
-</form>
-
-```html
-<form>
-  <m-combobox name="toppings" label="Choose toppings" multiple>
-    <m-option value="cheese">Cheese</m-option>
-    <m-option value="pepperoni">Pepperoni</m-option>
-    <m-option value="mushrooms">Mushrooms</m-option>
-    <m-option value="olives">Olives</m-option>
-  </m-combobox>
-</form>
-```
+</form>`} />
 
 ## Attributes
 

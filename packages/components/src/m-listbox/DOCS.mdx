@@ -1,99 +1,63 @@
+import CodeExample from '../../../../apps/site/src/components/CodeExample.astro';
+
 ## Examples
 
 ### Basic Usage
 
 A simple listbox with keyboard navigation and single selection.
 
-<m-listbox name="fruit">
+<CodeExample html={`<m-listbox name="fruit">
   <m-option value="apple">Apple</m-option>
   <m-option value="pear">Pear</m-option>
   <m-option value="orange">Orange</m-option>
   <m-option value="banana">Banana</m-option>
-</m-listbox>
-```html
-<m-listbox name="fruit">
-  <m-option value="apple">Apple</m-option>
-  <m-option value="pear">Pear</m-option>
-  <m-option value="orange">Orange</m-option>
-  <m-option value="banana">Banana</m-option>
-</m-listbox>
-```
+</m-listbox>`} />
 
 ### Multiple Selection
 
 Allow users to select multiple items using Space/Enter keys. Hold Shift while using arrow keys for extended selection.
 
-<m-listbox name="fruits" multiple>
+<CodeExample html={`<m-listbox name="fruits" multiple>
   <m-option value="apple">Apple</m-option>
   <m-option value="pear">Pear</m-option>
   <m-option value="orange">Orange</m-option>
   <m-option value="banana">Banana</m-option>
   <m-option value="grape">Grape</m-option>
-</m-listbox>
-```html
-<m-listbox name="fruits" multiple>
-  <m-option value="apple">Apple</m-option>
-  <m-option value="pear">Pear</m-option>
-  <m-option value="orange">Orange</m-option>
-  <m-option value="banana">Banana</m-option>
-  <m-option value="grape">Grape</m-option>
-</m-listbox>
-```
+</m-listbox>`} />
 
 ### Pre-selected Values
 
 Using the `selected` attribute on items:
 
-<m-listbox name="preselected-fruit-1">
+<CodeExample html={`<m-listbox name="preselected-fruit-1">
   <m-option value="apple">Apple</m-option>
   <m-option value="pear" selected>Pear</m-option>
   <m-option value="orange">Orange</m-option>
-</m-listbox>
-```html
-<m-listbox name="preselected-fruit-1">
-  <m-option value="apple">Apple</m-option>
-  <m-option value="pear" selected>Pear</m-option>
-  <m-option value="orange">Orange</m-option>
-</m-listbox>
-```
+</m-listbox>`} />
 
 Or using the `value` attribute on the listbox:
 
-<m-listbox name="preselected-fruit-2" value="orange">
+<CodeExample html={`<m-listbox name="preselected-fruit-2" value="orange">
   <m-option value="apple">Apple</m-option>
   <m-option value="pear">Pear</m-option>
   <m-option value="orange">Orange</m-option>
-</m-listbox>
-```html
-<m-listbox name="preselected-fruit-2" value="orange">
-  <m-option value="apple">Apple</m-option>
-  <m-option value="pear">Pear</m-option>
-  <m-option value="orange">Orange</m-option>
-</m-listbox>
-```
+</m-listbox>`} />
 
 ### Disabled State
 
 A disabled listbox prevents user interaction:
 
-<m-listbox name="disabled-fruit" disabled>
+<CodeExample html={`<m-listbox name="disabled-fruit" disabled>
   <m-option value="apple">Apple</m-option>
   <m-option value="pear" selected>Pear</m-option>
   <m-option value="orange">Orange</m-option>
-</m-listbox>
-```html
-<m-listbox name="disabled-fruit" disabled>
-  <m-option value="apple">Apple</m-option>
-  <m-option value="pear" selected>Pear</m-option>
-  <m-option value="orange">Orange</m-option>
-</m-listbox>
-```
+</m-listbox>`} />
 
 ### Form Integration
 
 The listbox is form-associated and works seamlessly with standard form submission:
 
-<form id="fruit-form" class="stack" data-gap="2">
+<CodeExample html={`<form id="fruit-form" class="stack" data-gap="2">
   <label for="favorite-fruit">Select your favorite fruit:</label>
   <m-listbox id="favorite-fruit" name="favorite-fruit">
     <m-option value="apple">Apple</m-option>
@@ -103,48 +67,20 @@ The listbox is form-associated and works seamlessly with standard form submissio
   </m-listbox>
   <button type="submit">Submit</button>
   <div id="form-result" class="box" style="padding: var(--size-2); background: var(--color-surface-raised);"></div>
-</form>
+</form>`} js={`const form = document.getElementById('fruit-form');
+const resultBox = document.getElementById('form-result');
 
-{`<script>
-  const form = document.getElementById('fruit-form');
-  const resultBox = document.getElementById('form-result');
-  
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const formData = new FormData(form);
-    resultBox.textContent = \`Selected: \${formData.get('favorite-fruit')}\`;
-  });
-</script>`}
-```html
-<form id="fruit-form" class="stack" data-gap="2">
-  <label for="favorite-fruit">Select your favorite fruit:</label>
-  <m-listbox id="favorite-fruit" name="favorite-fruit">
-    <m-option value="apple">Apple</m-option>
-    <m-option value="pear" selected>Pear</m-option>
-    <m-option value="orange">Orange</m-option>
-    <m-option value="banana">Banana</m-option>
-  </m-listbox>
-  <button type="submit">Submit</button>
-  <div id="form-result" class="box" style="padding: var(--size-2); background: var(--color-surface-raised);"></div>
-</form>
-
-<script>
-  const form = document.getElementById('fruit-form');
-  const resultBox = document.getElementById('form-result');
-  
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const formData = new FormData(form);
-    resultBox.textContent = `Selected: ${formData.get('favorite-fruit')}`;
-  });
-</script>
-```
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const formData = new FormData(form);
+  resultBox.textContent = \`Selected: \${formData.get('favorite-fruit')}\`;
+});`} />
 
 ### Event Listening
 
 Listen to selection changes with the `m-listbox-change` event:
 
-<div class="stack" data-gap="2">
+<CodeExample html={`<div class="stack" data-gap="2">
   <m-listbox id="event-listbox" name="event-example" multiple>
     <m-option value="apple">Apple</m-option>
     <m-option value="pear">Pear</m-option>
@@ -154,46 +90,16 @@ Listen to selection changes with the `m-listbox-change` event:
   <div id="event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised); min-height: 3rem;">
     Select items to see the event output...
   </div>
-</div>
+</div>`} js={`const eventListbox = document.getElementById('event-listbox');
+const eventOutput = document.getElementById('event-output');
 
-{`<script>
-  const eventListbox = document.getElementById('event-listbox');
-  const eventOutput = document.getElementById('event-output');
-  
-  eventListbox.addEventListener('m-listbox-change', (e) => {
-    eventOutput.textContent = \`Selected values: \${e.detail.selected.join(', ') || '(none)'}\`;
-  });
-  
-  eventListbox.addEventListener('change', () => {
-    console.log('Standard change event fired. Current value:', eventListbox.value);
-  });
-</script>`}
-```html
-<div class="stack" data-gap="2">
-  <m-listbox id="event-listbox" name="event-example" multiple>
-    <m-option value="apple">Apple</m-option>
-    <m-option value="pear">Pear</m-option>
-    <m-option value="orange">Orange</m-option>
-    <m-option value="banana">Banana</m-option>
-  </m-listbox>
-  <div id="event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised); min-height: 3rem;">
-    Select items to see the event output...
-  </div>
-</div>
+eventListbox.addEventListener('m-listbox-change', (e) => {
+  eventOutput.textContent = \`Selected values: \${e.detail.selected.join(', ') || '(none)'}\`;
+});
 
-<script>
-  const eventListbox = document.getElementById('event-listbox');
-  const eventOutput = document.getElementById('event-output');
-  
-  eventListbox.addEventListener('m-listbox-change', (e) => {
-    eventOutput.textContent = `Selected values: ${e.detail.selected.join(', ') || '(none)'}`;
-  });
-  
-  eventListbox.addEventListener('change', () => {
-    console.log('Standard change event fired. Current value:', eventListbox.value);
-  });
-</script>
-```
+eventListbox.addEventListener('change', () => {
+  console.log('Standard change event fired. Current value:', eventListbox.value);
+});`} />
 
 ## Attributes
 

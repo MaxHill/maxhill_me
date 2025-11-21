@@ -1,3 +1,5 @@
+import CodeExample from '../../../../apps/site/src/components/CodeExample.astro';
+
 ## Overview
 
 The `m-command` component allows you to bind keyboard shortcuts to common actions like navigation, opening/closing dialogs and popovers, and focusing elements. Commands can be triggered programmatically or via keyboard shortcuts.
@@ -7,7 +9,8 @@ The `m-command` component allows you to bind keyboard shortcuts to common action
 ### Navigate
 
 Use the `navigate` command to navigate to a different URL when a keyboard shortcut is pressed.
-<m-command 
+
+<CodeExample html={`<m-command 
     command="navigate" 
     commandfor="/design-system#hero" 
     keys="<C-b>1">
@@ -15,21 +18,13 @@ Use the `navigate` command to navigate to a different URL when a keyboard shortc
 </m-command>
 <m-command command="navigate" commandfor="/design-system#doc-components" keys="<C-b>2">
   Command+b2
-</m-command>
-```html
-<m-command name="toStart" command="navigate" commandfor="/design-system#hero" keys="<C-b>1">
-  Default content
-</m-command>
-<m-command name="toComponents" command="navigate" commandfor="/design-system#doc-components" keys="<C-b>2">
-  Default content
-</m-command>
-```
+</m-command>`} />
 
 ### Dialog
 
 Control HTML `<dialog>` elements with keyboard shortcuts. Use `show-modal` to open a dialog as a modal, and `close` to dismiss it.
 
-<dialog id="example-dialog">I'm an example dialog</dialog>
+<CodeExample html={`<dialog id="example-dialog">I'm an example dialog</dialog>
 
 <m-command command="show-modal" commandfor="#example-dialog" keys="<C-b>o">
   Command+b o (open)
@@ -37,25 +32,13 @@ Control HTML `<dialog>` elements with keyboard shortcuts. Use `show-modal` to op
 
 <m-command command="close" commandfor="#example-dialog" keys="<C-b>c">
   Command+b c (close)
-</m-command>
-
-```html
-<dialog id="example-dialog">I'm an example dialog</dialog>
-
-<m-command command="show-modal" commandfor="#example-dialog" keys="<C-b>o">
-  Command+b o (open)
-</m-command>
-
-<m-command command="close" commandfor="#example-dialog" keys="<C-b>c">
-  Command+b c (close)
-</m-command>
-```
+</m-command>`} />
 
 ### Popover
 
 Control elements with the `popover` attribute using keyboard shortcuts. You can show, hide, or toggle popovers programmatically.
 
-<div id="example-popover" popover>I'm a popover</div>
+<CodeExample html={`<div id="example-popover" popover>I'm a popover</div>
 
 <m-command command="show-popover" commandfor="#example-popover" keys="<C-b>s">
   Command+b s (show)
@@ -67,41 +50,17 @@ Control elements with the `popover` attribute using keyboard shortcuts. You can 
 
 <m-command command="toggle-popover" commandfor="#example-popover" keys="<C-b>t">
   Command+b t (toggle)
-</m-command>
-
-```html
-<div id="example-popover" popover>I'm a popover</div>
-
-<m-command command="show-popover" commandfor="#example-popover" keys="<C-b>s">
-  Command+b s (show)
-</m-command>
-
-<m-command command="hide-popover" commandfor="#example-popover" keys="<C-b>h">
-  Command+b h (hide)
-</m-command>
-
-<m-command command="toggle-popover" commandfor="#example-popover" keys="<C-b>t">
-  Command+b t (toggle)
-</m-command>
-```
+</m-command>`} />
 
 ### Focus
 
 Move keyboard focus to a specific element using the `focus` command. This is useful for creating keyboard navigation shortcuts.
 
-<input id="example-input" type="text" placeholder="Focus me with Command+b f" />
+<CodeExample html={`<input id="example-input" type="text" placeholder="Focus me with Command+b f" />
 
 <m-command command="focus" commandfor="#example-input" keys="<C-b>f">
   Command+b f (focus)
-</m-command>
-
-```html
-<input id="example-input" type="text" placeholder="Focus me with Command+b f" />
-
-<m-command command="focus" commandfor="#example-input" keys="<C-b>f">
-  Command+b f (focus)
-</m-command>
-```
+</m-command>`} />
 
 ### Custom Commands
 

@@ -11,8 +11,12 @@ const { html = "", css = "", js = "" } = Astro.props;
 
 const codeBlock = [
     html,
-    js && `<script>\n${js}\n</script>`,
-    css && `<style>\n${css}\n</style>`
+    js && `<script>
+${js}
+</script>`,
+    css && `<style>
+${css}
+</style>`
 ].filter(Boolean).join('\n\n');
 ---
 

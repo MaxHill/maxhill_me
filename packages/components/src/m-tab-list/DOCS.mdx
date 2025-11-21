@@ -1,90 +1,58 @@
+import CodeExample from '../../../../apps/site/src/components/CodeExample.astro';
+
 ## Examples
 
 ### Basic Usage (Top)
 
 A tab list with horizontal keyboard navigation.
 
-<m-tab-list label="Example">
+<CodeExample html={`<m-tab-list label="Example">
   <m-tab panel="tab1">Tab 1</m-tab>
   <m-tab panel="tab2">Tab 2</m-tab>
   <m-tab-panel name="tab1">Panel 1</m-tab-panel>
   <m-tab-panel name="tab2">Panel 2</m-tab-panel>
-</m-tab-list>
-```html
-<m-tab-list label="Example">
-  <m-tab panel="tab1">Tab 1</m-tab>
-  <m-tab panel="tab2">Tab 2</m-tab>
-  <m-tab-panel name="tab1">Panel 1</m-tab-panel>
-  <m-tab-panel name="tab2">Panel 2</m-tab-panel>
-</m-tab-list>
-```
+</m-tab-list>`} />
 
 ### Bottom Position
 
 Place tabs at the bottom of the content.
 
-<m-tab-list label="Example" position="bottom">
+<CodeExample html={`<m-tab-list label="Example" position="bottom">
   <m-tab panel="tab1">Tab 1</m-tab>
   <m-tab panel="tab2">Tab 2</m-tab>
   <m-tab-panel name="tab1">Panel 1</m-tab-panel>
   <m-tab-panel name="tab2">Panel 2</m-tab-panel>
-</m-tab-list>
-```html
-<m-tab-list label="Example" position="bottom">
-  <m-tab panel="tab1">Tab 1</m-tab>
-  <m-tab panel="tab2">Tab 2</m-tab>
-  <m-tab-panel name="tab1">Panel 1</m-tab-panel>
-  <m-tab-panel name="tab2">Panel 2</m-tab-panel>
-</m-tab-list>
-```
+</m-tab-list>`} />
 
 ### Vertical Layout (Start)
 
 A vertical tab list with keyboard navigation using up/down arrows or j/k.
 
-<m-tab-list label="Example" position="start">
+<CodeExample html={`<m-tab-list label="Example" position="start">
   <m-tab panel="tab1">Tab 1</m-tab>
   <m-tab panel="tab2">Tab 2</m-tab>
   <m-tab-panel name="tab1">Panel 1</m-tab-panel>
   <m-tab-panel name="tab2">Panel 2</m-tab-panel>
-</m-tab-list>
-```html
-<m-tab-list label="Example" position="start">
-  <m-tab panel="tab1">Tab 1</m-tab>
-  <m-tab panel="tab2">Tab 2</m-tab>
-  <m-tab-panel name="tab1">Panel 1</m-tab-panel>
-  <m-tab-panel name="tab2">Panel 2</m-tab-panel>
-</m-tab-list>
-```
+</m-tab-list>`} />
 
 ### Disabled Tabs
 
 Disabled tabs cannot be selected or navigated to.
 
-<m-tab-list label="Example">
+<CodeExample html={`<m-tab-list label="Example">
   <m-tab panel="tab1">Tab 1</m-tab>
   <m-tab panel="tab2" disabled>Tab 2 (Disabled)</m-tab>
   <m-tab panel="tab3">Tab 3</m-tab>
   <m-tab-panel name="tab1">Panel 1</m-tab-panel>
   <m-tab-panel name="tab2">Panel 2</m-tab-panel>
   <m-tab-panel name="tab3">Panel 3</m-tab-panel>
-</m-tab-list>
-```html
-<m-tab-list label="Example">
-  <m-tab panel="tab1">Tab 1</m-tab>
-  <m-tab panel="tab2" disabled>Tab 2 (Disabled)</m-tab>
-  <m-tab panel="tab3">Tab 3</m-tab>
-  <m-tab-panel name="tab1">Panel 1</m-tab-panel>
-  <m-tab-panel name="tab2">Panel 2</m-tab-panel>
-  <m-tab-panel name="tab3">Panel 3</m-tab-panel>
-</m-tab-list>
-```
+</m-tab-list>`} />
 
 ### Event Listening
 
 Listen to tab show and hide events.
 
-<div class="stack" data-gap="2">
+<CodeExample html={`<div class="stack" data-gap="2">
   <m-tab-list id="event-tabs" label="Event Example">
     <m-tab panel="tab1">Tab 1</m-tab>
     <m-tab panel="tab2">Tab 2</m-tab>
@@ -96,48 +64,16 @@ Listen to tab show and hide events.
   <div id="tab-event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised); min-height: 3rem;">
     Switch tabs to see events...
   </div>
-</div>
+</div>`} js={`const eventTabs = document.getElementById('event-tabs');
+const tabEventOutput = document.getElementById('tab-event-output');
 
-{`<script>
-  const eventTabs = document.getElementById('event-tabs');
-  const tabEventOutput = document.getElementById('tab-event-output');
-  
-  eventTabs.addEventListener('m-tab-show', (e) => {
-    tabEventOutput.textContent = \`Tab shown: \${e.detail.tab.textContent} → Panel: \${e.detail.panel.name}\`;
-  });
-  
-  eventTabs.addEventListener('m-tab-hide', (e) => {
-    console.log('Tab hidden:', e.detail.tab.textContent);
-  });
-</script>`}
-```html
-<div class="stack" data-gap="2">
-  <m-tab-list id="event-tabs" label="Event Example">
-    <m-tab panel="tab1">Tab 1</m-tab>
-    <m-tab panel="tab2">Tab 2</m-tab>
-    <m-tab panel="tab3">Tab 3</m-tab>
-    <m-tab-panel name="tab1">Panel 1</m-tab-panel>
-    <m-tab-panel name="tab2">Panel 2</m-tab-panel>
-    <m-tab-panel name="tab3">Panel 3</m-tab-panel>
-  </m-tab-list>
-  <div id="tab-event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised); min-height: 3rem;">
-    Switch tabs to see events...
-  </div>
-</div>
+eventTabs.addEventListener('m-tab-show', (e) => {
+  tabEventOutput.textContent = \`Tab shown: \${e.detail.tab.textContent} → Panel: \${e.detail.panel.name}\`;
+});
 
-<script>
-  const eventTabs = document.getElementById('event-tabs');
-  const tabEventOutput = document.getElementById('tab-event-output');
-  
-  eventTabs.addEventListener('m-tab-show', (e) => {
-    tabEventOutput.textContent = `Tab shown: ${e.detail.tab.textContent} → Panel: ${e.detail.panel.name}`;
-  });
-  
-  eventTabs.addEventListener('m-tab-hide', (e) => {
-    console.log('Tab hidden:', e.detail.tab.textContent);
-  });
-</script>
-```
+eventTabs.addEventListener('m-tab-hide', (e) => {
+  console.log('Tab hidden:', e.detail.tab.textContent);
+});`} />
 
 ## Attributes
 
