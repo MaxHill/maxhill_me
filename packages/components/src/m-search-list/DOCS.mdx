@@ -1,10 +1,12 @@
+import CodeExample from '../../../../apps/site/src/components/CodeExample.astro';
+
 ## Examples
 
 ### Basic Usage
 
 A search list that filters items using fuzzy search.
 
-<m-search-list>
+<CodeExample html={`<m-search-list>
   <input slot="controller" type="search" placeholder="Search programming languages..." />
   <div data-keywords="javascript js ecmascript">JavaScript</div>
   <div data-keywords="typescript ts">TypeScript</div>
@@ -13,25 +15,13 @@ A search list that filters items using fuzzy search.
   <div data-keywords="go golang">Go</div>
   <p slot="empty">No matching languages found</p>
   <p slot="initial">Start typing to search programming languages</p>
-</m-search-list>
-```html
-<m-search-list>
-  <input slot="controller" type="search" placeholder="Search programming languages..." />
-  <div data-keywords="javascript js ecmascript">JavaScript</div>
-  <div data-keywords="typescript ts">TypeScript</div>
-  <div data-keywords="python py">Python</div>
-  <div data-keywords="rust rs">Rust</div>
-  <div data-keywords="go golang">Go</div>
-  <p slot="empty">No matching languages found</p>
-  <p slot="initial">Start typing to search programming languages</p>
-</m-search-list>
-```
+</m-search-list>`} />
 
 ### With Target Selector
 
 Use the `target` attribute to specify which container's children should be filtered.
 
-<m-search-list target="ul">
+<CodeExample html={`<m-search-list target="ul">
   <input slot="controller" type="search" placeholder="Search fruits..." />
   <div>
     <ul>
@@ -43,96 +33,43 @@ Use the `target` attribute to specify which container's children should be filte
     </ul>
   </div>
   <p slot="empty">No fruits match your search</p>
-</m-search-list>
-```html
-<m-search-list target="ul">
-  <input slot="controller" type="search" placeholder="Search fruits..." />
-  <div>
-    <ul>
-      <li data-keywords="red delicious">Apple</li>
-      <li data-keywords="yellow curved tropical">Banana</li>
-      <li data-keywords="citrus orange vitamin-c">Orange</li>
-      <li data-keywords="green kiwifruit">Kiwi</li>
-      <li data-keywords="purple seedless">Grape</li>
-    </ul>
-  </div>
-  <p slot="empty">No fruits match your search</p>
-</m-search-list>
-```
+</m-search-list>`} />
 
 ### Custom Debounce
 
 Adjust the debounce delay for input handling (default is 150ms).
 
-<m-search-list debounce="500">
+<CodeExample html={`<m-search-list debounce="500">
   <input slot="controller" type="search" placeholder="Search with 500ms debounce..." />
   <div>Item 1</div>
   <div>Item 2</div>
   <div>Item 3</div>
   <div>Item 4</div>
   <div>Item 5</div>
-</m-search-list>
-```html
-<m-search-list debounce="500">
-  <input slot="controller" type="search" placeholder="Search with 500ms debounce..." />
-  <div>Item 1</div>
-  <div>Item 2</div>
-  <div>Item 3</div>
-  <div>Item 4</div>
-  <div>Item 5</div>
-</m-search-list>
-```
+</m-search-list>`} />
 
 ### Using CSS States
 
 Style the component based on its search state using CSS custom states.
 
-<style>
-{`  m-search-list:state(empty) {
-    border: 2px solid var(--color-error);
-  }
-  
-  m-search-list:state(match) {
-    border: 2px solid var(--color-success);
-  }
-  
-  m-search-list:state(initial) {
-    border: 2px solid var(--color-border);
-  }`}
-</style>
-
-<m-search-list class="box" data-padded="true">
+<CodeExample html={`<m-search-list class="box" data-padded="true">
   <input slot="controller" type="search" placeholder="Search to see state changes..." />
   <div>Apple</div>
   <div>Banana</div>
   <div>Cherry</div>
   <p slot="empty">No results</p>
   <p slot="initial">Type to search</p>
-</m-search-list>
-```html
-<style>
-  m-search-list:state(empty) {
-    border: 2px solid var(--color-error);
-  }
-  
-  m-search-list:state(match) {
-    border: 2px solid var(--color-success);
-  }
-  
-  m-search-list:state(initial) {
-    border: 2px solid var(--color-border);
-  }
-</style>
+</m-search-list>`} css={`m-search-list:state(empty) {
+  border: 2px solid var(--color-error);
+}
 
-<m-search-list class="box" data-padded="true">
-  <input slot="controller" type="search" placeholder="Search to see state changes..." />
-  <div>Apple</div>
-  <div>Banana</div>
-  <div>Cherry</div>
-  <p slot="empty">No results</p>
-  <p slot="initial">Type to search</p>
-</m-search-list>
-```
+m-search-list:state(match) {
+  border: 2px solid var(--color-success);
+}
+
+m-search-list:state(initial) {
+  border: 2px solid var(--color-border);
+}`} />
 
 ## Usage Notes
 

@@ -1,0 +1,101 @@
+:host {
+    display: grid;
+    gap: var(--size-1);
+}
+
+label {
+    font: var(--p2);
+    font-weight: 500;
+    color: hsl(var(--color-text));
+    margin-bottom: var(--size-2);
+}
+
+.input-wrapper {
+
+    /* Shape */
+    corner-shape: squircle;
+    border-radius: var(--radius-input);
+    padding-inline: var(--size-1);
+
+    /* Color */
+    background: var(--color-input-fill);
+    border: var(--border-width) solid var(--color-input-stroke);
+    color: var(--color-input-text);
+    outline: var(--outline-size) var(--outline-style) var(--outline-color);
+    outline-width: var(--outline-size) ;
+    outline-style: var(--outline-style);
+    outline-color: transparent;
+    outline-offset: calc(var(--outline-size) * -1);
+
+    /* Layout */
+    display: flex;
+    overflow: clip;
+    align-items: center;
+
+    input {
+        display: block;
+        padding-block: var(--size-2);
+        background: none;
+        border: none;
+        flex: 1;
+
+        font: var(--p);
+        color: hsl(var(--color-text));
+
+        &:focus {
+            outline: none;
+        }
+
+        &::placeholder {
+            color: hsl(var(--color-text-softer));
+        }
+    }
+
+    &:has(input:focus) {
+        background: var(--color-input-fill-focus);
+        /* outline-offset: var(--outline-offset, var(--outline-size)); */
+        outline-color: var(--color-input-stroke-focus);
+        border-color: var(--color-input-stroke-focus);
+        color: var(--color-input-text-focus);
+    }
+
+    &:has(input:disabled) {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background-color: hsl(var(--color-surface-raised));
+    }
+
+    &:has(input:disabled) {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background-color: hsl(var(--color-surface-raised));
+    }
+
+    &:has(input:readonly) {
+        background-color: hsl(var(--color-surface-raised));
+        cursor: default;
+    }
+
+    &:has(input:user-invalid) {
+        outline-color: var(--color-input-stroke-error);
+    }
+
+    &:has(input:user-invalid:focus) {
+        outline-color: var(--color-input-stroke-focus-error);
+    }
+}
+
+
+.error {
+    corner-shape: squircle;
+    border-radius: var(--radius-input);
+    color: var(--color-destructive-text-on-soft);
+    background-color: var(--color-destructive-fill-soft);
+    border: var(--border-width) solid var(--color-destructive-stroke-soft);
+    padding-inline: var(--size-2);
+    display: none;
+}
+
+.error:not(:empty) {
+    display: block;
+}

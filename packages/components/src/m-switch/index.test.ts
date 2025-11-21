@@ -1,13 +1,13 @@
 import { expect, html, fixture } from '@open-wc/testing';
-import { MInput } from './index';
+import { MSwitch } from './index';
 
-MInput.define();
+MSwitch.define();
 
-describe('m-input', () => {
+describe('m-switch', () => {
   describe('accessibility', () => {
     it('should be accessible', async () => {
       const el = await fixture(html`
-        <m-input>Test content</m-input>
+        <m-switch>Test content</m-switch>
       `);
 
       await expect(el).to.be.accessible();

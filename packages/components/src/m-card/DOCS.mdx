@@ -1,57 +1,40 @@
+import CodeExample from '../../../../apps/site/src/components/CodeExample.astro';
+
 ## Examples
 
 ### Basic Card
 
 A simple card with title, content, and footer.
 
-<m-card>
+<CodeExample html={`<m-card>
   <div slot="title">Card Title</div>
   <p>This is the main content of the card. It can contain any HTML elements.</p>
   <div slot="footer">Card footer</div>
-</m-card>
-```html
-<m-card>
-  <div slot="title">Card Title</div>
-  <p>This is the main content of the card. It can contain any HTML elements.</p>
-  <div slot="footer">Card footer</div>
-</m-card>
-```
+</m-card>`} />
 
 ### Outline Variant
 
 Use the outline variant for a bordered card style.
 
-<m-card data-variant="outline">
+<CodeExample html={`<m-card data-variant="outline">
   <div slot="title">Outline Card</div>
   <p>This card has an outline variant with a border instead of a background.</p>
   <div slot="footer">Footer information</div>
-</m-card>
-```html
-<m-card data-variant="outline">
-  <div slot="title">Outline Card</div>
-  <p>This card has an outline variant with a border instead of a background.</p>
-  <div slot="footer">Footer information</div>
-</m-card>
-```
+</m-card>`} />
 
 ### Without Title or Footer
 
 Cards can omit the title or footer slots.
 
-<m-card>
+<CodeExample html={`<m-card>
   <p>This card has no title or footer, just content.</p>
-</m-card>
-```html
-<m-card>
-  <p>This card has no title or footer, just content.</p>
-</m-card>
-```
+</m-card>`} />
 
 ### Subgrid Layout
 
 Use subgrid to align card sections across multiple cards in a grid.
 
-<div class="collection">
+<CodeExample html={`<div class="collection">
   <m-card data-subgrid="true">
     <div slot="title">Card 1</div>
     <p>Short content.</p>
@@ -67,41 +50,16 @@ Use subgrid to align card sections across multiple cards in a grid.
     <p>Medium amount of content here.</p>
     <div slot="footer">Footer</div>
   </m-card>
-</div>
-```html
-<div class="collection">
-  <m-card data-subgrid="true">
-    <div slot="title">Card 1</div>
-    <p>Short content.</p>
-    <div slot="footer">Footer</div>
-  </m-card>
-  <m-card data-subgrid="true">
-    <div slot="title">Card 2 with Longer Title</div>
-    <p>This card has more content that spans multiple lines to demonstrate how subgrid keeps the footers aligned.</p>
-    <div slot="footer">Footer</div>
-  </m-card>
-  <m-card data-subgrid="true">
-    <div slot="title">Card 3</div>
-    <p>Medium amount of content here.</p>
-    <div slot="footer">Footer</div>
-  </m-card>
-</div>
-```
+</div>`} />
 
 ### Custom Styling
 
 Cards support standard data attributes for customization.
 
-<m-card data-rounded="true" data-padded="true">
+<CodeExample html={`<m-card data-rounded="true" data-padded="true">
   <div slot="title">Styled Card</div>
   <p>This card has custom rounding and padding applied.</p>
-</m-card>
-```html
-<m-card data-rounded="true" data-padded="true">
-  <div slot="title">Styled Card</div>
-  <p>This card has custom rounding and padding applied.</p>
-</m-card>
-```
+</m-card>`} />
 
 ## Usage Notes
 
