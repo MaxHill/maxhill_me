@@ -33,13 +33,9 @@ const title = componentName;
 <BaseLayout title={title}>
   <main>
     <h1>{componentName}</h1>
-    <Content />
+    <Content components={{ script: Fragment }} />
   </main>
 </BaseLayout>
-
-<script>
-  import "../../components/compo.ts";
-</script>
 
 <style>
   main {
