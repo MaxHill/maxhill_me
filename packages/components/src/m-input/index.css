@@ -1,14 +1,78 @@
-:host(:invalid) {
-    background: orange;
+:host {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: span 2;
+    row-gap: var(--size-1);
 }
 
-    .error {
-        display: none;
+
+.input-description {
+    font: var(--p2);
+    color: var(--color-text-softer);
+}
+
+label {
+    color: var(--color-text-mid);
+    font-family: var(--ff-display);
+}
+
+.error {
+    display: none;
+    grid-column: 2/2;
+    corner-shape: squircle;
+    border-radius: var(--radius-input);
+    color: var(--color-destructive-text-on-soft);
+    background-color: var(--color-destructive-fill-soft);
+    border: var(--border-width) solid var(--color-destructive-stroke-soft);
+    padding-inline: var(--size-2);
+}
+
+
+.input-wrapper {
+    /* Shape */
+    corner-shape: squircle;
+    border-radius: var(--radius-input);
+    padding-inline: var(--size-1);
+
+    /* Color */
+    background: var(--color-input-fill);
+    border: var(--border-width) solid var(--color-input-stroke);
+    color: var(--color-input-text);
+    outline: var(--outline-size) var(--outline-style) var(--outline-color);
+    outline-width: var(--outline-size);
+    outline-style: var(--outline-style);
+    outline-color: transparent;
+    outline-offset: calc(var(--outline-size) * -1);
+
+    /* Layout */
+    display: flex;
+    overflow: clip;
+    align-items: center;
+
+    input {
+        font-size: 16px;
+        display: block;
+        flex: 1;
+        background: none;
+        border: none;
+        padding-block: var(--size-2);
+        color: hsl(var(--color-text));
+
+        &:focus {
+            outline: none;
+        }
+
+        &::placeholder {
+            color: hsl(var(--color-text-softer));
+        }
     }
+}
+
+:host([disabled]) {
+    opacity: .5;
+}
 
 :host(:state(user-invalid)) {
-    background: red;
-
     .error {
         display: inline-block;
     }
