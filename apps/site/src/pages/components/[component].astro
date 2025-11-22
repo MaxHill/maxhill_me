@@ -38,8 +38,10 @@ const events = component ? getComponentEventsWithType(component, { overrideCusto
 ---
 
 <BaseLayout title={title}>
-  <main>
-    <h1>{componentName}</h1>
+  <main class="content-grid typesetting">
+      <m-fit-text font-display>
+        <h1>{componentName}</h1>
+      </m-fit-text>
     
     {component?.description && (
       <div set:html={marked.parse(component.description)} />
@@ -197,23 +199,11 @@ const events = component ? getComponentEventsWithType(component, { overrideCusto
 
 <style>
   main {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
+    margin:var(--menu-height)  auto;
   }
 
-  h1 {
-    margin-bottom: 2rem;
-  }
-  
-  h2 {
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-  }
-  
   .table-wrapper {
     overflow-x: auto;
-    width: 100%;
     margin-bottom: 2rem;
   }
 
@@ -238,10 +228,12 @@ const events = component ? getComponentEventsWithType(component, { overrideCusto
     th:nth-child(1), td:nth-child(1),
     th:nth-child(2), td:nth-child(2) {
       width: max-content;
+        min-width: var(--size-content-1);
       white-space: nowrap;
     }
 
     th:nth-child(3), td:nth-child(3) {
+        min-width: var(--size-content-1);
       width: 100%;
     }
 
