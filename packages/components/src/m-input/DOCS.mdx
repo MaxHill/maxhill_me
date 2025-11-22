@@ -8,14 +8,14 @@ A simple m-input example.
 
 <CodeExample 
   html={`
-  <form id="example-form">
-
-    <label for="normal-input">Normal input</m-input>
+  <form class="form" id="example-form">
+    <label for="normal-input">Normal input</label>
     <input name="normal-input" />
 
-    <m-input name="m-input-example">Default content</m-input>
+    <m-input label="m-input example" name="m-input-example"></m-input>
+    <m-input label="m-input disabled" name="m-input-example-disabled" disabled></m-input>
     <button type="submit">Submit</button>
-
+    <button type="reset">Reset</button>
   </form>
   <pre id="example-form-output"></pre>
   `}
@@ -33,14 +33,13 @@ A simple m-input example.
 ## Required
 <CodeExample 
   html={`
-  <form id="example-required-form">
-
-    <label for="normal-input" >Normal input</m-input>
+  <form class="form" id="example-required-form">
+    <label for="normal-input" >Normal input</label>
     <input name="normal-input" required />
 
-    <m-input name="m-input-example" required="true">Default content</m-input>
+    <m-input label="m-input example" name="m-input-example" required="true">Default content</m-input>
     <button type="submit">Submit</button>
-
+    <button type="reset">Reset</button>
   </form>
   <pre id="example-required-form-output"></pre>
   `}

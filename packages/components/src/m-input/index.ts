@@ -14,6 +14,7 @@ baseStyleSheet.replaceSync(styles);
 // Text input specific
 // TODO: Selection range
 // TODO: setRangeText
+// TODO: focus the input on error
 
 
 
@@ -34,7 +35,7 @@ baseStyleSheet.replaceSync(styles);
 export class MInput extends MElement {
     static tagName = 'm-input';
     static formAssociated = true;
-    static observedAttributes = ['required', 'value'];
+    static observedAttributes = ['required', 'value', 'disabled', 'label'];
 
     private _shadowRoot: ShadowRoot;
     private internals: ElementInternals;
@@ -45,9 +46,17 @@ export class MInput extends MElement {
         return this._value
     }
     set value(value) {
+        // Don't set value if the input is disabled
+        if (this.disabled) return;
         this._value = value;
         this.internals.setFormValue(value)
     }
+
+    @BindAttribute()
+    label = null;
+
+    @BindAttribute()
+    disabled = false;
 
     //  ------------------------------------------------------------------------
     //  Constraint validation                                                                     
@@ -63,15 +72,13 @@ export class MInput extends MElement {
     // INPUT SPECIFIC
     @query('input')
     private inputElement!: HTMLInputElement;
-    select() {
-        this.inputElement?.select();
-    }
-    focus(options?: FocusOptions) {
-        this.inputElement?.focus(options);
-    }
-    blur() {
-        this.inputElement?.blur();
-    }
+
+    @query('label')
+    private labelElement!: HTMLInputElement;
+
+    select() { this.inputElement?.select(); }
+    focus(options?: FocusOptions) { this.inputElement?.focus(options); }
+    blur() { this.inputElement?.blur(); }
     // INPUT SPECIFIC
     //  ------------------------------------------------------------------------
 
@@ -96,6 +103,7 @@ export class MInput extends MElement {
 
         //  ------------------------------------------------------------------------
         // INPUT SPECIFIC
+
         this.inputElement.addEventListener("input", this.handleInput);
         this.inputElement.addEventListener("blur", this.handleBlur);
         this.addEventListener("invalid", this.handleInvalid);
@@ -116,6 +124,24 @@ export class MInput extends MElement {
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
         this.updateValidity();
+        if (name === "label") {
+            this.internals.ariaLabel = newValue as string;
+        }
+        //  ------------------------------------------------------------------------
+        // INPUT SPECIFIC
+        if (name === "disabled") {
+            if (this.disabled) {
+                this.inputElement.setAttribute("disabled", "");
+            } else {
+                this.inputElement.removeAttribute("disabled");
+            }
+        }
+
+        if (name === "label") {
+            this.labelElement.textContent = this.label;
+        }
+        // END INPUT SPECIFIC
+        //  ------------------------------------------------------------------------
     }
 
 
@@ -123,9 +149,11 @@ export class MInput extends MElement {
     //  Event handlers                                                                     
     //  ------------------------------------------------------------------------ 
     handleInvalid = (e: Event) => {
-        e.preventDefault();// Don't show native ui
+        // Don't show native ui
+        e.preventDefault();
         this.hasInteracted = true;
         this.updateValidity();
+        this.focus();
     }
     handleBlur = (_e: Event) => {
         this.hasInteracted = true;
@@ -134,10 +162,8 @@ export class MInput extends MElement {
 
     handleInput = (e: Event) => {
         const target = e.target as HTMLInputElement;
-        if (target) {
-            this.value = target.value;
-        }
-        this.hasInteracted = true;
+        if (target) { this.value = target.value; }
+        // this.hasInteracted = true;
         this.updateValidity();
     }
 
@@ -149,8 +175,22 @@ export class MInput extends MElement {
         this.updateValidity();
     }
 
+    formResetCallback() {
+        this.value = this.defaultValue;
+        this.hasInteracted = false;
+        this.setCustomStates();
+    }
+
+    formDisabledCallback(disabled: boolean) {
+        this.disabled = disabled;
+    }
+
+    formStateRestoreCallback(state: string, _mode: 'restore' | 'autocomplete') {
+        this.value = state;
+    }
+
     //  ------------------------------------------------------------------------
-    //  Constraint Validation                                                                     
+    //  Validation                                                                     
     //  ------------------------------------------------------------------------ 
     private setCustomStates() {
         const isValid = this.internals.validity.valid;
@@ -160,6 +200,7 @@ export class MInput extends MElement {
         this.setState('user-valid', isValid && this.hasInteracted);
     }
 
+    // This should be unimplemented in parent class
     private updateValidity() {
         const { value } = this;
         if (value === '' && this.required) {
@@ -173,7 +214,6 @@ export class MInput extends MElement {
         this.setCustomStates();
     }
 
-
     //  ------------------------------------------------------------------------
     //  Helpers                                                                     
     //  ------------------------------------------------------------------------ 
@@ -184,9 +224,12 @@ export class MInput extends MElement {
 
     private render() {
         this._shadowRoot.innerHTML = `
-            <label for="input"><slot></slot></label>
-            <input id="input"/>
+            <label for="input">${this.label}</label>
+            <div class="input-wrapper">
+                <input id="input" value="${this.value}"/>
+            </div>
             <div class="error">ERROR</div>
+
         `;
     }
 }

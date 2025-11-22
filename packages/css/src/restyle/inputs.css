@@ -15,7 +15,6 @@
 }
 
 @layer base {
-
     .input-description {
         font: var(--p2);
         color: var(--color-text-softer);
