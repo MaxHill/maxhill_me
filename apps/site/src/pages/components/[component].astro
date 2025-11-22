@@ -1,6 +1,9 @@
 ---
 import BaseLayout from "../../components/layouts/BaseLayout.astro";
 import { getCollection, render } from "astro:content";
+import { getComponentByTagName, getComponentPublicProperties, getComponentPublicMethods, getComponentEventsWithType } from "@wc-toolkit/cem-utilities";
+import customElements from "@maxhill/components/custom-elements.json";
+import { marked } from "marked";
 
 export async function getStaticPaths() {
   const docEntries = await getCollection('componentDocs');
@@ -15,7 +18,6 @@ export async function getStaticPaths() {
   });
 }
 
-const { component } = Astro.params;
 const { entry } = Astro.props;
 
 const { Content } = await render(entry);
@@ -28,12 +30,168 @@ const componentName = tagName
   .join(' ');
 
 const title = componentName;
+
+const component = getComponentByTagName(customElements, tagName);
+const properties = component ? getComponentPublicProperties(component) : [];
+const methods = component ? getComponentPublicMethods(component) : [];
+const events = component ? getComponentEventsWithType(component, { overrideCustomEventType: true }) : [];
 ---
 
 <BaseLayout title={title}>
   <main>
     <h1>{componentName}</h1>
+    
+    {component?.description && (
+      <div set:html={marked.parse(component.description)} />
+    )}
+    
     <Content components={{ script: Fragment }} />
+    
+    {properties && properties.length > 0 && (
+      <>
+        <h2>Properties</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {properties.map((prop: any) => (
+                <tr>
+                  <td>
+                    <m-copy-button value={prop.name}>
+                      {prop.name}
+                    </m-copy-button>
+                  </td>
+                  <td>{prop.type?.text}</td>
+                  <td>{prop.description}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </>
+    )}
+    
+    {methods && methods.length > 0 && (
+      <>
+        <h2>Methods</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {methods.map((method: any) => (
+                <tr>
+                  <td>
+                    <m-copy-button value={method.name}>
+                      {method.name}
+                    </m-copy-button>
+                  </td>
+                  <td>{method.type?.text}</td>
+                  <td>{method.description}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </>
+    )}
+    
+    {events && events.length > 0 && (
+      <>
+        <h2>Events</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((event: any) => (
+                <tr>
+                  <td>
+                    <m-copy-button value={event.name}>
+                      {event.name}
+                    </m-copy-button>
+                  </td>
+                  <td>{event.type?.text}</td>
+                  <td>{event.description}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </>
+    )}
+    
+    {component?.slots && component.slots.length > 0 && (
+      <>
+        <h2>Slots</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {component.slots.map((slot: any) => (
+                <tr>
+                  <td>
+                    <m-copy-button value={`slot="${slot.name || ''}"`}>
+                      slot="{slot.name || '(default)'}"
+                    </m-copy-button>
+                  </td>
+                  <td>{slot.description}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </>
+    )}
+    
+    {component?.cssParts && component.cssParts.length > 0 && (
+      <>
+        <h2>CSS Parts</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {component.cssParts.map((part: any) => (
+                <tr>
+                  <td>
+                    <m-copy-button value={`::part(${part.name})`}>
+                      ::part({part.name})
+                    </m-copy-button>
+                  </td>
+                  <td>{part.description}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </>
+    )}
   </main>
 </BaseLayout>
 
@@ -46,5 +204,51 @@ const title = componentName;
 
   h1 {
     margin-bottom: 2rem;
+  }
+  
+  h2 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+  
+  .table-wrapper {
+    overflow-x: auto;
+    width: 100%;
+    margin-bottom: 2rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    
+    th, td {
+      text-align: left;
+      padding: var(--size-2);
+    }
+
+    th {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    tr {
+      border-bottom: var(--border);
+    }
+
+    th:nth-child(1), td:nth-child(1),
+    th:nth-child(2), td:nth-child(2) {
+      width: max-content;
+      white-space: nowrap;
+    }
+
+    th:nth-child(3), td:nth-child(3) {
+      width: 100%;
+    }
+
+    td {
+      m-copy-button {
+        font-size: var(--font-size-1);
+      }
+    }
   }
 </style>
