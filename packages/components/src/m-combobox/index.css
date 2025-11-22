@@ -19,7 +19,6 @@ m-input {
     box-sizing: border-box;
     overflow: scroll;
 
-    display: grid;
     gap: var(--size-1);
 
     background-color: var(--color-background);
@@ -28,6 +27,10 @@ m-input {
     border-radius: var(--radius-2);
     padding: var(--size-fluid-1);
 
+}
+
+.box[open] {
+display: grid;
 }
 
 

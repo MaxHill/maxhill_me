@@ -61,10 +61,8 @@ export class MCombobox extends MInputListElement {
     @query('#multi-select-list')
     private multiSelectListElement!: HTMLDivElement;
 
-    @query('m-input')
-    private inputElement!: MInput;
-
-
+    @query('input')
+    private inputElement!: HTMLInputElement;
 
     protected getItemsSkipSelector(): string {
         return "[data-match='false']";
@@ -197,11 +195,14 @@ export class MCombobox extends MInputListElement {
      *  Selection Management
      * ----------------------------- */
     private syncInputFromSelection(): void {
+        console.log("sync input", this.multiple, this.selectedValues.length, this.selectedValues, this.selectedItems, )
         if (this.multiple) {
             this.renderMultiselect();
         } else if (!this.multiple && this.selectedValues.length > 0) {
+            console.log("set input value to: ",this.selectedItems[0]?.textContent?.trim() )
             this.inputElement.value = this.selectedItems[0]?.textContent?.trim() || '';
         } else if (!this.multiple && this.selectedValues.length === 0) {
+            console.log("set input value to empty");
             this.inputElement.value = '';
         }
     }
@@ -228,6 +229,7 @@ export class MCombobox extends MInputListElement {
             }
         }
 
+        console.log("select", this.selectedValues)
         this.syncInputFromSelection();
         if (!this.multiple) {
             this._hidePopover();
@@ -293,6 +295,7 @@ export class MCombobox extends MInputListElement {
     //  Event Handlers
     //  ------------------------------------------------------------------------ 
     private handleOptionSelectedChange = (_e: Event) => {
+        console.log("option change callback", this.selectedValues)
         this.syncInputFromSelection();
     }
 
@@ -311,7 +314,7 @@ export class MCombobox extends MInputListElement {
             | undefined;
 
         if (item && !item.disabled) {
-            if (!this.multiple) this.select(item);
+            if (!this.multiple) {this.select(item);}
             else {
                 this.setFocus(item);
                 this.select(item);
@@ -381,7 +384,7 @@ export class MCombobox extends MInputListElement {
         this._shadowRoot.innerHTML = `
             <m-search-list debounce="${this.debounce}" target="#popover slot">
                 <div slot="controller" id="multi-select-list" slot="control"></div>
-                <m-input type="text" ${this.label ? `label="${this.label}"` : ''}></m-input>
+                <input type="text" ${this.label ? `label="${this.label}"` : ''}></input>
 
                 <div 
                     id="popover"
