@@ -54,19 +54,19 @@ export class MInput extends MFormAssociatedElement {
     }
 
     connectedCallback() {
+        super.connectedCallback()
         this.render();
         this.firstUpdate();
 
         this.inputElement.addEventListener("input", this.handleInput);
         this.inputElement.addEventListener("blur", this.handleBlur);
 
-        this.inputElement.addEventListener("invalid", this.handleInputInvalid);
     }
 
     disconnectedCallback() {
+        super.disconnectedCallback()
         this.inputElement.removeEventListener("input", this.handleInput);
         this.inputElement.removeEventListener("blur", this.handleBlur);
-        this.inputElement.removeEventListener("invalid", this.handleInputInvalid);
     }
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
@@ -93,9 +93,6 @@ export class MInput extends MFormAssociatedElement {
     //  ------------------------------------------------------------------------
     //  Event handlers                                                                     
     //  ------------------------------------------------------------------------ 
-    handleInputInvalid=(e: Event) => {
-        e.preventDefault();
-    }
     handleBlur = (_e: Event) => {
         this.hasInteracted = true;
         this.updateValidity();
@@ -129,7 +126,7 @@ export class MInput extends MFormAssociatedElement {
         if (value === '' && this.required) {
             this.internals.setValidity({
                 valueMissing: true
-            }, 'This field is required', this.inputElement);
+            }, 'This field is required', this.inputElement || undefined);
         } else {
             this.internals.setValidity({});
         }
