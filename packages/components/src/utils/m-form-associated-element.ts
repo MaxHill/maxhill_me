@@ -82,6 +82,7 @@ export abstract class MFormAssociatedElement extends MElement {
     handleInvalid = (e: Event) => {
         // Don't show native ui
         e.preventDefault();
+        console.log("invalid handler called");
         this.hasInteracted = true;
         this.updateValidity();
         this.focus();

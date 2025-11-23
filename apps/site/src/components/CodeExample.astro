@@ -26,9 +26,7 @@ ${css}
 
     {
         js && (
-            <script define:vars={{ js }} is:inline>
-                eval(js);
-            </script>
+            <script is:inline set:html={js} />
         )
     }
 

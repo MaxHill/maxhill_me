@@ -4,9 +4,13 @@ import { query } from "../utils/query";
 import type { MOption } from "../m-option";
 import { MListboxSelectEvent, MListboxUnselectedEvent, MListboxChangeEvent, MListboxFocusChangeEvent } from "./events";
 import styles from "./index.css?inline";
+import utilsStyles from "@maxhill/css/utils.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
+
+const utilsStyleSheet = new CSSStyleSheet();
+utilsStyleSheet.replaceSync(utilsStyles);
 
 /**
  * A form-associated listbox component for single or multiple selection.
@@ -86,7 +90,7 @@ export class MListbox extends MInputListElement {
         super();
         const shadow = this.attachShadow({ mode: 'open' });
         shadow.innerHTML = `<slot></slot>`;
-        shadow.adoptedStyleSheets = [baseStyleSheet];
+        shadow.adoptedStyleSheets = [utilsStyleSheet, baseStyleSheet];
         this.internals = this.attachInternals();
         if (!this.hasAttribute("tabindex")) {
             this.tabIndex = 0;

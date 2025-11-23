@@ -3,9 +3,13 @@ import { BindAttribute } from "../utils/reflect-attribute";
 import { fuzzySearch } from "../utils/search";
 import { query } from "../utils/query";
 import styles from "./index.css?inline";
+import utilsStyles from "@maxhill/css/utils.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
+
+const utilsStyleSheet = new CSSStyleSheet();
+utilsStyleSheet.replaceSync(utilsStyles);
 
 /**
  * A search list component that filters items based on user input using fuzzy search.
@@ -100,7 +104,7 @@ export class MSearchList extends MElement {
         super();
         this._internals = this.attachInternals();
         this.#shadowRoot = this.attachShadow({ mode: 'open' });
-        this.#shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+        this.#shadowRoot.adoptedStyleSheets = [utilsStyleSheet, baseStyleSheet];
     }
 
     connectedCallback() {
