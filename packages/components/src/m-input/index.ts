@@ -34,7 +34,7 @@ export class MInput extends MFormAssociatedElement {
 
     private _shadowRoot: ShadowRoot;
 
-@query('input')
+    @query('input')
     private inputElement!: HTMLInputElement;
 
     @query('label')
@@ -59,11 +59,14 @@ export class MInput extends MFormAssociatedElement {
 
         this.inputElement.addEventListener("input", this.handleInput);
         this.inputElement.addEventListener("blur", this.handleBlur);
+
+        this.inputElement.addEventListener("invalid", this.handleInputInvalid);
     }
 
     disconnectedCallback() {
         this.inputElement.removeEventListener("input", this.handleInput);
         this.inputElement.removeEventListener("blur", this.handleBlur);
+        this.inputElement.removeEventListener("invalid", this.handleInputInvalid);
     }
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
@@ -90,6 +93,9 @@ export class MInput extends MFormAssociatedElement {
     //  ------------------------------------------------------------------------
     //  Event handlers                                                                     
     //  ------------------------------------------------------------------------ 
+    handleInputInvalid=(e: Event) => {
+        e.preventDefault();
+    }
     handleBlur = (_e: Event) => {
         this.hasInteracted = true;
         this.updateValidity();
