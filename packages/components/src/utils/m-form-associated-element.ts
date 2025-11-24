@@ -116,14 +116,16 @@ export abstract class MFormAssociatedElement extends MElement {
         super();
 
         this.internals = this.attachInternals();
-        this.value = this.defaultValue;
-        console.log(this.value, this.defaultValue);
     }
 
     connectedCallback() {
         this.updateValidity();
         this.addEventListener("invalid", this.handleInvalid);
-        this.value = this.defaultValue;
+        if (this.defaultValue) {
+            this.value = this.defaultValue;
+            // ensure form value is in sync with host
+            this.internals.setFormValue(this.value as string);
+        }
     }
     disconnectedCallback() {
         this.removeEventListener("invalid", this.handleInvalid);

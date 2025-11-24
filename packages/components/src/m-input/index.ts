@@ -43,6 +43,9 @@ export class MInput extends MFormAssociatedElement {
     @query('label')
     private labelElement!: HTMLInputElement;
 
+    @query('.error')
+    private errorElement!: HTMLInputElement;
+
     @BindAttribute()
     type: "text" | "search" | "tel" | "url" | "email" | "password" = "text"
 
@@ -93,7 +96,8 @@ export class MInput extends MFormAssociatedElement {
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
-        this.updateValidity();
+
+        if (!this.inputElement) return;
 
         if (name === "disabled") {
             if (this.disabled) {
@@ -107,41 +111,52 @@ export class MInput extends MFormAssociatedElement {
             this.labelElement.textContent = this.label || "";
         }
 
-        if (name === "type") { this.inputElement.type = this.type; }
-        if (name === "required") { this.inputElement.required = this.required; }
+        if (name === "type") {
+            this.inputElement.setAttribute("type", this.type);
+        }
+
+        if (name === "required") {
+            if (this.required) {
+                this.inputElement.setAttribute("required", "");
+            } else {
+                this.inputElement.removeAttribute("required");
+            }
+        }
 
         if (name === "minlength") {
             if (this.minLength != null) {
-                this.inputElement.minLength = this.minLength;
+                this.inputElement.setAttribute("minlength", String(this.minLength));
             } else {
-                this.inputElement.removeAttribute("minlength")
+                this.inputElement.removeAttribute("minlength");
             }
         }
 
         if (name === "maxlength") {
             if (this.maxLength != null) {
-                this.inputElement.maxLength = this.maxLength;
+                this.inputElement.setAttribute("maxlength", String(this.maxLength));
             } else {
-                this.inputElement.removeAttribute("maxlength")
+                this.inputElement.removeAttribute("maxlength");
             }
         }
 
         if (name === "pattern") {
             if (this.pattern != null) {
-                this.inputElement.pattern = this.pattern;
-                console.log("pattern", this.inputElement.pattern)
+                this.inputElement.setAttribute("pattern", this.pattern);
             } else {
-                this.inputElement.removeAttribute("pattern")
+                this.inputElement.removeAttribute("pattern");
             }
         }
 
         if (name === "placeholder") {
             if (this.placeholder) {
-                this.inputElement.placeholder = this.placeholder;
+                this.inputElement.setAttribute("placeholder", this.placeholder);
             } else {
-                this.inputElement.removeAttribute("placeholder")
+                this.inputElement.removeAttribute("placeholder");
             }
         }
+
+        // Update validity after attribute changes
+        this.updateValidity();
     }
 
     /**
@@ -179,25 +194,68 @@ export class MInput extends MFormAssociatedElement {
     //  ------------------------------------------------------------------------ 
     // This should be unimplemented in parent class
     protected updateValidity() {
-        if (!this.inputElement) return;
+        if (!this.inputElement) {
+            this.internals.setValidity({});
+            this.setCustomStates();
+            return;
+        }
+        const value = this.value as string;
+        const validityState: ValidityStateFlags = {};
+        let validationMessage = '';
+        // 1. Check valueMissing (required)
+        if (this.required && !value) {
+            validityState.valueMissing = true;
+            validationMessage = 'This field is required';
+        }
+        // 2. Check tooShort (minlength) - only if value is not empty
+        else if (this.minLength != null && value.length > 0 && value.length < this.minLength) {
+            validityState.tooShort = true;
+            validationMessage = `Please lengthen this text to ${this.minLength} characters or more (you are currently using ${value.length} characters).`;
+        }
+        // 3. Check tooLong (maxlength) - browser usually prevents this, but check anyway
+        else if (this.maxLength != null && value.length > this.maxLength) {
+            validityState.tooLong = true;
+            validationMessage = `Please shorten this text to ${this.maxLength} characters or less (you are currently using ${value.length} characters).`;
+        }
+        // 4. Check patternMismatch - only if value is not empty
+        else if (this.pattern && value.length > 0) {
+            const regex = new RegExp(this.pattern);
+            if (!regex.test(value)) {
+                validityState.patternMismatch = true;
+                validationMessage = `Please match the requested format.`;
+            }
+        }
+        // 5. Check typeMismatch based on input type
+        else if (value.length > 0) {
+            switch (this.type) {
+                case 'email':
+                    // Simple email validation
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(value)) {
+                        validityState.typeMismatch = true;
+                        validationMessage = 'Please enter a valid email address.';
+                    }
+                    break;
+                case 'url':
+                    try {
+                        new URL(value);
+                    } catch {
+                        validityState.typeMismatch = true;
+                        validationMessage = 'Please enter a valid URL.';
+                    }
+                    break;
+                // tel, search, password, text don't have type validation
+            }
+        }
 
-        const isValid = this.inputElement.checkValidity();
-        console.log({
-            isValid, 
-            inputElement:this.inputElement,
-            inputValue: this.inputElement.value,
-            inputMin: this.inputElement.minLength,
-            value: this.inputElement.value,
-            thisMin: this.minLength,
-            tooShort: this.inputElement.validity.tooShort,
-        })
-
-        if (!isValid) {
+        // Set validity on the custom element
+        if (Object.keys(validityState).length > 0) {
             this.internals.setValidity(
-                this.inputElement.validity,
-                this.inputElement.validationMessage,
+                validityState,
+                validationMessage,
                 this.inputElement
             );
+            this.errorElement.textContent = validationMessage;
         } else {
             this.internals.setValidity({});
         }
@@ -205,16 +263,24 @@ export class MInput extends MFormAssociatedElement {
         this.setCustomStates();
     }
 
-
     private render() {
         this._shadowRoot.innerHTML = `
             <label for="input">${this.label}</label>
             <div class="input-wrapper">
                 <slot name="start"></slot>
-                <input id="input" value="${this.value}"/>
+                <input 
+                id="input" 
+                value="${this.value}"
+                type="${this.type}"
+                ${this.required ? 'required' : ''}
+                ${this.minLength != null ? `minlength="${this.minLength}"` : ''}
+                ${this.maxLength != null ? `maxlength="${this.maxLength}"` : ''}
+                ${this.pattern != null ? `pattern="${this.pattern}"` : ''}
+                ${this.placeholder ? `placeholder="${this.placeholder}"` : ''}
+            />
                 <slot name="end"></slot>
             </div>
-            <div class="error">ERROR</div>
+            <div class="error"></div>
 
         `;
     }
