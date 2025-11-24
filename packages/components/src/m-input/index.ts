@@ -73,8 +73,7 @@ export class MInput extends MFormAssociatedElement {
     constructor() {
         super();
         this._shadowRoot = this.attachShadow({
-            mode: 'open',
-            delegatesFocus: true
+            mode: 'open'
         });
         this._shadowRoot.adoptedStyleSheets = [baseStyleSheet];
     }
@@ -86,6 +85,9 @@ export class MInput extends MFormAssociatedElement {
 
         this.inputElement.addEventListener("input", this.handleInput);
         this.inputElement.addEventListener("blur", this.handleBlur);
+        
+        // Update validity after rendering so inputElement exists
+        this.updateValidity();
     }
 
     disconnectedCallback() {
