@@ -5,6 +5,9 @@
   [data-margin="00"] {
     margin: var(--size-00);
   }
+  [data-margin="0"] {
+    margin: var(--size-0);
+  }
   [data-margin="1"] {
     margin: var(--size-1);
   }

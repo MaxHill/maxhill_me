@@ -1,33 +1,74 @@
 import { MElement } from "./m-element";
 import { BindAttribute } from "./reflect-attribute";
 
+
+/**
+ * 
+ * Base class for creating a form associated element. Use this as a base to 
+ * conform to how form elements work and get a lot of boilerplate setup.
+ * 
+ * Value property is automatically synced to formValue
+ *
+ */
 export abstract class MFormAssociatedElement extends MElement {
+
+    static observedAttributes = ['required', 'value', 'disabled', 'label', 'name'];
+
+    /**
+     * Enables constraint validation, default aria attributes, and fully 
+     * participate in HTMLForms
+     */
     protected internals: ElementInternals;
 
+    /**
+     * Enables form participation for the element with attributes such as value and name 
+     */
     static formAssociated = true;
-    static observedAttributes = ['required', 'value','disabled', 'label', 'name'];
 
+
+
+    /**
+     * Label that can be used in the ui and also set as the aria-label
+     */
     @BindAttribute()
     label?: string;
 
+    /**
+     * Whether the element is disabled. When disabled, tabindex is set to -1
+     */
     @BindAttribute()
     disabled = false;
 
+    /**
+     * Name associated with the value when submitted in a form
+     */
     @BindAttribute()
     name?: string;
 
-    // Original (or default) value of the element. 
-    // It reflects the element's value attribute.
-    @BindAttribute({attribute: "value"})
+    /**
+     * Original (or default) value of the element. 
+     * It reflects the element's value attribute.
+     * This is used on form reset
+     */
+    @BindAttribute({ attribute: "value" })
     defaultValue: string = '';
 
-    private _value: string | FormData = '';
-    get value() {
+    private _value: string | string[] = '';
+    /**
+     *
+     * @returns {string|string[]} - The value of the element
+     */
+    get value(): string | string[] {
         return this._value
     }
-    set value(value) {
+
+    /**
+     * @param {string|string[]} value - sets both the value and the form value for the element
+     */
+    set value(value: string | string[]) {
         // Don't set value if the input is disabled
         if (this.disabled) return;
+        if (this.value === value) return;
 
         if (Array.isArray(value)) {
             if (this.name) {
@@ -42,14 +83,30 @@ export abstract class MFormAssociatedElement extends MElement {
             this._value = value;
             this.internals.setFormValue(value)
         }
+
+        this.onValueChange && this.onValueChange(value)
     }
+
+    /**
+     * Implement this to hook into when the value is updated
+     */
+    protected onValueChange?: (value: string | string[]) => void;
 
     //  ------------------------------------------------------------------------
     //  Constraint validation                                                                     
     //  ------------------------------------------------------------------------ 
+    /**
+     * If the field is required, part of Constraint validation. 
+     */
     @BindAttribute()
     required = false;
 
+
+    /**
+     * Tracks whether the user has interacted with the element in a way that
+     * warrants showing validation feedback (e.g., blur, form submit attempt).
+     * Used to determine when to apply user-invalid and user-valid states.
+     */
     protected hasInteracted = false;
 
 
@@ -57,13 +114,14 @@ export abstract class MFormAssociatedElement extends MElement {
         super();
 
         this.internals = this.attachInternals();
-        // TODO: maybe this won't work in list inputs
         this.value = this.defaultValue;
+        console.log(this.value, this.defaultValue);
     }
 
     connectedCallback() {
-        this.firstUpdate();
+        this.updateValidity();
         this.addEventListener("invalid", this.handleInvalid);
+        this.value = this.defaultValue;
     }
     disconnectedCallback() {
         this.removeEventListener("invalid", this.handleInvalid);
@@ -71,8 +129,19 @@ export abstract class MFormAssociatedElement extends MElement {
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
         this.updateValidity();
+
+
         if (name === "label") {
             this.internals.ariaLabel = newValue as string;
+        }
+
+
+        if (name === "disabled") {
+            if (this.disabled) {
+                this.setAttribute("tabindex", "-1");
+            } else {
+                this.setAttribute("tabindex", "0");
+            }
         }
     }
 
@@ -82,29 +151,38 @@ export abstract class MFormAssociatedElement extends MElement {
     handleInvalid = (e: Event) => {
         // Don't show native ui
         e.preventDefault();
-        console.log("invalid handler called");
         this.hasInteracted = true;
         this.updateValidity();
         this.focus();
     }
     //  ------------------------------------------------------------------------
-    //  Form association                                                                     
+    //  Form lifecycle                                                                    
     //  ------------------------------------------------------------------------ 
-    protected firstUpdate() {
-        this.internals.setFormValue(this.value);
-        this.updateValidity();
-    }
 
+    /** 
+     * Called when the form is reset. Should clear the value and reset states 
+     * and interaction.
+     * */
     formResetCallback() {
         this.value = this.defaultValue;
         this.hasInteracted = false;
         this.setCustomStates();
     }
 
+
+    /**
+     * Called when the whole form is disabled/enabled.
+     * @param {boolean} disabled - If the form is disabled/enabled
+     */
     formDisabledCallback(disabled: boolean) {
         this.disabled = disabled;
     }
 
+
+    /**
+     * @param {string} state - value to be set
+     * @param {"restore" | "autocomplete"} _mode - is it called by "restore" (going back in the browser after form submission for example) or autocomplete?
+     */
     formStateRestoreCallback(state: string, _mode: 'restore' | 'autocomplete') {
         this.value = state;
     }
@@ -112,6 +190,11 @@ export abstract class MFormAssociatedElement extends MElement {
     //  ------------------------------------------------------------------------
     //  Validation                                                                     
     //  ------------------------------------------------------------------------ 
+
+    /**
+     * Sets custom element states for styling with :state(valid), :state(invalid),
+     * :state(user-valid), and :state(user-invalid) pseudo-classes
+     */
     protected setCustomStates() {
         const isValid = this.internals.validity.valid;
         this.setState('invalid', !isValid);
@@ -120,11 +203,23 @@ export abstract class MFormAssociatedElement extends MElement {
         this.setState('user-valid', isValid && this.hasInteracted);
     }
 
+
+    /**
+     * Implement this method to validate the element's value. Should call
+     * internals.setValidity() with appropriate validation state, then
+     * call setCustomStates() to update element states.
+     */
     protected abstract updateValidity(): void;
 
     //  ------------------------------------------------------------------------
     //  Helpers                                                                     
     //  ------------------------------------------------------------------------ 
+
+
+    /**
+     * @param {string} name - Name of the state
+     * @param {boolean} condition - Whether the state should be added or removed
+     */
     private setState(name: string, condition: boolean) {
         if (condition) { this.internals.states.add(name) }
         else { this.internals.states.delete(name) }

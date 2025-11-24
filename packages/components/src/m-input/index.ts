@@ -55,12 +55,11 @@ export class MInput extends MFormAssociatedElement {
 
     connectedCallback() {
         super.connectedCallback()
+
         this.render();
-        this.firstUpdate();
 
         this.inputElement.addEventListener("input", this.handleInput);
         this.inputElement.addEventListener("blur", this.handleBlur);
-
     }
 
     disconnectedCallback() {
@@ -72,11 +71,8 @@ export class MInput extends MFormAssociatedElement {
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
         this.updateValidity();
-        if (name === "label") {
-            this.internals.ariaLabel = newValue as string;
-        }
 
-        if (name === "disabled") {
+        if (name === "disabled" && this.inputElement) {
             if (this.disabled) {
                 this.inputElement.setAttribute("disabled", "");
             } else {
@@ -84,10 +80,24 @@ export class MInput extends MFormAssociatedElement {
             }
         }
 
-        if (name === "label") {
+        if (name === "label" && this.labelElement) { 
             this.labelElement.textContent = this.label || "";
         }
     }
+
+    /**
+     * Tie wrapped native input value to m-input value
+     */
+    protected onValueChange = (value: string | string[]) => {
+        if (Array.isArray(value))  {
+            console.error("trying to set array value to string input", this.tagName, value);
+            return;
+        }
+        if (this.inputElement) {
+         this.inputElement.value = value;
+        }
+    }
+    
 
 
     //  ------------------------------------------------------------------------
@@ -110,11 +120,6 @@ export class MInput extends MFormAssociatedElement {
     //  ------------------------------------------------------------------------ 
     formResetCallback() {
         super.formResetCallback();
-        // TODO: maybe we should link 
-        // value and input value in a more central way.
-        // This is kind of case by case right here.
-        // Somehow this could be done on the setter of value?
-        this.inputElement.value = this.value as string;
     }
 
     //  ------------------------------------------------------------------------

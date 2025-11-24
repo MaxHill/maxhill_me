@@ -1,5 +1,4 @@
 import MCard from './m-card';
-import MSwitch from './m-switch';
 import MInput from './m-input';
 import MCombobox from './m-combobox';
 import MCommandPalette from './m-command-palette';
@@ -29,7 +28,6 @@ export function registerAll() {
 
   // Form
   MInput.define();
-  MSwitch.define();
   MListbox.define();
   MOption.define();
   MCombobox.define();
