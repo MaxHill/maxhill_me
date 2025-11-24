@@ -68,7 +68,7 @@ export abstract class MFormAssociatedElement extends MElement {
      * @param {string|string[]} value - sets both the value and the form value for the element
      */
     set value(value: string | string[]) {
-        // Don't set value if the input is disabled
+        // Don't set value if the element is disabled
         if (this.disabled) return;
         if (this.value === value) return;
 
@@ -123,8 +123,6 @@ export abstract class MFormAssociatedElement extends MElement {
         
         if (this.defaultValue) {
             this.value = this.defaultValue;
-            // ensure form value is in sync with host
-            this.internals.setFormValue(this.value as string);
         }
         
         // Note: updateValidity() should be called by subclasses after they render their DOM

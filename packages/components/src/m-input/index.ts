@@ -7,11 +7,12 @@ const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
 // Text input specific
-// TODO: Selection range
-// TODO: setRangeText
-// TODO: bind value to input.value to make defaultValue work
-// TODO: before/after slots
-// TODO: constraint validation
+// TODO: tasks below
+// - [ ] Selection range
+// - [ ] setRangeText
+// - [ ] before/after slots
+// - [x] bind value to input.value to make defaultValue work
+// - [x] constraint validation
 
 
 /**
@@ -82,12 +83,12 @@ export class MInput extends MFormAssociatedElement {
         super.connectedCallback()
 
         this.render();
+        // Update validity after rendering so inputElement exists
+        this.updateValidity();
 
         this.inputElement.addEventListener("input", this.handleInput);
         this.inputElement.addEventListener("blur", this.handleBlur);
         
-        // Update validity after rendering so inputElement exists
-        this.updateValidity();
     }
 
     disconnectedCallback() {
@@ -98,67 +99,29 @@ export class MInput extends MFormAssociatedElement {
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
-
         if (!this.inputElement) return;
-
-        if (name === "disabled") {
-            if (this.disabled) {
-                this.inputElement.setAttribute("disabled", "");
-            } else {
-                this.inputElement.removeAttribute("disabled");
-            }
-        }
-
+        
+        // Special case: label goes to labelElement
         if (name === "label") {
-            this.labelElement.textContent = this.label || "";
+            this.labelElement.textContent = newValue as string || "";
+            return;
         }
-
-        if (name === "type") {
-            this.inputElement.setAttribute("type", this.type);
-        }
-
-        if (name === "required") {
-            if (this.required) {
-                this.inputElement.setAttribute("required", "");
+        
+        // Attributes to forward directly to the inner input element
+        const inputAttributes = [
+            'type', 'disabled', 'required', 
+            'minlength', 'maxlength', 'pattern', 'placeholder'
+        ];
+        
+        if (inputAttributes.includes(name)) {
+            if (newValue != null) {
+                this.inputElement.setAttribute(name, String(newValue));
             } else {
-                this.inputElement.removeAttribute("required");
+                this.inputElement.removeAttribute(name);
             }
         }
-
-        if (name === "minlength") {
-            if (this.minLength != null) {
-                this.inputElement.setAttribute("minlength", String(this.minLength));
-            } else {
-                this.inputElement.removeAttribute("minlength");
-            }
-        }
-
-        if (name === "maxlength") {
-            if (this.maxLength != null) {
-                this.inputElement.setAttribute("maxlength", String(this.maxLength));
-            } else {
-                this.inputElement.removeAttribute("maxlength");
-            }
-        }
-
-        if (name === "pattern") {
-            if (this.pattern != null) {
-                this.inputElement.setAttribute("pattern", this.pattern);
-            } else {
-                this.inputElement.removeAttribute("pattern");
-            }
-        }
-
-        if (name === "placeholder") {
-            if (this.placeholder) {
-                this.inputElement.setAttribute("placeholder", this.placeholder);
-            } else {
-                this.inputElement.removeAttribute("placeholder");
-            }
-        }
-
-        // Update validity after attribute changes
-        this.updateValidity();
+        
+        // Note: parent's attributeChangedCallback already calls updateValidity()
     }
 
     /**
@@ -187,7 +150,7 @@ export class MInput extends MFormAssociatedElement {
     handleInput = (e: Event) => {
         const target = e.target as HTMLInputElement;
         if (target) { this.value = target.value; }
-        this.updateValidity();
+        // Note: value setter already calls updateValidity()
     }
 
 
@@ -232,6 +195,7 @@ export class MInput extends MFormAssociatedElement {
             switch (this.type) {
                 case 'email':
                     // Simple email validation
+                    // TODO: a regex here is not great
                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                     if (!emailRegex.test(value)) {
                         validityState.typeMismatch = true;
@@ -250,7 +214,7 @@ export class MInput extends MFormAssociatedElement {
             }
         }
 
-        // Set validity on the custom element
+        // Set validity on this element
         if (Object.keys(validityState).length > 0) {
             this.internals.setValidity(
                 validityState,
@@ -269,7 +233,7 @@ export class MInput extends MFormAssociatedElement {
         this._shadowRoot.innerHTML = `
             <label for="input">${this.label}</label>
             <div class="input-wrapper">
-                <slot name="start"></slot>
+                <slot name="before"></slot>
                 <input 
                 id="input" 
                 value="${this.value}"
@@ -280,17 +244,11 @@ export class MInput extends MFormAssociatedElement {
                 ${this.pattern != null ? `pattern="${this.pattern}"` : ''}
                 ${this.placeholder ? `placeholder="${this.placeholder}"` : ''}
             />
-                <slot name="end"></slot>
+                <slot name="after"></slot>
             </div>
             <div class="error"></div>
 
         `;
-    }
-
-    //  ------------------------------------------------------------------------
-    //  Utils                                                                     
-    //  ------------------------------------------------------------------------ 
-    syncAttributesToWrappedInput() {
     }
 }
 
