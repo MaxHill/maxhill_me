@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>M-Input Focus Debug</title>
+    <style>
+        body { 
+            font-family: system-ui; 
+            padding: 2rem;
+            max-width: 600px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        m-input {
+            display: block;
+        }
+        button {
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+        }
+        #log {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f5f5f5;
+            border: 1px solid #ccc;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>M-Input Focus Debugging</h1>
+    
+    <form id="testForm">
+        <m-input id="field1" name="field1" label="Required" required></m-input>
+        <m-input id="field2" name="field2" label="Min length" minlength="5"></m-input>
+        <m-input id="field3" name="field3" label="Email" type="email"></m-input>
+        <button type="submit">Submit</button>
+    </form>
+
+    <div id="log">Log will appear here...</div>
+
+    <script type="module">
+        import './src/m-input/index.ts';
+        
+        const log = document.getElementById('log');
+        const form = document.getElementById('testForm');
+        const field1 = document.getElementById('field1');
+        const field2 = document.getElementById('field2');
+        const field3 = document.getElementById('field3');
+        
+        function addLog(msg) {
+            const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
+            log.textContent += `[${timestamp}] ${msg}\n`;
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        // Log all invalid events
+        [field1, field2, field3].forEach((field, index) => {
+            field.addEventListener('invalid', (e) => {
+                addLog(`INVALID event on field${index + 1} (${field.getAttribute('label')})`);
+                addLog(`  - form._validationFocused: ${form._validationFocused}`);
+            });
+            
+            field.addEventListener('focus', () => {
+                addLog(`FOCUS on field${index + 1} (${field.getAttribute('label')})`);
+            });
+            
+            field.addEventListener('blur', () => {
+                addLog(`BLUR on field${index + 1} (${field.getAttribute('label')})`);
+            });
+        });
+        
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            addLog('FORM SUBMIT prevented');
+        });
+        
+        // Log which element has focus after a delay
+        setTimeout(() => {
+            form.addEventListener('submit', () => {
+                setTimeout(() => {
+                    addLog(`Active element after submit: ${document.activeElement?.id || 'unknown'}`);
+                    addLog(`  - Is button: ${document.activeElement?.tagName === 'BUTTON'}`);
+                }, 10);
+            });
+        }, 100);
+        
+        addLog('Setup complete. Try submitting the form with empty/invalid fields.');
+    </script>
+</body>
+</html>

@@ -87,6 +87,7 @@ export abstract class MFormAssociatedElement extends MElement {
         }
 
         this.onValueChange && this.onValueChange(value)
+        this.updateValidity()
     }
 
     /**
@@ -111,7 +112,6 @@ export abstract class MFormAssociatedElement extends MElement {
      */
     protected hasInteracted = false;
 
-
     constructor() {
         super();
 
@@ -119,17 +119,22 @@ export abstract class MFormAssociatedElement extends MElement {
     }
 
     connectedCallback() {
-        this.updateValidity();
         this.addEventListener("invalid", this.handleInvalid);
+        
         if (this.defaultValue) {
             this.value = this.defaultValue;
             // ensure form value is in sync with host
             this.internals.setFormValue(this.value as string);
         }
+        
+        // Note: updateValidity() should be called by subclasses after they render their DOM
+        // TODO: fix this behavior
     }
+    
     disconnectedCallback() {
         this.removeEventListener("invalid", this.handleInvalid);
     }
+
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
         this.updateValidity();
@@ -153,12 +158,31 @@ export abstract class MFormAssociatedElement extends MElement {
     //  Event handlers                                                                     
     //  ------------------------------------------------------------------------ 
     handleInvalid = (e: Event) => {
-        // Don't show native ui
+        // Prevent native validation bubble and focus handling
+        // (native browser can't focus through shadow DOM, so we handle it ourselves)
         e.preventDefault();
+        
+        // Update custom validation state
         this.hasInteracted = true;
         this.updateValidity();
-        this.focus();
+        
+        // Focus the first invalid element only
+        const form = this.internals.form;
+        if (form) {
+            // Mark that we've seen an invalid event in this validation cycle
+            if (!(form as any)._hasInvalidEvent) {
+                // This is the first invalid element
+                (form as any)._hasInvalidEvent = true;
+                this.focus();
+                // Clear the flag after the current event loop to be ready for next submit
+                setTimeout(() => { delete (form as any)._hasInvalidEvent; }, 0);
+            }
+        } else {
+            // No form, just focus
+            this.focus();
+        }
     }
+
     //  ------------------------------------------------------------------------
     //  Form lifecycle                                                                    
     //  ------------------------------------------------------------------------ 
