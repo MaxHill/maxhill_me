@@ -22,7 +22,7 @@ ${css}
 
 <div class="box" data-padded="false">
     {css && <style set:html={css} />}
-    {html && <div data-padding="2" set:html={html} />}
+    {html && <div class="example" data-padding="2" set:html={html} />}
 
     {
         js && (
@@ -43,6 +43,10 @@ ${css}
         padding: var(--size-2);
         margin: 0;
         overflow-x: auto;
+    }
+
+    .example {
+        overflow: scroll;
     }
 
     details > div {
