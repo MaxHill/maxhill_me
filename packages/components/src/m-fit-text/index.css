@@ -5,6 +5,9 @@
 
   --captured-length: initial;
   --support-sentinel: var(--captured-length, 9999px);
+
+  /* TODO: This should not be static here */
+  h1 { margin: 0; }
 }
 
 .font-display { font-family: var(--ff-display); }
