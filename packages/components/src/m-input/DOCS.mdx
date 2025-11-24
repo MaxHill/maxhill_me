@@ -15,6 +15,7 @@ A simple m-input example.
     <m-input label="m-input example" name="m-input-example"></m-input>
     <m-input label="m-input disabled" name="m-input-example-disabled" disabled></m-input>
     <m-input label="m-input default value" name="m-input-example-default-value" value="Default value"></m-input>
+    <m-input label="m-input placeholder" name="m-input-example-placeholder" placeholder="Placeholder..."></m-input>
     <button type="submit">Submit</button>
     <button type="reset">Reset</button>
   </form>
@@ -31,14 +32,39 @@ A simple m-input example.
 />
 
 
-## Required
+## Validation
 <CodeExample 
   html={`
   <form class="form" id="example-required-form">
-    <label for="normal-input" >Normal input</label>
-    <input name="normal-input" required />
+    <label for="normal-required-input" >Normal input</label>
+    <input name="normal-required-input" required />
+    <label for="normal-min-input" >Normal min 3</label>
+    <input name="normal-min-input" minlength="3" />
 
-    <m-input label="m-input example" name="m-input-example" required="true">Default content</m-input>
+    <m-input 
+        label="Required" 
+        name="m-input-example" 
+        required="true"
+    ></m-input>
+
+    <m-input 
+        label="Min length" 
+        name="m-input-example" 
+        minlength="3"
+    ></m-input>
+
+    <m-input 
+        label="Max length" 
+        name="m-input-example" 
+        maxlength="3"
+    ></m-input>
+
+    <m-input 
+        label="Pattern [0-9]" 
+        name="m-input-example" 
+        pattern="[0-9]"
+    ></m-input>
+
     <button type="submit">Submit</button>
     <button type="reset">Reset</button>
   </form>

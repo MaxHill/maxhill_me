@@ -1,5 +1,6 @@
 import { MFormAssociatedElement } from "../utils/m-form-associated-element";
 import { query } from "../utils/query";
+import { BindAttribute } from "../utils/reflect-attribute";
 import styles from "./index.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -9,6 +10,8 @@ baseStyleSheet.replaceSync(styles);
 // TODO: Selection range
 // TODO: setRangeText
 // TODO: bind value to input.value to make defaultValue work
+// TODO: before/after slots
+// TODO: constraint validation
 
 
 /**
@@ -29,7 +32,7 @@ export class MInput extends MFormAssociatedElement {
     static tagName = 'm-input';
 
     static get observedAttributes() {
-        return [...super.observedAttributes]
+        return [...super.observedAttributes, "type", "minlength", "maxlength", "pattern", "placeholder"]
     }
 
     private _shadowRoot: ShadowRoot;
@@ -39,6 +42,26 @@ export class MInput extends MFormAssociatedElement {
 
     @query('label')
     private labelElement!: HTMLInputElement;
+
+    @BindAttribute()
+    type: "text" | "search" | "tel" | "url" | "email" | "password" = "text"
+
+    @BindAttribute({ attribute: "minlength" })
+    minLength?: number;
+
+    @BindAttribute({ attribute: "maxlength" })
+    maxLength?: number;
+
+    @BindAttribute()
+    pattern?: string;
+
+    @BindAttribute()
+    placeholder?: string;
+
+    // TODO: add "size" {number} - Width in characters of the input 
+    // TODO: add "multiple" - Only applies to email and url.
+    // TODO: add "autocomplete" {boolean}
+
 
     select() { this.inputElement?.select(); }
     focus(options?: FocusOptions) { this.inputElement?.focus(options); }
@@ -72,7 +95,7 @@ export class MInput extends MFormAssociatedElement {
         super.attributeChangedCallback(name, oldValue, newValue);
         this.updateValidity();
 
-        if (name === "disabled" && this.inputElement) {
+        if (name === "disabled") {
             if (this.disabled) {
                 this.inputElement.setAttribute("disabled", "");
             } else {
@@ -80,8 +103,44 @@ export class MInput extends MFormAssociatedElement {
             }
         }
 
-        if (name === "label" && this.labelElement) { 
+        if (name === "label") {
             this.labelElement.textContent = this.label || "";
+        }
+
+        if (name === "type") { this.inputElement.type = this.type; }
+        if (name === "required") { this.inputElement.required = this.required; }
+
+        if (name === "minlength") {
+            if (this.minLength != null) {
+                this.inputElement.minLength = this.minLength;
+            } else {
+                this.inputElement.removeAttribute("minlength")
+            }
+        }
+
+        if (name === "maxlength") {
+            if (this.maxLength != null) {
+                this.inputElement.maxLength = this.maxLength;
+            } else {
+                this.inputElement.removeAttribute("maxlength")
+            }
+        }
+
+        if (name === "pattern") {
+            if (this.pattern != null) {
+                this.inputElement.pattern = this.pattern;
+                console.log("pattern", this.inputElement.pattern)
+            } else {
+                this.inputElement.removeAttribute("pattern")
+            }
+        }
+
+        if (name === "placeholder") {
+            if (this.placeholder) {
+                this.inputElement.placeholder = this.placeholder;
+            } else {
+                this.inputElement.removeAttribute("placeholder")
+            }
         }
     }
 
@@ -89,15 +148,15 @@ export class MInput extends MFormAssociatedElement {
      * Tie wrapped native input value to m-input value
      */
     protected onValueChange = (value: string | string[]) => {
-        if (Array.isArray(value))  {
+        if (Array.isArray(value)) {
             console.error("trying to set array value to string input", this.tagName, value);
             return;
         }
         if (this.inputElement) {
-         this.inputElement.value = value;
+            this.inputElement.value = value;
         }
     }
-    
+
 
 
     //  ------------------------------------------------------------------------
@@ -114,24 +173,31 @@ export class MInput extends MFormAssociatedElement {
         this.updateValidity();
     }
 
-    
-    //  ------------------------------------------------------------------------
-    //  Form association                                                                     
-    //  ------------------------------------------------------------------------ 
-    formResetCallback() {
-        super.formResetCallback();
-    }
 
     //  ------------------------------------------------------------------------
     //  Validation                                                                     
     //  ------------------------------------------------------------------------ 
     // This should be unimplemented in parent class
     protected updateValidity() {
-        const { value } = this;
-        if (value === '' && this.required) {
-            this.internals.setValidity({
-                valueMissing: true
-            }, 'This field is required', this.inputElement || undefined);
+        if (!this.inputElement) return;
+
+        const isValid = this.inputElement.checkValidity();
+        console.log({
+            isValid, 
+            inputElement:this.inputElement,
+            inputValue: this.inputElement.value,
+            inputMin: this.inputElement.minLength,
+            value: this.inputElement.value,
+            thisMin: this.minLength,
+            tooShort: this.inputElement.validity.tooShort,
+        })
+
+        if (!isValid) {
+            this.internals.setValidity(
+                this.inputElement.validity,
+                this.inputElement.validationMessage,
+                this.inputElement
+            );
         } else {
             this.internals.setValidity({});
         }
@@ -139,15 +205,24 @@ export class MInput extends MFormAssociatedElement {
         this.setCustomStates();
     }
 
+
     private render() {
         this._shadowRoot.innerHTML = `
             <label for="input">${this.label}</label>
             <div class="input-wrapper">
+                <slot name="start"></slot>
                 <input id="input" value="${this.value}"/>
+                <slot name="end"></slot>
             </div>
             <div class="error">ERROR</div>
 
         `;
+    }
+
+    //  ------------------------------------------------------------------------
+    //  Utils                                                                     
+    //  ------------------------------------------------------------------------ 
+    syncAttributesToWrappedInput() {
     }
 }
 

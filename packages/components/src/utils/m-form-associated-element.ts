@@ -39,6 +39,8 @@ export abstract class MFormAssociatedElement extends MElement {
     @BindAttribute()
     disabled = false;
 
+    // TODO: add readonly attribute
+
     /**
      * Name associated with the value when submitted in a form
      */
