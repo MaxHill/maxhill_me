@@ -24,7 +24,7 @@ m-input {
     background-color: var(--color-background);
     border: var(--border, 1px solid);
     border-color: var(--color-stroke);
-    border-radius: var(--radius-2);
+    border-radius: var(--radius-box);
     padding: var(--size-fluid-1);
 
 }

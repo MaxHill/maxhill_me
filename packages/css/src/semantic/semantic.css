@@ -90,13 +90,28 @@
         --color-input-stroke-focus: var(--color-primary-stroke-softer);
         --color-input-text-focus: var(--color-primary-text-on-soft);
 
-
         --color-input-fill-error: var(--color-surface);
         --color-input-stroke-focus-error: var(--color-destructive-stroke-mid);
         --color-input-text-focus-error: var(--color-destructive-text-on-soft);
 
         --radius-input: var(--radius-2);
         --radius-input: 0;
+
+        /*  ------------------------------------------------------------------------
+        /*  Box                                                                     
+        /*  ------------------------------------------------------------------------ */
+        --radius-box: 0; /* Previously radius-2*/
+
+        /*  ------------------------------------------------------------------------
+        /*  Focus outline                                                                     
+        /*  ------------------------------------------------------------------------ */
+        --outline-size: max(2px, 0.08em);
+        --outline-style: solid;
+        --outline-color: var(--color-primary-fill-mid);
+        --outline-offset-value: var(--outline-size);
+
+        --outline: var(--outline-size) var(--outline-style) var(--outline-color);
+        --outline-offset: var(--outline-offset-value);
     }
 
 }

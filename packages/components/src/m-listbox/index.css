@@ -3,7 +3,7 @@
     gap: var(--size-1);
     padding: var(--size-1);
     border: var(--border);
-    border-radius: var(--radius-2);
+    border-radius: var(--radius-box);
 }
 
 :host([disabled]) {
