@@ -27,5 +27,10 @@ export default defineConfig({
                 assetFileNames: '[name].[ext]'
             }
         }
+    },
+    server: {
+        watch: {
+            include: ['src/**/*.css', 'src/**/*.ts']
+        }
     }
 });

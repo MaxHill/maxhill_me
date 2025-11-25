@@ -33,7 +33,6 @@ label {
     /* Shape */
     corner-shape: squircle;
     border-radius: var(--radius-input);
-    padding-inline: var(--size-2);
 
     /* Color */
     background: var(--color-input-fill);
@@ -47,10 +46,11 @@ label {
     /* Layout */
     display: flex;
     align-items: center;
-    gap: var(--size-2);
     overflow: clip;
     max-width: 100%;
     min-width: 0;
+    padding-inline: var(--size-2);
+    flex-wrap: wrap;
 
     &:has(input:focus) {
         outline: var(--outline);
@@ -59,10 +59,29 @@ label {
 
     /* Slots take content size only */
     slot[name="before"],
-    slot[name="after"] {
+    slot[name="after"],
+    slot[name="clear"] {
         flex-shrink: 0;
-        display: flex;
         align-items: center;
+        display: contents;
+    }
+
+
+    slot[name="clear"] {
+        button {
+            display: contents;
+            cursor: pointer;
+            color: var(--color-text-softer);
+
+            &:hover {
+                color: var(--color-text-mid);
+            }
+        }
+
+        &[hidden] {
+            display: none;
+        }
+
     }
 
     input {
@@ -74,6 +93,8 @@ label {
         border: none;
         padding-block: var(--size-2);
         color: hsl(var(--color-text));
+        padding-inline: var(--size-2);
+        min-width: min(100% , 10ch);
 
         &:focus {
             outline: none;
@@ -91,6 +112,7 @@ label {
 
 :host([readonly]) {
     opacity: .7;
+
     input {
         color: var(--color-neutral-);
     }

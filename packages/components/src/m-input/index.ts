@@ -27,6 +27,7 @@ baseStyleSheet.replaceSync(styles);
  * @tagname m-input
  * 
  * @slot - Default slot for component content
+ * @slot clear - Slot where you can override the clear button.
  * 
  * @attr {string} example - An example property
  * 
@@ -38,7 +39,7 @@ export class MInput extends MFormAssociatedElement {
     static tagName = 'm-input';
 
     static get observedAttributes() {
-        return [...super.observedAttributes, "type", "minlength", "maxlength", "pattern", "placeholder"]
+        return [...super.observedAttributes, "type", "minlength", "maxlength", "pattern", "placeholder", "clearable"]
     }
 
     private _shadowRoot: ShadowRoot;
@@ -71,6 +72,17 @@ export class MInput extends MFormAssociatedElement {
     // TODO: add "multiple" - Only applies to email and url.
     // TODO: add "autocomplete" {boolean}
 
+    @BindAttribute()
+    clearable: boolean = false;
+
+    @query('slot[name="clear"]')
+    private clearSlot!: HTMLSlotElement;
+    get clearSlotHasContent() {
+        return this.clearSlot?.assignedElements().length > 0;
+
+    }
+
+
 
     select() { this.inputElement?.select(); }
     focus(options?: FocusOptions) { this.inputElement?.focus(options); }
@@ -79,7 +91,8 @@ export class MInput extends MFormAssociatedElement {
     constructor() {
         super();
         this._shadowRoot = this.attachShadow({
-            mode: 'open'
+            mode: 'open',
+            delegatesFocus: true
         });
         this._shadowRoot.adoptedStyleSheets = [baseStyleSheet];
     }
@@ -91,33 +104,36 @@ export class MInput extends MFormAssociatedElement {
         // Update validity after rendering so inputElement exists
         this.updateValidity();
 
+        this.toggleClearButton();
+
         this.inputElement.addEventListener("input", this.handleInput);
         this.inputElement.addEventListener("blur", this.handleBlur);
-        
+        this.clearSlot.addEventListener('click', this.handleClearClick);
     }
 
     disconnectedCallback() {
         super.disconnectedCallback()
         this.inputElement.removeEventListener("input", this.handleInput);
         this.inputElement.removeEventListener("blur", this.handleBlur);
+        this.clearSlot.removeEventListener('click', this.handleClearClick);
     }
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
         if (!this.inputElement) return;
-        
+
         // Special case: label goes to labelElement
         if (name === "label") {
             this.labelElement.textContent = newValue as string || "";
             return;
         }
-        
+
         // Attributes to forward directly to the inner input element
         const inputAttributes = [
-            'type', 'disabled', 'readonly', 'required', 
+            'type', 'disabled', 'readonly', 'required',
             'minlength', 'maxlength', 'pattern', 'placeholder'
         ];
-        
+
         if (inputAttributes.includes(name)) {
             if (newValue != null) {
                 this.inputElement.setAttribute(name, String(newValue));
@@ -125,8 +141,9 @@ export class MInput extends MFormAssociatedElement {
                 this.inputElement.removeAttribute(name);
             }
         }
-        
+
         // Note: parent's attributeChangedCallback already calls updateValidity()
+        this.toggleClearButton();
     }
 
     /**
@@ -156,6 +173,15 @@ export class MInput extends MFormAssociatedElement {
         const target = e.target as HTMLInputElement;
         if (target) { this.value = target.value; }
         // Note: value setter already calls updateValidity()
+        this.toggleClearButton();
+    }
+
+
+    private handleClearClick = (e: Event) => {
+        e.preventDefault();
+        this.value = '';
+        this.inputElement.focus(); // Return focus to input
+        this.toggleClearButton(); // Hide button after clearing
     }
 
 
@@ -234,6 +260,24 @@ export class MInput extends MFormAssociatedElement {
         this.setCustomStates();
     }
 
+    //  ------------------------------------------------------------------------
+    //  Clear button                                                                     
+    //  ------------------------------------------------------------------------ 
+    private toggleClearButton() {
+        if (!this.clearSlot) return;
+
+        const shouldHide = !this.clearable ||
+            !this.value ||
+            this.disabled ||
+            this.readonly;
+
+        if (shouldHide) {
+            this.clearSlot.setAttribute('hidden', '');
+        } else {
+            this.clearSlot.removeAttribute('hidden');
+        }
+    }
+
     private render() {
         this._shadowRoot.innerHTML = `
             <label for="input">${this.label || ''}</label>
@@ -250,6 +294,11 @@ export class MInput extends MFormAssociatedElement {
                 ${this.pattern != null ? `pattern="${this.pattern}"` : ''}
                 ${this.placeholder ? `placeholder="${this.placeholder}"` : ''}
             />
+                <slot name="clear">
+                    <button type="button" tabindex="-1" aria-label="Clear input">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                </slot>
                 <slot name="after"></slot>
             </div>
             <div class="error"></div>
