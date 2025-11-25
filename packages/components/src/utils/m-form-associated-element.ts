@@ -12,7 +12,7 @@ import { BindAttribute } from "./reflect-attribute";
  */
 export abstract class MFormAssociatedElement extends MElement {
 
-    static observedAttributes = ['required', 'value', 'disabled', 'label', 'name'];
+    static observedAttributes = ['required', 'value', 'disabled', 'readonly', 'label', 'name'];
 
     /**
      * Enables constraint validation, default aria attributes, and fully 
@@ -39,7 +39,12 @@ export abstract class MFormAssociatedElement extends MElement {
     @BindAttribute()
     disabled = false;
 
-    // TODO: add readonly attribute
+    /**
+     * Whether the element is readonly. When readonly, user cannot edit 
+     * but value is still submitted with forms and can be updated programmatically.
+     */
+    @BindAttribute()
+    readonly = false;
 
     /**
      * Name associated with the value when submitted in a form

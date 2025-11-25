@@ -73,6 +73,10 @@ label {
     opacity: .5;
 }
 
+:host([readonly]) {
+    opacity: .7;
+}
+
 :host(:state(user-invalid)) {
     .error {
         display: inline-block;
