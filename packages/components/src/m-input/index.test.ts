@@ -178,4 +178,68 @@ describe('m-input', () => {
       expect(document.activeElement).to.equal(field1);
     });
   });
+
+  describe('readonly attribute', () => {
+    it('should set readonly attribute on inner input', async () => {
+      const input = await fixture<MInput>(html`
+        <m-input name="test-input" readonly value="initial"></m-input>
+      `);
+      
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      // Readonly property should be set
+      expect(input.readonly).to.be.true;
+      
+      // Inner input should have readonly attribute
+      const innerInput = input.shadowRoot?.querySelector('input');
+      expect(innerInput?.hasAttribute('readonly')).to.be.true;
+    });
+
+    it('should allow programmatic updates when readonly', async () => {
+      const input = await fixture<MInput>(html`
+        <m-input name="test-input" readonly value="initial"></m-input>
+      `);
+      
+      // Value should be accessible
+      expect(input.value).to.equal('initial');
+      
+      // Programmatic updates should still work
+      input.value = 'updated';
+      expect(input.value).to.equal('updated');
+    });
+
+    it('should submit readonly field value with form', async () => {
+      const form = await fixture<HTMLFormElement>(html`
+        <form>
+          <m-input name="readonly-field" readonly value="test"></m-input>
+        </form>
+      `);
+      
+      const formData = new FormData(form);
+      expect(formData.get('readonly-field')).to.equal('test');
+    });
+
+    it('should validate readonly fields', async () => {
+      const input = await fixture<MInput>(html`
+        <m-input name="test-input" readonly required></m-input>
+      `);
+      
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      // Readonly fields should still be validated
+      expect(input.internals.validity.valid).to.be.false;
+      expect(input.internals.validity.valueMissing).to.be.true;
+    });
+
+    it('should pass validation when readonly field has value', async () => {
+      const input = await fixture<MInput>(html`
+        <m-input name="test-input" readonly required value="test"></m-input>
+      `);
+      
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      // Should be valid
+      expect(input.internals.validity.valid).to.be.true;
+    });
+  });
 });

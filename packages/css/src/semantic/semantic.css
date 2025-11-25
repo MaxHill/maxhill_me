@@ -96,6 +96,7 @@
         --color-input-text-focus-error: var(--color-destructive-text-on-soft);
 
         --radius-input: var(--radius-2);
+        --radius-input: 0;
     }
 
 }

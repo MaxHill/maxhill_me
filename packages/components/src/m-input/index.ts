@@ -109,7 +109,7 @@ export class MInput extends MFormAssociatedElement {
         
         // Attributes to forward directly to the inner input element
         const inputAttributes = [
-            'type', 'disabled', 'required', 
+            'type', 'disabled', 'readonly', 'required', 
             'minlength', 'maxlength', 'pattern', 'placeholder'
         ];
         
@@ -239,6 +239,7 @@ export class MInput extends MFormAssociatedElement {
                 value="${this.value}"
                 type="${this.type}"
                 ${this.required ? 'required' : ''}
+                ${this.readonly ? 'readonly' : ''}
                 ${this.minLength != null ? `minlength="${this.minLength}"` : ''}
                 ${this.maxLength != null ? `maxlength="${this.maxLength}"` : ''}
                 ${this.pattern != null ? `pattern="${this.pattern}"` : ''}
