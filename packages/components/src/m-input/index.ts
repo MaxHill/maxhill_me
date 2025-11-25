@@ -9,8 +9,13 @@ baseStyleSheet.replaceSync(styles);
 // Text input specific
 // TODO: tasks below
 // - [ ] Selection range
-// - [ ] setRangeText
-// - [ ] before/after slots
+// - [ ] SetRangeText
+// - [ ] Clear button
+// - [ ] Orientation
+// - [ ] Size
+// - [ ] Events
+// - [ ] css parts
+// - [x] before/after slots
 // - [x] bind value to input.value to make defaultValue work
 // - [x] constraint validation
 
@@ -231,7 +236,7 @@ export class MInput extends MFormAssociatedElement {
 
     private render() {
         this._shadowRoot.innerHTML = `
-            <label for="input">${this.label}</label>
+            <label for="input">${this.label || ''}</label>
             <div class="input-wrapper">
                 <slot name="before"></slot>
                 <input 

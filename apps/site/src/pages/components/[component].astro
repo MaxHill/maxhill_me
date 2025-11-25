@@ -39,7 +39,7 @@ const events = component ? getComponentEventsWithType(component, { overrideCusto
 
 <BaseLayout title={title}>
   <main class="content-grid typesetting">
-      <m-fit-text font-display data-margin="0">
+      <m-fit-text class="title" font-display data-margin="0">
         <h1 data-margin="0">{componentName}</h1>
       </m-fit-text>
     
@@ -198,6 +198,11 @@ const events = component ? getComponentEventsWithType(component, { overrideCusto
 </BaseLayout>
 
 <style>
+
+    
+    .title {
+        margin-top: var(--size-fluid-3);
+    }
   main {
     margin:var(--menu-height)  auto;
   }

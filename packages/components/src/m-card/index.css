@@ -10,7 +10,7 @@
     box-shadow: var(--shadow);
     border: var(--border);
     corner-shape: squircle;
-    border-radius: var(--radius-2);
+    border-radius: var(--radius-box);
     max-width: 100%;
     height: min-content;
     overflow: clip;

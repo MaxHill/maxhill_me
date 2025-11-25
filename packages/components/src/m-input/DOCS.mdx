@@ -17,10 +17,6 @@ A simple m-input example.
     <m-input label="m-input default value" name="m-input-example-default-value" value="Default value"></m-input>
     <m-input label="m-input readonly" name="m-input-example-readonly-value" value="Readonly" readonly></m-input>
     <m-input label="m-input placeholder" name="m-input-example-placeholder" placeholder="Placeholder..."></m-input>
-    <m-input label="m-input slots" name="m-input-example-slots" placeholder="Placeholder...">
-        <span slot="before">before</span>
-        <span slot="after">after</span>
-    </m-input>
     <button type="submit">Submit</button>
     <button type="reset">Reset</button>
   </form>
@@ -84,3 +80,23 @@ A simple m-input example.
     }
   });`}
 />
+
+## Slots
+
+<CodeExample 
+  html={` 
+<div class="form">
+    <m-input label="Before">
+      <div slot="before">🔍</div>
+    </m-input>
+
+    <m-input label="After">
+      <button slot="after">Clear</button>
+    </m-input>
+
+    <m-input label="Both" placeholder="Search...">
+      <div slot="before">🔍</div>
+      <button slot="after">X</button>
+    </m-input>
+</div>
+`}/>

@@ -33,7 +33,7 @@ label {
     /* Shape */
     corner-shape: squircle;
     border-radius: var(--radius-input);
-    padding-inline: var(--size-1);
+    padding-inline: var(--size-2);
 
     /* Color */
     background: var(--color-input-fill);
@@ -43,17 +43,33 @@ label {
     outline-width: var(--outline-size);
     outline-style: var(--outline-style);
     outline-color: transparent;
-    outline-offset: calc(var(--outline-size) * -1);
 
     /* Layout */
     display: flex;
-    overflow: clip;
     align-items: center;
+    gap: var(--size-2);
+    overflow: clip;
+    max-width: 100%;
+    min-width: 0;
+
+    &:has(input:focus) {
+        outline: var(--outline);
+        outline-offset: var(--outline-offset);
+    }
+
+    /* Slots take content size only */
+    slot[name="before"],
+    slot[name="after"] {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+    }
 
     input {
         font-size: 16px;
         display: block;
         flex: 1;
+        min-width: 0;
         background: none;
         border: none;
         padding-block: var(--size-2);
@@ -64,7 +80,7 @@ label {
         }
 
         &::placeholder {
-            color: hsl(var(--color-text-softer));
+            color: var(--color-text-softer);
         }
     }
 }
@@ -75,6 +91,9 @@ label {
 
 :host([readonly]) {
     opacity: .7;
+    input {
+        color: var(--color-neutral-);
+    }
 }
 
 :host(:state(user-invalid)) {

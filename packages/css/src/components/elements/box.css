@@ -12,7 +12,7 @@
         border: var(--border);
         border-color: var(--_box-stroke);
         corner-shape: squircle;
-        border-radius: var(0, --radius-2);
+        border-radius: var(--radius-box);
         padding: var(--size-fluid-1);
         gap: 0;
 

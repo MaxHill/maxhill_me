@@ -83,7 +83,7 @@
             margin-bottom: 0;
             padding: var(--size-fluid-2);
             border: var(--border);
-            border-radius: var(--radius-2);
+            border-radius: var(--radius-box);
             font-weight: var(--font-weight-medium);
         }
 
@@ -91,7 +91,7 @@
             padding-inline: var(--size-1);
             padding-block: .1ch;
             border: var(--border);
-            border-radius: var(--radius-2);
+            border-radius: var(--radius-box);
             color: var(--color-primary-text-colorful);
             font-weight: var(--font-weight-medium);
             overflow-wrap: break-word;

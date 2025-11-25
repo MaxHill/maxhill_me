@@ -15,7 +15,7 @@ button {
     position: relative;
     border: var(--border);
     corner-shape: squircle;
-    border-radius: var(--radius-2);
+    border-radius: var(--radius-box);
     background-color: var(--color-background);
     color: var(--color-primary-text-colorful);
     font-family: inherit;
@@ -64,7 +64,7 @@ button:active {
     background-color: var(--color-surface-raised);
     border: var(--border);
     corner-shape: squircle;
-    border-radius: var(--radius-2);
+    border-radius: var(--radius-box);
     padding: var(--size-1) var(--size-2);
     font-size: 0.875rem;
     white-space: nowrap;

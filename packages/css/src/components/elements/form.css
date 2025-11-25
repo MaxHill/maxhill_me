@@ -8,7 +8,6 @@
     --_border-input: var(--border);
     --_border-input-focus: var(--border-width) solid
       var(--color-stroke-strong);
-    --_radius-input: var(--radius-2);
     --_height-input: var(--size-7);
 
     display: grid;
