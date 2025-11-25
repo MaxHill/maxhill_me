@@ -39,7 +39,7 @@ export class MInput extends MFormAssociatedElement {
     static tagName = 'm-input';
 
     static get observedAttributes() {
-        return [...super.observedAttributes, "type", "minlength", "maxlength", "pattern", "placeholder", "clearable"]
+        return [...super.observedAttributes, "type", "minlength", "maxlength", "pattern", "placeholder", "clearable", "autocomplete", "size"]
     }
 
     private _shadowRoot: ShadowRoot;
@@ -68,9 +68,13 @@ export class MInput extends MFormAssociatedElement {
     @BindAttribute()
     placeholder?: string;
 
-    // TODO: add "size" {number} - Width in characters of the input 
+    @BindAttribute()
+    autocomplete?: string;
+
+    @BindAttribute()
+    size?: number;
+
     // TODO: add "multiple" - Only applies to email and url.
-    // TODO: add "autocomplete" {boolean}
 
     @BindAttribute()
     clearable: boolean = false;
@@ -131,7 +135,8 @@ export class MInput extends MFormAssociatedElement {
         // Attributes to forward directly to the inner input element
         const inputAttributes = [
             'type', 'disabled', 'readonly', 'required',
-            'minlength', 'maxlength', 'pattern', 'placeholder'
+            'minlength', 'maxlength', 'pattern', 'placeholder', 
+            'autocomplete', 'size'
         ];
 
         if (inputAttributes.includes(name)) {
@@ -293,6 +298,8 @@ export class MInput extends MFormAssociatedElement {
                 ${this.maxLength != null ? `maxlength="${this.maxLength}"` : ''}
                 ${this.pattern != null ? `pattern="${this.pattern}"` : ''}
                 ${this.placeholder ? `placeholder="${this.placeholder}"` : ''}
+                ${this.autocomplete != null ? `autocomplete="${this.autocomplete}"` : ''}
+                ${this.size != null ? `size="${this.size}"` : ''}
             />
                 <slot name="clear">
                     <button type="button" tabindex="-1" aria-label="Clear input">
