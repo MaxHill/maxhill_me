@@ -87,8 +87,38 @@ export class MInput extends MFormAssociatedElement {
     }
 
 
+    get selectionStart(): number | null {
+        return this.inputElement?.selectionStart ?? null;
+    }
+
+    set selectionStart(value: number | null) {
+        if (this.inputElement) {
+            this.inputElement.selectionStart = value;
+        }
+    }
+
+    get selectionEnd(): number | null {
+        return this.inputElement?.selectionEnd ?? null;
+    }
+
+    set selectionEnd(value: number | null) {
+        if (this.inputElement) {
+            this.inputElement.selectionEnd = value;
+        }
+    }
+
+    get selectionDirection(): 'forward' | 'backward' | 'none' | null {
+        return (this.inputElement?.selectionDirection as 'forward' | 'backward' | 'none') ?? null;
+    }
+
+    set selectionDirection(value: 'forward' | 'backward' | 'none' | null) {
+        if (this.inputElement) {
+            this.inputElement.selectionDirection = value;
+        }
+    }
 
     select() { this.inputElement?.select(); }
+
     focus(options?: FocusOptions) { this.inputElement?.focus(options); }
     blur() { this.inputElement?.blur(); }
 
@@ -263,6 +293,28 @@ export class MInput extends MFormAssociatedElement {
         }
 
         this.setCustomStates();
+    }
+
+    //  ------------------------------------------------------------------------
+    //  Selection ranges                                                                     
+    //  ------------------------------------------------------------------------ 
+    public setSelectionRange(start: number, end: number, direction?: 'forward' | 'backward' | 'none') {
+        this.inputElement?.setSelectionRange(start, end, direction);
+    }
+
+    public setRangeText(replacement: string): void;
+    public setRangeText(replacement: string, start: number, end: number, selectionMode?: 'select' | 'start' | 'end' | 'preserve'): void;
+    public setRangeText(replacement: string, start?: number, end?: number, selectionMode?: 'select' | 'start' | 'end' | 'preserve'): void {
+        if (!this.inputElement) return;
+        
+        if (start !== undefined && end !== undefined) {
+            this.inputElement.setRangeText(replacement, start, end, selectionMode);
+        } else {
+            this.inputElement.setRangeText(replacement);
+        }
+        
+        // Sync value after setRangeText modifies the input
+        this.value = this.inputElement.value;
     }
 
     //  ------------------------------------------------------------------------
