@@ -85,7 +85,7 @@ label {
     }
 
     input {
-        font-size: 16px;
+        font-size: max(var(--font-size-1), 16px);
         display: block;
         flex: 1;
         min-width: 0;
@@ -103,6 +103,17 @@ label {
         &::placeholder {
             color: var(--color-text-softer);
         }
+    }
+}
+
+:host([size]) {
+    .input-wrapper {
+        max-width: max-content;  /* Shrink to fit content */
+        flex: 0 0 auto;  /* Don't grow */
+    }
+    input {
+        flex: 0 0 auto;  /* Don't grow or shrink */
+        width: auto;     /* Let size attribute control width */
     }
 }
 
