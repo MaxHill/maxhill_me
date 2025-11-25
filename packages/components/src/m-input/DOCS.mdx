@@ -12,14 +12,41 @@ A simple m-input example.
     <label for="normal-input">Normal input</label>
     <input name="normal-input" />
 
-    <m-input label="m-input disabled" name="m-input-example-disabled" disabled></m-input>
-    <m-input label="m-input default value" name="m-input-example-default-value" value="Default value"></m-input>
-    <m-input label="m-input readonly" name="m-input-example-readonly-value" value="Readonly" readonly></m-input>
-    <m-input label="m-input placeholder" name="m-input-example-placeholder" placeholder="Placeholder..."></m-input>
-    <m-input label="m-input clearable" name="m-input-example-clearable" clearable></m-input>
     <m-input 
-    label="m-input size" 
-    name="m-input-size" size="4"></m-input>
+        label="m-input disabled" 
+        name="m-input-example-disabled" 
+        disabled
+    ></m-input>
+
+    <m-input 
+        label="m-input default value" 
+        name="m-input-example-default-value" 
+        value="Default value"
+    ></m-input>
+
+    <m-input 
+        label="m-input readonly" 
+        name="m-input-example-readonly-value" 
+        value="Readonly" 
+        readonly
+    ></m-input>
+
+    <m-input 
+        label="m-input placeholder" 
+        name="m-input-example-placeholder" 
+        placeholder="Placeholder..."
+    ></m-input>
+
+    <m-input 
+        label="m-input clearable" 
+        name="m-input-example-clearable" 
+        clearable
+    ></m-input>
+
+    <m-input 
+        label="m-input size" 
+        name="m-input-size" size="4"
+    ></m-input>
     <button type="submit">Submit</button>
     <button type="reset">Reset</button>
   </form>
@@ -37,6 +64,9 @@ A simple m-input example.
 
 
 ## Validation
+
+Built-in constraint validation with required, minlength, maxlength, and pattern attributes.
+
 <CodeExample 
   html={`
   <form class="form" id="example-required-form">
@@ -86,6 +116,8 @@ A simple m-input example.
 
 ## Slots
 
+Add content before or after the input using slots for icons, buttons, or other elements.
+
 <CodeExample 
   html={` 
 <div class="form">
@@ -117,5 +149,57 @@ A simple m-input example.
       </div>
       <svg slot="after" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-icon lucide-search"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
     </m-input>
+</div>
+`}/>
+
+## CSS Parts
+
+You can style internal elements using CSS parts. This allows customization from outside the shadow DOM.
+
+<CodeExample 
+  html={`
+<style>
+  .styled-input::part(input) {
+    font-family: var(--ff-display);
+  }
+  
+  .styled-input::part(input-wrapper) {
+    border-radius: 20px;
+    color: var(--color-primary-fill-mid);
+  }
+  
+  .styled-input::part(label) {
+    color: var(--color-primary-fill-mid);
+  }
+  
+  .styled-input::part(error) {
+    background: var(--color-neutral-fill-mid);
+    border-color: var(--color-neutral-stroke-mid);
+  }
+  
+  .styled-input::part(clear-button) {
+    color: var(--color-primary-fill-mid);
+  }
+  
+  .styled-input::part(clear-button):hover {
+    color: var(--color-destructive-fill-mid);
+  }
+</style>
+
+<div class="form">
+  <m-input 
+    class="styled-input" 
+    label="Styled input" 
+    placeholder="Custom styled..." 
+    clearable
+  ></m-input>
+  
+  <m-input 
+    class="styled-input" 
+    label="With validation" 
+    placeholder="Type at least 3 chars..." 
+    minlength="3"
+    clearable
+  ></m-input>
 </div>
 `}/>

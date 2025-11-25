@@ -8,13 +8,13 @@ baseStyleSheet.replaceSync(styles);
 
 // Text input specific
 // TODO: tasks below
-// - [ ] Selection range
-// - [ ] SetRangeText
-// - [ ] Clear button
 // - [ ] Orientation
-// - [ ] Size
 // - [ ] Events
-// - [ ] css parts
+// - [x] Selection range
+// - [x] SetRangeText
+// - [x] Clear button
+// - [x] Size
+// - [x] css parts
 // - [x] before/after slots
 // - [x] bind value to input.value to make defaultValue work
 // - [x] constraint validation
@@ -22,18 +22,38 @@ baseStyleSheet.replaceSync(styles);
 
 /**
  * Text input custom element
+ *
+ * Supports most attributes a normal text input does, except multiple
  * 
  * @customElement
  * @tagname m-input
  * 
  * @slot - Default slot for component content
- * @slot clear - Slot where you can override the clear button.
+ * @slot before - Slot for content before the input element
+ * @slot after - Slot for content after the input element
+ * @slot clear - Slot where you can override the clear button
  * 
- * @attr {string} example - An example property
+ * @attr {string} type - Input type (text, email, password, tel, url, search)
+ * @attr {string} value - The input value
+ * @attr {string} label - Label text for the input
+ * @attr {string} name - Name for form submission
+ * @attr {string} placeholder - Placeholder text
+ * @attr {number} minlength - Minimum length validation
+ * @attr {number} maxlength - Maximum length validation
+ * @attr {string} pattern - Pattern validation regex
+ * @attr {string} autocomplete - Autocomplete hint
+ * @attr {number} size - Visual width in characters
+ * @attr {boolean} required - Whether the field is required
+ * @attr {boolean} disabled - Whether the input is disabled
+ * @attr {boolean} readonly - Whether the input is readonly
+ * @attr {boolean} clearable - Whether to show a clear button
  * 
- * @prop {string} example - An example property
- * 
- * @fires m-input-change - Fired when the example changes (detail: { example: string })
+ * @csspart label - The label element
+ * @csspart input-wrapper - The wrapper containing the input and slots
+ * @csspart input - The native input element
+ * @csspart clear-button - The clear button
+ * @csspart clear-icon - The icon inside the clear button
+ * @csspart error - The error message container
  */
 export class MInput extends MFormAssociatedElement {
     static tagName = 'm-input';
@@ -73,8 +93,6 @@ export class MInput extends MFormAssociatedElement {
 
     @BindAttribute()
     size?: number;
-
-    // TODO: add "multiple" - Only applies to email and url.
 
     @BindAttribute()
     clearable: boolean = false;
@@ -337,10 +355,11 @@ export class MInput extends MFormAssociatedElement {
 
     private render() {
         this._shadowRoot.innerHTML = `
-            <label for="input">${this.label || ''}</label>
-            <div class="input-wrapper">
+            <label part="label" for="input">${this.label || ''}</label>
+            <div part="input-wrapper" class="input-wrapper">
                 <slot name="before"></slot>
                 <input 
+                part="input"
                 id="input" 
                 value="${this.value}"
                 type="${this.type}"
@@ -354,13 +373,13 @@ export class MInput extends MFormAssociatedElement {
                 ${this.size != null ? `size="${this.size}"` : ''}
             />
                 <slot name="clear">
-                    <button type="button" tabindex="-1" aria-label="Clear input">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    <button part="clear-button" type="button" tabindex="-1" aria-label="Clear input">
+                        <svg part="clear-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                     </button>
                 </slot>
                 <slot name="after"></slot>
             </div>
-            <div class="error"></div>
+            <div part="error" class="error"></div>
 
         `;
     }
