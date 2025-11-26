@@ -61,7 +61,7 @@ export class MCombobox extends MInputListElement {
     @query('#multi-select-list')
     private multiSelectListElement!: HTMLDivElement;
 
-    @query('input')
+    @query('m-input')
     private inputElement!: HTMLInputElement;
 
     protected getItemsSkipSelector(): string {
@@ -135,11 +135,13 @@ export class MCombobox extends MInputListElement {
         if (name === 'label') {
             if (newValue) {
                 this.setAttribute("aria-label", newValue);
+                // TODO: maybe this is not needed?
                 if (this.inputElement) {
                     this.inputElement.setAttribute("label", newValue);
                 }
             } else {
                 this.removeAttribute("aria-label");
+                // TODO: maybe this is not needed?
                 if (this.inputElement) {
                     this.inputElement.removeAttribute("label");
                 }
@@ -383,8 +385,9 @@ export class MCombobox extends MInputListElement {
     private render() {
         this._shadowRoot.innerHTML = `
             <m-search-list debounce="${this.debounce}" target="#popover slot">
-                <div slot="controller" id="multi-select-list" slot="control"></div>
-                <input type="text" ${this.label ? `label="${this.label}"` : ''}></input>
+                <m-input type="text" ${this.label ? `label="${this.label}"` : ''}>
+                    <div slot="before" id="multi-select-list"></div>
+                </m-input>
 
                 <div 
                     id="popover"
