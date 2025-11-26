@@ -6,6 +6,10 @@
     align-items: center;
 }
 
+* {
+box-sizing: border-box;
+}
+
 
 .input-description {
     font: var(--p2);

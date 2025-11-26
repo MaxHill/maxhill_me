@@ -25,12 +25,12 @@ m-input {
     border: var(--border, 1px solid);
     border-color: var(--color-stroke);
     border-radius: var(--radius-box);
-    padding: var(--size-fluid-1);
+    padding: var(--size-2);
 
 }
 
 .box[open] {
-display: grid;
+    display: grid;
 }
 
 
