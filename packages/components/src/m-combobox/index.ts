@@ -297,7 +297,6 @@ export class MCombobox extends MInputListElement {
     //  Event Handlers
     //  ------------------------------------------------------------------------ 
     private handleOptionSelectedChange = (_e: Event) => {
-        console.log("option change callback", this.selectedValues)
         this.syncInputFromSelection();
     }
 
@@ -386,7 +385,7 @@ export class MCombobox extends MInputListElement {
         this._shadowRoot.innerHTML = `
             <m-search-list debounce="${this.debounce}" target="#popover slot">
                 <m-input type="text" ${this.label ? `label="${this.label}"` : ''}>
-                    <div slot="before" id="multi-select-list"></div>
+                    <ul slot="before" id="multi-select-list"></ul>
                 </m-input>
 
                 <div 
