@@ -1,6 +1,7 @@
 import { MFormAssociatedElement } from "../utils/m-form-associated-element";
 import { query } from "../utils/query";
 import { BindAttribute } from "../utils/reflect-attribute";
+import { MInputClearEvent } from "./events";
 import styles from "./index.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -232,9 +233,17 @@ export class MInput extends MFormAssociatedElement {
 
     private handleClearClick = (e: Event) => {
         e.preventDefault();
-        this.value = '';
-        this.inputElement.focus(); // Return focus to input
-        this.toggleClearButton(); // Hide button after clearing
+        
+        // Dispatch custom clear event with current value
+        const clearEvent = new MInputClearEvent({ value: this.value as string });
+        const shouldClear = this.dispatchEvent(clearEvent);
+        
+        // Only clear if event wasn't prevented
+        if (shouldClear) {
+            this.value = '';
+            this.inputElement.focus(); // Return focus to input
+            this.toggleClearButton(); // Hide button after clearing
+        }
     }
 
 
