@@ -1,13 +1,14 @@
-export interface MInputChangeEventDetail {
-    example: string;
+export interface MInputClearEventDetail {
+    value: string;
 }
 
-export class MInputChangeEvent extends CustomEvent<MInputChangeEventDetail> {
-    constructor(detail: MInputChangeEventDetail) {
-        super('m-input-change', {
+export class MInputClearEvent extends CustomEvent<MInputClearEventDetail> {
+    constructor(detail: MInputClearEventDetail) {
+        super('m-input-clear', {
             detail,
             bubbles: true,
             composed: true,
+            cancelable: true,
         });
     }
 }
