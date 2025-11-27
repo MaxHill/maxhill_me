@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test m-invalid Event</title>
+    <style>
+        body { font-family: system-ui; padding: 2rem; max-width: 600px; }
+        .event-log { 
+            background: #f0f0f0; 
+            padding: 1rem; 
+            margin-top: 1rem; 
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .event-item { 
+            padding: 0.5rem; 
+            margin: 0.5rem 0; 
+            background: white; 
+            border-left: 3px solid #e74c3c;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        m-input { margin: 1rem 0; }
+    </style>
+</head>
+<body>
+    <h1>Test m-invalid Event</h1>
+    
+    <h2>Required Input Test</h2>
+    <m-input 
+        id="test-input" 
+        label="Email Address" 
+        type="email" 
+        required
+        clearable
+    ></m-input>
+    
+    <div>
+        <button id="validate-btn">Validate</button>
+        <button id="clear-log-btn">Clear Log</button>
+    </div>
+    
+    <div class="event-log">
+        <strong>Event Log:</strong>
+        <div id="log"></div>
+    </div>
+
+    <script type="module">
+        import { MInput } from './src/m-input/index.ts';
+        
+        // Register the component
+        customElements.define(MInput.tagName, MInput);
+        
+        const input = document.getElementById('test-input');
+        const log = document.getElementById('log');
+        const validateBtn = document.getElementById('validate-btn');
+        const clearLogBtn = document.getElementById('clear-log-btn');
+        
+        function addLog(message) {
+            const item = document.createElement('div');
+            item.className = 'event-item';
+            item.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(item);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        // Listen for m-invalid event
+        input.addEventListener('m-invalid', (e) => {
+            addLog(`m-invalid: "${e.detail.validationMessage}"`);
+            console.log('m-invalid event detail:', e.detail);
+        });
+        
+        // Listen for m-input-clear event
+        input.addEventListener('m-input-clear', (e) => {
+            addLog(`m-input-clear: value was "${e.detail.value}"`);
+            console.log('m-input-clear event detail:', e.detail);
+        });
+        
+        // Listen for native input event
+        input.addEventListener('input', () => {
+            addLog(`input: value = "${input.value}"`);
+        });
+        
+        // Manual validation trigger
+        validateBtn.addEventListener('click', () => {
+            addLog('--- Manual validation triggered ---');
+            input.updateValidity();
+        });
+        
+        // Clear log
+        clearLogBtn.addEventListener('click', () => {
+            log.innerHTML = '';
+            addLog('Log cleared');
+        });
+        
+        addLog('Page loaded - Try typing invalid email, leaving field empty, or clearing');
+    </script>
+</body>
+</html>

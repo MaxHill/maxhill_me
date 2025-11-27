@@ -2,6 +2,7 @@ import { MFormAssociatedElement } from "../utils/m-form-associated-element";
 import { query } from "../utils/query";
 import { BindAttribute } from "../utils/reflect-attribute";
 import { MInputClearEvent } from "./events";
+import type { MInvalidEventDetail } from "../events";
 import styles from "./index.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -10,7 +11,7 @@ baseStyleSheet.replaceSync(styles);
 // Text input specific
 // TODO: tasks below
 // - [ ] Orientation
-// - [ ] Events
+// - [x] Events (m-input-clear, m-invalid from base class)
 // - [x] Selection range
 // - [x] SetRangeText
 // - [x] Clear button
@@ -24,7 +25,7 @@ baseStyleSheet.replaceSync(styles);
 /**
  * Text input custom element
  *
- * Supports most attributes a normal text input does, except multiple
+ * m-input is a drop-in replacement for the text-type variants of the native input element, enhanced with features such as slots, a clear button, built-in validation styling, and full form participation.
  * 
  * @customElement
  * @tagname m-input
@@ -162,6 +163,7 @@ export class MInput extends MFormAssociatedElement {
         this.inputElement.addEventListener("input", this.handleInput);
         this.inputElement.addEventListener("blur", this.handleBlur);
         this.clearSlot.addEventListener('click', this.handleClearClick);
+        this.addEventListener('m-invalid', this.handleInvalidEvent);
     }
 
     disconnectedCallback() {
@@ -169,6 +171,7 @@ export class MInput extends MFormAssociatedElement {
         this.inputElement.removeEventListener("input", this.handleInput);
         this.inputElement.removeEventListener("blur", this.handleBlur);
         this.clearSlot.removeEventListener('click', this.handleClearClick);
+        this.removeEventListener('m-invalid', this.handleInvalidEvent);
     }
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
@@ -246,20 +249,26 @@ export class MInput extends MFormAssociatedElement {
         }
     }
 
+    private handleInvalidEvent = (e: Event) => {
+        const event = e as CustomEvent<MInvalidEventDetail>;
+        if (this.errorElement) {
+            this.errorElement.textContent = event.detail.validationMessage;
+        }
+    }
+
 
     //  ------------------------------------------------------------------------
     //  Validation                                                                     
     //  ------------------------------------------------------------------------ 
-    // This should be unimplemented in parent class
     protected updateValidity() {
         if (!this.inputElement) {
-            this.internals.setValidity({});
-            this.setCustomStates();
+            this.updateValidationState({}, '');
             return;
         }
         const value = this.value as string;
         const validityState: ValidityStateFlags = {};
         let validationMessage = '';
+        
         // 1. Check valueMissing (required)
         if (this.required && !value) {
             validityState.valueMissing = true;
@@ -307,19 +316,8 @@ export class MInput extends MFormAssociatedElement {
             }
         }
 
-        // Set validity on this element
-        if (Object.keys(validityState).length > 0) {
-            this.internals.setValidity(
-                validityState,
-                validationMessage,
-                this.inputElement
-            );
-            this.errorElement.textContent = validationMessage;
-        } else {
-            this.internals.setValidity({});
-        }
-
-        this.setCustomStates();
+        // Update validation state (sets validity, custom states, and dispatches events)
+        this.updateValidationState(validityState, validationMessage, this.inputElement);
     }
 
     //  ------------------------------------------------------------------------
