@@ -55,6 +55,7 @@ label {
     min-width: 0;
     padding-inline: var(--size-2);
     flex-wrap: wrap;
+    gap: var(--size-1);
 
     &:has(input:focus) {
         outline: var(--outline);
@@ -97,7 +98,6 @@ label {
         border: none;
         padding-block: var(--size-2);
         color: hsl(var(--color-text));
-        padding-inline: var(--size-2);
         min-width: min(100% , 10ch);
 
         &:focus {

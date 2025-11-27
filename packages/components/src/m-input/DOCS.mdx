@@ -1,10 +1,380 @@
 import CodeExample from '../../../../apps/site/src/components/CodeExample.astro';
 
+# M-input
+
+`m-input` is a drop-in replacement for native text-type `<input>` elements. It provides form participation, accessibility-friendly labeling, optional clear buttons, slot-based customization, and enhanced validation styling — all while preserving native input behaviors.
+
+---
+
+## Form Participation
+
+`m-input` is a form-associated custom element, meaning it behaves just like a native `<input>` inside a form:
+- Included in FormData
+- Participates in form submission
+- Responds to `form.reset()` and reset buttons
+- Supports constraint validation
+- Works with `:valid` / `:invalid` states internally
+- Preserves standard events (`input`, `change`, `focus`, `blur`)
+
+### Example: Simple Form Submission
+
+This example shows an `m-input` inside a form that is submitted and displayed as JSON.
+
+<CodeExample 
+  html={`
+<form id="demo-form" class="form">
+  <m-input
+    label="Your name"
+    name="username"
+    placeholder="Type here…"
+  ></m-input>
+
+  <button type="submit">Submit</button>
+</form>
+
+<pre id="demo-output"></pre>`}
+  js={`
+  document.querySelector('#demo-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    document.querySelector('#demo-output').textContent =
+      JSON.stringify(data, null, 2);
+  });`} />
+
+---
+
+## Layout & Labeling
+
+`m-input` is designed to work seamlessly with the `.form` layout system.
+
+By default, it uses subgrid, placing the label on the left and the input on the right. The `label` attribute creates a visible label and sets an accessible `aria-label` automatically, removing the need for separate `<label>` elements in most cases.
+
+<CodeExample 
+  html={`
+<div class="form">
+  <m-input 
+    label="Email" 
+    name="email"
+    placeholder="you@example.com"
+  ></m-input>
+  
+  <m-input 
+    label="Vertical layout" 
+    name="vertical"
+    self-orientation="vertical"
+    placeholder="Label appears above input"
+  ></m-input>
+</div>
+`}/>
+
+---
+
+## Clearable Input
+
+Adding the `clearable` attribute displays a clear button when the input has content.
+- The default clear button uses `tabindex="-1"` so it's not tabbable.
+- It displays a Lucide "x" icon.
+- The `m-input-clear` event fires before clearing and can be prevented.
+
+<CodeExample 
+  html={`
+<form class="form" id="clearable-form">
+  <m-input 
+    label="Default clear button" 
+    name="default-clear"
+    value="Clear me"
+    clearable
+  ></m-input>
+  
+  <m-input 
+    label="Custom clear button" 
+    name="custom-clear"
+    value="Custom clear"
+    clearable
+  >
+    <button slot="clear" style="padding: 0 0.5rem;">✕</button>
+  </m-input>
+  
+  <button type="reset">Reset to initial values</button>
+</form>
+`}/>
+
+---
+
+## Slots
+
+`m-input` includes slots that allow inline customization:
+- `before` — content before the input (icons, tags, chips, buttons)
+- `after` — content after the input
+- `clear` — replaces the built-in clear button
+- default slot — custom content inside the input wrapper
+
+These slots make it easy to build composite input UIs (e.g., search boxes with icons, tag inputs, tool buttons).
+
+<CodeExample 
+  html={` 
+<div class="form">
+    <m-input label="Before">
+      <svg slot="before" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-icon lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </m-input>
+
+    <m-input label="After">
+      <svg slot="after" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+    </m-input>
+
+    <m-input label="Both" placeholder="Search...">
+     <div slot="before" class="stack" data-direction="row" data-gap="1">
+      <button 
+        data-background="surface-raised"
+        data-padding="i-3"
+        data-border
+      >tag 1</button>
+      <button 
+        data-background="surface-raised"
+        data-padding="i-3"
+        data-border
+      >tag 2</button>
+      <button 
+        data-background="surface-raised"
+        data-padding="i-3"
+        data-border
+      >tag 3</button>
+      </div>
+      <svg slot="after" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-icon lucide-search"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+    </m-input>
+</div>
+`}/>
+
+---
+
+## Validation
+
+`m-input` uses the native Constraint Validation API behind the scenes.
+It supports all standard validation attributes:
+- `required`
+- `minlength`
+- `maxlength`
+- `pattern`
+
+When validation fails:
+- The component applies a styled error state
+- An inline error message appears (if enabled in your design system)
+- An `m-invalid` event is emitted
+
+<CodeExample 
+  html={`
+  <form class="form" id="example-required-form">
+    <label for="normal-required-input" >Normal input</label>
+    <input name="normal-required-input" required />
+    <label for="normal-min-input" >Normal min 3</label>
+    <input name="normal-min-input" minlength="3" />
+
+    <m-input 
+        label="Required" 
+        name="m-input-required" 
+        required="true"
+    ></m-input>
+
+    <m-input 
+        label="Min length" 
+        name="m-input-min-length" 
+        minlength="3"
+    ></m-input>
+
+    <m-input 
+        label="Max length" 
+        name="m-input-max-length" 
+        maxlength="3"
+    ></m-input>
+
+    <m-input 
+        label="Pattern [0-9]" 
+        name="m-input-pattern" 
+        pattern="[0-9]"
+    ></m-input>
+
+    <button type="submit">Submit</button>
+    <button type="reset">Reset</button>
+  </form>
+  <pre id="example-required-form-output"></pre>
+  `}
+  js={`document.querySelector('#example-required-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const outputEl = document.querySelector("#example-required-form-output");
+    const formData = new FormData(e.target);
+    if(outputEl){
+      outputEl.textContent = JSON.stringify(Object.fromEntries(formData));
+    }
+  });`}
+/>
+
+---
+
+## Events
+
+In addition to bubbling native events (`input`, `change`, `focus`, `blur`), `m-input` emits custom events for validation and user interactions.
+
+### m-invalid Event
+
+Fires when the input becomes invalid or the validation message changes. This event provides detailed validation information that can be used to display custom error messages.
+
+<CodeExample 
+  html={`
+  <form class="form" id="event-form">
+    <m-input 
+      id="email-input"
+      label="Email Address" 
+      name="email" 
+      type="email"
+      required
+    ></m-input>
+    
+    <div id="event-log" style="margin-top: 1rem; padding: 1rem; background: var(--color-surface-raised); border-radius: 4px;">
+      <strong>Event Log:</strong>
+      <ul id="log-list" style="margin: 0; padding-left: 1.5rem;"></ul>
+    </div>
+    
+    <button type="submit">Submit</button>
+  </form>
+  `}
+  js={`
+  const emailInput = document.querySelector('#email-input');
+  const logList = document.querySelector('#log-list');
+  
+  // Listen for m-invalid event
+  emailInput.addEventListener('m-invalid', (e) => {
+    const li = document.createElement('li');
+    li.textContent = \`m-invalid: "\${e.detail.validationMessage}"\`;
+    li.style.color = 'var(--color-destructive-fill-mid)';
+    logList.appendChild(li);
+    console.log('Validation error:', e.detail);
+  });
+  
+  // Also log when validation passes (input event with valid value)
+  emailInput.addEventListener('input', () => {
+    if (emailInput.validity.valid && emailInput.value) {
+      const li = document.createElement('li');
+      li.textContent = 'Valid email entered';
+      li.style.color = 'var(--color-success-fill-mid)';
+      logList.appendChild(li);
+    }
+  });
+  `}
+/>
+
+**Event Detail:**
+- `validity`: Full ValidityState object from the input
+- `validationMessage`: Human-readable error message
+- `value`: Current value that failed validation
+
+### m-input-clear Event
+
+Fires when the clear button is clicked. This event is cancelable, allowing you to prevent the clear action if needed (e.g., to show a confirmation dialog).
+
+<CodeExample 
+  html={`
+  <form class="form">
+    <m-input 
+      id="clearable-input"
+      label="Try clearing this" 
+      value="Some important data"
+      clearable
+    ></m-input>
+    
+    <p id="clear-status"></p>
+  </form>
+  `}
+  js={`
+  const clearableInput = document.querySelector('#clearable-input');
+  const status = document.querySelector('#clear-status');
+  
+  // Listen for clear event
+  clearableInput.addEventListener('m-input-clear', (e) => {
+    status.textContent = \`Clear button clicked! Previous value: "\${e.detail.value}"\`;
+    status.style.color = 'var(--color-neutral-fill-mid)';
+    
+    // Optionally prevent clearing with confirmation
+    // if (!confirm('Are you sure you want to clear?')) {
+    //   e.preventDefault();
+    // }
+  });
+  `}
+/>
+
+**Event Detail:**
+- `value`: The value before clearing
+
+Call `event.preventDefault()` to cancel clearing.
+
+---
+
+## CSS Parts
+
+You can style internal elements using CSS parts. This allows customization from outside the shadow DOM.
+
+`m-input` exposes the following CSS parts:
+- `::part(label)`
+- `::part(input-wrapper)`
+- `::part(input)`
+- `::part(clear-button)`
+- `::part(clear-icon)`
+- `::part(error)`
+
+<CodeExample 
+  html={`
+<style>
+  .styled-input::part(input) {
+    font-family: var(--ff-display);
+  }
+  
+  .styled-input::part(input-wrapper) {
+    border-radius: 20px;
+    color: var(--color-primary-fill-mid);
+  }
+  
+  .styled-input::part(label) {
+    color: var(--color-primary-fill-mid);
+  }
+  
+  .styled-input::part(error) {
+    background: var(--color-neutral-fill-mid);
+    border-color: var(--color-neutral-stroke-mid);
+  }
+  
+  .styled-input::part(clear-button) {
+    color: var(--color-primary-fill-mid);
+  }
+  
+  .styled-input::part(clear-button):hover {
+    color: var(--color-destructive-fill-mid);
+  }
+</style>
+
+<div class="form">
+  <m-input 
+    class="styled-input" 
+    label="Styled input" 
+    placeholder="Custom styled..." 
+    clearable
+  ></m-input>
+  
+  <m-input 
+    class="styled-input" 
+    label="With validation" 
+    placeholder="Type at least 3 chars..." 
+    minlength="3"
+    clearable
+  ></m-input>
+</div>
+`}/>
+
+---
+
 ## Examples
 
 ### Basic Usage
 
-A simple m-input example.
+A simple `m-input` demonstration including disabled, default value, readonly, placeholder, clearable, and size.
 
 <CodeExample 
   html={`
@@ -61,145 +431,3 @@ A simple m-input example.
     }
   });`}
 />
-
-
-## Validation
-
-Built-in constraint validation with required, minlength, maxlength, and pattern attributes.
-
-<CodeExample 
-  html={`
-  <form class="form" id="example-required-form">
-    <label for="normal-required-input" >Normal input</label>
-    <input name="normal-required-input" required />
-    <label for="normal-min-input" >Normal min 3</label>
-    <input name="normal-min-input" minlength="3" />
-
-    <m-input 
-        label="Required" 
-        name="m-input-required" 
-        required="true"
-    ></m-input>
-
-    <m-input 
-        label="Min length" 
-        name="m-input-min-length" 
-        minlength="3"
-    ></m-input>
-
-    <m-input 
-        label="Max length" 
-        name="m-input-max-length" 
-        maxlength="3"
-    ></m-input>
-
-    <m-input 
-        label="Pattern [0-9]" 
-        name="m-input-pattern" 
-        pattern="[0-9]"
-    ></m-input>
-
-    <button type="submit">Submit</button>
-    <button type="reset">Reset</button>
-  </form>
-  <pre id="example-required-form-output"></pre>
-  `}
-  js={`document.querySelector('#example-required-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const outputEl = document.querySelector("#example-required-form-output");
-    const formData = new FormData(e.target);
-    if(outputEl){
-      outputEl.textContent = JSON.stringify(Object.fromEntries(formData));
-    }
-  });`}
-/>
-
-## Slots
-
-Add content before or after the input using slots for icons, buttons, or other elements.
-
-<CodeExample 
-  html={` 
-<div class="form">
-    <m-input label="Before">
-      <svg slot="before" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-icon lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    </m-input>
-
-    <m-input label="After">
-      <svg slot="after" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-    </m-input>
-
-    <m-input label="Both" placeholder="Search...">
-     <div slot="before" class="stack" data-direction="row" data-gap="1">
-      <button 
-        data-background="surface-raised"
-        data-padding="i-3"
-        data-border
-      >tag 1</button>
-      <button 
-        data-background="surface-raised"
-        data-padding="i-3"
-        data-border
-      >tag 2</button>
-      <button 
-        data-background="surface-raised"
-        data-padding="i-3"
-        data-border
-      >tag 3</button>
-      </div>
-      <svg slot="after" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-icon lucide-search"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
-    </m-input>
-</div>
-`}/>
-
-## CSS Parts
-
-You can style internal elements using CSS parts. This allows customization from outside the shadow DOM.
-
-<CodeExample 
-  html={`
-<style>
-  .styled-input::part(input) {
-    font-family: var(--ff-display);
-  }
-  
-  .styled-input::part(input-wrapper) {
-    border-radius: 20px;
-    color: var(--color-primary-fill-mid);
-  }
-  
-  .styled-input::part(label) {
-    color: var(--color-primary-fill-mid);
-  }
-  
-  .styled-input::part(error) {
-    background: var(--color-neutral-fill-mid);
-    border-color: var(--color-neutral-stroke-mid);
-  }
-  
-  .styled-input::part(clear-button) {
-    color: var(--color-primary-fill-mid);
-  }
-  
-  .styled-input::part(clear-button):hover {
-    color: var(--color-destructive-fill-mid);
-  }
-</style>
-
-<div class="form">
-  <m-input 
-    class="styled-input" 
-    label="Styled input" 
-    placeholder="Custom styled..." 
-    clearable
-  ></m-input>
-  
-  <m-input 
-    class="styled-input" 
-    label="With validation" 
-    placeholder="Type at least 3 chars..." 
-    minlength="3"
-    clearable
-  ></m-input>
-</div>
-`}/>

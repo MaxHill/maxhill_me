@@ -1,5 +1,6 @@
 import { MElement } from "./m-element";
 import { BindAttribute } from "./reflect-attribute";
+import { MInvalidEvent } from "../events";
 
 
 /**
@@ -117,6 +118,11 @@ export abstract class MFormAssociatedElement extends MElement {
      */
     protected hasInteracted = false;
 
+    /**
+     * Tracks the previous validation message to avoid dispatching duplicate m-invalid events
+     */
+    private _previousValidationMessage: string = '';
+
     constructor() {
         super();
 
@@ -197,7 +203,7 @@ export abstract class MFormAssociatedElement extends MElement {
     formResetCallback() {
         this.value = this.defaultValue;
         this.hasInteracted = false;
-        this.setCustomStates();
+        this.updateValidationState({}, '');
     }
 
 
@@ -223,22 +229,49 @@ export abstract class MFormAssociatedElement extends MElement {
     //  ------------------------------------------------------------------------ 
 
     /**
-     * Sets custom element states for styling with :state(valid), :state(invalid),
-     * :state(user-valid), and :state(user-invalid) pseudo-classes
+     * Updates validation state including internals.validity, custom states, and dispatches events.
+     * Call this method with validation results instead of calling internals.setValidity() directly.
+     * 
+     * @param validityState - The ValidityStateFlags object describing validation errors
+     * @param validationMessage - Human-readable error message
+     * @param anchor - Optional anchor element for constraint validation API
      */
-    protected setCustomStates() {
+    protected updateValidationState(
+        validityState: ValidityStateFlags, 
+        validationMessage: string = '', 
+        anchor?: HTMLElement
+    ): void {
+        // Set validity on internals
+        if (Object.keys(validityState).length > 0) {
+            this.internals.setValidity(validityState, validationMessage, anchor);
+        } else {
+            this.internals.setValidity({});
+        }
+
+        // Update custom states for :state() pseudo-classes
         const isValid = this.internals.validity.valid;
         this.setState('invalid', !isValid);
         this.setState('valid', isValid);
         this.setState('user-invalid', !isValid && this.hasInteracted);
         this.setState('user-valid', isValid && this.hasInteracted);
+
+        // Dispatch m-invalid event when invalid (avoid duplicates)
+        if (!isValid && this._previousValidationMessage !== validationMessage) {
+            this.dispatchEvent(new MInvalidEvent({
+                validity: this.internals.validity,
+                validationMessage,
+                value: this.value
+            }));
+            this._previousValidationMessage = validationMessage;
+        } else if (isValid) {
+            this._previousValidationMessage = '';
+        }
     }
 
 
     /**
-     * Implement this method to validate the element's value. Should call
-     * internals.setValidity() with appropriate validation state, then
-     * call setCustomStates() to update element states.
+     * Implement this method to validate the element's value. Should calculate
+     * validation state and call updateValidationState() with the results.
      */
     protected abstract updateValidity(): void;
 
