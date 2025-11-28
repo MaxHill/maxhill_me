@@ -3,8 +3,9 @@ title: Css layout primitives
 author: Max Hill
 date: 2025-11-11
 tags: [css, framework]
-htmlId: doc-css-layou-primitives
+htmlId: doc-css-layout-primitives
 ---
+import CodeExample from "../../../components/CodeExample.astro";
 
 A set of layout primitives that can be used to build interfaces with.
 
@@ -20,225 +21,251 @@ Flexible grid layout with configurable columns and spanning capabilities.
 Combine with `[data-gap]` for spacing between grid items,
 or combine with `[data-justify]` and `[data-align]` for cell alignment.
 
-### Basic 3 col grid
-<div class="grid" data-cols="3" data-gap="2">
-    <div class="box"></div>
-    <div class="box"></div>
-    <div class="box"></div>
-</div>
+### Basic Grid
 
-### Columnd spanning
-<div class="grid" data-cols="3" data-gap="2">
-    <div class="box" data-span="2"></div>
-    <div class="box"></div>
-</div>
+A 3-column grid with equal-width columns.
 
-### Row and columnd spanning
-<div class="grid" data-cols="3" data-gap="2">
-    <div class="box" data-row-span="2"></div>
-    <div class="box"></div>
-    <div class="box"></div>
-    <div class="box" data-span="2"></div>
-</div>
+<CodeExample 
+  html={`<div class="grid" data-cols="3" data-gap="2">
+  <div class="box" data-variant="surface">Item 1</div>
+  <div class="box" data-variant="surface">Item 2</div>
+  <div class="box" data-variant="surface">Item 3</div>
+</div>`}
+/>
+
+### Column Spanning
+
+Items can span multiple columns using `data-span`.
+
+<CodeExample 
+  html={`<div class="grid" data-cols="3" data-gap="2">
+  <div class="box" data-variant="surface" data-span="2">Spans 2 columns</div>
+  <div class="box" data-variant="surface">Item</div>
+</div>`}
+/>
+
+### Row and Column Spanning
+
+Items can span both rows and columns simultaneously.
+
+<CodeExample 
+  html={`<div class="grid" data-cols="3" data-gap="2">
+  <div class="box" data-variant="surface" data-row-span="2">Spans 2 rows</div>
+  <div class="box" data-variant="surface">Item 1</div>
+  <div class="box" data-variant="surface">Item 2</div>
+  <div class="box" data-variant="surface" data-span="2">Spans 2 columns</div>
+</div>`}
+/>
 
 
 ---
 ## Collection
 
-Responsive grid layout that automatically adapts to available space. Items wrap to new rows when needed.
+Responsive grid layout that automatically adapts to available space. Items wrap to new rows as needed, maintaining a minimum card width.
 
-- `.collection` — responsive grid with default card width
-- `.collection[data-size="1-10"]` — adjust minimum card width using fluid size scale
+- `.collection` — responsive grid (defaults to `--size-fluid-8` minimum width)
+- `[data-size="1-10"]` — adjust minimum card width using fluid size scale
+- `[data-variant="fit"]` — collapse empty columns and stretch items to fill available space
 
-The collection uses `auto-fill` to create as many columns as will fit. Combine with `[data-gap]` for spacing.
+### Behavior
 
-<section class="box collection" data-width="breakout" data-variant="surface">
-  <div class="box" data-variant="surface-raised">
-    .collection
-  </div>
-  <div class="box" data-variant="surface-raised">
-    .collection
-  </div>
-  <div class="box" data-variant="surface-raised">
-    .collection
-  </div>
-</section>
+By default, Collection uses `auto-fill` which creates as many columns as will fit, leaving empty space if items don't fill the row. Use `data-variant="fit"` to collapse empty columns and stretch items to fill the container.
 
-<section
-  class="box collection"
-  data-size="7"
-  data-gap="3"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box" data-variant="surface-raised">
-    .collection [data-size="7"] [data-gap="3"]
-  </div>
-  <div class="box" data-variant="surface-raised">
-    .collection [data-size="7"] [data-gap="3"]
-  </div>
-  <div class="box" data-variant="surface-raised">
-    .collection [data-size="7"] [data-gap="3"]
-  </div>
-  <div class="box" data-variant="surface-raised">
-    .collection [data-size="7"] [data-gap="3"]
-  </div>
-</section>
+Combine with `[data-gap]` for spacing between items.
+
+### Basic Collection
+
+Default collection with automatic column creation based on available space.
+
+<CodeExample 
+  html={`<div class="collection">
+  <div class="box" data-variant="surface">Card 1</div>
+  <div class="box" data-variant="surface">Card 2</div>
+  <div class="box" data-variant="surface">Card 3</div>
+</div>`}
+/>
+
+### Custom Card Size
+
+Use `data-size` to control minimum card width. Larger sizes create wider cards that wrap earlier.
+
+<CodeExample 
+  html={`<div class="collection" data-size="7" data-gap="3">
+  <div class="box" data-variant="surface">Card 1</div>
+  <div class="box" data-variant="surface">Card 2</div>
+  <div class="box" data-variant="surface">Card 3</div>
+  <div class="box" data-variant="surface">Card 4</div>
+</div>`}
+/>
+
+### Auto-Fit Variant
+
+With `data-variant="fit"`, empty columns collapse and items stretch to fill available space.
+
+<CodeExample 
+  html={`<div class="collection" data-variant="fit" data-gap="3">
+  <div class="box" data-variant="surface">Card 1</div>
+  <div class="box" data-variant="surface">Card 2</div>
+  <div class="box" data-variant="surface">Card 3</div>
+</div>`}
+/>
 
 ---
 ## Content Grid
 
-Full-width grid layout with centered content area and optional breakout zones. Perfect for article layouts and documentation pages.
+Full-width grid layout with centered content area and optional breakout zones.
 
 - `.content-grid` — creates three-column grid (full-width, breakout, content)
 - Children get content width by default
 - `[data-width="breakout"]` — wider than content, but not full-width
 - `[data-width="full"]` — spans entire viewport width
 
-<div class="box content-grid" data-gap="2" data-width="full" style="width:70%; --_content-max-width: 70%; --_breakout-max-width: 85%; " data-padded="false">
-  <div class="box" data-variant="surface">
-    .content-grid (content width, default)
+### CSS Variables
+
+Control content grid widths with CSS custom properties:
+
+- `--content-width` — maximum width for default content (default: `1600px`)
+- `--content-breakout-width` — maximum width for breakout content (default: `1800px`)
+- `--body-margin` — inline padding for all content (default: `var(--size-fluid-2)`)
+
+### Use Cases
+
+Use Content Grid for article layouts, documentation pages, or any content where most elements should be constrained to a readable width, but some elements (like images or code blocks) need to break out wider or span the full viewport.
+
+Content grids can be nested to create different content width zones within a page.
+
+### Width Zones
+
+Children default to content width. Use `data-width` to break out to wider zones.
+
+<CodeExample 
+  html={`<div class="content-grid" data-gap="2">
+  <div class="box" data-variant="surface">Content width (default)</div>
+  <div class="box" data-variant="surface" data-width="breakout">Breakout width</div>
+  <div class="box" data-variant="surface" data-width="full">Full width</div>
+</div>`}
+/>
+
+### Custom Width Variables
+
+Override width variables for specific content grids.
+
+<CodeExample 
+  html={`<div class="content-grid" style="--content-width: 200px; --content-breakout-width: 300px;">
+  <div class="box" data-variant="surface">Narrower content (800px max)</div>
+  <div class="box" data-variant="surface" data-width="breakout">Narrower breakout (1000px max)</div>
+</div>`}
+/>
+
+### Nested Content Grids
+
+Content grids can be nested to create sections with different width constraints.
+
+<CodeExample 
+  html={`<div class="content-grid">
+  <div class="box" data-variant="surface">Outer content width</div>
+  
+  <div class="box content-grid" style="--content-width: 200px; --content-breakout-width: 300px;" data-width="full">
+    <div class="box" data-variant="surface">Nested content grid with narrower width</div>
+    <div class="box" data-variant="surface" data-width="breakout">Nested content grid with narrower width</div>
   </div>
-  <div class="box" data-width="breakout" data-variant="accent">
-    .content-grid [data-width="breakout"]
-  </div>
-  <div class="box" data-width="full" data-variant="surface" >
-    .content-grid [data-width="full"]
-  </div>
-</div>
+  
+  <div class="box" data-variant="surface">Back to outer content width</div>
+</div>`}
+/>
 
 ---
 ## Stack
 
-Stack components create flex layouts for arranging items vertically or horizontally.
+Flex layout for arranging items in a single direction with optional spacing and alignment.
 
 - `.stack` — vertical stack (column, default)
-- `.stack[data-direction="row"]` — horizontal stack
+- `[data-direction="row"]` — horizontal stack
 
-Combine with `[data-gap]`, `[data-align]`, and `[data-justify]` attributes for spacing and alignment.
+Combine with `[data-gap]` for spacing. Control alignment with:
+- `[data-align]` — cross-axis alignment (horizontal in column, vertical in row)
+- `[data-justify]` — main-axis alignment (vertical in column, horizontal in row)
 
-<section class="box stack" data-width="breakout" data-variant="surface">
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack
-  </div>
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack
-  </div>
-</section>
+### Use Cases
 
-<section
-  class="box stack"
-  data-gap="3"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack [data-gap="3"]
-  </div>
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack [data-gap="3"]
-  </div>
-</section>
+Use Stack when you need a single column or row of items with consistent spacing. For multi-dimensional layouts where items wrap, use Collection instead.
 
-<section
-  class="box stack"
-  data-direction="row"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack [data-direction="row"]
-  </div>
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack [data-direction="row"]
-  </div>
-</section>
+### Vertical Stack
 
-<section
-  class="box stack"
-  data-direction="row"
-  data-gap="3"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack [data-direction="row"] [data-gap="3"]
-  </div>
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack [data-direction="row"] [data-gap="3"]
-    <br />
-    more content
-  </div>
-</section>
+Default stack direction is vertical (column).
 
-<section
-  class="box stack"
-  data-direction="row"
-  data-gap="3"
-  data-align="start"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack [data-direction="row"] [data-align="start"]
-  </div>
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack [data-direction="row"] [data-align="start"]
-    <br />
-    more content
-  </div>
-</section>
+<CodeExample 
+  html={`<div class="stack">
+  <div class="box" data-variant="surface">Item 1</div>
+  <div class="box" data-variant="surface">Item 2</div>
+</div>`}
+/>
 
-<section
-  class="box stack"
-  data-direction="row"
-  data-gap="3"
-  data-align="end"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack [data-direction="row"] [data-align="end"]
-  </div>
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack [data-direction="row"] [data-align="end"]
-    <br />
-    more content
-  </div>
-</section>
+### Vertical Stack with Gap
 
-<section
-  class="box stack"
-  data-direction="row"
-  data-gap="3"
-  data-justify="center"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack [data-direction="row"] [data-justify="center"]
-  </div>
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack [data-direction="row"] [data-justify="center"]
-    <br />
-    more content
-  </div>
-</section>
+Add spacing between stacked items.
 
-<section
-  class="box stack"
-  data-direction="row"
-  data-gap="3"
-  data-align="stretch"
-  data-width="breakout"
-  data-variant="surface"
->
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack [data-direction="row"] [data-align="stretch"] [data-gap="3"]
-  </div>
-  <div class="box stack-example-box" data-variant="surface-raised">
-    .stack [data-direction="row"] [data-align="stretch"] [data-gap="3"]
-    <br />
-    more content
-  </div>
-</section>
+<CodeExample 
+  html={`<div class="stack" data-gap="3">
+  <div class="box" data-variant="surface">Item 1</div>
+  <div class="box" data-variant="surface">Item 2</div>
+</div>`}
+/>
+
+### Horizontal Stack
+
+Use `data-direction="row"` for horizontal layout.
+
+<CodeExample 
+  html={`<div class="stack" data-direction="row">
+  <div class="box" data-variant="surface">Item 1</div>
+  <div class="box" data-variant="surface">Item 2</div>
+</div>`}
+/>
+
+### Horizontal Stack with Gap
+
+Combine direction and gap for horizontal spacing.
+
+<CodeExample 
+  html={`<div class="stack" data-direction="row" data-gap="3">
+  <div class="box" data-variant="surface">Item 1</div>
+  <div class="box" data-variant="surface">Item 2<br>More content</div>
+</div>`}
+/>
+
+### Vertical Alignment (Cross-Axis)
+
+In horizontal stacks, `data-align` controls vertical alignment.
+
+<CodeExample 
+  html={`<div class="stack" data-direction="row" data-gap="3" data-align="start">
+  <div class="box" data-variant="surface">Item 1</div>
+  <div class="box" data-variant="surface">Item 2<br>More content</div>
+</div>`}
+/>
+
+<CodeExample 
+  html={`<div class="stack" data-direction="row" data-gap="3" data-align="end">
+  <div class="box" data-variant="surface">Item 1</div>
+  <div class="box" data-variant="surface">Item 2<br>More content</div>
+</div>`}
+/>
+
+<CodeExample 
+  html={`<div class="stack" data-direction="row" data-gap="3" data-align="stretch">
+  <div class="box" data-variant="surface">Item 1</div>
+  <div class="box" data-variant="surface">Item 2<br>More content</div>
+</div>`}
+/>
+
+### Horizontal Alignment (Main-Axis)
+
+In horizontal stacks, `data-justify` controls horizontal alignment.
+
+<CodeExample 
+  html={`<div class="stack" data-direction="row" data-gap="3" data-justify="center">
+  <div class="box" data-variant="surface">Item 1</div>
+  <div class="box" data-variant="surface">Item 2<br>More content</div>
+</div>`}
+/>
