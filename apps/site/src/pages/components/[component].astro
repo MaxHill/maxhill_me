@@ -70,7 +70,7 @@ const events = component
             properties && properties.length > 0 && (
                 <>
                     <h2>Properties</h2>
-                    <div class="table-wrapper" data-width="breakout">
+                    <div class="table-wrapper" data-width="full">
                         <table>
                             <thead>
                                 <tr>
@@ -102,7 +102,7 @@ const events = component
             methods && methods.length > 0 && (
                 <>
                     <h2>Methods</h2>
-                    <div class="table-wrapper">
+                    <div class="table-wrapper" data-width="full">
                         <table>
                             <thead>
                                 <tr>
@@ -134,7 +134,7 @@ const events = component
             events && events.length > 0 && (
                 <>
                     <h2>Events</h2>
-                    <div class="table-wrapper">
+                    <div class="table-wrapper" data-width="full">
                         <table>
                             <thead>
                                 <tr>
@@ -166,7 +166,7 @@ const events = component
             component?.slots && component.slots.length > 0 && (
                 <>
                     <h2>Slots</h2>
-                    <div class="table-wrapper">
+                    <div class="table-wrapper" data-width="full">
                         <table>
                             <thead>
                                 <tr>
@@ -199,7 +199,7 @@ const events = component
             component?.cssParts && component.cssParts.length > 0 && (
                 <>
                     <h2>CSS Parts</h2>
-                    <div class="table-wrapper">
+                    <div class="table-wrapper" data-width="full">
                         <table>
                             <thead>
                                 <tr>

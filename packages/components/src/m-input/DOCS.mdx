@@ -430,6 +430,13 @@ A simple `m-input` demonstration including disabled, default value, readonly, pl
         label="m-input size" 
         name="m-input-size" size="4"
     ></m-input>
+
+    <m-input 
+        label="m-input autofocus" 
+        name="m-input-example-autofocus" 
+        placeholder="This input is focused on load"
+        autofocus
+    ></m-input>
     <button type="submit">Submit</button>
     <button type="reset">Reset</button>
   </form>
@@ -444,3 +451,24 @@ A simple `m-input` demonstration including disabled, default value, readonly, pl
     }
   });`}
 />
+
+---
+
+### Autofocus
+
+Use the `autofocus` attribute to automatically focus an input when the page loads. This is useful for search boxes, login forms, or any input where you want immediate user interaction.
+
+<CodeExample 
+  html={`
+  <form class="form">
+    <m-input 
+      label="Search" 
+      placeholder="Start typing immediately..."
+      type="search"
+      autofocus
+    ></m-input>
+  </form>
+  `}
+/>
+
+**Note:** The autofocus behavior is implemented to work correctly with Shadow DOM by manually calling focus in the component's lifecycle.
