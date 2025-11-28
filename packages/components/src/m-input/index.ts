@@ -167,7 +167,6 @@ export class MInput extends MFormAssociatedElement {
         this.inputElement.addEventListener("input", this.handleInput);
         this.inputElement.addEventListener("blur", this.handleBlur);
         this.clearSlot.addEventListener('click', this.handleClearClick);
-        this.addEventListener('m-invalid', this.handleInvalidEvent);
 
         // Handle autofocus manually since it doesn't work automatically with Shadow DOM
         if (this.autofocus) {
@@ -183,7 +182,6 @@ export class MInput extends MFormAssociatedElement {
         this.inputElement.removeEventListener("input", this.handleInput);
         this.inputElement.removeEventListener("blur", this.handleBlur);
         this.clearSlot.removeEventListener('click', this.handleClearClick);
-        this.removeEventListener('m-invalid', this.handleInvalidEvent);
     }
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
@@ -228,6 +226,21 @@ export class MInput extends MFormAssociatedElement {
         }
     }
 
+    /**
+     * Update error UI when validation state changes
+     */
+    protected onValidationChange = (isValid: boolean, validationMessage: string) => {
+        if (!this.errorElement) return;
+        
+        if (!isValid && this.hasInteracted) {
+            // Show error when invalid and user has interacted
+            this.errorElement.textContent = validationMessage;
+        } else if (isValid) {
+            // Clear error when valid
+            this.errorElement.textContent = '';
+        }
+    }
+
 
 
     //  ------------------------------------------------------------------------
@@ -260,14 +273,6 @@ export class MInput extends MFormAssociatedElement {
             this.toggleClearButton(); // Hide button after clearing
         }
     }
-
-    private handleInvalidEvent = (e: Event) => {
-        const event = e as CustomEvent<MInvalidEventDetail>;
-        if (this.errorElement) {
-            this.errorElement.textContent = event.detail.validationMessage;
-        }
-    }
-
 
     //  ------------------------------------------------------------------------
     //  Validation                                                                     

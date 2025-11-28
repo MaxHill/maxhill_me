@@ -101,6 +101,13 @@ export abstract class MFormAssociatedElement extends MElement {
      */
     protected onValueChange?: (value: string | string[]) => void;
 
+    /**
+     * Implement this to hook into when the validation state changes.
+     * Called every time updateValidationState() runs, allowing child classes
+     * to update their UI (e.g., show/hide error messages) based on validation state.
+     */
+    protected onValidationChange?: (isValid: boolean, validationMessage: string) => void;
+
     //  ------------------------------------------------------------------------
     //  Constraint validation                                                                     
     //  ------------------------------------------------------------------------ 
@@ -258,6 +265,11 @@ export abstract class MFormAssociatedElement extends MElement {
         // Update ARIA attributes for accessibility
         this.internals.ariaInvalid = !isValid ? 'true' : 'false';
 
+        // Call validation change hook for child classes to update UI
+        if (this.onValidationChange) {
+            this.onValidationChange(isValid, validationMessage);
+        }
+
         // Dispatch m-invalid event when invalid (avoid duplicates)
         if (!isValid && this._previousValidationMessage !== validationMessage) {
             this.dispatchEvent(new MInvalidEvent({
@@ -277,6 +289,34 @@ export abstract class MFormAssociatedElement extends MElement {
      * validation state and call updateValidationState() with the results.
      */
     protected abstract updateValidity(): void;
+
+    /**
+     * Checks validity without showing validation UI.
+     * Fires 'invalid' event if validation fails (handled by handleInvalid).
+     * 
+     * @returns {boolean} - true if the element is valid, false otherwise
+     */
+    public checkValidity(): boolean {
+        // Just check validity, fire 'invalid' event if needed
+        // The 'invalid' event is already handled by handleInvalid()
+        return this.internals.checkValidity();
+    }
+
+    /**
+     * Checks validity and shows custom validation UI if invalid.
+     * Sets hasInteracted to true and updates validation state.
+     * 
+     * @returns {boolean} - true if the element is valid, false otherwise
+     */
+    public reportValidity(): boolean {
+        // Trigger validation with UI
+        this.hasInteracted = true;
+        this.updateValidity();
+        
+        // Fire 'invalid' event if needed (handled by handleInvalid)
+        // Note: We use checkValidity() not reportValidity() to avoid native browser UI
+        return this.internals.checkValidity();
+    }
 
     //  ------------------------------------------------------------------------
     //  Helpers                                                                     
