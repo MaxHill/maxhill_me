@@ -7,10 +7,210 @@ describe('m-input', () => {
   describe('accessibility', () => {
     it('should be accessible', async () => {
       const el = await fixture(html`
-        <m-input>Test content</m-input>
+        <m-input label="Test input">Test content</m-input>
       `);
 
       await expect(el).to.be.accessible();
+    });
+  });
+
+  describe('basic rendering', () => {
+    it('should render with default values', async () => {
+      const el = await fixture<MInput>(html`
+        <m-input></m-input>
+      `);
+
+      expect(el).to.be.instanceOf(MInput);
+      expect(el.value).to.equal('');
+      expect(el.type).to.equal('text');
+      expect(el.required).to.equal(false);
+      expect(el.disabled).to.equal(false);
+    });
+
+    it('should render with label', async () => {
+      const el = await fixture<MInput>(html`
+        <m-input label="Email"></m-input>
+      `);
+
+      const label = el.shadowRoot?.querySelector('label');
+      expect(label?.textContent).to.equal('Email');
+    });
+
+    it('should render with value', async () => {
+      const el = await fixture<MInput>(html`
+        <m-input value="test@example.com"></m-input>
+      `);
+
+      expect(el.value).to.equal('test@example.com');
+      const input = el.shadowRoot?.querySelector('input');
+      expect(input?.value).to.equal('test@example.com');
+    });
+  });
+
+  describe('validation behavior', () => {
+    it('should NOT show error on initial render for required empty input', async () => {
+      const el = await fixture<MInput>(html`
+        <m-input required label="Name"></m-input>
+      `);
+
+      const errorEl = el.shadowRoot?.querySelector('.error');
+      expect(errorEl?.textContent).to.equal('');
+      expect(errorEl?.style.display).not.to.equal('block');
+    });
+
+    it('should NOT validate on change', async () => {
+      const el = await fixture<MInput>(html`
+        <m-input required></m-input>
+      `);
+
+      const input = el.shadowRoot?.querySelector('input')!;
+      input.value = '';
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      const errorEl = el.shadowRoot?.querySelector('.error');
+      expect(errorEl?.textContent).to.equal('');
+    });
+
+    it('should validate when reportValidity() is called', async () => {
+      const el = await fixture<MInput>(html`
+        <m-input required></m-input>
+      `);
+
+      const isValid = el.reportValidity();
+
+      expect(isValid).to.be.false;
+      const errorEl = el.shadowRoot?.querySelector('.error');
+      expect(errorEl?.textContent).not.to.equal('');
+    });
+
+    it('should validate when checkValidity() is called', async () => {
+      const el = await fixture<MInput>(html`
+        <m-input required></m-input>
+      `);
+
+      const isValid = el.checkValidity();
+
+      expect(isValid).to.be.false;
+    });
+
+    it('should dispatch m-invalid event on failed validation', async () => {
+      const el = await fixture<MInput>(html`
+        <m-input minlength="5"></m-input>
+      `);
+
+      let invalidEventFired = false;
+      let validationMessage = '';
+
+      el.addEventListener('m-invalid', (e: Event) => {
+        invalidEventFired = true;
+        validationMessage = (e as CustomEvent).detail.validationMessage;
+      });
+
+      // Set a value that's too short and trigger validation by blurring
+      const input = el.shadowRoot?.querySelector('input')!;
+      input.value = 'abc';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(invalidEventFired).to.be.true;
+      expect(validationMessage).to.be.ok;
+      expect(validationMessage).to.include('5 characters');
+    });
+  });
+
+  describe('error display', () => {
+    it('should show error message after validation fails', async () => {
+      const el = await fixture<MInput>(html`
+        <m-input required></m-input>
+      `);
+
+      // Trigger validation by blurring empty required field
+      const input = el.shadowRoot?.querySelector('input')!;
+      input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      const errorEl = el.shadowRoot?.querySelector('.error') as HTMLElement;
+      const displayStyle = window.getComputedStyle(errorEl).display;
+      // Should be visible (inline-block in CSS, but may compute to block)
+      expect(displayStyle).to.not.equal('none');
+      expect(errorEl?.textContent).to.be.ok;
+    });
+
+    it('should hide error message after validation passes', async () => {
+      const el = await fixture<MInput>(html`
+        <m-input required></m-input>
+      `);
+
+      // Trigger validation by blurring empty required field
+      const input = el.shadowRoot?.querySelector('input')!;
+      input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      const errorEl = el.shadowRoot?.querySelector('.error') as HTMLElement;
+      // Should be visible (inline-block in CSS, but may compute to block)
+      expect(window.getComputedStyle(errorEl).display).to.not.equal('none');
+
+      // Fix the validation error
+      el.value = 'valid';
+      input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(window.getComputedStyle(errorEl).display).to.equal('none');
+      expect(errorEl?.textContent).to.equal('');
+    });
+
+    it('should update aria-invalid based on validation state', async () => {
+      const el = await fixture<MInput>(html`
+        <m-input required></m-input>
+      `);
+
+      // Trigger validation by blurring empty required field
+      const input = el.shadowRoot?.querySelector('input')!;
+      input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      // Should be invalid
+      expect(el.internals.ariaInvalid).to.equal('true');
+
+      // Fix the validation error
+      el.value = 'valid';
+      input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      // Should now be valid
+      expect(el.internals.ariaInvalid).to.equal('false');
+    });
+  });
+
+  describe('focus management', () => {
+    it('should focus input when focus() is called', async () => {
+      const el = await fixture<MInput>(html`
+        <m-input></m-input>
+      `);
+
+      el.focus();
+
+      expect(document.activeElement).to.equal(el);
+    });
+
+    it('should blur input when blur() is called', async () => {
+      const el = await fixture<MInput>(html`
+        <m-input></m-input>
+      `);
+
+      el.focus();
+      el.blur();
+
+      expect(document.activeElement).not.to.equal(el);
     });
   });
 
