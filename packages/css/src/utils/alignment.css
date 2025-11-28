@@ -1,48 +1,121 @@
 @layer utils {
-  [data-justify="center"] {
-    justify-content: center;
-  }
-  [data-justify="start"] {
-    justify-content: start;
-  }
-  [data-justify="end"] {
-    justify-content: end;
-  }
-  [data-justify="between"] {
-    justify-content: space-between;
-  }
-  [data-justify="evenly"] {
-    justify-content: space-evenly;
-  }
-  [data-justify="around"] {
-    justify-content: space-around;
-  }
-
-  [data-items="center"] {
-    align-items: center;
-  }
-  [data-align="start"] {
+  /* align-items (default) */
+  [data-align~="start"] {
     align-items: start;
   }
-  [data-align="center"] {
+  [data-align~="center"] {
     align-items: center;
   }
-  [data-align="end"] {
+  [data-align~="end"] {
     align-items: end;
   }
-  [data-align="baseline"] {
+  [data-align~="baseline"] {
     align-items: baseline;
   }
-  [data-align="stretch"] {
+  [data-align~="stretch"] {
     align-items: stretch;
   }
-  [data-items="end"] {
+
+  /* align-items (explicit) */
+  [data-align~="items-start"] {
+    align-items: start;
+  }
+  [data-align~="items-center"] {
+    align-items: center;
+  }
+  [data-align~="items-end"] {
     align-items: end;
   }
-  [data-items="baseline"] {
+  [data-align~="items-baseline"] {
     align-items: baseline;
   }
-  [data-items="stretch"] {
+  [data-align~="items-stretch"] {
     align-items: stretch;
+  }
+
+  /* align-content */
+  [data-align~="content-start"] {
+    align-content: start;
+  }
+  [data-align~="content-center"] {
+    align-content: center;
+  }
+  [data-align~="content-end"] {
+    align-content: end;
+  }
+  [data-align~="content-between"] {
+    align-content: space-between;
+  }
+  [data-align~="content-evenly"] {
+    align-content: space-evenly;
+  }
+  [data-align~="content-around"] {
+    align-content: space-around;
+  }
+  [data-align~="content-baseline"] {
+    align-content: baseline;
+  }
+  [data-align~="content-stretch"] {
+    align-content: stretch;
+  }
+
+  /* justify-items (default) */
+  [data-justify~="start"] {
+    justify-items: start;
+  }
+  [data-justify~="center"] {
+    justify-items: center;
+  }
+  [data-justify~="end"] {
+    justify-items: end;
+  }
+  [data-justify~="between"] {
+    justify-items: space-between;
+  }
+  [data-justify~="evenly"] {
+    justify-items: space-evenly;
+  }
+  [data-justify~="around"] {
+    justify-items: space-around;
+  }
+
+  /* justify-items (explicit) */
+  [data-justify~="items-start"] {
+    justify-items: start;
+  }
+  [data-justify~="items-center"] {
+    justify-items: center;
+  }
+  [data-justify~="items-end"] {
+    justify-items: end;
+  }
+  [data-justify~="items-between"] {
+    justify-items: space-between;
+  }
+  [data-justify~="items-evenly"] {
+    justify-items: space-evenly;
+  }
+  [data-justify~="items-around"] {
+    justify-items: space-around;
+  }
+
+  /* justify-content */
+  [data-justify~="content-start"] {
+    justify-content: start;
+  }
+  [data-justify~="content-center"] {
+    justify-content: center;
+  }
+  [data-justify~="content-end"] {
+    justify-content: end;
+  }
+  [data-justify~="content-between"] {
+    justify-content: space-between;
+  }
+  [data-justify~="content-evenly"] {
+    justify-content: space-evenly;
+  }
+  [data-justify~="content-around"] {
+    justify-content: space-around;
   }
 }

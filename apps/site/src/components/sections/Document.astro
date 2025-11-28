@@ -29,9 +29,9 @@ const { metadata, class: className, ...rest } = Astro.props;
 
 <style>
     .document {
-        --_content-max-width: 500px;
-        --_breakout-max-width: 600px;
         --_width: 650px;
+        --content-width: 500px;
+        --content-breakout-width: calc(600px - var(--body-margin));
 
         z-index: var(--layer-1);
         background: var(--color-background);
@@ -62,8 +62,8 @@ const { metadata, class: className, ...rest } = Astro.props;
     }
 
     .document-metadata {
-        --_content-max-width: 700px;
-        --_breakout-max-width: 850px;
+        --content-width: 700px;
+        --content-breakout-width: 850px;
         border-bottom: var(--border);
         font-family: var(--ff-display);
         dl {

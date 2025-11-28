@@ -1,251 +1,288 @@
 ---
 import BaseLayout from "../../components/layouts/BaseLayout.astro";
 import { getCollection, render } from "astro:content";
-import { getComponentByTagName, getComponentPublicProperties, getComponentPublicMethods, getComponentEventsWithType } from "@wc-toolkit/cem-utilities";
+import {
+    getComponentByTagName,
+    getComponentPublicProperties,
+    getComponentPublicMethods,
+    getComponentEventsWithType,
+} from "@wc-toolkit/cem-utilities";
 import customElements from "@maxhill/components/custom-elements.json";
 import { marked } from "marked";
 
 export async function getStaticPaths() {
-  const docEntries = await getCollection('componentDocs');
-  
-  return docEntries.map((docsEntry) => {
-    const tagName = docsEntry.id.split('/').slice(-2, -1)[0];
-    
-    return {
-      params: { component: tagName.substring(2) },
-      props: { entry: docsEntry }
-    };
-  });
+    const docEntries = await getCollection("componentDocs");
+
+    return docEntries.map((docsEntry) => {
+        const tagName = docsEntry.id.split("/").slice(-2, -1)[0];
+
+        return {
+            params: { component: tagName.substring(2) },
+            props: { entry: docsEntry },
+        };
+    });
 }
 
 const { entry } = Astro.props;
 
 const { Content } = await render(entry);
 
-const tagName = entry.id.split('/').slice(-2, -1)[0];
+const tagName = entry.id.split("/").slice(-2, -1)[0];
 
 const componentName = tagName
-  .split('-')
-  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-  .join(' ');
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 
 const title = componentName;
 
 const component = getComponentByTagName(customElements, tagName);
 const properties = component ? getComponentPublicProperties(component) : [];
 const methods = component ? getComponentPublicMethods(component) : [];
-const events = component ? getComponentEventsWithType(component, { overrideCustomEventType: true }) : [];
+const events = component
+    ? getComponentEventsWithType(component, { overrideCustomEventType: true })
+    : [];
 ---
 
 <BaseLayout title={title}>
-  <main class="content-grid typesetting">
-      <m-fit-text class="title" font-display data-margin="0">
-        <h1 data-margin="0">{componentName}</h1>
-      </m-fit-text>
-    
-    {component?.description && (
-      <div set:html={marked.parse(component.description)} />
-    )}
-    
-    <Content components={{ script: Fragment }} />
-    
-    {properties && properties.length > 0 && (
-      <>
-        <h2>Properties</h2>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {properties.map((prop: any) => (
-                <tr>
-                  <td>
-                    <m-copy-button value={prop.name}>
-                      {prop.name}
-                    </m-copy-button>
-                  </td>
-                  <td>{prop.type?.text}</td>
-                  <td>{prop.description}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </>
-    )}
-    
-    {methods && methods.length > 0 && (
-      <>
-        <h2>Methods</h2>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {methods.map((method: any) => (
-                <tr>
-                  <td>
-                    <m-copy-button value={method.name}>
-                      {method.name}
-                    </m-copy-button>
-                  </td>
-                  <td>{method.type?.text}</td>
-                  <td>{method.description}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </>
-    )}
-    
-    {events && events.length > 0 && (
-      <>
-        <h2>Events</h2>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.map((event: any) => (
-                <tr>
-                  <td>
-                    <m-copy-button value={event.name}>
-                      {event.name}
-                    </m-copy-button>
-                  </td>
-                  <td>{event.type?.text}</td>
-                  <td>{event.description}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </>
-    )}
-    
-    {component?.slots && component.slots.length > 0 && (
-      <>
-        <h2>Slots</h2>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {component.slots.map((slot: any) => (
-                <tr>
-                  <td>
-                    <m-copy-button value={`slot="${slot.name || ''}"`}>
-                      slot="{slot.name || '(default)'}"
-                    </m-copy-button>
-                  </td>
-                  <td>{slot.description}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </>
-    )}
-    
-    {component?.cssParts && component.cssParts.length > 0 && (
-      <>
-        <h2>CSS Parts</h2>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {component.cssParts.map((part: any) => (
-                <tr>
-                  <td>
-                    <m-copy-button value={`::part(${part.name})`}>
-                      ::part({part.name})
-                    </m-copy-button>
-                  </td>
-                  <td>{part.description}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </>
-    )}
-  </main>
+    <main
+        class="content-grid typesetting"
+        data-justify="start"
+    >
+        <m-fit-text
+            class="title"
+            font-display
+            data-margin="0"
+            data-width="full"
+        >
+            <h1 data-margin="0">{componentName}</h1>
+        </m-fit-text>
+
+        {
+            component?.description && (
+                <div set:html={marked.parse(component.description)} />
+            )
+        }
+
+        <Content components={{ script: Fragment }} />
+
+        {
+            properties && properties.length > 0 && (
+                <>
+                    <h2>Properties</h2>
+                    <div class="table-wrapper" data-width="breakout">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {properties.map((prop: any) => (
+                                    <tr>
+                                        <td>
+                                            <m-copy-button value={prop.name}>
+                                                {prop.name}
+                                            </m-copy-button>
+                                        </td>
+                                        <td>{prop.type?.text}</td>
+                                        <td>{prop.description}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
+            )
+        }
+
+        {
+            methods && methods.length > 0 && (
+                <>
+                    <h2>Methods</h2>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {methods.map((method: any) => (
+                                    <tr>
+                                        <td>
+                                            <m-copy-button value={method.name}>
+                                                {method.name}
+                                            </m-copy-button>
+                                        </td>
+                                        <td>{method.type?.text}</td>
+                                        <td>{method.description}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
+            )
+        }
+
+        {
+            events && events.length > 0 && (
+                <>
+                    <h2>Events</h2>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {events.map((event: any) => (
+                                    <tr>
+                                        <td>
+                                            <m-copy-button value={event.name}>
+                                                {event.name}
+                                            </m-copy-button>
+                                        </td>
+                                        <td>{event.type?.text}</td>
+                                        <td>{event.description}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
+            )
+        }
+
+        {
+            component?.slots && component.slots.length > 0 && (
+                <>
+                    <h2>Slots</h2>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {component.slots.map((slot: any) => (
+                                    <tr>
+                                        <td>
+                                            <m-copy-button
+                                                value={`slot="${slot.name || ""}"`}
+                                            >
+                                                slot="{slot.name || "(default)"}
+                                                "
+                                            </m-copy-button>
+                                        </td>
+                                        <td>{slot.description}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
+            )
+        }
+
+        {
+            component?.cssParts && component.cssParts.length > 0 && (
+                <>
+                    <h2>CSS Parts</h2>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {component.cssParts.map((part: any) => (
+                                    <tr>
+                                        <td>
+                                            <m-copy-button
+                                                value={`::part(${part.name})`}
+                                            >
+                                                ::part({part.name})
+                                            </m-copy-button>
+                                        </td>
+                                        <td>{part.description}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
+            )
+        }
+    </main>
 </BaseLayout>
 
 <style>
-
-    
     .title {
         margin-top: var(--size-fluid-3);
+        width: 100%;
     }
-  main {
-    margin:var(--menu-height)  auto;
-  }
-
-  .table-wrapper {
-    overflow-x: auto;
-    margin-bottom: 2rem;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    
-    th, td {
-      text-align: left;
-      padding: var(--size-2);
+    main {
+        --content-width: 600px;
+        --content-breakout-width: 850px;
+        margin: var(--menu-height) auto;
     }
 
-    th {
-      font-weight: 600;
-      white-space: nowrap;
+    .table-wrapper {
+        overflow-x: auto;
+        margin-bottom: 2rem;
     }
 
-    tr {
-      border-bottom: var(--border);
-    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
 
-    th:nth-child(1), td:nth-child(1),
-    th:nth-child(2), td:nth-child(2) {
-      width: max-content;
-        min-width: var(--size-content-1);
-      white-space: nowrap;
-    }
+        th,
+        td {
+            text-align: left;
+            padding: var(--size-2);
+        }
 
-    th:nth-child(3), td:nth-child(3) {
-        min-width: var(--size-content-1);
-      width: 100%;
-    }
+        th {
+            font-weight: 600;
+            white-space: nowrap;
+        }
 
-    td {
-      m-copy-button {
-        font-size: var(--font-size-1);
-      }
+        tr {
+            border-bottom: var(--border);
+        }
+
+        th:nth-child(1),
+        td:nth-child(1),
+        th:nth-child(2),
+        td:nth-child(2) {
+            width: max-content;
+            min-width: var(--size-content-1);
+            white-space: nowrap;
+        }
+
+        th:nth-child(3),
+        td:nth-child(3) {
+            min-width: var(--size-content-1);
+            width: 100%;
+        }
+
+        td {
+            m-copy-button {
+                font-size: var(--font-size-1);
+            }
+        }
     }
-  }
 </style>
