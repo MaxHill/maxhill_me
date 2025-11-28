@@ -255,6 +255,9 @@ export abstract class MFormAssociatedElement extends MElement {
         this.setState('user-invalid', !isValid && this.hasInteracted);
         this.setState('user-valid', isValid && this.hasInteracted);
 
+        // Update ARIA attributes for accessibility
+        this.internals.ariaInvalid = !isValid ? 'true' : 'false';
+
         // Dispatch m-invalid event when invalid (avoid duplicates)
         if (!isValid && this._previousValidationMessage !== validationMessage) {
             this.dispatchEvent(new MInvalidEvent({
