@@ -78,6 +78,9 @@
   [data-justify~="around"] {
     justify-items: space-around;
   }
+  [data-justify~="stretch"] {
+    justify-items: stretch;
+  }
 
   /* justify-items (explicit) */
   [data-justify~="items-start"] {
@@ -98,6 +101,9 @@
   [data-justify~="items-around"] {
     justify-items: space-around;
   }
+  [data-justify~="items-stretch"] {
+    justify-items: stretch;
+  }
 
   /* justify-content */
   [data-justify~="content-start"] {
@@ -117,5 +123,8 @@
   }
   [data-justify~="content-around"] {
     justify-content: space-around;
+  }
+  [data-justify~="content-stretch"] {
+    justify-content: stretch;
   }
 }

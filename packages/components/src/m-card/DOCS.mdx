@@ -61,6 +61,26 @@ Cards support standard data attributes for customization.
   <p>This card has custom rounding and padding applied.</p>
 </m-card>`} />
 
+### Clickable Cards
+
+Cards can be made clickable by adding an `href` attribute. The entire card becomes a link.
+
+<CodeExample html={`<m-card href="/components/card">
+  <div slot="title">Clickable Card</div>
+  <p>Click anywhere on this card to navigate to the card component page.</p>
+  <div slot="footer">Read more →</div>
+</m-card>`} />
+
+### Clickable Card with Target
+
+Use the `target` attribute to open links in a new tab.
+
+<CodeExample html={`<m-card href="https://example.com" target="_blank">
+  <div slot="title">External Link</div>
+  <p>This card opens in a new tab when clicked.</p>
+  <div slot="footer">Visit site →</div>
+</m-card>`} />
+
 ## Usage Notes
 
 ### Slots
@@ -76,9 +96,21 @@ When using `data-subgrid="true"`:
 - The card will span as many rows as needed based on which slots are used
 - All cards in the grid will align their title, content, and footer sections
 
-### Data Attributes
+### Attributes
 
+- **`href`**: URL to navigate to when the card is clicked
+- **`target`**: Link target (e.g., `_blank` for new tab, `_self` for same window)
 - **`data-rounded`**: Applies rounded corners
 - **`data-padded`**: Applies padding to the card
 - **`data-variant="outline"`**: Applies outline styling
 - **`data-subgrid="true"`**: Enables CSS subgrid layout
+
+### Link Behavior
+
+When `href` is provided:
+- The entire card becomes clickable
+- Hover effects provide visual feedback (subtle lift and enhanced shadow)
+- The card cursor changes to pointer
+- Supports keyboard navigation (Tab to focus, Enter to activate)
+- Right-click context menu works for "Open in new tab", etc.
+- Automatically adds `rel="noopener noreferrer"` when `target="_blank"` for security

@@ -20,6 +20,21 @@
     grid-template-columns: [full-width-start] var(--_padding-inline) [content-start] 1fr [content-end] var(--_padding-inline) [full-width-end];
 }
 
+:host([href]) {
+    cursor: pointer;
+}
+
+
+:host([href]:focus),
+:host([href]:active),
+:host([href]:hover) {
+    outline: var(--outline);
+    outline-offset: var(--outline-offset);
+}
+
+    transform: translateY(0);
+}
+
 :host([data-rounded="false"]) {
     border-radius: 0;
 }
@@ -53,4 +68,10 @@
     font: var(--p2);
     color: var(--color-text-softer);
     border-block-start: var(--border);
+}
+
+.card-link {
+    display: contents;
+    text-decoration: none;
+    color: inherit;
 }
