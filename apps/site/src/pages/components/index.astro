@@ -1,0 +1,110 @@
+---
+import BaseLayout from "../../components/layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+
+const title = "Components";
+
+const docEntries = await getCollection("componentDocs");
+
+const components = docEntries
+    .map((docsEntry) => {
+        const tagName = docsEntry.id.split("/").slice(-2, -1)[0];
+
+        if (!tagName) {
+            return null;
+        }
+
+        return {
+            tagName,
+            componentPath: tagName.substring(2),
+        };
+    })
+    .filter(Boolean);
+---
+
+<BaseLayout title={title} bodyClass="component-index-page">
+    <main>
+        <m-fit-text class="title" font-display >
+            <h1 data-margin="0">Search Components</h1>
+        </m-fit-text>
+
+        <m-search-list
+            target=".collection"
+            data-padding="i-body"
+            data-gap="3"
+        >
+            <m-input
+                slot="controller"
+                id="search-components"
+                placeholder="Find components"
+                type="search"
+                autofocus></m-input>
+
+            <div
+                class="collection"
+                data-gap="2"
+                data-size="8"
+                data-align="content-start"
+            >
+                {
+                    components.map((component) => (
+                        <m-card
+                            href={`/components/${component?.componentPath}`}
+                            data-keywords={component?.tagName}
+                            data-subgrid
+                        >
+                            <div slot="title">&lt;{component?.tagName}&gt;</div>
+                            {component?.componentPath}
+                        </m-card>
+                    ))
+                }
+            </div>
+        </m-search-list>
+    </main>
+</BaseLayout>
+
+<style>
+
+
+    :global(.component-index-page){
+        height: 100dvh;
+        overflow: hidden;
+        padding-top: var(--menu-height);
+        display: grid;
+
+        main {
+            width: 100%;
+            display: grid;
+            grid-template-rows: auto 1fr;
+        }
+    }
+
+    m-search-list {
+        margin-top: var(--size-fluid-5);
+        display: grid;
+        grid-template-columns: 1fr;
+        align-content: start;
+        justify-items: center;
+
+        /* Override m-input's subgrid behavior */
+        m-input {
+            grid-template-columns: 1fr;
+            grid-column: span 1;
+            max-width: var(--size-content-2);
+        }
+
+        .collection {
+            max-width: calc(100% - var(--body-margin));
+            width: 1200px;
+        }
+    }
+
+    .title {
+        margin-top: var(--size-fluid-3);
+        width: 100%;
+    }
+
+    :global([data-match="false"]) {
+        display: none;
+    }
+</style>

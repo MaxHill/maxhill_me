@@ -68,7 +68,11 @@ const { title, bodyClass } = Astro.props;
         <div class="main-menu">
             <nav>
                 <a href="/">maxhill.me</a>
+                <m-command command="navigate" commandfor="/" keys="<C-b>1"></m-command>
                 <a href="/design-system">/design-system</a>
+                <m-command command="navigate" commandfor="/design-system" keys="<C-b>2"></m-command>
+                <a href="/components">/components</a>
+                <m-command command="navigate" commandfor="/components" keys="<C-b>3"></m-command>
             </nav>
 
             <ThemeSwitcher persist={true} />
@@ -103,8 +107,18 @@ const { title, bodyClass } = Astro.props;
         gap: var(--size-fluid-2);
 
         &>nav {
+            display: flex;
+            align-items: center;
+            gap: var(--size-1);
+            
             a {
                 text-decoration: none;
+            }
+            
+            m-command {
+                font-size: var(--font-size-0);
+                color: var(--color-text-softer);
+                opacity: 0.7;
             }
         }
     }

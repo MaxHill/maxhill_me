@@ -49,6 +49,7 @@ baseStyleSheet.replaceSync(styles);
  * @attr {boolean} disabled - Whether the input is disabled
  * @attr {boolean} readonly - Whether the input is readonly
  * @attr {boolean} clearable - Whether to show a clear button
+ * @attr {boolean} autofocus - Whether the input should be focused on page load
  * 
  * @csspart label - The label element
  * @csspart input-wrapper - The wrapper containing the input and slots
@@ -61,7 +62,7 @@ export class MInput extends MFormAssociatedElement {
     static tagName = 'm-input';
 
     static get observedAttributes() {
-        return [...super.observedAttributes, "type", "minlength", "maxlength", "pattern", "placeholder", "clearable", "autocomplete", "size"]
+        return [...super.observedAttributes, "type", "minlength", "maxlength", "pattern", "placeholder", "clearable", "autocomplete", "size", "autofocus"]
     }
 
     private _shadowRoot: ShadowRoot;
@@ -98,6 +99,9 @@ export class MInput extends MFormAssociatedElement {
 
     @BindAttribute()
     clearable: boolean = false;
+
+    @BindAttribute()
+    autofocus: boolean = false;
 
     @query('slot[name="clear"]')
     private clearSlot!: HTMLSlotElement;
@@ -164,6 +168,14 @@ export class MInput extends MFormAssociatedElement {
         this.inputElement.addEventListener("blur", this.handleBlur);
         this.clearSlot.addEventListener('click', this.handleClearClick);
         this.addEventListener('m-invalid', this.handleInvalidEvent);
+
+        // Handle autofocus manually since it doesn't work automatically with Shadow DOM
+        if (this.autofocus) {
+            // Use requestAnimationFrame to ensure the element is fully connected
+            requestAnimationFrame(() => {
+                this.inputElement?.focus();
+            });
+        }
     }
 
     disconnectedCallback() {
@@ -188,7 +200,7 @@ export class MInput extends MFormAssociatedElement {
         const inputAttributes = [
             'type', 'disabled', 'readonly', 'required',
             'minlength', 'maxlength', 'pattern', 'placeholder', 
-            'autocomplete', 'size'
+            'autocomplete', 'size', 'autofocus'
         ];
 
         if (inputAttributes.includes(name)) {
@@ -372,6 +384,7 @@ export class MInput extends MFormAssociatedElement {
                 type="${this.type}"
                 ${this.required ? 'required' : ''}
                 ${this.readonly ? 'readonly' : ''}
+                ${this.autofocus ? 'autofocus' : ''}
                 ${this.minLength != null ? `minlength="${this.minLength}"` : ''}
                 ${this.maxLength != null ? `maxlength="${this.maxLength}"` : ''}
                 ${this.pattern != null ? `pattern="${this.pattern}"` : ''}
