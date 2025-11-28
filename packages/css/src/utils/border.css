@@ -1,39 +1,39 @@
 @layer utils {
-  [data-border]:not([data-border="i"]):not([data-border="is"]):not(
-      [data-border="ie"]
-    ):not([data-border="b"]):not([data-border="bs"]):not([data-border="be"]),
-  [data-border="true"] {
+  [data-border]:not([data-border~="i"]):not([data-border~="is"]):not(
+      [data-border~="ie"]
+    ):not([data-border~="b"]):not([data-border~="bs"]):not([data-border~="be"]),
+  [data-border~="true"] {
     border: var(--border);
   }
-  [data-border="i"] {
+  [data-border~="i"] {
     border-inline: var(--border);
   }
-  [data-border="is"] {
+  [data-border~="is"] {
     border-inline-start: var(--border);
   }
-  [data-border="ie"] {
+  [data-border~="ie"] {
     border-inline-end: var(--border);
   }
-  [data-border="b"] {
+  [data-border~="b"] {
     border-block: var(--border);
   }
-  [data-border="bs"] {
+  [data-border~="bs"] {
     border-block-start: var(--border);
   }
-  [data-border="be"] {
+  [data-border~="be"] {
     border-block-end: var(--border);
   }
 
-  [data-border]:not([data-border="i"]):not([data-border="is"]):not(
-      [data-border="ie"]
-    ):not([data-border="b"]):not([data-border="bs"]):not([data-border="be"]),
-  [data-border="true"],
-  [data-border="i"],
-  [data-border="is"],
-  [data-border="ie"],
-  [data-border="b"],
-  [data-border="bs"],
-  [data-border="be"] {
+  [data-border]:not([data-border~="i"]):not([data-border~="is"]):not(
+      [data-border~="ie"]
+    ):not([data-border~="b"]):not([data-border~="bs"]):not([data-border~="be"]),
+  [data-border~="true"],
+  [data-border~="i"],
+  [data-border~="is"],
+  [data-border~="ie"],
+  [data-border~="b"],
+  [data-border~="bs"],
+  [data-border~="be"] {
     &[data-variant="strong"] {
       border-color: var(--color-stroke-strong);
     }

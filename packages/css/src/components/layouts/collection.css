@@ -9,6 +9,10 @@
       minmax(min(var(--_card-width), 100%), 1fr)
     );
 
+    &[data-variant="fit"] {
+        --grid-type: auto-fit;
+    }
+
     &[data-size="1"] {
       --_card-width: var(--size-fluid-1);
     }

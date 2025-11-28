@@ -6,6 +6,14 @@ import CodeExample from '../../../../apps/site/src/components/CodeExample.astro'
 
 ---
 
+<div 
+    class="collection typesetting" 
+    data-width="breakout" 
+    data-variant="fit" 
+    data-padding="i-body" 
+    data-size="10"
+>
+<div class="typesetting">
 ## Form Participation
 
 `m-input` is a form-associated custom element, meaning it behaves just like a native `<input>` inside a form:
@@ -16,6 +24,8 @@ import CodeExample from '../../../../apps/site/src/components/CodeExample.astro'
 - Works with `:valid` / `:invalid` states internally
 - Preserves standard events (`input`, `change`, `focus`, `blur`)
 
+</div>
+<div class="typesetting">
 ### Example: Simple Form Submission
 
 This example shows an `m-input` inside a form that is submitted and displayed as JSON.
@@ -40,6 +50,9 @@ This example shows an `m-input` inside a form that is submitted and displayed as
     document.querySelector('#demo-output').textContent =
       JSON.stringify(data, null, 2);
   });`} />
+</div>
+
+</div>
 
 ---
 

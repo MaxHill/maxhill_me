@@ -12,40 +12,65 @@ import ExamplesMargin from './ExamplesMargin.astro';
 import ExamplesPadding from './ExamplesPadding.astro';
 import ExamplesPlacement from './ExamplesPlacement.astro';
 
-Utility classes for spacing, borders, and layout. All utilities use logical properties for better internationalization support.
+Utilities for spacing, borders, and layout using data attributes. All utilities use logical properties for better internationalization support.
 
 ## Structure
 
-CSS utilities provide low-level styling primitives through data attributes. Instead of utility classes like `.p-3` or `.bg-surface`,
-you use attributes like `data-padding="3"` and `data-background="surface"`.
+CSS utilities use data attributes instead of classes. Write `data-padding="3"` instead of `.p-3`, or `data-background="surface"` instead of `.bg-surface`.
 
-This approach keeps markup semantic while maintaining the flexibility of utility-first styling. All utility values map directly to
-tokens from the design system, ensuring consistency across your interface.
+All utility values map to design system tokens.
+
+### Combining Values
+
+Spacing utilities (margin, padding), borders, gaps, and alignment attributes support space-separated values:
+
+```html
+<div data-padding="i-5 b-3">
+```
+
+This applies `padding-inline: var(--size-5)` and `padding-block: var(--size-3)`.
+
+```html
+<div data-margin="i-auto b-4">
+```
+
+This applies `margin-inline: auto` and `margin-block: var(--size-4)`.
 
 
 ## Directional Suffixes
 
-Utilities support directional variants using logical property naming:
+Spacing and border utilities use logical property suffixes:
 
-- `-i` — inline (horizontal: left & right)
+- `-i` — inline (left and right in LTR languages)
 - `-is` — inline-start (left in LTR, right in RTL)
 - `-ie` — inline-end (right in LTR, left in RTL)
-- `-b` — block (vertical: top & bottom)
+- `-b` — block (top and bottom)
 - `-bs` — block-start (top)
 - `-be` — block-end (bottom)
 
-## Size Tokens
-
-Most utilities support these size scales:
-
-- Fixed sizes: `000`, `00`, `1-15`
-- Fluid sizes: `fluid-1` through `fluid-10` (responsive, scale with viewport)
-- Auto: `auto` (margin only)
+Example: `data-padding="i-5"` applies horizontal padding, while `data-padding="b-3"` applies vertical padding.
 
 --- 
 ## Borders
 
-Border utilities add borders to elements using the `[data-border]` attribute. Combine with `[data-variant]` for different looks.
+Add borders to elements using the `[data-border]` attribute. Supports directional variants and combinations.
+
+### Directional Variants
+
+- `i` — inline (left and right)
+- `is` — inline-start (left in LTR)
+- `ie` — inline-end (right in LTR)
+- `b` — block (top and bottom)
+- `bs` — block-start (top)
+- `be` — block-end (bottom)
+
+Combine directions:
+
+```html
+<div data-border="bs be">  <!-- top and bottom -->
+```
+
+Use `[data-variant]` to change border color:
 
 <ExamplesBorder />
 
@@ -75,7 +100,9 @@ Where `{family}` is `primary`, `neutral`, `constructive`, or `destructive`.
 ---
 ## Backgrounds
 
-Background utilities apply background colors using the `[data-background]` attribute. Use `[data-text]` for text colors on accent fills.
+Apply background colors using the `[data-background]` attribute. Color families include five intensity levels: `softer`, `soft`, `mid`, `loud`, and `louder`.
+
+Use `[data-text]` for proper text contrast on colored backgrounds.
 
 ### Surface Colors
 
@@ -92,7 +119,22 @@ Background utilities apply background colors using the `[data-background]` attri
 ---
 ## Gaps
 
-Gap utilities control spacing between flex or grid items. Works with any layout container that supports the `gap` property.
+Control spacing between flex or grid items using the `[data-gap]` attribute.
+
+### Row and Column Gaps
+
+Use directional prefixes for independent row and column spacing:
+
+- `r-` — row-gap (vertical spacing)
+- `c-` — column-gap (horizontal spacing)
+
+Combine row and column gaps:
+
+```html
+<div data-gap="r-3 c-5">  <!-- row-gap: var(--size-3); column-gap: var(--size-5) -->
+```
+
+### Examples
 
 <div
   style="display:grid;"
@@ -100,44 +142,105 @@ Gap utilities control spacing between flex or grid items. Works with any layout 
   data-gap="3"
   data-variant="surface"
 >
-  <div class="box">data-gap="3"</div>
-  <div class="box">data-gap="3"</div>
-  <div class="box">data-gap="3"</div>
+  <div class="box">Item 1</div>
+  <div class="box">Item 2</div>
+  <div class="box">Item 3</div>
 </div>
 
 <div
-  style="display:grid;"
+  style="display:grid; grid-template-columns: 1fr 1fr;"
   class="box"
-  data-gap="fluid-3"
+  data-gap="r-2 c-5"
   data-variant="surface"
 >
-  <div class="box">data-gap="fluid-3"</div>
-  <div class="box">data-gap="fluid-3"</div>
-  <div class="box">data-gap="fluid-3"</div>
+  <div class="box">Item 1</div>
+  <div class="box">Item 2</div>
+  <div class="box">Item 3</div>
+  <div class="box">Item 4</div>
 </div>
 
-Available sizes: `000`, `00`, `1-15`, `fluid-1` through `fluid-10`
+Available sizes: `0`, `000`, `00`, `1-15`, `fluid-1` through `fluid-10`
 
 ---
 ## Margin
 
-Margin utilities add space outside elements using the `[data-margin]` attribute. Supports all directional variants and includes `auto` for centering.
+Add space outside elements using the `[data-margin]` attribute.
+
+### Directional Control
+
+Combine directions:
+
+```html
+<div data-margin="i-5 b-3">  <!-- margin-inline: var(--size-5); margin-block: var(--size-3) -->
+```
 
 <ExamplesMargin />
 
-Available sizes: `000`, `00`, `1-15`, `fluid-1` through `fluid-10`, `auto`
+Available sizes: `0`, `000`, `00`, `1-15`, `fluid-1-10`, `auto`
 
 ---
 ## Padding
 
-Padding utilities add space inside elements using the `[data-padding]` attribute.
+Add space inside elements using the `[data-padding]` attribute.
+
+### Directional Control
+
+Combine directions:
+
+```html
+<div data-padding="i-body b-3">  <!-- padding-inline: var(--body-margin); padding-block: var(--size-3) -->
+```
 
 <ExamplesPadding />
 
-Available sizes: `000`, `00`, `1-15`, `fluid-1` through `fluid-10`
+Available sizes: `body`, `000`, `00`, `1-15`, `fluid-1-10`
 
 ---
-## Placement
+## Alignment
+
+Control flexbox and grid alignment using `[data-align]` and `[data-justify]` attributes.
+
+### data-align
+
+Controls vertical alignment in flex layouts and block-axis alignment in grid.
+
+**align-items** (default):
+- `start`, `center`, `end`, `baseline`, `stretch`
+
+**align-content** (prefix: `content-`):
+- `content-start`, `content-center`, `content-end`
+- `content-between`, `content-around`, `content-evenly`
+- `content-baseline`, `content-stretch`
+
+Use `-items` to align individual items. Use `content-` when working with wrapped flex items or grid tracks.
+
+### data-justify
+
+Controls horizontal alignment in flex layouts and inline-axis alignment in grid.
+
+**justify-items** (default):
+- `start`, `center`, `end`, `stretch`
+
+**justify-content** (prefix: `content-`):
+- `content-start`, `content-center`, `content-end`
+- `content-between`, `content-around`, `content-evenly`
+
+Use `-items` to align individual items. Use `content-` when working with wrapped flex items or grid tracks.
+
+### Combining Values
+
+Combine values within each attribute:
+
+```html
+<div data-align="center content-start">  <!-- align-items + align-content -->
+<div data-justify="start content-between">  <!-- justify-items + justify-content -->
+```
+
+Combine both attributes for full control:
+
+```html
+<div data-align="center" data-justify="content-between">
+```
 
 <ExamplesPlacement />
 

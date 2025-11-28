@@ -1,24 +1,26 @@
 @layer components {
-  :where(.content-grid) {
-    --_padding-inline: var(--body-margin);
-    --_content-max-width: 1600px;
-    --_breakout-max-width: 1800px;
+    :where(.content-grid) {
+        --_padding-inline: var(--body-margin, var(--size-fluid-2));
+        --_content-max-width: var(--content-width, 1600px);
+        --_breakout-max-width: var(--content-breakout-width, 1800px);
 
-    display: grid;
-    grid-template-columns: min(1fr, 100%);
-    justify-items: center;
+        display: grid;
+        grid-template-columns: min(1fr, 100%);
+        justify-items: center;
 
-    & > * {
-      width: min(var(--_content-max-width), calc(100% - (var(--_padding-inline) * 2)));
-      min-width: 0;
+        &>* {
+            margin-inline: var(--_padding-inline);
+            width: min(var(--_content-max-width), 100%);
+            min-width: 0;
+        }
+
+        &>[data-width="breakout"] {
+            width: min(var(--_breakout-max-width), 100%);
+        }
+
+        &>[data-width="full"] {
+            margin-inline: 0;
+            width: 100%;
+        }
     }
-
-    & > [data-width="breakout"] {
-      width: min(var(--_breakout-max-width), calc(100% - (var(--_padding-inline) * 2)));
-    }
-
-    & > [data-width="full"] {
-      width: 100%;
-    }
-  }
 }
