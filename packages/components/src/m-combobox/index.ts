@@ -1,6 +1,7 @@
 import { MInputListElement } from "../utils/m-input-list-element";
 import { BindAttribute } from "../utils/reflect-attribute";
 import { query } from "../utils/query";
+import { OutsideClickController } from "../utils/outside-click-controller";
 import styles from "./index.css?inline";
 import MInput from "../m-input";
 import MOption from "../m-option";
@@ -54,6 +55,7 @@ export class MCombobox extends MInputListElement {
     private _shadowRoot: ShadowRoot;
     private internals: ElementInternals;
     private popoverCleanup?: () => void;
+    private outsideClickController?: OutsideClickController;
 
     @query('#popover')
     private popoverElement!: HTMLDivElement;
@@ -113,6 +115,17 @@ export class MCombobox extends MInputListElement {
 
         this.addEventListener("focus", this.handleFocus, true);
         this.addEventListener("blur", this.handleBlur, true);
+
+        this.outsideClickController = new OutsideClickController(
+            this,
+            () => {
+                if (this.popoverElement?.matches(':popover-open')) {
+                    this.resetInputValue();
+                    this._hidePopover();
+                }
+            }
+        );
+        this.outsideClickController.connect();
     }
 
     disconnectedCallback() {
@@ -126,6 +139,7 @@ export class MCombobox extends MInputListElement {
         this.removeEventListener("focus", this.handleFocus, true);
         this.removeEventListener("blur", this.handleBlur, true);
 
+        this.outsideClickController?.disconnect();
         this.popoverCleanup && this.popoverCleanup();
     }
 
@@ -302,8 +316,9 @@ export class MCombobox extends MInputListElement {
 
     private handleFocus = (_e: Event) => { this._showPopover(); }
     private handleBlur = (_e: Event) => {
-        this.resetInputValue();
-        this._hidePopover();
+        // Note: Popover closing is now handled by OutsideClickController
+        // This blur handler is kept for potential keyboard navigation (Tab key)
+        // but we don't close the popover here to allow clicking inside options
     }
     private handleInput = (_e: Event) => { this._showPopover(); }
 

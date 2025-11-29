@@ -1,5 +1,6 @@
 import { MInputListElement } from "../utils/m-input-list-element";
 import { BindAttribute } from "../utils/reflect-attribute";
+import { OutsideClickController } from "../utils/outside-click-controller";
 import type { MOption } from "../m-option";
 import { MListboxSelectEvent, MListboxUnselectedEvent, MListboxChangeEvent, MListboxFocusChangeEvent } from "./events";
 import styles from "./index.css?inline";
@@ -55,6 +56,7 @@ export class MListbox extends MInputListElement {
     private originalTabIndex: string | null = null;
 
     private internals: ElementInternals;
+    private outsideClickController?: OutsideClickController;
 
     /*** ----------------------------
      *  Getters 
@@ -114,6 +116,14 @@ export class MListbox extends MInputListElement {
         this.addEventListener('click', this.handleClick);
         this.addEventListener('mouseover', this.handleMouseOver);
         this.addEventListener('mouseout', this.handleMouseOut);
+
+        this.outsideClickController = new OutsideClickController(
+            this,
+            () => {
+                this.blur();
+            }
+        );
+        this.outsideClickController.connect();
         
         const valueAttr = this.getAttribute('value');
         if (valueAttr) {
@@ -133,6 +143,8 @@ export class MListbox extends MInputListElement {
         this.removeEventListener('click', this.handleClick);
         this.removeEventListener('mouseover', this.handleMouseOver);
         this.removeEventListener('mouseout', this.handleMouseOut);
+        
+        this.outsideClickController?.disconnect();
     }
 
 
