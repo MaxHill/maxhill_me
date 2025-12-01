@@ -1,5 +1,39 @@
 @layer components {
     :where(.content-grid) {
+        --gap: var(--body-margin);
+        --full: minmax(var(--gap), 1fr);
+        --content: min(50ch, 100% - var(--gap) * 2);
+        --breakout: minmax(0, 20ch);
+        --feature: minmax(0, 40ch);
+
+        display: grid;
+        grid-template-columns:
+            [full-start] var(--full) 
+            [feature-start] var(--feature) 
+            [breakout-start] var(--breakout) 
+            [content-start] var(--content) 
+            [content-end] var(--breakout) 
+            [breakout-end] var(--feature) 
+            [feature-end] var(--full) 
+            [full-end];
+        
+        & > * {
+          grid-column: content;
+        }
+
+        [data-width="breakout"] {
+          grid-column: breakout;
+        }
+        [data-width="feature"] {
+          grid-column: feature;
+        }
+        [data-width="full"] {
+          grid-column: full;
+        }
+
+    }
+
+    :where(.content-grid-old) {
         --_padding-inline: var(--body-margin, var(--size-fluid-2));
         --_content-max-width: var(--content-width, 1600px);
         --_breakout-max-width: var(--content-breakout-width, 1800px);

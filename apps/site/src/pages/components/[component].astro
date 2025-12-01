@@ -232,21 +232,24 @@ const events = component
 <style>
     .title {
         margin-top: var(--size-fluid-3);
-        width: 100%;
+        grid-column: full;
     }
     main {
         --content-width: 600px;
         --content-breakout-width: 850px;
         margin: var(--menu-height) auto;
+        overflow-x: clip;
+
     }
 
     .table-wrapper {
         overflow-x: auto;
         margin-bottom: 2rem;
+        grid-column: full;
+        max-width: 100%;
     }
 
     table {
-        width: 100%;
         border-collapse: collapse;
 
         th,
