@@ -1,6 +1,6 @@
 @layer utils {
     .typesetting {
-        gap: 1rlh;
+        row-gap: 1rlh;
         display: grid;
         grid-auto-rows: max-content;
 
@@ -74,9 +74,9 @@
 
         hr {
             margin-bottom: calc(var(--size-fluid-1) * -1);
-            width: 100%;
             border: 0;
             border-block-end: var(--border);
+            grid-column: full-width;
         }
 
         &>pre {

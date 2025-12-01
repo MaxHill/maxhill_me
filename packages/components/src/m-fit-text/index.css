@@ -1,3 +1,7 @@
+:host{
+    /* Default widht 100% */
+    width: 100%; 
+}
 .text-fit {
   display: flex;
   container-type: inline-size;
