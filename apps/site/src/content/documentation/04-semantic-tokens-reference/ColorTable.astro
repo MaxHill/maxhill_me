@@ -1,16 +1,16 @@
 ---
-import colorData from "../../../data/colors.json";
 import ThemeSwitcher from "../../../components/ThemeSwitcher.astro";
 
-interface Props {
-    category?: string;
+interface Color {
+    name: string;
+    description: string;
 }
 
-const { category } = Astro.props;
+interface Props {
+    colors: Color[];
+}
 
-const filteredColors = category
-    ? colorData.colors.filter((c) => c.category === category)
-    : colorData.colors;
+const { colors } = Astro.props;
 
 const id = `color-table-${Math.random().toString(36).substring(7)}`;
 ---
@@ -19,7 +19,7 @@ const id = `color-table-${Math.random().toString(36).substring(7)}`;
     <ThemeSwitcher slot="title" target={`#${id}`} unsetOption="none" />
     <ul class="color-table">
         {
-            filteredColors.map((c) => (
+            colors.map((c) => (
                 <li>
                     <span
                         class="swatch"

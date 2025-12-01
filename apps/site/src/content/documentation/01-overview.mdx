@@ -1,0 +1,47 @@
+---
+title: Overview
+author: Max Hill
+date: 2025-12-01
+tags: [intro, overview]
+htmlId: doc-overview
+---
+
+The design system consists of design tokens expressed as css custom properties. The design tokens are then organized into two main layers, foundation and semantic.
+
+
+
+---
+## Foundation tokens
+Foundation tokens are the smallest building blocks. They are primitive values and their describe what they are. For example `—radius-1` is the a value that should be used to specify, well how rounded the corners of an element should be.
+
+They serve an important purpose, they constrain the possible values from anything to a subset of pre-defined ones. This both speeds up the decision process and improves consistency through the ui.
+
+
+The foundational tokens in this design system are an adaptation of the fantastic [open props](https://open-props.style/)
+
+---
+
+## Semantic tokens
+
+The semantic tokens is an abstraction on top of the foundation tokens that 
+should encode a pattern that should be applied across multiple elements 
+like `—color-text`.
+
+### Themes
+A good rule of thumb is that themes should only change semantic layer tokens.
+This also gives a good indication on whether a token is foundational or semantic.
+
+By default there are two themes setup; light and dark. These mainly changes 
+the colors from light to dark. But there could be more themes that changes 
+other custom properties in the semantic layer like input radius or spacing. 
+These could even complement each other. For example having theme “light” and 
+“spacious” applied at the same time (if a “spacious” theme was created).
+
+For more info about the color setup in the themes see the [Color system](#color-system) 
+
+---
+
+
+## Next
+Next: <a href="#doc-color-system">Color system</a>
+

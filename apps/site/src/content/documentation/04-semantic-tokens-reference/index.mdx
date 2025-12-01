@@ -1,0 +1,449 @@
+---
+title: Semantic tokens reference
+author: Max Hill
+date: 2025-12-01
+tags: [reference, semantic-tokens]
+htmlId: doc-semantic-tokens-reference
+---
+
+import FontFamilyDisplay from "./FontFamilyDisplay.astro";
+
+Semantic tokens come in all shapes and sizes, below is an overview of all
+the values.
+
+---
+
+## Typography
+
+For ui elements the typescale is limited to 4
+sizes. `--h1`,`--h2`,`--p` and `--p2`. This combined with text color
+provides enough visual hierarcy for normal ui.
+
+Long form text like the documentation you’re reading now might need a
+bigger typescale and for that usecase `.typesetting` exists,
+see [#doc-css-restyle](https://maxhill.me/design-system/#doc-css-restyle)
+
+### Font Families
+
+<div class="box" data-width="breakout" data-variant="surface">
+  ### IBM Plex Mono Primary font for body text and UI elements
+  <FontFamilyDisplay />
+</div>
+
+<div class="box" data-width="breakout" data-variant="surface">
+  ### Departure Mono Display font for headings and emphasis
+  <FontFamilyDisplay class="ff-display" weights={["Regular", "Bold"]} />
+</div>
+
+## Type Scale
+
+The type scale provides consistent sizing across all text elements:
+
+<div
+  class="box stack"
+  data-width="breakout"
+  data-variant="surface"
+  data-gap="5"
+>
+  <div>
+    <div class="stack" data-direction="row" data-gap="2">
+      <h1>Heading 1</h1>
+      <m-copy-button value="--h1">--h1</m-copy-button>
+    </div>
+    <p data-text="weak">2rem bold / 1.1 (Departure Mono)</p>
+  </div>
+  <div>
+    <div class="stack" data-direction="row" data-gap="2">
+      <h2>Heading 2</h2>
+      <m-copy-button value="--h2">--h2</m-copy-button>
+    </div>
+    <p data-text="weak">1.5rem medium / 1.1 (IBM Plex Mono)</p>
+  </div>
+  <div>
+    <div class="stack" data-direction="row" data-gap="2">
+      <p>Body text for paragraphs and general content.</p>
+      <m-copy-button value="--p">--p</m-copy-button>
+    </div>
+    <p data-text="weak">1rem regular / 1.4 (IBM Plex Mono)</p>
+  </div>
+  <div>
+    <div class="stack" data-direction="row" data-gap="2">
+      <p class="text-small">
+        Small text for captions and secondary information.
+      </p>
+      <m-copy-button value="--p2">--p2</m-copy-button>
+    </div>
+    <p data-text="weak">0.875rem regular / 1.4 (IBM Plex Mono)</p>
+  </div>
+</div>
+
+---
+
+## Sizing
+
+<m-copy-button value="--menu-height">--menu-height</m-copy-button> Simply
+the height of the menu. Since the menu is position absolute this is usefull
+when creating page layouts that needs to add padding so the top element is
+not positioned below the menu
+
+<m-copy-button value="--body-margin">--body-margin</m-copy-button> This
+value referes to the inset or padding of the main content. Think of it as
+the closest content that is not full width should be from the edge of a
+element.
+
+<m-copy-button value="--radius-box">--radius-box</m-copy-button> UIs have a
+lot of boxes. We have a dedicated `.box` class that can be used, but for
+other places where box styling is disired --radius-box can be used
+
+---
+
+## Input elements
+
+There are a lot of input elements. They should all have consistent styling.
+These custom properties are used to style both the custom elements like
+`<m-input>` as well as the native `<input/>` elements
+
+<m-copy-button value="--color-input-fill">--color-input-fill</m-copy-button>
+<m-copy-button value="--color-input-stroke">--color-input-stroke</m-copy-button>
+<m-copy-button value="--color-input-text">--color-input-text</m-copy-button>
+<m-copy-button value="--color-input-stroke-focus">--color-input-stroke-focus</m-copy-button>
+<m-copy-button value="--color-input-fill-focus">--color-input-fill-focus</m-copy-button>
+<m-copy-button value="--color-input-text-focus">--color-input-text-focus</m-copy-button>
+<m-copy-button value="--color-input-fill-error">--color-input-fill-error</m-copy-button>
+<m-copy-button value="--color-input-stroke-focus-error">--color-input-stroke-focus-error</m-copy-button>
+<m-copy-button value="--color-input-text-focus-error">--color-input-text-focus-error</m-copy-button>
+
+<m-copy-button value="--radius-input">--radius-input</m-copy-button>
+<m-copy-button value="--radius-input">--radius-input</m-copy-button>
+
+---
+## Borders
+
+In adition to all the stroke variants of colors (like
+`--color-primary-stroke`), that can be used to set the border color, there
+are other custom propertise that should be used for consistent border
+styling
+
+<m-copy-button value="--border-width">--border-width</m-copy-button>
+How thick should the border be.
+
+<m-copy-button value="--border">--border</m-copy-button> Collects border widht, style and default-color into a variable that can be used with `border: var(--border)`
+
+<m-copy-button value="--border-strong">--border-strong</m-copy-button> Same as `--border` but the strong variant.
+
+---
+
+## Colors
+
+import ColorTable from "./ColorTable.astro";
+
+The color system adapts to light and dark themes. Each color is defined with multiple variants for different use cases.
+
+### Text Colors
+
+export const textColors = [
+  {
+    name: "color-text",
+    description: "Default text color. Used as the main text color throughout the UI. Provides good and legible contrast for our content."
+  },
+  {
+    name: "color-text-mid",
+    description: "Mid text color. Used for introduction paragraphs and help texts that are coupled with form elements."
+  },
+  {
+    name: "color-text-softer",
+    description: "Softer text color. Used for disabled buttons, footers, table headings, captions and placeholder texts."
+  },
+  {
+    name: "color-text-link",
+    description: "Link text color. Used for all paragraph level links in a user interface."
+  }
+];
+
+<ColorTable colors={textColors} />
+
+### Background Colors
+
+export const backgroundColors = [
+  {
+    name: "color-background",
+    description: "Default application background color. Should be set to either html or body element."
+  },
+  {
+    name: "color-surface",
+    description: "Default application surface color. Use this for card backgrounds."
+  },
+  {
+    name: "color-surface-raised",
+    description: "Raised surface color. Use this when you need to separate a specific layer from the surface color, e.g. table headers."
+  }
+];
+
+<ColorTable colors={backgroundColors} />
+
+### Stroke Colors
+
+export const strokeColors = [
+  {
+    name: "color-stroke",
+    description: "Default stroke color. Used for borders and dividers."
+  },
+  {
+    name: "color-stroke-strong",
+    description: "Strong stroke color for highlighting specific parts in the user interface."
+  },
+  {
+    name: "color-stroke-hover",
+    description: "Stroke color for hover states."
+  }
+];
+
+<ColorTable colors={strokeColors} />
+
+### Special Colors
+
+export const specialColors = [
+  {
+    name: "color-button-hover",
+    description: "Background color for button hover states."
+  },
+  {
+    name: "color-button-active",
+    description: "Background color for button active states."
+  },
+  {
+    name: "color-icon",
+    description: "Default icon color."
+  },
+  {
+    name: "color-icon-hover",
+    description: "Icon color on hover."
+  }
+];
+
+<ColorTable colors={specialColors} />
+
+### Color Scale Variants
+
+The color system includes four semantic scales: primary, neutral, constructive, and destructive. Each scale has consistent variants:
+
+#### Primary Colors
+
+export const primaryColors = [
+  {
+    name: "color-primary-fill-softer",
+    description: "Subtlest fill. Use for backgrounds that need minimal emphasis."
+  },
+  {
+    name: "color-primary-fill-soft",
+    description: "Soft fill. Use for secondary backgrounds."
+  },
+  {
+    name: "color-primary-fill-mid",
+    description: "Mid-range fill. Use for button backgrounds and UI elements."
+  },
+  {
+    name: "color-primary-fill-loud",
+    description: "High contrast fill. Use for emphasized elements."
+  },
+  {
+    name: "color-primary-fill-louder",
+    description: "Highest contrast fill. Use for maximum emphasis."
+  },
+  {
+    name: "color-primary-text-on-soft",
+    description: "Text color to use on soft fill backgrounds."
+  },
+  {
+    name: "color-primary-text-on-mid",
+    description: "Text color to use on mid fill backgrounds."
+  },
+  {
+    name: "color-primary-text-on-loud",
+    description: "Text color to use on loud fill backgrounds."
+  },
+  {
+    name: "color-primary-text-colorful",
+    description: "Colorful text variant. Use for links and emphasized inline text."
+  },
+  {
+    name: "color-primary-stroke-softer",
+    description: "Subtlest stroke. Use for subtle borders."
+  },
+  {
+    name: "color-primary-stroke-soft",
+    description: "Soft stroke. Use for default borders."
+  },
+  {
+    name: "color-primary-stroke-mid",
+    description: "Mid-range stroke. Use for emphasized borders and focus indicators."
+  }
+];
+
+<ColorTable colors={primaryColors} />
+
+#### Neutral Colors
+
+export const neutralColors = [
+  {
+    name: "color-neutral-fill-softer",
+    description: "Subtlest fill. Use for backgrounds that need minimal emphasis."
+  },
+  {
+    name: "color-neutral-fill-soft",
+    description: "Soft fill. Use for secondary backgrounds."
+  },
+  {
+    name: "color-neutral-fill-mid",
+    description: "Mid-range fill. Use for button backgrounds and UI elements."
+  },
+  {
+    name: "color-neutral-fill-loud",
+    description: "High contrast fill. Use for emphasized elements."
+  },
+  {
+    name: "color-neutral-fill-louder",
+    description: "Highest contrast fill. Use for maximum emphasis."
+  },
+  {
+    name: "color-neutral-text-on-soft",
+    description: "Text color to use on soft fill backgrounds."
+  },
+  {
+    name: "color-neutral-text-on-mid",
+    description: "Text color to use on mid fill backgrounds."
+  },
+  {
+    name: "color-neutral-text-on-loud",
+    description: "Text color to use on loud fill backgrounds."
+  },
+  {
+    name: "color-neutral-text-colorful",
+    description: "Colorful text variant. Use for links and emphasized inline text."
+  },
+  {
+    name: "color-neutral-stroke-softer",
+    description: "Subtlest stroke. Use for subtle borders."
+  },
+  {
+    name: "color-neutral-stroke-soft",
+    description: "Soft stroke. Use for default borders."
+  },
+  {
+    name: "color-neutral-stroke-mid",
+    description: "Mid-range stroke. Use for emphasized borders and focus indicators."
+  }
+];
+
+<ColorTable colors={neutralColors} />
+
+#### Constructive Colors
+
+export const constructiveColors = [
+  {
+    name: "color-constructive-fill-softer",
+    description: "Subtlest fill. Use for backgrounds that need minimal emphasis."
+  },
+  {
+    name: "color-constructive-fill-soft",
+    description: "Soft fill. Use for secondary backgrounds."
+  },
+  {
+    name: "color-constructive-fill-mid",
+    description: "Mid-range fill. Use for button backgrounds and UI elements."
+  },
+  {
+    name: "color-constructive-fill-loud",
+    description: "High contrast fill. Use for emphasized elements."
+  },
+  {
+    name: "color-constructive-fill-louder",
+    description: "Highest contrast fill. Use for maximum emphasis."
+  },
+  {
+    name: "color-constructive-text-on-soft",
+    description: "Text color to use on soft fill backgrounds."
+  },
+  {
+    name: "color-constructive-text-on-mid",
+    description: "Text color to use on mid fill backgrounds."
+  },
+  {
+    name: "color-constructive-text-on-loud",
+    description: "Text color to use on loud fill backgrounds."
+  },
+  {
+    name: "color-constructive-text-colorful",
+    description: "Colorful text variant. Use for success messages and positive feedback."
+  },
+  {
+    name: "color-constructive-stroke-softer",
+    description: "Subtlest stroke. Use for subtle borders."
+  },
+  {
+    name: "color-constructive-stroke-soft",
+    description: "Soft stroke. Use for default borders."
+  },
+  {
+    name: "color-constructive-stroke-mid",
+    description: "Mid-range stroke. Use for emphasized borders."
+  }
+];
+
+<ColorTable colors={constructiveColors} />
+
+#### Destructive Colors
+
+export const destructiveColors = [
+  {
+    name: "color-destructive-fill-softer",
+    description: "Subtlest fill. Use for backgrounds that need minimal emphasis."
+  },
+  {
+    name: "color-destructive-fill-soft",
+    description: "Soft fill. Use for secondary backgrounds."
+  },
+  {
+    name: "color-destructive-fill-mid",
+    description: "Mid-range fill. Use for button backgrounds and UI elements."
+  },
+  {
+    name: "color-destructive-fill-loud",
+    description: "High contrast fill. Use for emphasized elements."
+  },
+  {
+    name: "color-destructive-fill-louder",
+    description: "Highest contrast fill. Use for maximum emphasis."
+  },
+  {
+    name: "color-destructive-text-on-soft",
+    description: "Text color to use on soft fill backgrounds."
+  },
+  {
+    name: "color-destructive-text-on-mid",
+    description: "Text color to use on mid fill backgrounds."
+  },
+  {
+    name: "color-destructive-text-on-loud",
+    description: "Text color to use on loud fill backgrounds."
+  },
+  {
+    name: "color-destructive-text-colorful",
+    description: "Colorful text variant. Use for error messages and destructive actions."
+  },
+  {
+    name: "color-destructive-stroke-softer",
+    description: "Subtlest stroke. Use for subtle borders."
+  },
+  {
+    name: "color-destructive-stroke-soft",
+    description: "Soft stroke. Use for default borders."
+  },
+  {
+    name: "color-destructive-stroke-mid",
+    description: "Mid-range stroke. Use for emphasized borders and error indicators."
+  }
+];
+
+<ColorTable colors={destructiveColors} />
+
