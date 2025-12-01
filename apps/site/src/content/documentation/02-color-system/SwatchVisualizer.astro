@@ -1,0 +1,57 @@
+---
+interface Props {
+    name: string;
+}
+
+const { name } = Astro.props;
+---
+
+<table class="swatch box" data-padding="0">
+    <caption>{name}</caption>
+    <thead>
+        <tr>
+            <th></th>
+            <th>Softer</th>
+            <th>Soft</th>
+            <th>Mid</th>
+            <th>Loud</th>
+            <th>Louder</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th>Fill</th>
+            <td style={`background-color: var(--color-${name}-fill-softer)`}></td>
+            <td style={`background-color: var(--color-${name}-fill-soft)`}></td>
+            <td style={`background-color: var(--color-${name}-fill-mid)`}></td>
+            <td style={`background-color: var(--color-${name}-fill-loud)`}></td>
+            <td style={`background-color: var(--color-${name}-fill-louder)`}></td>
+        </tr>
+        <tr>
+            <th>Text</th>
+            <td style={`background-color: var(--color-${name}-text-on-softer)`}></td>
+            <td style={`background-color: var(--color-${name}-text-on-soft)`}></td>
+            <td style={`background-color: var(--color-${name}-text-on-mid)`}></td>
+            <td style={`background-color: var(--color-${name}-text-on-loud)`}></td>
+            <td style={`background-color: var(--color-${name}-text-on-louder)`}></td>
+        </tr>
+        <tr>
+            <th>Stroke</th>
+            <td style={`background-color: var(--color-${name}-stroke-softer)`}></td>
+            <td style={`background-color: var(--color-${name}-stroke-soft)`}></td>
+            <td style={`background-color: var(--color-${name}-stroke-mid)`}></td>
+            <td style={`background-color: var(--color-${name}-stroke-loud)`}></td>
+            <td style={`background-color: var(--color-${name}-stroke-louder)`}></td>
+        </tr>
+    </tbody>
+</table>
+
+<style>
+    caption {
+        text-transform: capitalize;
+    }
+
+    td{
+        height: var(--size-8);
+    }
+</style>

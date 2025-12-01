@@ -1,0 +1,44 @@
+---
+title: Color system
+author: Max Hill
+date: 2025-12-01
+tags: [color-system, semantic-tokens]
+htmlId: doc-color-system
+---
+
+import SwatchVizualizer from "./SwatchVisualizer.astro";
+
+As mentioned the semantic layer deals quite a bit with colors.
+
+To make it easier to use accessible colors there is a color system in place that helps with generating pallets. 
+
+From 4 seed colors: neutral, primary, destructive and constructive 4 swatches are generated with the same names.
+
+<SwatchVizualizer name="primary" />
+<SwatchVizualizer name="neutral" />
+<SwatchVizualizer name="destructive" />
+<SwatchVizualizer name="constructive" />
+
+### How it works
+The system starts with four seed colors that define the base hue for each color family:
+
+#### 1. Seed colors
+- `--color-primary-seed` - Main brand color
+- `--color-neutral-seed` - Grayscale colors
+- `--color-constructive-seed` - Success/positive actions
+- `--color-destructive-seed` - Error/negative actions
+
+#### 2. Color scale generation
+Each seed color is automatically expanded into an 11-step scale (50-950) using `color-mix()` in oklab color space:
+
+- **50-400**: Progressively lighter tints (mixed with white)
+- **500**: The seed color itself
+- **600-950**: Progressively darker shades (mixed with black)
+
+#### 3. Swatch mapping
+The scale values are then mapped to semantic tokens that describe their purpose. These mappings flip between light and dark themes to maintain proper contrast.
+
+--
+
+## Next
+Next: <a href="#doc-foundation-tokens-reference">Foundation tokens reference</a>

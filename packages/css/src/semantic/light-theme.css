@@ -95,8 +95,6 @@
     --color-icon: var(--color-text-mid);
     --color-icon-hover: var(--color-text);
 
-    --focus-shadow: 0 0 0 var(--size-1) var(--color-primary-stroke-soft);
-
     --border-width: 1px;
     --border: var(--border-width) solid var(--color-stroke);
     --border-strong: var(--border-width) solid var(--color-stroke-strong);

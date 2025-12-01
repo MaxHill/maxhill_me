@@ -6,7 +6,6 @@
     [data-theme="light"],
     [data-theme="dark"],
     :root {
-        --menu-height: var(--size-6);
 
         --h1: var(--font-weight-bold) 2rem/1.1 var(--ff-display);
         --h2: var(--font-weight-medium) 1.5rem/1.1 var(--ff);
@@ -16,6 +15,7 @@
         /*  ------------------------------------------------------------------------
         /*  Sizing                                                                     
         /*  ------------------------------------------------------------------------ */
+        --menu-height: var(--size-6);
         --body-margin: var(--size-fluid-2);
 
         /*  ------------------------------------------------------------------------
@@ -94,7 +94,6 @@
         --color-input-stroke-focus-error: var(--color-destructive-stroke-mid);
         --color-input-text-focus-error: var(--color-destructive-text-on-soft);
 
-        --radius-input: var(--radius-2);
         --radius-input: 0;
 
         /*  ------------------------------------------------------------------------
