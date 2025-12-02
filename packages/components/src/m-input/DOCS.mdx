@@ -6,15 +6,6 @@ import CodeExample from '../../../../apps/site/src/components/CodeExample.astro'
 
 ---
 
-<div 
-    class="collection" 
-    data-width="feature" 
-    data-variant="fit" 
-    data-padding="i-body" 
-    data-size="10"
-    style="width: 100%;"
->
-<div class="typesetting">
 ## Form Participation
 
 `m-input` is a form-associated custom element, meaning it behaves just like a native `<input>` inside a form:
@@ -25,11 +16,13 @@ import CodeExample from '../../../../apps/site/src/components/CodeExample.astro'
 - Works with `:valid` / `:invalid` states internally
 - Preserves standard events (`input`, `change`, `focus`, `blur`)
 
-</div>
+--- 
+<section class="example-section" data-width="feature">
 <div class="typesetting">
-### Example: Simple Form Submission
+## Simple Form Submission
 
 This example shows an `m-input` inside a form that is submitted and displayed as JSON.
+</div>
 
 <CodeExample 
   html={`
@@ -51,18 +44,18 @@ This example shows an `m-input` inside a form that is submitted and displayed as
     document.querySelector('#demo-output').textContent =
       JSON.stringify(data, null, 2);
   });`} />
-</div>
-
-</div>
+</section>
 
 ---
 
+<section class="example-section" data-width="feature" data-reverse>
+<div class="typesetting">
 ## Layout & Labeling
 
 `m-input` is designed to work seamlessly with the `.form` layout system.
 
 By default, it uses subgrid, placing the label on the left and the input on the right. The `label` attribute creates a visible label and sets an accessible `aria-label` automatically, removing the need for separate `<label>` elements in most cases.
-
+</div>
 <CodeExample 
   html={`
 <div class="form">
@@ -80,9 +73,12 @@ By default, it uses subgrid, placing the label on the left and the input on the 
   ></m-input>
 </div>
 `}/>
+</section>
 
 ---
 
+<section class="example-section" data-width="feature">
+<div class="typesetting">
 ## Clearable Input
 
 Adding the `clearable` attribute displays a clear button when the input has content.
@@ -90,18 +86,19 @@ Adding the `clearable` attribute displays a clear button when the input has cont
 - It displays a Lucide "x" icon.
 - The `m-input-clear` event fires before clearing and can be prevented.
 
+</div>
 <CodeExample 
   html={`
 <form class="form" id="clearable-form">
   <m-input 
-    label="Default clear button" 
+    label="Default button" 
     name="default-clear"
     value="Clear me"
     clearable
   ></m-input>
   
   <m-input 
-    label="Custom clear button" 
+    label="Custom button" 
     name="custom-clear"
     value="Custom clear"
     clearable
@@ -109,12 +106,15 @@ Adding the `clearable` attribute displays a clear button when the input has cont
     <button slot="clear" style="padding: 0 0.5rem;">✕</button>
   </m-input>
   
-  <button type="reset">Reset to initial values</button>
+  <button type="reset" data-span="2">Reset</button>
 </form>
 `}/>
+</section>
 
 ---
 
+<section class="example-section" data-width="feature" data-reverse>
+<div class="typesetting">
 ## Slots
 
 `m-input` includes slots that allow inline customization:
@@ -124,7 +124,7 @@ Adding the `clearable` attribute displays a clear button when the input has cont
 - default slot — custom content inside the input wrapper
 
 These slots make it easy to build composite input UIs (e.g., search boxes with icons, tag inputs, tool buttons).
-
+</div>
 <CodeExample 
   html={` 
 <div class="form">
@@ -158,9 +158,12 @@ These slots make it easy to build composite input UIs (e.g., search boxes with i
     </m-input>
 </div>
 `}/>
+</section>
 
 ---
 
+<section class="example-section" data-width="feature">
+<div class="typesetting">
 ## Validation
 
 `m-input` uses the native Constraint Validation API behind the scenes.
@@ -174,7 +177,7 @@ When validation fails:
 - The component applies a styled error state
 - An inline error message appears (if enabled in your design system)
 - An `m-invalid` event is emitted
-
+</div>
 <CodeExample 
   html={`
   <form class="form" id="example-required-form">
@@ -221,6 +224,7 @@ When validation fails:
     }
   });`}
 />
+</section>
 
 ---
 
@@ -228,10 +232,13 @@ When validation fails:
 
 In addition to bubbling native events (`input`, `change`, `focus`, `blur`), `m-input` emits custom events for validation and user interactions.
 
-### m-invalid Event
+<section class="example-section" data-width="feature" data-reverse>
+<div class="typesetting">
+## m-invalid Event
 
 Fires when the input becomes invalid or the validation message changes. This event provides detailed validation information that can be used to display custom error messages.
-
+</div>
+<div>
 <CodeExample 
   html={`
   <form class="form" id="event-form">
@@ -243,7 +250,7 @@ Fires when the input becomes invalid or the validation message changes. This eve
       required
     ></m-input>
     
-    <div id="event-log" style="margin-top: 1rem; padding: 1rem; background: var(--color-surface-raised); border-radius: 4px;">
+    <div id="event-log" class="box" data-variant="surface" data-span="2">
       <strong>Event Log:</strong>
       <ul id="log-list" style="margin: 0; padding-left: 1.5rem;"></ul>
     </div>
@@ -280,11 +287,17 @@ Fires when the input becomes invalid or the validation message changes. This eve
 - `validity`: Full ValidityState object from the input
 - `validationMessage`: Human-readable error message
 - `value`: Current value that failed validation
+</div>
 
+</section>
+
+<section class="example-section" data-width="feature">
+<div class="typesetting">
 ### m-input-clear Event
 
 Fires when the clear button is clicked. This event is cancelable, allowing you to prevent the clear action if needed (e.g., to show a confirmation dialog).
-
+</div>
+<div>
 <CodeExample 
   html={`
   <form class="form">
@@ -319,6 +332,8 @@ Fires when the clear button is clicked. This event is cancelable, allowing you t
 - `value`: The value before clearing
 
 Call `event.preventDefault()` to cancel clearing.
+</div>
+</section>
 
 ---
 
@@ -436,7 +451,6 @@ A simple `m-input` demonstration including disabled, default value, readonly, pl
         label="m-input autofocus" 
         name="m-input-example-autofocus" 
         placeholder="This input is focused on load"
-        autofocus
     ></m-input>
     <button type="submit">Submit</button>
     <button type="reset">Reset</button>
@@ -466,7 +480,6 @@ Use the `autofocus` attribute to automatically focus an input when the page load
       label="Search" 
       placeholder="Start typing immediately..."
       type="search"
-      autofocus
     ></m-input>
   </form>
   `}
