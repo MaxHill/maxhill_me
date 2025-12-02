@@ -23,9 +23,7 @@ baseStyleSheet.replaceSync(styles);
 
 
 /**
- * Text input custom element
- *
- * m-input is a drop-in replacement for the text-type variants of the native input element, enhanced with features such as slots, a clear button, built-in validation styling, and full form participation.
+ *`m-input` is a drop-in replacement for native text-type `<input>` elements. It provides form participation, accessibility-friendly labeling, optional clear buttons, slot-based customization, and enhanced validation styling — all while preserving native input behaviors.
  * 
  * @customElement
  * @tagname m-input
