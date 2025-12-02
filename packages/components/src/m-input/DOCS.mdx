@@ -1,8 +1,67 @@
 import CodeExample from '../../../../apps/site/src/components/CodeExample.astro';
 
-# M-input
+---
 
-`m-input` is a drop-in replacement for native text-type `<input>` elements. It provides form participation, accessibility-friendly labeling, optional clear buttons, slot-based customization, and enhanced validation styling — all while preserving native input behaviors.
+## Basic Usage
+
+A simple `m-input` demonstration including disabled, default value, readonly, placeholder, clearable, and size.
+
+<CodeExample 
+  html={`
+  <form class="form" id="example-form">
+    <label for="normal-input">Normal input</label>
+    <input name="normal-input" />
+
+    <m-input 
+        label="m-input disabled" 
+        name="m-input-example-disabled" 
+        disabled
+    ></m-input>
+
+    <m-input 
+        label="m-input default value" 
+        name="m-input-example-default-value" 
+        value="Default value"
+    ></m-input>
+
+    <m-input 
+        label="m-input readonly" 
+        name="m-input-example-readonly-value" 
+        value="Readonly" 
+        readonly
+    ></m-input>
+
+    <m-input 
+        label="m-input placeholder" 
+        name="m-input-example-placeholder" 
+        placeholder="Placeholder..."
+    ></m-input>
+
+    <m-input 
+        label="m-input clearable" 
+        name="m-input-example-clearable" 
+        clearable
+    ></m-input>
+
+    <m-input 
+        label="m-input size" 
+        name="m-input-size" size="4"
+    ></m-input>
+
+    <button type="submit">Submit</button>
+    <button type="reset">Reset</button>
+  </form>
+  <pre id="example-form-output"></pre>
+  `}
+  js={`document.querySelector('#example-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const outputEl = document.querySelector("#example-form-output");
+    const formData = new FormData(e.target);
+    if(outputEl){
+      outputEl.textContent = JSON.stringify(Object.fromEntries(formData));
+    }
+  });`}
+/>
 
 ---
 
@@ -34,14 +93,17 @@ This example shows an `m-input` inside a form that is submitted and displayed as
   ></m-input>
 
   <button type="submit">Submit</button>
-</form>
-
-<pre id="demo-output"></pre>`}
+  
+  <div id="demo-output" class="box" data-variant="surface" data-span="2">
+    <strong>Form Data:</strong>
+    <pre id="demo-output-text" style="margin: 0.5rem 0 0 0;"></pre>
+  </div>
+</form>`}
   js={`
   document.querySelector('#demo-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.target));
-    document.querySelector('#demo-output').textContent =
+    document.querySelector('#demo-output-text').textContent =
       JSON.stringify(data, null, 2);
   });`} />
 </section>
@@ -234,20 +296,33 @@ In addition to bubbling native events (`input`, `change`, `focus`, `blur`), `m-i
 
 <section class="example-section" data-width="feature" data-reverse>
 <div class="typesetting">
-## m-invalid Event
+### m-invalid Event
 
-Fires when the input becomes invalid or the validation message changes. This event provides detailed validation information that can be used to display custom error messages.
+Fires when the input becomes invalid or the validation message changes.
+
+**Event Detail:**
+- `validity`: Full ValidityState object from the input
+- `validationMessage`: Human-readable error message
+- `value`: Current value that failed validation
+
+### m-input-clear Event
+
+Fires when the clear button is clicked. This event is cancelable—call `event.preventDefault()` to cancel clearing.
+
+**Event Detail:**
+- `value`: The value before clearing
 </div>
-<div>
 <CodeExample 
   html={`
-  <form class="form" id="event-form">
+  <form class="form" id="events-form">
     <m-input 
       id="email-input"
-      label="Email Address" 
+      label="Email (required)" 
       name="email" 
       type="email"
       required
+      clearable
+      value="test@example.com"
     ></m-input>
     
     <div id="event-log" class="box" data-variant="surface" data-span="2">
@@ -268,10 +343,17 @@ Fires when the input becomes invalid or the validation message changes. This eve
     li.textContent = \`m-invalid: "\${e.detail.validationMessage}"\`;
     li.style.color = 'var(--color-destructive-fill-mid)';
     logList.appendChild(li);
-    console.log('Validation error:', e.detail);
   });
   
-  // Also log when validation passes (input event with valid value)
+  // Listen for m-input-clear event
+  emailInput.addEventListener('m-input-clear', (e) => {
+    const li = document.createElement('li');
+    li.textContent = \`m-input-clear: Previous value was "\${e.detail.value}"\`;
+    li.style.color = 'var(--color-neutral-fill-mid)';
+    logList.appendChild(li);
+  });
+  
+  // Log valid input
   emailInput.addEventListener('input', () => {
     if (emailInput.validity.valid && emailInput.value) {
       const li = document.createElement('li');
@@ -282,61 +364,12 @@ Fires when the input becomes invalid or the validation message changes. This eve
   });
   `}
 />
-
-**Event Detail:**
-- `validity`: Full ValidityState object from the input
-- `validationMessage`: Human-readable error message
-- `value`: Current value that failed validation
-</div>
-
-</section>
-
-<section class="example-section" data-width="feature">
-<div class="typesetting">
-### m-input-clear Event
-
-Fires when the clear button is clicked. This event is cancelable, allowing you to prevent the clear action if needed (e.g., to show a confirmation dialog).
-</div>
-<div>
-<CodeExample 
-  html={`
-  <form class="form">
-    <m-input 
-      id="clearable-input"
-      label="Try clearing this" 
-      value="Some important data"
-      clearable
-    ></m-input>
-    
-    <p id="clear-status"></p>
-  </form>
-  `}
-  js={`
-  const clearableInput = document.querySelector('#clearable-input');
-  const status = document.querySelector('#clear-status');
-  
-  // Listen for clear event
-  clearableInput.addEventListener('m-input-clear', (e) => {
-    status.textContent = \`Clear button clicked! Previous value: "\${e.detail.value}"\`;
-    status.style.color = 'var(--color-neutral-fill-mid)';
-    
-    // Optionally prevent clearing with confirmation
-    // if (!confirm('Are you sure you want to clear?')) {
-    //   e.preventDefault();
-    // }
-  });
-  `}
-/>
-
-**Event Detail:**
-- `value`: The value before clearing
-
-Call `event.preventDefault()` to cancel clearing.
-</div>
 </section>
 
 ---
 
+<section class="example-section" data-width="feature">
+<div class="typesetting">
 ## CSS Parts
 
 You can style internal elements using CSS parts. This allows customization from outside the shadow DOM.
@@ -348,7 +381,7 @@ You can style internal elements using CSS parts. This allows customization from 
 - `::part(clear-button)`
 - `::part(clear-icon)`
 - `::part(error)`
-
+</div>
 <CodeExample 
   html={`
 <style>
@@ -396,93 +429,12 @@ You can style internal elements using CSS parts. This allows customization from 
   ></m-input>
 </div>
 `}/>
+</section>
 
 ---
 
-## Examples
+## See Also
 
-### Basic Usage
-
-A simple `m-input` demonstration including disabled, default value, readonly, placeholder, clearable, and size.
-
-<CodeExample 
-  html={`
-  <form class="form" id="example-form">
-    <label for="normal-input">Normal input</label>
-    <input name="normal-input" />
-
-    <m-input 
-        label="m-input disabled" 
-        name="m-input-example-disabled" 
-        disabled
-    ></m-input>
-
-    <m-input 
-        label="m-input default value" 
-        name="m-input-example-default-value" 
-        value="Default value"
-    ></m-input>
-
-    <m-input 
-        label="m-input readonly" 
-        name="m-input-example-readonly-value" 
-        value="Readonly" 
-        readonly
-    ></m-input>
-
-    <m-input 
-        label="m-input placeholder" 
-        name="m-input-example-placeholder" 
-        placeholder="Placeholder..."
-    ></m-input>
-
-    <m-input 
-        label="m-input clearable" 
-        name="m-input-example-clearable" 
-        clearable
-    ></m-input>
-
-    <m-input 
-        label="m-input size" 
-        name="m-input-size" size="4"
-    ></m-input>
-
-    <m-input 
-        label="m-input autofocus" 
-        name="m-input-example-autofocus" 
-        placeholder="This input is focused on load"
-    ></m-input>
-    <button type="submit">Submit</button>
-    <button type="reset">Reset</button>
-  </form>
-  <pre id="example-form-output"></pre>
-  `}
-  js={`document.querySelector('#example-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const outputEl = document.querySelector("#example-form-output");
-    const formData = new FormData(e.target);
-    if(outputEl){
-      outputEl.textContent = JSON.stringify(Object.fromEntries(formData));
-    }
-  });`}
-/>
-
----
-
-### Autofocus
-
-Use the `autofocus` attribute to automatically focus an input when the page loads. This is useful for search boxes, login forms, or any input where you want immediate user interaction.
-
-<CodeExample 
-  html={`
-  <form class="form">
-    <m-input 
-      label="Search" 
-      placeholder="Start typing immediately..."
-      type="search"
-    ></m-input>
-  </form>
-  `}
-/>
-
-**Note:** The autofocus behavior is implemented to work correctly with Shadow DOM by manually calling focus in the component's lifecycle.
+- [Form Layout System](/design-system) - Grid-based form layouts using `.form` class
+- [`<m-combobox>`](/components/m-combobox) - Searchable select input
+- [`<m-listbox>`](/components/m-listbox) - List selection component
