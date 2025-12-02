@@ -68,15 +68,12 @@
             margin-top: calc(1lh - 1rlh);
         }
 
-        /* p { */
-        /*     max-inline-size: 65ch; */
-        /* } */
-
         hr {
             margin-bottom: calc(var(--size-fluid-1) * -1);
             border: 0;
             border-block-end: var(--border);
-            grid-column: full-width;
+            grid-column: full;
+            width: 100%;
         }
 
         &>pre {
