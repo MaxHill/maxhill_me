@@ -120,8 +120,7 @@ export class MCombobox extends MInputListElement {
             this,
             () => {
                 if (this.popoverElement?.matches(':popover-open')) {
-                    this.resetInputValue();
-                    this._hidePopover();
+                    this.blur();
                 }
             }
         );
@@ -176,7 +175,7 @@ export class MCombobox extends MInputListElement {
                         // Change styles, e.g.
                         Object.assign(elements.floating.style, {
                             width: `${rects.reference.width}px`,
-                            maxHeight: `${Math.max(0, availableHeight)}px`,
+                            maxHeight: `min(${availableHeight}px, 300px)`,
                         });
                     },
                 }),
@@ -316,9 +315,8 @@ export class MCombobox extends MInputListElement {
 
     private handleFocus = (_e: Event) => { this._showPopover(); }
     private handleBlur = (_e: Event) => {
-        // Note: Popover closing is now handled by OutsideClickController
-        // This blur handler is kept for potential keyboard navigation (Tab key)
-        // but we don't close the popover here to allow clicking inside options
+        this.resetInputValue();
+        this._hidePopover();
     }
     private handleInput = (_e: Event) => { this._showPopover(); }
 
