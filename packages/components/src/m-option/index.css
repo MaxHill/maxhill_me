@@ -1,10 +1,10 @@
 :host {
-    display: block;
     padding: var(--size-2);
     cursor: pointer;
     border-radius: var(--radius-box);
     color: var(--color-text);
 }
+
 
 
 :host(:state(focus)) {
