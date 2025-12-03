@@ -42,7 +42,6 @@ m-input {
     gap: var(--size-1);
 }
 
-
-m-option[data-match="false"][aria-selected="false"] {
+::slotted(m-option[data-match="false"][aria-selected="false"]) {
     display: none;
 }
