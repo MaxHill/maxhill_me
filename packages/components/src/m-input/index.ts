@@ -2,52 +2,38 @@ import { MFormAssociatedElement } from "../utils/m-form-associated-element";
 import { query } from "../utils/query";
 import { BindAttribute } from "../utils/reflect-attribute";
 import { MInputClearEvent } from "./events";
-import type { MInvalidEventDetail } from "../events";
 import styles from "./index.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
-// Text input specific
-// TODO: tasks below
-// - [ ] Orientation
-// - [x] Events (m-input-clear, m-invalid from base class)
-// - [x] Selection range
-// - [x] SetRangeText
-// - [x] Clear button
-// - [x] Size
-// - [x] css parts
-// - [x] before/after slots
-// - [x] bind value to input.value to make defaultValue work
-// - [x] constraint validation
-
-
 /**
- *`m-input` is a drop-in replacement for native text-type `<input>` elements. It provides form participation, accessibility-friendly labeling, optional clear buttons, slot-based customization, and enhanced validation styling — all while preserving native input behaviors.
+ * Drop-in replacement for native text-type `<input>` elements with form participation, 
+ * validation, clear buttons, and slot-based customization.
  * 
  * @customElement
  * @tagname m-input
  * 
  * @slot - Default slot for component content
- * @slot before - Slot for content before the input element
- * @slot after - Slot for content after the input element
- * @slot clear - Slot where you can override the clear button
+ * @slot before - Content before the input element (icons, chips, buttons)
+ * @slot after - Content after the input element
+ * @slot clear - Override the default clear button
  * 
- * @attr {string} type - Input type (text, email, password, tel, url, search)
- * @attr {string} value - The input value
- * @attr {string} label - Label text for the input
+ * @attr {string} type - Input type: text (default), email, password, tel, url, search
+ * @attr {string} value - Current value of the input
+ * @attr {string} label - Visible label text and accessible name
  * @attr {string} name - Name for form submission
  * @attr {string} placeholder - Placeholder text
- * @attr {number} minlength - Minimum length validation
- * @attr {number} maxlength - Maximum length validation
- * @attr {string} pattern - Pattern validation regex
- * @attr {string} autocomplete - Autocomplete hint
+ * @attr {number} minlength - Minimum character length
+ * @attr {number} maxlength - Maximum character length
+ * @attr {string} pattern - Regular expression pattern for validation
+ * @attr {string} autocomplete - Autocomplete hint (e.g., email, username)
  * @attr {number} size - Visual width in characters
- * @attr {boolean} required - Whether the field is required
- * @attr {boolean} disabled - Whether the input is disabled
- * @attr {boolean} readonly - Whether the input is readonly
- * @attr {boolean} clearable - Whether to show a clear button
- * @attr {boolean} autofocus - Whether the input should be focused on page load
+ * @attr {boolean} required - Whether the field is required for form submission
+ * @attr {boolean} disabled - Disables the input and excludes it from form submission
+ * @attr {boolean} readonly - Makes the input read-only (value still submitted)
+ * @attr {boolean} clearable - Shows a clear button when input has content
+ * @attr {boolean} autofocus - Automatically focuses the input on page load
  * 
  * @csspart label - The label element
  * @csspart input-wrapper - The wrapper containing the input and slots
@@ -55,6 +41,9 @@ baseStyleSheet.replaceSync(styles);
  * @csspart clear-button - The clear button
  * @csspart clear-icon - The icon inside the clear button
  * @csspart error - The error message container
+ * 
+ * @event m-invalid - Fires when validation fails. Detail: { validity: ValidityState, validationMessage: string, value: string }
+ * @event m-input-clear - Fires when clear button is clicked (cancelable). Detail: { value: string }
  */
 export class MInput extends MFormAssociatedElement {
     static tagName = 'm-input';
@@ -107,7 +96,6 @@ export class MInput extends MFormAssociatedElement {
         return this.clearSlot?.assignedElements().length > 0;
 
     }
-
 
     get selectionStart(): number | null {
         return this.inputElement?.selectionStart ?? null;
@@ -162,6 +150,7 @@ export class MInput extends MFormAssociatedElement {
 
         this.toggleClearButton();
 
+        this.inputElement.addEventListener('keydown', this.submitOnEnter);
         this.inputElement.addEventListener("input", this.handleInput);
         this.inputElement.addEventListener("blur", this.handleBlur);
         this.clearSlot.addEventListener('click', this.handleClearClick);
@@ -177,6 +166,7 @@ export class MInput extends MFormAssociatedElement {
 
     disconnectedCallback() {
         super.disconnectedCallback()
+        this.inputElement.removeEventListener('keydown', this.submitOnEnter);
         this.inputElement.removeEventListener("input", this.handleInput);
         this.inputElement.removeEventListener("blur", this.handleBlur);
         this.clearSlot.removeEventListener('click', this.handleClearClick);
@@ -244,6 +234,10 @@ export class MInput extends MFormAssociatedElement {
     //  ------------------------------------------------------------------------
     //  Event handlers                                                                     
     //  ------------------------------------------------------------------------ 
+    handleKeydown = (e: KeyboardEvent) => {
+        console.log("hello", e.key)
+    }
+
     handleBlur = (_e: Event) => {
         this.hasInteracted = true;
         this.updateValidity();

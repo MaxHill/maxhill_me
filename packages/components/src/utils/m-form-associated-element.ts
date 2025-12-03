@@ -26,8 +26,6 @@ export abstract class MFormAssociatedElement extends MElement {
      */
     static formAssociated = true;
 
-
-
     /**
      * Label that can be used in the ui and also set as the aria-label
      */
@@ -330,6 +328,20 @@ export abstract class MFormAssociatedElement extends MElement {
     private setState(name: string, condition: boolean) {
         if (condition) { this.internals.states.add(name) }
         else { this.internals.states.delete(name) }
+    }
+
+    /**
+     * Call this function to submit the form the element is associated 
+     * with when enter is pressed. The implementor is responsible for setting 
+     * up the keydown event listener.
+     *
+     * @param {KeyboardEvent} e - Keydown event to listen for enter key
+     */
+    protected submitOnEnter = (e: KeyboardEvent) =>  {
+        const form = this.internals.form as HTMLFormElement | null;
+        if(e.key === "Enter" && form) {
+            form.requestSubmit();
+        }
     }
 
 }
