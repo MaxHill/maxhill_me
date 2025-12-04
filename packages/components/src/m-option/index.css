@@ -3,9 +3,16 @@
     cursor: pointer;
     border-radius: var(--radius-box);
     color: var(--color-text);
+    -webkit-text-fill-color: currentColor;
 }
 
+slot {
+    color: inherit;
+}
 
+::slotted(*) {
+    color: inherit;
+}
 
 :host(:state(focus)) {
     background: var(--color-neutral-fill-soft);

@@ -1,4 +1,4 @@
-import { MElement } from "../utils/m-element";
+import { MElement, generateUUID } from "../utils/m-element";
 import { BindAttribute } from "../utils/reflect-attribute";
 import styles from "./index.css?inline";
 import { MOptionSelectedChangeEvent } from "./events";
@@ -65,12 +65,20 @@ export class MOption extends MElement {
 
     connectedCallback() {
          if (!this.id) {
-            this.id = `option-${crypto.randomUUID()}`;
+            this.id = `option-${generateUUID()}`;
         }
         this.render();
         this.setAttribute('role', 'option');
         this.setAttribute('aria-selected', String(this.selected));
         this.updateDisabledState();
+    }
+    
+    private ensureColorInheritance() {
+        // Get the computed color from CSS variables
+        const computedColor = getComputedStyle(this).color;
+        if (computedColor && computedColor !== 'rgba(0, 0, 0, 0)') {
+            this.style.color = computedColor;
+        }
     }
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
