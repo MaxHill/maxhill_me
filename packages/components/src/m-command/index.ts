@@ -1,4 +1,4 @@
-import { MElement } from "../utils/m-element";
+import { MElement, generateUUID } from "../utils/m-element";
 import { BindAttribute } from "../utils/reflect-attribute";
 import styles from "./index.css?inline";
 import { MCommandRegisterEvent, MCommandUnRegisterEvent, MCommandTriggerEvent } from "./events";
@@ -100,7 +100,7 @@ export class MCommand extends MElement {
     constructor(commandDefinition?: CommandDefinition) {
         super();
 
-        this.id = this.id || `command_${commandDefinition?.id || crypto.randomUUID()}`;
+        this.id = this.id || `command_${commandDefinition?.id || generateUUID()}`;
         if (commandDefinition) {
             this.keys = commandDefinition.keys;
             this.preventDefault = commandDefinition.preventDefault || false;

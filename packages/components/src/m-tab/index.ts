@@ -1,5 +1,5 @@
 import { BindAttribute } from "../utils/reflect-attribute";
-import { MElement } from "../utils/m-element";
+import { MElement, generateUUID } from "../utils/m-element";
 import styles from "./index.css?inline";
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -43,7 +43,7 @@ export class MTab extends MElement {
 
     connectedCallback() {
         if (!this.id) {
-            this.id = `tab-${crypto.randomUUID()}`;
+            this.id = `tab-${generateUUID()}`;
         }
         this.setAttribute('role', 'tab');
         this.setAttribute('slot', 'tab');
