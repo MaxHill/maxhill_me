@@ -11,7 +11,7 @@ m-input {
 }
 
 .box {
-    width: fit-content;
+    height: fit-content;
     position: absolute;
     top: 0;
     left: 0;
@@ -30,6 +30,7 @@ m-input {
 .box:popover-open {
     display: grid;
     gap: var(--size-1);
+    align-content: start;
 }
 
 #multi-select-list {

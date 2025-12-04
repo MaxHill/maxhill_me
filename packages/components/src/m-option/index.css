@@ -6,14 +6,6 @@
     -webkit-text-fill-color: currentColor;
 }
 
-slot {
-    color: inherit;
-}
-
-::slotted(*) {
-    color: inherit;
-}
-
 :host(:state(focus)) {
     background: var(--color-neutral-fill-soft);
     color: var(--color-neutral-text-on-soft);
