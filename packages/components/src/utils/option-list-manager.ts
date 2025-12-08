@@ -62,12 +62,13 @@ export class OptionListManager {
 
     // Value accessors
     get selectedValues(): string[] {
-        return this.options.reduce<string[]>((acc, option) => {
+        const result: string[] = [];
+        for (const option of this.options) {
             if (option.selected && option.value) {
-                acc.push(option.value);
+                result.push(option.value);
             }
-            return acc;
-        }, []);
+        }
+        return result;
     }
 
     constructor(
