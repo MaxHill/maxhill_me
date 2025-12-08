@@ -1507,5 +1507,340 @@ describe('m-combobox', () => {
     });
   });
 
+  describe('m-input attribute passthrough', () => {
+    it('should pass placeholder to m-input on initial render', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox placeholder="Search...">
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.getAttribute('placeholder')).to.equal('Search...');
+    });
+
+    it('should update placeholder on m-input when attribute changes', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox placeholder="Initial">
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.getAttribute('placeholder')).to.equal('Initial');
+      
+      el.setAttribute('placeholder', 'Updated');
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      expect(input!.getAttribute('placeholder')).to.equal('Updated');
+    });
+
+    it('should pass clearable to m-input on initial render', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox clearable>
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.hasAttribute('clearable')).to.equal(true);
+    });
+
+    it('should have clearable=true by default', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox>
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.hasAttribute('clearable')).to.equal(true);
+    });
+
+    it('should have clearable enabled by default', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox>
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      // Clearable is true by default
+      expect(el.clearable).to.equal(true);
+      
+      const input = el.shadowRoot!.querySelector('m-input')!;
+      expect(input.hasAttribute('clearable')).to.equal(true);
+    });
+
+    it('should allow explicitly setting clearable attribute', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox clearable>
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input')!;
+      expect(el.clearable).to.equal(true);
+      expect(input.hasAttribute('clearable')).to.equal(true);
+    });
+
+    it('should pass autocomplete to m-input on initial render', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox autocomplete="email">
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.getAttribute('autocomplete')).to.equal('email');
+    });
+
+    it('should update autocomplete on m-input when attribute changes', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox autocomplete="email">
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.getAttribute('autocomplete')).to.equal('email');
+      
+      el.setAttribute('autocomplete', 'username');
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      expect(input!.getAttribute('autocomplete')).to.equal('username');
+    });
+
+    it('should pass size to m-input on initial render', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox size="30">
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.getAttribute('size')).to.equal('30');
+    });
+
+    it('should update size on m-input when attribute changes', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox size="20">
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.getAttribute('size')).to.equal('20');
+      
+      el.setAttribute('size', '30');
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      expect(input!.getAttribute('size')).to.equal('30');
+    });
+
+    it('should pass autofocus to m-input on initial render', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox autofocus>
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.hasAttribute('autofocus')).to.equal(true);
+    });
+
+    it('should remove attributes from m-input when removed from combobox', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox placeholder="Test" clearable autocomplete="email" size="20">
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      
+      el.removeAttribute('placeholder');
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(input!.hasAttribute('placeholder')).to.equal(false);
+      
+      el.removeAttribute('clearable');
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(input!.hasAttribute('clearable')).to.equal(false);
+      
+      el.removeAttribute('autocomplete');
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(input!.hasAttribute('autocomplete')).to.equal(false);
+      
+      el.removeAttribute('size');
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(input!.hasAttribute('size')).to.equal(false);
+    });
+
+    it('should pass disabled to m-input on initial render', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox disabled>
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.hasAttribute('disabled')).to.equal(true);
+    });
+
+    it('should update disabled on m-input when attribute changes', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox>
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.hasAttribute('disabled')).to.equal(false);
+      
+      el.setAttribute('disabled', '');
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      expect(input!.hasAttribute('disabled')).to.equal(true);
+    });
+
+    it('should pass readonly to m-input on initial render', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox readonly>
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.hasAttribute('readonly')).to.equal(true);
+    });
+
+    it('should update readonly on m-input when attribute changes', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox>
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.hasAttribute('readonly')).to.equal(false);
+      
+      el.setAttribute('readonly', '');
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      expect(input!.hasAttribute('readonly')).to.equal(true);
+    });
+
+    it('should remove disabled from m-input when removed from combobox', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox disabled>
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.hasAttribute('disabled')).to.equal(true);
+      
+      el.removeAttribute('disabled');
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      expect(input!.hasAttribute('disabled')).to.equal(false);
+    });
+
+    it('should remove readonly from m-input when removed from combobox', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox readonly>
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input!.hasAttribute('readonly')).to.equal(true);
+      
+      el.removeAttribute('readonly');
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      expect(input!.hasAttribute('readonly')).to.equal(false);
+    });
+  });
+
+  describe('m-input slot passthrough', () => {
+    it('should pass through after slot to m-input', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox>
+          <svg slot="after" data-testid="icon"></svg>
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+      
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      const input = el.shadowRoot!.querySelector('m-input');
+      expect(input).to.exist;
+      
+      const afterSlot = input!.querySelector('slot[name="after"]') as HTMLSlotElement;
+      expect(afterSlot).to.exist;
+      
+      const assignedElements = afterSlot.assignedElements();
+      expect(assignedElements.length).to.equal(1);
+      expect(assignedElements[0].getAttribute('data-testid')).to.equal('icon');
+    });
+
+    it('should pass clearable to m-input for clear button functionality', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox value="test">
+          <m-option value="test">Test</m-option>
+        </m-combobox>
+      `);
+      
+      const input = el.shadowRoot!.querySelector('m-input') as any;
+      expect(input).to.exist;
+      
+      // Check that m-input has clearable attribute (from default)
+      expect(input.hasAttribute('clearable')).to.equal(true);
+      
+      // Verify the m-input has clearable functionality
+      // (The actual clear button visibility is tested in m-input tests)
+      expect(input.clearable).to.equal(true);
+    });
+
+    it('should clear only search input in multiple mode, not selections', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox multiple>
+          <m-option value="1" selected>Item 1</m-option>
+          <m-option value="2" selected>Item 2</m-option>
+          <m-option value="3">Item 3</m-option>
+        </m-combobox>
+      `);
+      
+      await waitUntil(() => {
+        const value = el.value;
+        return Array.isArray(value) && value.length === 2;
+      });
+      
+      expect(el.value).to.deep.equal(['1', '2']);
+      
+      // Get the m-input element
+      const input = el.shadowRoot!.querySelector('m-input') as any;
+      
+      // Programmatically set a value in the input (simulating typing)
+      input.value = 'search text';
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Verify clearable is enabled
+      expect(input.hasAttribute('clearable')).to.equal(true);
+      
+      // Click clear button
+      const clearButton = input.shadowRoot!.querySelector('[part="clear-button"]') as HTMLButtonElement;
+      expect(clearButton).to.exist;
+      clearButton.click();
+      
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Selections should remain, only input cleared
+      // (This is the natural behavior - m-input clear only clears its own value,
+      // not the combobox's selected values)
+      expect(el.value).to.deep.equal(['1', '2']);
+      expect(input.value).to.equal('');
+    });
+  });
+
 
 });
