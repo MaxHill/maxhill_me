@@ -4,6 +4,7 @@ import { OutsideClickController } from "../utils/outside-click-controller";
 import type { MOption } from "../m-option";
 import { MListboxSelectEvent, MListboxUnselectedEvent, MListboxChangeEvent, MListboxFocusChangeEvent } from "./events";
 import styles from "./index.css?inline";
+import { OptionListManager } from "../utils/option-list-manager";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -92,6 +93,10 @@ export class MListbox extends MInputListElement {
         if (!this.hasAttribute("tabindex")) {
             this.tabIndex = 0;
         }
+
+
+        const optionsListManager = new OptionListManager(this, "m-option", {dom: "light"});
+        console.log(optionsListManager.options)
     }
 
     /*** ----------------------------

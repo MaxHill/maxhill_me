@@ -24,7 +24,6 @@ m-input {
     border-color: var(--color-stroke);
     border-radius: var(--radius-box);
     padding: var(--size-2);
-
 }
 
 .box:popover-open {

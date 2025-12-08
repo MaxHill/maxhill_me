@@ -1,6 +1,6 @@
 // query.ts
 
-type QueryOptions = {
+export type QueryOptions = {
     dom: "shadow" | "light" | "document";
 }
 
