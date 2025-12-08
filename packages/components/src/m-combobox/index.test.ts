@@ -114,7 +114,7 @@ describe('m-combobox', () => {
 
     it('should return empty array for multiple mode when no items selected', async () => {
       const el = await fixture<MCombobox>(html`
-        <m-combobox multiple>
+        <m-combobox multiple name="test">
           <m-option value="1">Item 1</m-option>
           <m-option value="2">Item 2</m-option>
         </m-combobox>
@@ -167,6 +167,163 @@ describe('m-combobox', () => {
 
       expect(eventFired).to.equal(true);
       expect(eventDetail.selected).to.deep.equal(['1']);
+    });
+
+    it('should dispatch m-combobox-select event when option is selected', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox>
+          <m-option value="1">Item 1</m-option>
+          <m-option value="2">Item 2</m-option>
+        </m-combobox>
+      `);
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      let eventFired = false;
+      let eventDetail: any;
+
+      el.addEventListener('m-combobox-select', (e: Event) => {
+        eventFired = true;
+        eventDetail = (e as CustomEvent).detail;
+      });
+
+      const option = el.querySelector('m-option[value="1"]') as MOption;
+      option.click();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(eventFired).to.equal(true);
+      expect(eventDetail.option).to.equal(option);
+      expect(eventDetail.selected).to.equal(true);
+    });
+
+    it('should dispatch m-combobox-unselected event when option is deselected', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox>
+          <m-option value="1">Item 1</m-option>
+          <m-option value="2">Item 2</m-option>
+        </m-combobox>
+      `);
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const option1 = el.querySelector('m-option[value="1"]') as MOption;
+      const option2 = el.querySelector('m-option[value="2"]') as MOption;
+
+      // Select first option
+      option1.click();
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      let eventFired = false;
+      let eventDetail: any;
+
+      el.addEventListener('m-combobox-unselected', (e: Event) => {
+        eventFired = true;
+        eventDetail = (e as CustomEvent).detail;
+      });
+
+      // Select second option (should deselect first in single-select mode)
+      option2.click();
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(eventFired).to.equal(true);
+      expect(eventDetail.option).to.equal(option1);
+      expect(eventDetail.selected).to.equal(false);
+    });
+
+    it('should dispatch m-combobox-focus-change event when focus moves between options', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox>
+          <m-option value="1">Item 1</m-option>
+          <m-option value="2">Item 2</m-option>
+        </m-combobox>
+      `);
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      let eventFired = false;
+      let eventDetail: any;
+
+      el.addEventListener('m-combobox-focus-change', (e: Event) => {
+        eventFired = true;
+        eventDetail = (e as CustomEvent).detail;
+      });
+
+      const option1 = el.querySelector('m-option[value="1"]') as MOption;
+      
+      el.focus();
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(eventFired).to.equal(true);
+      expect(eventDetail.option).to.equal(option1);
+    });
+
+    it('should dispatch m-combobox-focus-change with null when focus is cleared', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox>
+          <m-option value="1">Item 1</m-option>
+        </m-combobox>
+      `);
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const option1 = el.querySelector('m-option[value="1"]') as MOption;
+      
+      // Focus an option first
+      el.focus();
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      let eventFired = false;
+      let eventDetail: any;
+
+      el.addEventListener('m-combobox-focus-change', (e: Event) => {
+        eventFired = true;
+        eventDetail = (e as CustomEvent).detail;
+      });
+
+      // Clear focus
+      el.focusBlur();
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(eventFired).to.equal(true);
+      expect(eventDetail.option).to.equal(null);
+    });
+
+    it('should dispatch events in correct order for single-select mode', async () => {
+      const el = await fixture<MCombobox>(html`
+        <m-combobox>
+          <m-option value="1">Item 1</m-option>
+          <m-option value="2">Item 2</m-option>
+        </m-combobox>
+      `);
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const option1 = el.querySelector('m-option[value="1"]') as MOption;
+      const option2 = el.querySelector('m-option[value="2"]') as MOption;
+
+      const events: string[] = [];
+
+      el.addEventListener('m-combobox-unselected', () => events.push('unselected'));
+      el.addEventListener('m-combobox-select', () => events.push('select'));
+      el.addEventListener('m-combobox-change', () => events.push('change'));
+
+      // Select first option
+      option1.click();
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(events).to.deep.equal(['select', 'change']);
+
+      events.length = 0;
+
+      // Select second option (should deselect first)
+      option2.click();
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(events).to.deep.equal(['unselected', 'select', 'change']);
     });
   });
   describe('accessibility', () => {

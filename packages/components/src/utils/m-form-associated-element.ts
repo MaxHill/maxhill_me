@@ -83,18 +83,15 @@ export abstract class MFormAssociatedElement extends MElement {
         if (this.value === value) return;
 
         if (Array.isArray(value)) {
-            if (!this.name) {
-                console.error(
-                    `Cannot set array value without name attribute. Component: ${this.tagName}`
-                );
-                return;
-            }
-            const formData = new FormData();
-            for (const val of value) {
-                formData.append(this.name, val as string);
-            }
             this._value = value;
-            this.internals.setFormValue(formData);
+            if (this.name) {
+                const formData = new FormData();
+                for (const val of value) {
+                    formData.append(this.name, val as string);
+                }
+                this.internals.setFormValue(formData);
+            }
+            // Note: If no name attribute, value is set but won't be submitted with form
         } else {
             this._value = value;
             // Only set form value if value is not null
