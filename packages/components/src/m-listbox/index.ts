@@ -4,7 +4,7 @@ import { OutsideClickController } from "../utils/outside-click-controller";
 import type { MOption } from "../m-option";
 import { MListboxSelectEvent, MListboxUnselectedEvent, MListboxChangeEvent, MListboxFocusChangeEvent } from "./events";
 import styles from "./index.css?inline";
-import { OptionListManager, type OptionLike, type SelectionResult } from "../utils/option-list-manager";
+import { OptionListManager, type OptionLike, type SelectionResult, type SelectionMode } from "../utils/option-list-manager";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -150,6 +150,7 @@ export class MListbox extends MFormAssociatedElement {
             ? `${baseSelector}:not(${this.skip})`
             : baseSelector;
 
+        const selectionMode: SelectionMode = this.multiple ? "multiple" : "single-select";
         return new OptionListManager(
             this,
             selector,
@@ -157,7 +158,7 @@ export class MListbox extends MFormAssociatedElement {
                 selectCallback: (result: SelectionResult) => this.handleSelectCallback(result),
                 focusCallback: (option: OptionLike) => this.handleFocusCallback(option)
             },
-            this.multiple,
+            selectionMode,
             { dom: "light" }
         );
     }
@@ -389,7 +390,8 @@ export class MListbox extends MFormAssociatedElement {
             this.optionListManager = this.createOptionListManager();
         }
         if (name === 'multiple') {
-            this.optionListManager.multiple = this.multiple;
+            // Rebuild manager with new selection mode
+            this.optionListManager = this.createOptionListManager();
             this.options.forEach(option => (option.selected = false));
             this.optionListManager.focusedElement = null;
             this.value = null;

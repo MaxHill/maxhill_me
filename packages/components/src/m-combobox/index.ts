@@ -1,7 +1,8 @@
-import { MInputListElement } from "../utils/m-input-list-element";
+import { MFormAssociatedElement } from "../utils/m-form-associated-element";
 import { BindAttribute } from "../utils/reflect-attribute";
 import { query } from "../utils/query";
 import { OutsideClickController } from "../utils/outside-click-controller";
+import { OptionListManager, type OptionLike, type SelectionResult, type SelectionMode } from "../utils/option-list-manager";
 import styles from "./index.css?inline";
 import MInput from "../m-input";
 import MOption from "../m-option";
@@ -32,30 +33,21 @@ baseStyleSheet.replaceSync(styles);
  * 
  * @fires m-combobox-change - Fired when the selection changes
  */
-export class MCombobox extends MInputListElement {
+export class MCombobox extends MFormAssociatedElement {
     static tagName = 'm-combobox';
     static formAssociated = true;
-    static observedAttributes = ['name', 'disabled', 'multiple', 'value', 'label', 'debounce'];
-
-    @BindAttribute()
-    name: string = '';
-
-    @BindAttribute()
-    disabled: boolean = false;
+    static observedAttributes = [...MFormAssociatedElement.observedAttributes, 'multiple', 'debounce'];
 
     @BindAttribute()
     multiple: boolean = false;
 
     @BindAttribute()
-    label: string = "";
-
-    @BindAttribute()
     debounce: number = 150;
 
     private _shadowRoot: ShadowRoot;
-    private internals: ElementInternals;
     private popoverCleanup?: () => void;
     private outsideClickController?: OutsideClickController;
+    private optionListManager!: OptionListManager;
 
     @query('#popover')
     private popoverElement!: HTMLDivElement;
@@ -66,28 +58,119 @@ export class MCombobox extends MInputListElement {
     @query('m-input')
     private inputElement!: HTMLInputElement;
 
-    protected getItemsSkipSelector(): string {
-        return "[data-match='false']";
+    /*** ----------------------------
+     *  OptionListManager Setup
+     * ----------------------------- */
+    private createOptionListManager(): OptionListManager {
+        // Build selector that excludes hidden, disabled, and non-matching items
+        const baseSelector = "m-option:not([hidden]):not([disabled])";
+        const skipSelector = "[data-match='false']"; // inline from getItemsSkipSelector
+        const selector = `${baseSelector}:not(${skipSelector})`;
+
+        // Combobox uses "single-focus" mode: arrow keys move focus only, Enter/Space selects
+        const selectionMode: SelectionMode = this.multiple ? "multiple" : "single-focus";
+        return new OptionListManager(
+            this,
+            selector,
+            {
+                selectCallback: (result: SelectionResult) => this.handleSelectCallback(result),
+                focusCallback: (option: OptionLike) => this.handleFocusCallback(option)
+            },
+            selectionMode,
+            { dom: "light" } // m-options are in light DOM
+        );
     }
 
-    get value(): string | string[] | null {
-        if (this.multiple) return this.selectedValues;
-        return this.selectedItems[0]?.value ?? null;
+    /*** ----------------------------
+     *  Property Getters
+     * ----------------------------- */
+    // Delegate to OptionListManager
+    get options(): MOption[] {
+        return this.optionListManager.options as MOption[];
     }
+
+    get selectedOptions(): MOption[] {
+        return this.optionListManager.selectedOptions as MOption[];
+    }
+
+    get selectedValues(): string[] {
+        return this.optionListManager.selectedValues;
+    }
+
+    // Override value getter from base class to delegate to manager
+    override get value(): string | string[] | null {
+        if (this.multiple) return this.selectedValues;
+        return this.selectedValues[0] ?? null;
+    }
+
+    // Override value setter to properly sync with base class
+    override set value(value: string | string[] | null) {
+        // Call base class setter to update form value
+        super.value = value;
+    }
+
+    // Backward compatibility aliases (for tests)
+    get items(): MOption[] { return this.options; }
+    get selectedItems(): MOption[] { return this.selectedOptions; }
 
     get form(): HTMLFormElement | null {
         return this.internals.form;
+    }
+
+    /*** ----------------------------
+     *  Focus Management - Delegated to OptionListManager
+     * ----------------------------- */
+    setFocus(option: MOption | null): void {
+        if (!option) return;
+        this.optionListManager.focus(option);
+    }
+
+    focusFirst(): void { 
+        this.optionListManager.focusFirst(); 
+    }
+
+    focusLast(): void { 
+        this.optionListManager.focusLast(); 
+    }
+
+    focusNext(): void { 
+        this.optionListManager.focusNext(); 
+    }
+
+    focusPrev(): void { 
+        this.optionListManager.focusPrev(); 
+    }
+
+    focusBlur(): void { 
+        this.optionListManager.focusBlur(); 
+    }
+
+    // Provide focusedElement getter/setter for backward compatibility
+    get focusedElement(): MOption | null {
+        return this.optionListManager.focusedElement as MOption | null;
+    }
+
+    set focusedElement(el: MOption | null) {
+        if (el) {
+            this.optionListManager.focus(el);
+        } else {
+            this.optionListManager.focusBlur();
+        }
     }
 
     constructor() {
         super();
         this._shadowRoot = this.attachShadow({ mode: 'open' });
         this._shadowRoot.adoptedStyleSheets = [baseStyleSheet];
-        this.internals = this.attachInternals();
     }
 
     connectedCallback() {
+        super.connectedCallback(); // Initialize form association
+        
         this.render();
+
+        // Initialize OptionListManager after DOM is ready
+        this.optionListManager = this.createOptionListManager();
 
         this.setAttribute("role", "combobox");
         this.setAttribute("aria-haspopup", "listbox");
@@ -125,9 +208,31 @@ export class MCombobox extends MInputListElement {
             }
         );
         this.outsideClickController.connect();
+
+        // Initialize value from either the value attribute or pre-selected options
+        const valueAttr = this.getAttribute('value');
+        if (valueAttr) {
+            // If value attribute is set, select the matching option
+            const matchingOption = this.options.find(option => option.value === valueAttr);
+            if (matchingOption && !matchingOption.selected) {
+                this.select(matchingOption);
+            }
+        } else {
+            // Otherwise, sync value from any pre-selected options
+            const selectedOptions = this.options.filter(option => option.selected);
+            if (selectedOptions.length > 0) {
+                const selectedValues = selectedOptions.map(option => option.value);
+                this.value = this.multiple ? selectedValues : selectedValues[0];
+            }
+        }
+
+        // Update validity after initialization
+        this.updateValidity();
     }
 
     disconnectedCallback() {
+        super.disconnectedCallback(); // Clean up form association
+        
         this.removeEventListener("keydown", this.handleKeydown);
         this.removeEventListener("input", this.handleInput);
         this.removeEventListener("click", this.handleClick);
@@ -160,6 +265,14 @@ export class MCombobox extends MInputListElement {
                 }
             }
         }
+        
+        // Handle multiple attribute changes
+        if (name === 'multiple' && this.optionListManager) {
+            // Clear selections when toggling mode
+            this.options.forEach(option => (option.selected = false));
+            // Rebuild the manager with updated multiple setting
+            this.optionListManager = this.createOptionListManager();
+        }
     }
 
     /*** ----------------------------
@@ -188,7 +301,8 @@ export class MCombobox extends MInputListElement {
         });
     }
     private _showPopover(): void {
-        this.popoverElement?.showPopover();
+        if (!this.popoverElement) return;
+        this.popoverElement.showPopover();
         this.setAttribute("aria-expanded", "true");
 
         this.popoverCleanup = autoUpdate(
@@ -205,17 +319,63 @@ export class MCombobox extends MInputListElement {
         this.setAttribute("aria-expanded", "false");
     }
 
+    /*** ----------------------------
+     *  OptionListManager Callbacks
+     * ----------------------------- */
+    private handleSelectCallback(result: SelectionResult): void {
+        const option = result.itemToSelect as MOption;
+        
+        // Sync input field with selection
+        this.syncInputFromSelection();
+        
+        // Hide popover in single-select mode
+        if (!this.multiple) {
+            this._hidePopover();
+        }
+        
+        // Dispatch change event
+        this.dispatchEvent(
+            new CustomEvent('m-combobox-change', {
+                detail: { selected: this.optionListManager.selectedValues },
+                bubbles: true,
+                composed: true
+            })
+        );
+        this.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        // Update form value via base class setter
+        const selectedValues = this.selectedValues;
+        this.value = this.multiple ? selectedValues : (selectedValues[0] ?? null);
+    }
+
+    private handleFocusCallback(option: OptionLike): void {
+        if (!option) {
+            this.removeAttribute("aria-activedescendant");
+            return;
+        }
+        
+        const mOption = option as MOption;
+        if (!mOption.id) {
+            console.error('MOption missing required id attribute', mOption);
+            return;
+        }
+        
+        this.setAttribute("aria-activedescendant", mOption.id);
+        
+        // Open popover when an option is focused
+        this._showPopover();
+    }
 
     /*** ----------------------------
      *  Selection Management
      * ----------------------------- */
     private syncInputFromSelection(): void {
-        console.log("sync input", this.multiple, this.selectedValues.length, this.selectedValues, this.selectedItems, )
+        console.log("sync input", this.multiple, this.selectedValues.length, this.selectedValues, this.selectedOptions, )
         if (this.multiple) {
             this.renderMultiselect();
         } else if (!this.multiple && this.selectedValues.length > 0) {
-            console.log("set input value to: ",this.selectedItems[0]?.textContent?.trim() )
-            this.inputElement.value = this.selectedItems[0]?.textContent?.trim() || '';
+            console.log("set input value to: ",this.selectedOptions[0]?.textContent?.trim() )
+            this.inputElement.value = this.selectedOptions[0]?.textContent?.trim() || '';
         } else if (!this.multiple && this.selectedValues.length === 0) {
             console.log("set input value to empty");
             this.inputElement.value = '';
@@ -224,85 +384,70 @@ export class MCombobox extends MInputListElement {
 
     select(item: MOption): void {
         if (!item) return;
-
-        const result = this.computeSelection(item);
-
-        result.itemsToDeselect.forEach((i: MOption) => {
-            i.selected = false;
-            // TODO: send event
-            // this.dispatchEvent(
-            //     new MListboxUnselectedEvent({ item: i, selected: false })
-            // );
-        });
-
-        if (result.shouldToggle) {
-            item.selected = !item.selected;
-        } else {
-            item.selected = true;
-            if (result.newFocusTarget) {
-                this.setFocus(result.newFocusTarget);
-            }
+        
+        if (!this.options.includes(item)) {
+            console.error('Attempted to select option not in this combobox', item);
+            return;
         }
-
-        console.log("select", this.selectedValues)
-        this.syncInputFromSelection();
-        if (!this.multiple) {
-            this._hidePopover();
+        
+        if (item.disabled) {
+            console.warn('Attempted to select disabled option', item);
+            return;
         }
+        
+        // Delegate to OptionListManager - callbacks will handle the rest
+        this.optionListManager.select(item);
+    }
 
-        // TODO: update events
-        // const EventClass = item.selected ? MListboxSelectEvent : MListboxUnselectedEvent;
-        this.dispatchEvent(
-            new CustomEvent('m-combobox-change', {
-                detail: { selected: this.selectedValues },
-                bubbles: true,
-                composed: true
-            })
-        );
+    // Add these helper methods for consistency with m-listbox
+    selectFocused(): void {
+        this.optionListManager.selectFocused();
+    }
 
-        this.updateFormValue();
+    selectFirst(): void {
+        this.optionListManager.selectFirst();
+    }
+
+    selectLast(): void {
+        this.optionListManager.selectLast();
+    }
+
+    selectNext(): void {
+        this.optionListManager.selectNext();
+    }
+
+    selectPrev(): void {
+        this.optionListManager.selectPrev();
     }
 
 
     /*** ----------------------------
-     *  Form association
+     *  Form Lifecycle
      * ----------------------------- */
-    private updateFormValue(): void {
-        if (this.selectedValues.length === 0) {
-            this.internals.setFormValue(null);
-        } else if (this.selectedValues.length === 1) {
-            this.internals.setFormValue(this.selectedValues[0]);
-        } else {
-            const formData = new FormData();
-            for (const val of this.selectedValues) { formData.append(this.name, val); }
-            this.internals.setFormValue(formData);
-        }
-    }
-
-    formAssociatedCallback(): void {
-        this.updateFormValue();
-    }
-
-    formResetCallback(): void {
-        this.items.forEach(item => (item.selected = false));
-        this.focusedElement = null;
+    override formResetCallback(): void {
+        super.formResetCallback(); // Reset value and hasInteracted
+        this.options.forEach(option => (option.selected = false));
+        this.optionListManager.focusedElement = null;
         this.inputElement.value = '';
-        this.updateFormValue();
     }
 
-    formDisabledCallback(disabled: boolean): void {
-        this.disabled = disabled;
+    override formDisabledCallback(disabled: boolean): void {
+        super.formDisabledCallback(disabled);
+        // Additional combobox-specific disabled logic handled by base class
     }
 
-    formStateRestoreCallback(state: string | FormData | null): void {
-        if (state === null) {
-            this.formResetCallback();
-        } else if (typeof state === 'string') {
-            const option = this.items.find(item => item.value === state);
-            if (option) {
-                option.selected = true;
-                this.updateFormValue();
-            }
+    /**
+     * Validates the combobox value.
+     * Checks if required attribute is set and no value is selected.
+     */
+    protected updateValidity(): void {
+        if (this.required && this.selectedValues.length === 0) {
+            this.updateValidationState(
+                { valueMissing: true },
+                'Please select an option.'
+            );
+        } else {
+            this.updateValidationState({}, '');
         }
     }
 
@@ -336,60 +481,63 @@ export class MCombobox extends MInputListElement {
         }
     };
 
+    private handleMouseOver = (event: MouseEvent) => {
+        const option = event
+            .composedPath()
+            .find(el => (el as HTMLElement).tagName === 'M-OPTION') as
+            | MOption
+            | undefined;
+
+        if (option && !option.disabled && this.optionListManager.focusedElement !== option) {
+            this.setFocus(option);
+        }
+    };
+
+    private handleMouseOut = (event: MouseEvent) => {
+        const option = event
+            .composedPath()
+            .find(el => (el as HTMLElement).tagName === 'M-OPTION') as
+            | MOption
+            | undefined;
+
+        if (option && !option.disabled && this.optionListManager.focusedElement === option) {
+            this.focusBlur();
+        }
+    };
+
     private handleKeydown = (e: Event) => {
         if (this.disabled) return;
         const event = e as KeyboardEvent;
-
-        if (
-            event.key === "ArrowDown" ||
-            (event.key === "n" && event.ctrlKey)
-        ) {
-            e.preventDefault();
-            e.stopPropagation();
-            this._showPopover();
-            this.focusNext();
-        } else if (
-            event.key === "ArrowUp" ||
-            (event.key === "p" && event.ctrlKey)
-        ) {
-            e.preventDefault();
-            e.stopPropagation();
-            this._showPopover();
-            this.focusPrev();
-        } else if (event.key === "Home") {
-            this.focusFirst();
-            event.preventDefault();
-        } else if (event.key === "End") {
-            this.focusLast();
-            event.preventDefault();
-        } else if (event.key === "Enter") {
-            e.preventDefault();
-            e.stopPropagation();
-            if (this.focusedElement) {
-                this.selectFocused();
-            }
-        } else if (event.key === "Escape") {
+        
+        // Combobox-specific: Escape key closes popover
+        if (event.key === "Escape") {
             e.preventDefault();
             e.stopPropagation();
             if (this.popoverElement.matches(':popover-open')) {
                 this.resetInputValue();
                 this._hidePopover();
             }
+            return;
         }
+        
+        // Delegate to OptionListManager for standard keyboard handling
+        // This handles: ArrowUp, ArrowDown, Home, End, Space, Enter, Ctrl+N, Ctrl+P
+        // The popover will open automatically via the focus callback when an option is focused
+        this.optionListManager.handleKeydown(event);
     }
 
     private resetInputValue() {
         if (this.multiple) {
             this.inputElement.value = "";
         } else {
-            this.inputElement.value = this.selectedItems[0]?.textContent || "";
+            this.inputElement.value = this.selectedOptions[0]?.textContent || "";
         }
     }
 
 
 
     private renderMultiselect() {
-        this.multiSelectListElement.innerHTML = this.selectedItems.reduce((acc, i) => {
+        this.multiSelectListElement.innerHTML = this.selectedOptions.reduce((acc, i) => {
             return `${acc}<li>${i.textContent.trim()}</li>`
         }, "")
     }
