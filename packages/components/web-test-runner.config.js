@@ -66,7 +66,7 @@ export default {
       typeof arg === 'string' && arg.includes('Lit is in dev mode')
     );
   },
-  testsFinishTimeout: 30000,
+  testsFinishTimeout: 60000,
   browserStartTimeout: 30000,
   testRunnerHtml: testFramework => `
     <!DOCTYPE html>

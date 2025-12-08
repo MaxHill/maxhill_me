@@ -1,85 +1,257 @@
 import CodeExample from '../../../../apps/site/src/components/CodeExample.astro';
 
-## Examples
+---
 
-### Basic Usage
+## Basic Usage
 
-A simple listbox with keyboard navigation and single selection.
+<section class="example-section" data-width="feature">
+<div class="typesetting">
 
+`m-listbox` provides single or multiple selection from a list of options. It supports full keyboard navigation, form integration, and follows the ARIA listbox pattern for accessibility.
+
+By default, users can navigate with arrow keys and select with Space or Enter.
+
+</div>
 <CodeExample html={`<m-listbox name="fruit">
   <m-option value="apple">Apple</m-option>
   <m-option value="pear">Pear</m-option>
   <m-option value="orange">Orange</m-option>
   <m-option value="banana">Banana</m-option>
 </m-listbox>`} />
+</section>
 
-### Multiple Selection
+---
 
-Allow users to select multiple items using Space/Enter keys. Hold Shift while using arrow keys for extended selection.
+## Form Participation
 
-<CodeExample html={`<m-listbox name="fruits" multiple>
-  <m-option value="apple">Apple</m-option>
-  <m-option value="pear">Pear</m-option>
-  <m-option value="orange">Orange</m-option>
-  <m-option value="banana">Banana</m-option>
-  <m-option value="grape">Grape</m-option>
-</m-listbox>`} />
+<section class="example-section" data-width="feature" data-reverse>
+<div class="typesetting">
 
-### Pre-selected Values
+`m-listbox` is a form-associated custom element, meaning it behaves just like a native form control:
+- Included in FormData
+- Participates in form submission
+- Responds to `form.reset()` and reset buttons
+- Supports constraint validation
+- Works with the `required` attribute
+- Preserves standard events (`change`, `focus`, `blur`)
 
-Using the `selected` attribute on items:
+In single-select mode, the value is a string (or `null`). In multiple-select mode, the value is an array of strings.
 
-<CodeExample html={`<m-listbox name="preselected-fruit-1">
-  <m-option value="apple">Apple</m-option>
-  <m-option value="pear" selected>Pear</m-option>
-  <m-option value="orange">Orange</m-option>
-</m-listbox>`} />
-
-Or using the `value` attribute on the listbox:
-
-<CodeExample html={`<m-listbox name="preselected-fruit-2" value="orange">
-  <m-option value="apple">Apple</m-option>
-  <m-option value="pear">Pear</m-option>
-  <m-option value="orange">Orange</m-option>
-</m-listbox>`} />
-
-### Disabled State
-
-A disabled listbox prevents user interaction:
-
-<CodeExample html={`<m-listbox name="disabled-fruit" disabled>
-  <m-option value="apple">Apple</m-option>
-  <m-option value="pear" selected>Pear</m-option>
-  <m-option value="orange">Orange</m-option>
-</m-listbox>`} />
-
-### Form Integration
-
-The listbox is form-associated and works seamlessly with standard form submission:
-
-<CodeExample html={`<form id="fruit-form" class="stack" data-gap="2">
-  <label for="favorite-fruit">Select your favorite fruit:</label>
-  <m-listbox id="favorite-fruit" name="favorite-fruit">
+</div>
+<CodeExample html={`<form id="fruit-form" class="form">
+  <label for="favorite-fruit">Favorite fruit</label>
+  <m-listbox id="favorite-fruit" name="favorite-fruit" required>
     <m-option value="apple">Apple</m-option>
-    <m-option value="pear" selected>Pear</m-option>
+    <m-option value="pear">Pear</m-option>
     <m-option value="orange">Orange</m-option>
     <m-option value="banana">Banana</m-option>
   </m-listbox>
+  
+  <div id="form-result" class="box" data-variant="surface" data-span="2">
+    <strong>Form Data:</strong>
+    <pre id="form-result-text" style="margin: 0.5rem 0 0 0;"></pre>
+  </div>
+  
   <button type="submit">Submit</button>
-  <div id="form-result" class="box" style="padding: var(--size-2); background: var(--color-surface-raised);"></div>
+  <button type="reset">Reset</button>
 </form>`} js={`const form = document.getElementById('fruit-form');
-const resultBox = document.getElementById('form-result');
+const resultText = document.getElementById('form-result-text');
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
-  const formData = new FormData(form);
-  resultBox.textContent = \`Selected: \${formData.get('favorite-fruit')}\`;
+  const data = Object.fromEntries(new FormData(form));
+  resultText.textContent = JSON.stringify(data, null, 2);
 });`} />
+</section>
 
-### Event Listening
+---
 
-Listen to selection changes with the `m-listbox-change` event:
+## Selection Modes
 
+<section class="example-section" data-width="feature">
+<div class="typesetting">
+
+### Single Selection
+
+By default, `m-listbox` allows only one option to be selected at a time. Selecting a new option automatically deselects the previous one.
+
+### Multiple Selection
+
+Adding the `multiple` attribute enables multi-selection:
+- Click or press Space/Enter to toggle individual items
+- Hold Shift while using arrow keys for extended selection
+- The value becomes an array of selected option values
+
+</div>
+<CodeExample html={`<div class="form">
+  <label for="single-select">Single select</label>
+  <m-listbox id="single-select" name="single">
+    <m-option value="red">Red</m-option>
+    <m-option value="green">Green</m-option>
+    <m-option value="blue">Blue</m-option>
+  </m-listbox>
+  
+  <label for="multi-select">Multiple select</label>
+  <m-listbox id="multi-select" name="multiple" multiple>
+    <m-option value="red">Red</m-option>
+    <m-option value="green">Green</m-option>
+    <m-option value="blue">Blue</m-option>
+    <m-option value="yellow">Yellow</m-option>
+  </m-listbox>
+</div>`} />
+</section>
+
+---
+
+## Pre-selected Values
+
+<section class="example-section" data-width="feature" data-reverse>
+<div class="typesetting">
+
+You can pre-select options in two ways:
+
+**Using the `selected` attribute** on individual `<m-option>` elements marks them as selected when the component initializes.
+
+**Using the `value` attribute** on the `<m-listbox>` itself programmatically selects the matching option. This is useful when dynamically setting values from JavaScript or server-side rendering.
+
+</div>
+<CodeExample html={`<div class="form">
+  <label for="selected-attr">Using selected attribute</label>
+  <m-listbox id="selected-attr" name="selected-attr">
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear" selected>Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+  </m-listbox>
+  
+  <label for="value-attr">Using value attribute</label>
+  <m-listbox id="value-attr" name="value-attr" value="orange">
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear">Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+  </m-listbox>
+</div>`} />
+</section>
+
+---
+
+## Disabled State
+
+<section class="example-section" data-width="feature">
+<div class="typesetting">
+
+The `disabled` attribute prevents all user interaction with the listbox. The component becomes non-focusable and is excluded from form submission.
+
+Individual options can also be disabled while keeping the listbox interactive.
+
+</div>
+<CodeExample html={`<div class="form">
+  <label for="disabled-listbox">Disabled listbox</label>
+  <m-listbox id="disabled-listbox" name="disabled" disabled>
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear" selected>Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+  </m-listbox>
+  
+  <label for="disabled-options">Disabled options</label>
+  <m-listbox id="disabled-options" name="partial-disabled">
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear" disabled>Pear (disabled)</m-option>
+    <m-option value="orange">Orange</m-option>
+  </m-listbox>
+</div>`} />
+</section>
+
+---
+
+## Validation
+
+<section class="example-section" data-width="feature" data-reverse>
+<div class="typesetting">
+
+`m-listbox` supports the `required` attribute for form validation. When required, the form cannot be submitted without a selection.
+
+The component uses the native Constraint Validation API behind the scenes and emits an `m-invalid` event when validation fails.
+
+</div>
+<CodeExample html={`<form id="validation-form" class="form">
+  <label for="required-listbox">Country (required)</label>
+  <m-listbox id="required-listbox" name="country" required>
+    <m-option value="us">United States</m-option>
+    <m-option value="uk">United Kingdom</m-option>
+    <m-option value="ca">Canada</m-option>
+    <m-option value="au">Australia</m-option>
+  </m-listbox>
+  
+  <div id="validation-output" class="box" data-variant="surface" data-span="2">
+    <strong>Validation Status:</strong>
+    <pre id="validation-text" style="margin: 0.5rem 0 0 0;">Not yet validated</pre>
+  </div>
+  
+  <button type="submit">Submit</button>
+  <button type="reset">Reset</button>
+</form>`} js={`const validationForm = document.getElementById('validation-form');
+const requiredListbox = document.getElementById('required-listbox');
+const validationText = document.getElementById('validation-text');
+
+requiredListbox.addEventListener('m-invalid', (e) => {
+  validationText.textContent = \`Invalid: \${e.detail.validationMessage}\`;
+  validationText.style.color = 'var(--color-destructive-fill-mid)';
+});
+
+requiredListbox.addEventListener('change', () => {
+  if (requiredListbox.value) {
+    validationText.textContent = \`Valid: "\${requiredListbox.value}" selected\`;
+    validationText.style.color = 'var(--color-success-fill-mid)';
+  }
+});
+
+validationForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  validationText.textContent = 'Form submitted successfully!';
+  validationText.style.color = 'var(--color-success-fill-mid)';
+});`} />
+</section>
+
+---
+
+## Events
+
+In addition to bubbling native events (`change`, `focus`, `blur`), `m-listbox` emits custom events for selection and focus changes.
+
+<section class="example-section" data-width="feature">
+<div class="typesetting">
+
+### m-listbox-change Event
+
+Fires when the selection changes. This is the primary event for tracking user selections.
+
+**Event Detail:**
+- `selected`: Array of currently selected option values
+
+### m-listbox-select Event
+
+Fires when an individual option is selected.
+
+**Event Detail:**
+- `item`: The `MOption` element that was selected
+- `selected`: `true` (always true for this event)
+
+### m-listbox-unselected Event
+
+Fires when an individual option is unselected.
+
+**Event Detail:**
+- `item`: The `MOption` element that was unselected
+- `selected`: `false` (always false for this event)
+
+### m-listbox-focus-change Event
+
+Fires when keyboard focus moves to a different option. This tracks the "active descendant" for keyboard navigation, not the selected state.
+
+**Event Detail:**
+- `item`: The `MOption` element that received focus (or `null`)
+
+</div>
 <CodeExample html={`<div class="stack" data-gap="2">
   <m-listbox id="event-listbox" name="event-example" multiple>
     <m-option value="apple">Apple</m-option>
@@ -87,60 +259,167 @@ Listen to selection changes with the `m-listbox-change` event:
     <m-option value="orange">Orange</m-option>
     <m-option value="banana">Banana</m-option>
   </m-listbox>
-  <div id="event-output" class="box" style="padding: var(--size-2); background: var(--color-surface-raised); min-height: 3rem;">
-    Select items to see the event output...
+  
+  <div id="event-log" class="box" data-variant="surface">
+    <strong>Event Log:</strong>
+    <ul id="event-log-list" style="margin: 0.5rem 0 0 0; padding-left: 1.5rem; max-height: 200px; overflow-y: auto;"></ul>
   </div>
 </div>`} js={`const eventListbox = document.getElementById('event-listbox');
-const eventOutput = document.getElementById('event-output');
+const eventLogList = document.getElementById('event-log-list');
+
+function logEvent(message, color = 'var(--color-neutral-fill-mid)') {
+  const li = document.createElement('li');
+  li.textContent = message;
+  li.style.color = color;
+  eventLogList.prepend(li);
+  
+  // Keep log size manageable
+  if (eventLogList.children.length > 10) {
+    eventLogList.removeChild(eventLogList.lastChild);
+  }
+}
 
 eventListbox.addEventListener('m-listbox-change', (e) => {
-  eventOutput.textContent = \`Selected values: \${e.detail.selected.join(', ') || '(none)'}\`;
+  logEvent(\`m-listbox-change: [\${e.detail.selected.join(', ') || 'none'}]\`, 'var(--color-primary-fill-mid)');
 });
 
-eventListbox.addEventListener('change', () => {
-  console.log('Standard change event fired. Current value:', eventListbox.value);
+eventListbox.addEventListener('m-listbox-select', (e) => {
+  logEvent(\`m-listbox-select: "\${e.detail.item.value}"\`, 'var(--color-success-fill-mid)');
+});
+
+eventListbox.addEventListener('m-listbox-unselected', (e) => {
+  logEvent(\`m-listbox-unselected: "\${e.detail.item.value}"\`, 'var(--color-destructive-fill-mid)');
+});
+
+eventListbox.addEventListener('m-listbox-focus-change', (e) => {
+  const value = e.detail.item?.value || 'none';
+  logEvent(\`m-listbox-focus-change: "\${value}"\`, 'var(--color-neutral-fill-mid)');
 });`} />
+</section>
 
-## Attributes
+---
 
-- **`name`** (string): The form control name
-- **`multiple`** (boolean): Whether multiple items can be selected
-- **`disabled`** (boolean): Whether the listbox is disabled
-- **`value`** (string | string[]): The value of the first selected item (or array in multiple mode)
+## Focus Management
 
-## Slots
+<section class="example-section" data-width="feature" data-reverse>
+<div class="typesetting">
 
-- **default**: Accepts `<m-option>` elements
+`m-listbox` uses the ARIA activedescendant pattern for focus management. The listbox container maintains actual DOM focus while visually highlighting the "active" option using `aria-activedescendant`.
 
-## Events
+This pattern:
+- Keeps focus on the container element
+- Updates `aria-activedescendant` to reference the currently focused option
+- Allows seamless keyboard navigation without moving DOM focus
+- Provides better screen reader experience
 
-- **`m-listbox-select`**: Fired when an item is selected. Detail: `{ item: MListboxItem, selected: boolean }`
-- **`m-listbox-unselected`**: Fired when an item is unselected. Detail: `{ item: MListboxItem, selected: boolean }`
-- **`m-listbox-change`**: Fired when the selection changes. Detail: `{ selected: string[] }`
-- **`m-listbox-focus-change`**: Fired when focus moves to a different item. Detail: `{ item: MListboxItem | null }`
-- **`change`**: Standard change event
+The `m-listbox-focus-change` event fires whenever the focused option changes, which is separate from selection state.
+
+</div>
+<CodeExample html={`<div class="stack" data-gap="2">
+  <m-listbox id="focus-demo" name="focus-demo">
+    <m-option value="item-1">Item 1</m-option>
+    <m-option value="item-2">Item 2</m-option>
+    <m-option value="item-3">Item 3</m-option>
+    <m-option value="item-4">Item 4</m-option>
+  </m-listbox>
+  
+  <div class="box" data-variant="surface" style="padding: var(--size-2);">
+    <strong>Focused:</strong> <span id="focus-output">None</span><br>
+    <strong>Selected:</strong> <span id="select-output">None</span>
+  </div>
+</div>`} js={`const focusDemo = document.getElementById('focus-demo');
+const focusOutput = document.getElementById('focus-output');
+const selectOutput = document.getElementById('select-output');
+
+focusDemo.addEventListener('m-listbox-focus-change', (e) => {
+  focusOutput.textContent = e.detail.item?.value || 'None';
+});
+
+focusDemo.addEventListener('m-listbox-change', (e) => {
+  selectOutput.textContent = e.detail.selected.join(', ') || 'None';
+});`} />
+</section>
+
+---
 
 ## Keyboard Navigation
 
-- **Arrow Keys**: Navigate between items
-- **Home/End**: Jump to first/last item
-- **Space/Enter**: Toggle selection
-- **Shift + Arrow/Home/End**: Extended selection (multiple mode only)
+<section class="example-section" data-width="feature">
+<div class="typesetting">
+
+`m-listbox` supports full keyboard navigation following the ARIA listbox pattern:
+
+- **Arrow Up/Down**: Navigate between options
+- **Home**: Jump to first option
+- **End**: Jump to last option
+- **Space/Enter**: Toggle selection of focused option
+- **Shift + Arrow Keys**: Extended selection (multiple mode only)
+- **Shift + Home/End**: Select from current to first/last (multiple mode only)
+
+All keyboard interactions wrap around (moving past the last option goes to the first, and vice versa).
+
+</div>
+<CodeExample html={`<div class="form">
+  <label for="keyboard-demo">Try keyboard navigation</label>
+  <m-listbox id="keyboard-demo" name="keyboard-demo" multiple>
+    <m-option value="option-1">Option 1</m-option>
+    <m-option value="option-2">Option 2</m-option>
+    <m-option value="option-3">Option 3</m-option>
+    <m-option value="option-4">Option 4</m-option>
+    <m-option value="option-5">Option 5</m-option>
+    <m-option value="option-6">Option 6</m-option>
+  </m-listbox>
+  
+  <div class="box" data-variant="surface" data-span="2" style="padding: var(--size-2);">
+    <strong>Keyboard shortcuts:</strong>
+    <ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem;">
+      <li>↑/↓ - Navigate</li>
+      <li>Home/End - First/Last</li>
+      <li>Space/Enter - Select</li>
+      <li>Shift + ↑/↓ - Extended selection</li>
+    </ul>
+  </div>
+</div>`} />
+</section>
+
+---
 
 ## Accessibility
 
-- Full ARIA support with proper roles and states
-- Live region announcements for screen readers
-- Focus management follows ARIA listbox pattern
-- Keyboard navigation matches native select behavior
+<section class="example-section" data-width="feature" data-reverse>
+<div class="typesetting">
 
-## Form Integration
+`m-listbox` is built with accessibility as a priority:
 
-- Works with standard `FormData` API
-- Validates with HTML5 constraint validation
-- Supports `required` attribute
-- Single mode returns string value, multiple mode returns array
+- **ARIA Roles**: Uses `role="listbox"` on the container and `role="option"` on items
+- **ARIA States**: Manages `aria-selected`, `aria-disabled`, `aria-multiselectable`, and `aria-activedescendant`
+- **Focus Management**: Implements the activedescendant pattern for screen reader compatibility
+- **Keyboard Support**: Full keyboard navigation matching native controls
+- **Labels**: Supports `label` attribute for accessible naming
+
+The component follows the [ARIA Listbox Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/) from the WAI-ARIA Authoring Practices Guide.
+
+</div>
+<CodeExample html={`<div class="form">
+  <label for="accessible-listbox">Accessible listbox with label</label>
+  <m-listbox 
+    id="accessible-listbox" 
+    name="accessible" 
+    label="Choose your preferred contact method"
+    required
+  >
+    <m-option value="email">Email</m-option>
+    <m-option value="phone">Phone</m-option>
+    <m-option value="sms">SMS</m-option>
+    <m-option value="mail">Postal Mail</m-option>
+  </m-listbox>
+</div>`} />
+</section>
+
+---
 
 ## See Also
 
-- [`<m-option>`](/components/m-option) - Individual listbox item
+- [`<m-option>`](/components/m-option) - Individual listbox option element
+- [`<m-combobox>`](/components/m-combobox) - Searchable select with listbox
+- [`<m-command>`](/components/m-command) - Command menu with listbox
