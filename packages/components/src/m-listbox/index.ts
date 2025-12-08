@@ -18,21 +18,56 @@ baseStyleSheet.replaceSync(styles);
  * 
  * @slot - The default slot accepts m-option elements
  * 
- * @attr {string} name - The form control name
- * @attr {boolean} multiple - Whether multiple options can be selected
+ * @attr {string} name - The form control name for form submission
+ * @attr {string} label - Accessible label (also sets aria-label)
+ * @attr {boolean} multiple - Whether multiple options can be selected (default: false)
+ * @attr {boolean} disabled - Whether the listbox is disabled (inherited from base)
+ * @attr {boolean} required - Whether selection is required for form validation (inherited from base)
+ * @attr {boolean} readonly - Whether the listbox is readonly (inherited from base)
+ * @attr {string} skip - CSS selector for options to skip in keyboard navigation
+ * @attr {string} value - Initial value to select
  * 
- * @prop {string | string[] | null} value - The value of the first selected option (or array in multiple mode)
+ * @prop {string | string[] | null} value - Current value (string in single-select, array in multiple-select, null when empty)
  * @prop {string[]} selectedValues - Array of all selected option values
  * @prop {MOption[]} selectedOptions - Array of all selected option elements
+ * @prop {MOption[]} options - Array of all available option elements
  * @prop {boolean} multiple - Whether multiple selection is enabled
- * @prop {HTMLFormElement | null} form - The associated form element
+ * @prop {boolean} disabled - Whether the listbox is disabled
+ * @prop {boolean} required - Whether selection is required
+ * @prop {boolean} readonly - Whether the listbox is readonly
+ * @prop {HTMLFormElement | null} form - The associated form element (readonly)
  * @prop {string} name - The form control name
+ * @prop {string} label - The accessible label
  * 
- * @event m-listbox-select - Fired when an option is selected. Detail: { item: MOption, selected: boolean }
- * @event m-listbox-unselected - Fired when an option is unselected. Detail: { item: MOption, selected: boolean }
- * @event m-listbox-change - Fired when the selection changes. Detail: { selected: string[] }
- * @event m-listbox-focus-change - Fired when focus moves to a different option. Detail: { item: MOption | null }
+ * @fires {MListboxSelectEvent} m-listbox-select - Fired when an option is selected. Detail: { item: MOption, selected: boolean }
+ * @fires {MListboxUnselectedEvent} m-listbox-unselected - Fired when an option is unselected. Detail: { item: MOption, selected: boolean }
+ * @fires {MListboxChangeEvent} m-listbox-change - Fired when the selection changes. Detail: { selected: string[] }
+ * @fires {MListboxFocusChangeEvent} m-listbox-focus-change - Fired when focus moves to a different option. Detail: { item: MOption | null }
+ * @fires {Event} change - Standard change event (bubbles)
+ * @fires {MInvalidEvent} m-invalid - Fired when validation fails (inherited). Detail: { validity, validationMessage, value }
  * 
+ * @example
+ * ```html
+ * <!-- Single selection -->
+ * <m-listbox name="fruit" label="Choose a fruit">
+ *   <m-option value="apple">Apple</m-option>
+ *   <m-option value="banana">Banana</m-option>
+ *   <m-option value="orange">Orange</m-option>
+ * </m-listbox>
+ * 
+ * <!-- Multiple selection -->
+ * <m-listbox name="colors" label="Choose colors" multiple>
+ *   <m-option value="red">Red</m-option>
+ *   <m-option value="green">Green</m-option>
+ *   <m-option value="blue">Blue</m-option>
+ * </m-listbox>
+ * 
+ * <!-- With validation -->
+ * <m-listbox name="country" label="Country" required>
+ *   <m-option value="us">United States</m-option>
+ *   <m-option value="uk">United Kingdom</m-option>
+ * </m-listbox>
+ * ```
  */
 export class MListbox extends MFormAssociatedElement {
     static tagName = 'm-listbox';
@@ -45,34 +80,47 @@ export class MListbox extends MFormAssociatedElement {
     @BindAttribute()
     skip?: string;
 
-    private originalTabIndex: string | null = null;
+    private tabIndexBeforeDisable: string | null = null;
 
     private outsideClickController?: OutsideClickController;
     private optionListManager!: OptionListManager;
-    // Note: this.internals is inherited from MFormAssociatedElement
 
     /*** ----------------------------
      *  Getters 
      * ----------------------------- */
     /**
-     * Returns all available options (from OptionListManager).
+     * Returns all available option elements in the listbox.
+     * Includes both selected and unselected options.
+     * Excludes hidden and disabled options based on the skip attribute.
      */
     get options(): MOption[] {
         return this.optionListManager.options as MOption[];
     }
 
     /**
-     * Returns all selected options (from OptionListManager).
+     * Returns all currently selected option elements.
+     * In single-select mode, returns array with 0 or 1 element.
+     * In multiple-select mode, returns array with 0 or more elements.
      */
     get selectedOptions(): MOption[] {
         return this.optionListManager.selectedOptions as MOption[];
     }
 
     /**
-     * Returns values of all selected options (from OptionListManager).
+     * Returns the values of all currently selected options.
+     * In single-select mode, returns array with 0 or 1 string.
+     * In multiple-select mode, returns array with 0 or more strings.
      */
     get selectedValues(): string[] {
         return this.optionListManager.selectedValues;
+    }
+
+    /**
+     * Returns the associated form element, if any.
+     * Returns null if the listbox is not inside a form.
+     */
+    get form(): HTMLFormElement | null {
+        return this.internals.form;
     }
 
     constructor() {
@@ -133,14 +181,17 @@ export class MListbox extends MFormAssociatedElement {
             new EventClass({ item: option, selected: option.selected! })
         );
 
+        // Get selected values once and reuse
+        const selectedValues = this.optionListManager.selectedValues;
+        
         // Dispatch change events
         this.dispatchEvent(
-            new MListboxChangeEvent({ selected: this.optionListManager.selectedValues })
+            new MListboxChangeEvent({ selected: selectedValues })
         );
         this.dispatchEvent(new Event('change', { bubbles: true }));
 
         // Update form value via base class setter
-        this.value = this.multiple ? this.selectedValues : (this.selectedValues[0] ?? null);
+        this.value = this.multiple ? selectedValues : (selectedValues[0] ?? null);
     }
 
     /**
@@ -167,27 +218,54 @@ export class MListbox extends MFormAssociatedElement {
     /*** ----------------------------
      *  Focus Management - Delegated to OptionListManager
      * ----------------------------- */
+    /**
+     * Sets virtual focus to a specific option.
+     * Updates aria-activedescendant and triggers focus state on the option.
+     * Does nothing if option is null.
+     * 
+     * @param option - The option to focus, or null to do nothing
+     */
     setFocus(option: MOption | null): void {
         if (!option) return;
         this.optionListManager.focus(option);
     }
 
+    /**
+     * Moves virtual focus to the first available option.
+     * Wraps to first if already at the end.
+     */
     focusFirst(): void {
         this.optionListManager.focusFirst();
     }
 
+    /**
+     * Moves virtual focus to the last available option.
+     * Wraps to last if already at the beginning.
+     */
     focusLast(): void {
         this.optionListManager.focusLast();
     }
 
+    /**
+     * Moves virtual focus to the next option in the list.
+     * Wraps to the first option if currently on the last.
+     */
     focusNext(): void {
         this.optionListManager.focusNext();
     }
 
+    /**
+     * Moves virtual focus to the previous option in the list.
+     * Wraps to the last option if currently on the first.
+     */
     focusPrev(): void {
         this.optionListManager.focusPrev();
     }
 
+    /**
+     * Removes virtual focus from all options.
+     * Clears the aria-activedescendant attribute.
+     */
     focusBlur(): void {
         this.optionListManager.focusBlur();
     }
@@ -195,22 +273,45 @@ export class MListbox extends MFormAssociatedElement {
     /*** ----------------------------
      *  Selection Management - Delegated to OptionListManager
      * ----------------------------- */
+    /**
+     * Selects the currently focused option.
+     * In single-select mode, deselects all other options.
+     * In multiple-select mode, toggles the focused option's selection.
+     */
     selectFocused(): void {
         this.optionListManager.selectFocused();
     }
 
+    /**
+     * Selects the first available option.
+     * In single-select mode, deselects all other options.
+     */
     selectFirst(): void {
         this.optionListManager.selectFirst();
     }
 
+    /**
+     * Selects the last available option.
+     * In single-select mode, deselects all other options.
+     */
     selectLast(): void {
         this.optionListManager.selectLast();
     }
 
+    /**
+     * Selects the next option after the currently selected one.
+     * In single-select mode, deselects all other options.
+     * Wraps to first if currently on last.
+     */
     selectNext(): void {
         this.optionListManager.selectNext();
     }
 
+    /**
+     * Selects the previous option before the currently selected one.
+     * In single-select mode, deselects all other options.
+     * Wraps to last if currently on first.
+     */
     selectPrev(): void {
         this.optionListManager.selectPrev();
     }
@@ -227,7 +328,7 @@ export class MListbox extends MFormAssociatedElement {
 
         if (this.disabled) {
             this.setAttribute("aria-disabled", "true");
-            this.originalTabIndex = this.getAttribute("tabindex");
+            this.tabIndexBeforeDisable = this.getAttribute("tabindex");
             this.setAttribute("tabindex", "-1");
         }
 
@@ -301,13 +402,13 @@ export class MListbox extends MFormAssociatedElement {
         if (name === 'disabled') {
             if (this.disabled) {
                 this.setAttribute("aria-disabled", "true");
-                this.originalTabIndex = this.getAttribute("tabindex");
+                this.tabIndexBeforeDisable = this.getAttribute("tabindex");
                 this.setAttribute("tabindex", "-1");
             } else {
                 this.removeAttribute("aria-disabled");
-                if (this.originalTabIndex !== null) {
-                    this.setAttribute("tabindex", this.originalTabIndex);
-                    this.originalTabIndex = null;
+                if (this.tabIndexBeforeDisable !== null) {
+                    this.setAttribute("tabindex", this.tabIndexBeforeDisable);
+                    this.tabIndexBeforeDisable = null;
                 } else if (!this.hasAttribute("tabindex")) {
                     this.setAttribute("tabindex", "0");
                 }
