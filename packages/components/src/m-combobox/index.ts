@@ -57,6 +57,9 @@ export class MCombobox extends MFormAssociatedElement {
     @query('m-input')
     private inputElement!: HTMLInputElement;
 
+    @query('m-search-list')
+    private searchListElement!: HTMLElement & { filter: (query: string) => void };
+
     /*** ----------------------------
      *  OptionListManager Setup
      * ----------------------------- */
@@ -202,6 +205,8 @@ export class MCombobox extends MFormAssociatedElement {
             if (selectedOptions.length > 0) {
                 const selectedValues = selectedOptions.map(option => option.value);
                 this.value = this.multiple ? selectedValues : selectedValues[0];
+                // Sync the input field to display the selected option(s)
+                this.syncInputFromSelection();
             } else if (this.multiple) {
                 // Initialize to empty array in multiple mode when nothing is selected
                 this.value = [];
@@ -515,10 +520,15 @@ export class MCombobox extends MFormAssociatedElement {
     }
 
     private resetInputValue() {
-        if (this.multiple) {
-            this.inputElement.value = "";
-        } else {
-            this.inputElement.value = this.selectedOptions[0]?.textContent || "";
+        const newValue = this.multiple 
+            ? "" 
+            : (this.selectedOptions[0]?.textContent || "");
+        
+        this.inputElement.value = newValue;
+        
+        // Update m-search-list filtering to match the new input value
+        if (this.searchListElement) {
+            this.searchListElement.filter();
         }
     }
 
