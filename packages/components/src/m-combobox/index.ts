@@ -4,9 +4,8 @@ import { query } from "../utils/query";
 import { OutsideClickController } from "../utils/outside-click-controller";
 import { OptionListManager, type OptionLike, type SelectionResult, type SelectionMode } from "../utils/option-list-manager";
 import styles from "./index.css?inline";
-import MInput from "../m-input";
 import MOption from "../m-option";
-import { MOptionSelectedChangeEvent } from "../m-option/events";
+import { MComboboxSelectEvent, MComboboxUnselectedEvent, MComboboxChangeEvent, MComboboxFocusChangeEvent } from "./events";
 import { autoUpdate, computePosition, flip, offset, size } from "@floating-ui/dom";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -97,26 +96,6 @@ export class MCombobox extends MFormAssociatedElement {
         return this.optionListManager.selectedValues;
     }
 
-    // Override value getter from base class to delegate to manager
-    override get value(): string | string[] | null {
-        if (this.multiple) return this.selectedValues;
-        return this.selectedValues[0] ?? null;
-    }
-
-    // Override value setter to properly sync with base class
-    override set value(value: string | string[] | null) {
-        // Call base class setter to update form value
-        super.value = value;
-    }
-
-    // Backward compatibility aliases (for tests)
-    get items(): MOption[] { return this.options; }
-    get selectedItems(): MOption[] { return this.selectedOptions; }
-
-    get form(): HTMLFormElement | null {
-        return this.internals.form;
-    }
-
     /*** ----------------------------
      *  Focus Management - Delegated to OptionListManager
      * ----------------------------- */
@@ -160,7 +139,7 @@ export class MCombobox extends MFormAssociatedElement {
 
     constructor() {
         super();
-        this._shadowRoot = this.attachShadow({ mode: 'open' });
+        this._shadowRoot = this.attachShadow({ mode: 'open', delegatesFocus: true });
         this._shadowRoot.adoptedStyleSheets = [baseStyleSheet];
     }
 
@@ -223,6 +202,9 @@ export class MCombobox extends MFormAssociatedElement {
             if (selectedOptions.length > 0) {
                 const selectedValues = selectedOptions.map(option => option.value);
                 this.value = this.multiple ? selectedValues : selectedValues[0];
+            } else if (this.multiple) {
+                // Initialize to empty array in multiple mode when nothing is selected
+                this.value = [];
             }
         }
 
@@ -302,6 +284,7 @@ export class MCombobox extends MFormAssociatedElement {
     }
     private _showPopover(): void {
         if (!this.popoverElement) return;
+        if (this.disabled) return; // Don't show popover when disabled
         this.popoverElement.showPopover();
         this.setAttribute("aria-expanded", "true");
 
@@ -323,7 +306,31 @@ export class MCombobox extends MFormAssociatedElement {
      *  OptionListManager Callbacks
      * ----------------------------- */
     private handleSelectCallback(result: SelectionResult): void {
+        // Dispatch unselect events for deselected options
+        result.itemsToDeselect.forEach(i => {
+            this.dispatchEvent(
+                new MComboboxUnselectedEvent({ option: i as MOption, selected: false })
+            );
+        });
+
+        // Dispatch select or unselect event for the target option
         const option = result.itemToSelect as MOption;
+        const EventClass = option.selected ? MComboboxSelectEvent : MComboboxUnselectedEvent;
+        this.dispatchEvent(
+            new EventClass({ option: option, selected: option.selected! })
+        );
+
+        // Get selected values once and reuse
+        const selectedValues = this.optionListManager.selectedValues;
+        
+        // Dispatch change events
+        this.dispatchEvent(
+            new MComboboxChangeEvent({ selected: selectedValues })
+        );
+        this.dispatchEvent(new Event('change', { bubbles: true }));
+
+        // Update form value via base class setter
+        this.value = this.multiple ? selectedValues : (selectedValues[0] ?? null);
         
         // Sync input field with selection
         this.syncInputFromSelection();
@@ -332,37 +339,26 @@ export class MCombobox extends MFormAssociatedElement {
         if (!this.multiple) {
             this._hidePopover();
         }
-        
-        // Dispatch change event
-        this.dispatchEvent(
-            new CustomEvent('m-combobox-change', {
-                detail: { selected: this.optionListManager.selectedValues },
-                bubbles: true,
-                composed: true
-            })
-        );
-        this.dispatchEvent(new Event('change', { bubbles: true }));
-        
-        // Update form value via base class setter
-        const selectedValues = this.selectedValues;
-        this.value = this.multiple ? selectedValues : (selectedValues[0] ?? null);
     }
 
     private handleFocusCallback(option: OptionLike): void {
-        if (!option) {
+        const mOption = option as MOption | null;
+        
+        if (!mOption) {
             this.removeAttribute("aria-activedescendant");
+            this.dispatchEvent(new MComboboxFocusChangeEvent({ option: null }));
             return;
         }
-        
-        const mOption = option as MOption;
+
         if (!mOption.id) {
             console.error('MOption missing required id attribute', mOption);
             return;
         }
-        
+
         this.setAttribute("aria-activedescendant", mOption.id);
+        this.dispatchEvent(new MComboboxFocusChangeEvent({ option: mOption }));
         
-        // Open popover when an option is focused
+        // Combobox-specific: Open popover when an option is focused
         this._showPopover();
     }
 
@@ -370,14 +366,11 @@ export class MCombobox extends MFormAssociatedElement {
      *  Selection Management
      * ----------------------------- */
     private syncInputFromSelection(): void {
-        console.log("sync input", this.multiple, this.selectedValues.length, this.selectedValues, this.selectedOptions, )
         if (this.multiple) {
             this.renderMultiselect();
         } else if (!this.multiple && this.selectedValues.length > 0) {
-            console.log("set input value to: ",this.selectedOptions[0]?.textContent?.trim() )
             this.inputElement.value = this.selectedOptions[0]?.textContent?.trim() || '';
         } else if (!this.multiple && this.selectedValues.length === 0) {
-            console.log("set input value to empty");
             this.inputElement.value = '';
         }
     }
@@ -429,11 +422,6 @@ export class MCombobox extends MFormAssociatedElement {
         this.options.forEach(option => (option.selected = false));
         this.optionListManager.focusedElement = null;
         this.inputElement.value = '';
-    }
-
-    override formDisabledCallback(disabled: boolean): void {
-        super.formDisabledCallback(disabled);
-        // Additional combobox-specific disabled logic handled by base class
     }
 
     /**

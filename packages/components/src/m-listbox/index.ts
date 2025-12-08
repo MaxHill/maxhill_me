@@ -171,7 +171,7 @@ export class MListbox extends MFormAssociatedElement {
         // Dispatch unselect events for deselected options
         result.itemsToDeselect.forEach(i => {
             this.dispatchEvent(
-                new MListboxUnselectedEvent({ item: i as MOption, selected: false })
+                new MListboxUnselectedEvent({ option: i as MOption, selected: false })
             );
         });
 
@@ -179,7 +179,7 @@ export class MListbox extends MFormAssociatedElement {
         const option = result.itemToSelect as MOption;
         const EventClass = option.selected ? MListboxSelectEvent : MListboxUnselectedEvent;
         this.dispatchEvent(
-            new EventClass({ item: option, selected: option.selected! })
+            new EventClass({ option: option, selected: option.selected! })
         );
 
         // Get selected values once and reuse
@@ -200,12 +200,13 @@ export class MListbox extends MFormAssociatedElement {
      * Updates aria-activedescendant and dispatches focus change event.
      */
     private handleFocusCallback(option: OptionLike): void {
-        if (!option) {
-            console.warn('handleFocusCallback called with null/undefined option');
+        const mOption = option as MOption | null;
+        
+        if (!mOption) {
             this.removeAttribute("aria-activedescendant");
+            this.dispatchEvent(new MListboxFocusChangeEvent({ option: null }));
             return;
         }
-        const mOption = option as MOption;
 
         if (!mOption.id) {
             console.error('MOption missing required id attribute', mOption);
@@ -213,7 +214,7 @@ export class MListbox extends MFormAssociatedElement {
         }
 
         this.setAttribute("aria-activedescendant", mOption.id);
-        this.dispatchEvent(new MListboxFocusChangeEvent({ item: mOption }));
+        this.dispatchEvent(new MListboxFocusChangeEvent({ option: mOption }));
     }
 
     /*** ----------------------------
