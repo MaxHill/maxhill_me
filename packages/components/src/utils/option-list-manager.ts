@@ -14,9 +14,17 @@ export interface SelectionResult {
     newFocusTarget: OptionLike | null;
 }
 
+/**
+ * Selection mode for OptionListManager.
+ * - "single-select": Arrow keys move selection (m-listbox single-select)
+ * - "single-focus": Arrow keys move focus only, Space/Enter selects (m-combobox single-select)
+ * - "multiple": Arrow keys move focus only, Space/Enter toggles selection (multiple-select mode)
+ */
+export type SelectionMode = "single-select" | "single-focus" | "multiple";
+
 export class OptionListManager {
 
-    multiple: boolean = false;
+    private selectionMode: SelectionMode = "single-select";
     private target: HTMLElement;
     private callbacks: {
         selectCallback(selection: SelectionResult): void,
@@ -74,29 +82,29 @@ export class OptionListManager {
     constructor(
         target: HTMLElement, 
         optionsQuerySelector: string, 
-        callbacksOrMultiple?: { selectCallback(selection: SelectionResult): void, focusCallback(focus: OptionLike): void } | boolean,
-        multipleOrOptionsQuery?: boolean | QueryOptions, 
+        callbacksOrSelectionMode?: { selectCallback(selection: SelectionResult): void, focusCallback(focus: OptionLike): void } | SelectionMode,
+        selectionModeOrOptionsQuery?: SelectionMode | QueryOptions, 
         optionsQuery?: QueryOptions
     ) {
         this.target = target;
         this.optionsQuerySelector = optionsQuerySelector;
         
         // Handle overloaded constructor signatures
-        // Signature 1: (target, selector, callbacks, multiple?, optionsQuery?)
-        // Signature 2: (target, selector, multiple?, optionsQuery?)
-        if (typeof callbacksOrMultiple === 'object') {
+        // Signature 1: (target, selector, callbacks, selectionMode?, optionsQuery?)
+        // Signature 2: (target, selector, selectionMode?, optionsQuery?)
+        if (typeof callbacksOrSelectionMode === 'object' && 'selectCallback' in callbacksOrSelectionMode) {
             // Signature 1: callbacks provided
-            this.callbacks = callbacksOrMultiple;
-            this.multiple = (multipleOrOptionsQuery as boolean) || false;
+            this.callbacks = callbacksOrSelectionMode;
+            this.selectionMode = (selectionModeOrOptionsQuery as SelectionMode) || "single-select";
             this.optionsQuery = optionsQuery;
         } else {
-            // Signature 2: multiple provided (or nothing)
+            // Signature 2: selectionMode provided (or nothing)
             this.callbacks = {
                 selectCallback: (_selection: SelectionResult) => {},
                 focusCallback: (_focus: OptionLike) => {}
             };
-            this.multiple = (callbacksOrMultiple as boolean) || false;
-            this.optionsQuery = multipleOrOptionsQuery as QueryOptions;
+            this.selectionMode = (callbacksOrSelectionMode as SelectionMode) || "single-select";
+            this.optionsQuery = selectionModeOrOptionsQuery as QueryOptions;
         }
     }
 
@@ -125,6 +133,7 @@ export class OptionListManager {
         if (this.focusedElement) {
             this.focusedElement.removeAttribute('focused');
             this.focusedElement = null;
+            this.callbacks.focusCallback(null as any);
         }
     }
 
@@ -137,7 +146,7 @@ export class OptionListManager {
     select(option: OptionLike): void {
         if (!option) return;
 
-        const result = this.multiple
+        const result = this.selectionMode === "multiple"
             ? this.createSelectionResultMultiple(option)
             : this.createSelectionResultSingle(option);
 
@@ -213,17 +222,29 @@ export class OptionListManager {
             return;
         }
 
+        // Handle Ctrl+N/Ctrl+P shortcuts (alternative to Arrow keys)
+        if (event.key === 'n' && event.ctrlKey) {
+            event.preventDefault();
+            this.selectionMode === "single-select" ? this.selectNext() : this.focusNext();
+            return;
+        }
+        if (event.key === 'p' && event.ctrlKey) {
+            event.preventDefault();
+            this.selectionMode === "single-select" ? this.selectPrev() : this.focusPrev();
+            return;
+        }
+
         // Delegate to mode-specific navigation
-        if (!this.multiple) {
-            this.keyboardMoveSelect(event);
+        if (this.selectionMode === "single-select") {
+            this.keyboardMoveSelect(event);  // Arrow keys select (m-listbox single-select)
         } else {
-            this.keyboardMoveFocus(event);
+            this.keyboardMoveFocus(event);   // Arrow keys focus only (single-focus and multiple)
         }
     };
 
     /**
-     * Handles keyboard navigation for multiple-select mode.
-     * Arrow keys move focus only. Shift+Arrow extends selection.
+     * Handles keyboard navigation for single-focus and multiple modes.
+     * Arrow keys move focus only. In multiple mode, Shift+Arrow extends selection.
      * @param {KeyboardEvent} event - Keyboard input event
      */
     private keyboardMoveFocus(event: KeyboardEvent) {

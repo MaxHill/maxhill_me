@@ -39,7 +39,7 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      expect(el.name).to.equal('');
+      expect(el.name).to.be.undefined;
       expect(el.disabled).to.equal(false);
       expect(el.multiple).to.equal(false);
       expect(el.value).to.equal(null);

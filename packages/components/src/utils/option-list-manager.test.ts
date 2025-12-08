@@ -21,10 +21,10 @@ describe('OptionListManager', () => {
 
         it('should default multiple to false when not provided', async () => {
             const container = await fixture<HTMLElement>(html`<div></div>`);
-            const managerSingle = new OptionListManager(container, 'm-option', false);
+            const managerSingle = new OptionListManager(container, 'm-option', 'single-select');
             expect(managerSingle.multiple).to.equal(false);
             
-            const managerMultiple = new OptionListManager(container, 'm-option', true);
+            const managerMultiple = new OptionListManager(container, 'm-option', 'multiple');
             expect(managerMultiple.multiple).to.equal(true);
 
             const managerDefault = new OptionListManager(container, 'm-option');
