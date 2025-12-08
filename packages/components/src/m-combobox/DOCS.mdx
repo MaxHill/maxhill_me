@@ -1,51 +1,513 @@
 import CodeExample from '../../../../apps/site/src/components/CodeExample.astro';
 
-## Overview
+---
 
-A form-associated combobox component that combines a search input with a listbox for filtering and selecting options.
+## Basic Usage
 
-## Examples
+<section class="example-section" data-width="feature">
+<div class="typesetting">
 
-### Basic Usage
+`m-combobox` combines a search input with a listbox for filtering and selecting options. It provides single or multiple selection with full keyboard navigation, form integration, and follows ARIA combobox patterns for accessibility.
 
-<CodeExample html={`<form>
+Type to filter options, use arrow keys to navigate, and press Enter or Space to select.
+
+</div>
+<CodeExample html={`<form class="form">
   <m-combobox name="fruit" label="Choose a fruit">
     <m-option value="apple">Apple</m-option>
     <m-option value="pear">Pear</m-option>
     <m-option value="orange">Orange</m-option>
     <m-option value="banana">Banana</m-option>
+    <m-option value="grape">Grape</m-option>
+    <m-option value="mango">Mango</m-option>
   </m-combobox>
 </form>`} />
+</section>
+
+---
+
+## Form Participation
+
+<section class="example-section" data-width="feature" data-reverse>
+<div class="typesetting">
+
+`m-combobox` is a form-associated custom element, meaning it behaves just like a native form control:
+- Included in FormData
+- Participates in form submission
+- Responds to `form.reset()` and reset buttons
+- Supports constraint validation
+- Works with the `required` attribute
+- Preserves standard events (`change`, `focus`, `blur`)
+
+In single-select mode, the value is a string (or `null`). In multiple-select mode, the value is an array of strings.
+
+</div>
+<CodeExample html={`<form id="fruit-form" class="form">
+  <m-combobox name="favorite-fruit" label="Favorite fruit">
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear">Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+    <m-option value="banana">Banana</m-option>
+  </m-combobox>
+  
+  <div id="form-result" class="box" data-variant="surface" data-span="2">
+    <strong>Form Data:</strong>
+    <pre id="form-result-text" style="margin: 0.5rem 0 0 0;"></pre>
+  </div>
+  
+  <button type="submit">Submit</button>
+  <button type="reset">Reset</button>
+</form>`} js={`const form = document.getElementById('fruit-form');
+const resultText = document.getElementById('form-result-text');
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(form));
+  resultText.textContent = JSON.stringify(data, null, 2);
+});`} />
+</section>
+
+---
+
+## Selection Modes
+
+<section class="example-section" data-width="feature">
+<div class="typesetting">
+
+### Single Selection
+
+By default, `m-combobox` allows only one option to be selected at a time. Arrow keys move focus without selecting, and Enter/Space select the focused option.
 
 ### Multiple Selection
 
-<CodeExample html={`<form>
-  <m-combobox name="toppings" label="Choose toppings" multiple>
-    <m-option value="cheese">Cheese</m-option>
-    <m-option value="pepperoni">Pepperoni</m-option>
-    <m-option value="mushrooms">Mushrooms</m-option>
-    <m-option value="olives">Olives</m-option>
+Adding the `multiple` attribute enables multi-selection:
+- Click or press Space/Enter to toggle individual items
+- Hold Shift while using arrow keys for extended selection
+- Selected items appear as chips above the input
+- The value becomes an array of selected option values
+
+</div>
+<CodeExample html={`<div class="form">
+  <m-combobox name="single" label="Single select">
+    <m-option value="red">Red</m-option>
+    <m-option value="green">Green</m-option>
+    <m-option value="blue">Blue</m-option>
   </m-combobox>
-</form>`} />
+  
+  <m-combobox name="multiple" label="Multiple select" multiple>
+    <m-option value="red">Red</m-option>
+    <m-option value="green">Green</m-option>
+    <m-option value="blue">Blue</m-option>
+    <m-option value="yellow">Yellow</m-option>
+  </m-combobox>
+</div>`} />
+</section>
 
-## Attributes
+---
 
-- **`name`** (string): The form control name
-- **`label`** (string): Accessible label for the combobox
-- **`disabled`** (boolean): Whether the combobox is disabled
-- **`multiple`** (boolean): Whether multiple options can be selected
-- **`value`** (string): The value of the selected option (or comma-separated values in multiple mode)
+## Pre-selected Values
 
-## Slots
+<section class="example-section" data-width="feature" data-reverse>
+<div class="typesetting">
 
-- **default**: Accepts `<m-option>` elements
+You can pre-select options in two ways:
+
+**Using the `selected` attribute** on individual `<m-option>` elements marks them as selected when the component initializes.
+
+**Using the `value` attribute** on the `<m-combobox>` itself programmatically selects the matching option. This is useful when dynamically setting values from JavaScript or server-side rendering.
+
+</div>
+<CodeExample html={`<div class="form">
+  <m-combobox name="selected-attr" label="Using selected attribute">
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear" selected>Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+  </m-combobox>
+  
+  <m-combobox name="value-attr" label="Using value attribute" value="orange">
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear">Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+  </m-combobox>
+</div>`} />
+</section>
+
+---
+
+## Clearable Input
+
+<section class="example-section" data-width="feature">
+<div class="typesetting">
+
+Since `m-combobox` wraps `m-input`, it inherits the `clearable` attribute. Adding this displays a clear button when the input has content.
+
+- The clear button uses `tabindex="-1"` so it's not tabbable
+- Clicking clear resets the selection and input value
+- The `m-input-clear` event fires before clearing and can be prevented
+
+</div>
+<CodeExample html={`<div class="form">
+  <m-combobox 
+    name="clearable-example" 
+    label="Clearable combobox" 
+    value="orange"
+    clearable
+  >
+    <m-option value="apple">Apple</m-option>
+    <m-option value="orange">Orange</m-option>
+    <m-option value="pear">Pear</m-option>
+  </m-combobox>
+</div>`} />
+</section>
+
+---
+
+## Disabled State
+
+<section class="example-section" data-width="feature" data-reverse>
+<div class="typesetting">
+
+The `disabled` attribute prevents all user interaction with the combobox. The component becomes non-focusable, the popover cannot be opened, and it is excluded from form submission.
+
+Individual options can also be disabled while keeping the combobox interactive.
+
+</div>
+<CodeExample html={`<div class="form">
+  <m-combobox name="disabled" label="Disabled combobox" disabled>
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear" selected>Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+  </m-combobox>
+  
+  <m-combobox name="partial-disabled" label="Disabled options">
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear" disabled>Pear (disabled)</m-option>
+    <m-option value="orange">Orange</m-option>
+  </m-combobox>
+</div>`} />
+</section>
+
+---
+
+## Validation
+
+<section class="example-section" data-width="feature">
+<div class="typesetting">
+
+`m-combobox` supports the `required` attribute for form validation. When required, the form cannot be submitted without a selection.
+
+The component uses the native Constraint Validation API and emits an `m-invalid` event when validation fails.
+
+</div>
+<CodeExample html={`<form id="validation-form" class="form">
+  <m-combobox name="country" label="Country (required)" required>
+    <m-option value="us">United States</m-option>
+    <m-option value="uk">United Kingdom</m-option>
+    <m-option value="ca">Canada</m-option>
+    <m-option value="au">Australia</m-option>
+  </m-combobox>
+  
+  <div id="validation-output" class="box" data-variant="surface" data-span="2">
+    <strong>Validation Status:</strong>
+    <pre id="validation-text" style="margin: 0.5rem 0 0 0;">Not yet validated</pre>
+  </div>
+  
+  <button type="submit">Submit</button>
+  <button type="reset">Reset</button>
+</form>`} js={`const validationForm = document.getElementById('validation-form');
+const combobox = document.querySelector('[name="country"]');
+const validationText = document.getElementById('validation-text');
+
+combobox.addEventListener('m-invalid', (e) => {
+  validationText.textContent = \`Invalid: \${e.detail.validationMessage}\`;
+  validationText.style.color = 'var(--color-destructive-fill-mid)';
+});
+
+combobox.addEventListener('change', () => {
+  if (combobox.value) {
+    validationText.textContent = \`Valid: "\${combobox.value}" selected\`;
+    validationText.style.color = 'var(--color-success-fill-mid)';
+  }
+});
+
+validationForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  validationText.textContent = 'Form submitted successfully!';
+  validationText.style.color = 'var(--color-success-fill-mid)';
+});`} />
+</section>
+
+---
 
 ## Events
 
-- **`m-combobox-change`**: Fired when the selection changes. Detail: `{ selected: string[] }`
+In addition to bubbling native events (`change`, `focus`, `blur`, `input`), `m-combobox` emits custom events for selection, focus changes, and inherits events from `m-input`.
+
+<section class="example-section" data-width="feature" data-reverse>
+<div class="typesetting">
+
+### m-combobox-change Event
+
+Fires when the selection changes. This is the primary event for tracking user selections.
+
+**Event Detail:**
+- `selected`: Array of currently selected option values
+
+### m-combobox-select Event
+
+Fires when an individual option is selected.
+
+**Event Detail:**
+- `option`: The `MOption` element that was selected
+- `selected`: `true` (always true for this event)
+
+### m-combobox-unselected Event
+
+Fires when an individual option is unselected.
+
+**Event Detail:**
+- `option`: The `MOption` element that was unselected
+- `selected`: `false` (always false for this event)
+
+### m-combobox-focus-change Event
+
+Fires when keyboard focus moves to a different option. This tracks the "active descendant" for keyboard navigation, not the selected state.
+
+**Event Detail:**
+- `option`: The `MOption` element that received focus (or `null`)
+
+### Inherited m-input Events
+
+Since `m-combobox` wraps `m-input`, it also bubbles:
+- `input` - Native input event when typing
+- `m-input-clear` - When the clear button is clicked
+- `m-invalid` - When validation fails
+
+</div>
+<CodeExample html={`<div class="stack" data-gap="2">
+  <m-combobox id="event-combobox" name="event-example" label="Select fruits" multiple>
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear">Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+    <m-option value="banana">Banana</m-option>
+  </m-combobox>
+  
+  <div id="event-log" class="box" data-variant="surface">
+    <strong>Event Log:</strong>
+    <ul id="event-log-list" style="margin: 0.5rem 0 0 0; padding-left: 1.5rem; max-height: 200px; overflow-y: auto;"></ul>
+  </div>
+</div>`} js={`const eventCombobox = document.getElementById('event-combobox');
+const eventLogList = document.getElementById('event-log-list');
+
+function logEvent(message, color = 'var(--color-neutral-fill-mid)') {
+  const li = document.createElement('li');
+  li.textContent = message;
+  li.style.color = color;
+  eventLogList.prepend(li);
+  
+  // Keep log size manageable
+  if (eventLogList.children.length > 10) {
+    eventLogList.removeChild(eventLogList.lastChild);
+  }
+}
+
+eventCombobox.addEventListener('m-combobox-change', (e) => {
+  logEvent(\`m-combobox-change: [\${e.detail.selected.join(', ') || 'none'}]\`, 'var(--color-primary-fill-mid)');
+});
+
+eventCombobox.addEventListener('m-combobox-select', (e) => {
+  logEvent(\`m-combobox-select: "\${e.detail.option.value}"\`, 'var(--color-success-fill-mid)');
+});
+
+eventCombobox.addEventListener('m-combobox-unselected', (e) => {
+  logEvent(\`m-combobox-unselected: "\${e.detail.option.value}"\`, 'var(--color-destructive-fill-mid)');
+});
+
+eventCombobox.addEventListener('m-combobox-focus-change', (e) => {
+  const value = e.detail.option?.value || 'none';
+  logEvent(\`m-combobox-focus-change: "\${value}"\`, 'var(--color-neutral-fill-mid)');
+});`} />
+</section>
+
+---
+
+## Search and Filtering
+
+<section class="example-section" data-width="feature">
+<div class="typesetting">
+
+`m-combobox` includes built-in search functionality powered by `m-search-list`. Type in the input to filter options in real-time.
+
+The `debounce` attribute controls the delay before filtering is applied (default: 150ms). This improves performance with large option lists.
+
+Filtering is case-insensitive and matches anywhere in the option text.
+
+</div>
+<CodeExample html={`<div class="form">
+  <m-combobox name="countries" label="Search countries" debounce="300">
+    <m-option value="us">United States</m-option>
+    <m-option value="uk">United Kingdom</m-option>
+    <m-option value="ca">Canada</m-option>
+    <m-option value="au">Australia</m-option>
+    <m-option value="de">Germany</m-option>
+    <m-option value="fr">France</m-option>
+    <m-option value="it">Italy</m-option>
+    <m-option value="es">Spain</m-option>
+    <m-option value="jp">Japan</m-option>
+    <m-option value="cn">China</m-option>
+  </m-combobox>
+</div>`} />
+</section>
+
+---
+
+## Focus Management
+
+<section class="example-section" data-width="feature" data-reverse>
+<div class="typesetting">
+
+`m-combobox` uses the ARIA activedescendant pattern for focus management. The combobox container maintains actual DOM focus while visually highlighting the "active" option using `aria-activedescendant`.
+
+This pattern:
+- Keeps focus on the input element
+- Updates `aria-activedescendant` to reference the currently focused option
+- Allows seamless keyboard navigation without moving DOM focus
+- Provides better screen reader experience
+
+The `m-combobox-focus-change` event fires whenever the focused option changes, which is separate from selection state.
+
+</div>
+<CodeExample html={`<div class="stack" data-gap="2">
+  <m-combobox id="focus-demo" name="focus-demo" label="Focus demo">
+    <m-option value="item-1">Item 1</m-option>
+    <m-option value="item-2">Item 2</m-option>
+    <m-option value="item-3">Item 3</m-option>
+    <m-option value="item-4">Item 4</m-option>
+  </m-combobox>
+  
+  <div class="box" data-variant="surface" style="padding: var(--size-2);">
+    <strong>Focused:</strong> <span id="focus-output">None</span><br>
+    <strong>Selected:</strong> <span id="select-output">None</span>
+  </div>
+</div>`} js={`const focusDemo = document.getElementById('focus-demo');
+const focusOutput = document.getElementById('focus-output');
+const selectOutput = document.getElementById('select-output');
+
+focusDemo.addEventListener('m-combobox-focus-change', (e) => {
+  focusOutput.textContent = e.detail.option?.value || 'None';
+});
+
+focusDemo.addEventListener('m-combobox-change', (e) => {
+  selectOutput.textContent = e.detail.selected.join(', ') || 'None';
+});`} />
+</section>
+
+---
+
+## Keyboard Navigation
+
+<section class="example-section" data-width="feature">
+<div class="typesetting">
+
+`m-combobox` supports full keyboard navigation following the ARIA combobox pattern:
+
+- **Arrow Up/Down**: Navigate between options (opens popover automatically)
+- **Home**: Jump to first option
+- **End**: Jump to last option
+- **Space/Enter**: Select the focused option
+- **Escape**: Close the popover and reset filter
+- **Shift + Arrow Keys**: Extended selection (multiple mode only)
+- **Shift + Home/End**: Select from current to first/last (multiple mode only)
+
+In single-select mode, arrow keys move focus only. Press Enter or Space to select.
+
+</div>
+<CodeExample html={`<div class="form">
+  <m-combobox name="keyboard-demo" label="Try keyboard navigation">
+    <m-option value="option-1">Option 1</m-option>
+    <m-option value="option-2">Option 2</m-option>
+    <m-option value="option-3">Option 3</m-option>
+    <m-option value="option-4">Option 4</m-option>
+    <m-option value="option-5">Option 5</m-option>
+    <m-option value="option-6">Option 6</m-option>
+  </m-combobox>
+  
+  <div class="box" data-variant="surface" data-span="2" style="padding: var(--size-2);">
+    <strong>Keyboard shortcuts:</strong>
+    <ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem;">
+      <li>↑/↓ - Navigate (opens list)</li>
+      <li>Home/End - First/Last</li>
+      <li>Space/Enter - Select</li>
+      <li>Escape - Close popover</li>
+      <li>Type to filter options</li>
+    </ul>
+  </div>
+</div>`} />
+</section>
+
+---
+
+## Slots
+
+<section class="example-section" data-width="feature" data-reverse>
+<div class="typesetting">
+
+Since `m-combobox` wraps `m-input`, it inherits slot support for inline customization:
+- `before` — content before the input (icons, chips, buttons)
+- `after` — content after the input
+- `clear` — replaces the built-in clear button
+- default slot — `<m-option>` elements for the listbox
+
+These slots make it easy to add search icons, tags, or custom clear buttons.
+
+</div>
+<CodeExample html={`<div class="form">
+  <m-combobox name="with-icon" label="With search icon">
+    <svg slot="after" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear">Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+  </m-combobox>
+</div>`} />
+</section>
+
+---
+
+## Accessibility
+
+<section class="example-section" data-width="feature">
+<div class="typesetting">
+
+`m-combobox` is built with accessibility as a priority:
+
+- **ARIA Roles**: Uses `role="combobox"` on the container and `role="listbox"` with `role="option"` on items
+- **ARIA States**: Manages `aria-expanded`, `aria-autocomplete`, `aria-controls`, `aria-activedescendant`, `aria-selected`, and `aria-multiselectable`
+- **Focus Management**: Implements the activedescendant pattern for screen reader compatibility
+- **Keyboard Support**: Full keyboard navigation matching native combobox controls
+- **Labels**: Supports `label` attribute for accessible naming
+
+The component follows the [ARIA Combobox Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/) from the WAI-ARIA Authoring Practices Guide.
+
+</div>
+<CodeExample html={`<div class="form">
+  <m-combobox 
+    name="accessible" 
+    label="Preferred contact method (required)"
+    required
+  >
+    <m-option value="email">Email</m-option>
+    <m-option value="phone">Phone</m-option>
+    <m-option value="sms">SMS</m-option>
+    <m-option value="mail">Postal Mail</m-option>
+  </m-combobox>
+</div>`} />
+</section>
+
+---
 
 ## See Also
 
 - [`<m-option>`](/components/m-option) - Individual option element
+- [`<m-listbox>`](/components/m-listbox) - List selection without search
+- [`<m-input>`](/components/m-input) - Text input component (wrapped by m-combobox)
 - [`<m-search-list>`](/components/m-search-list) - Search and filter functionality
-

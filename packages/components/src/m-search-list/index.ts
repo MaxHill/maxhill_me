@@ -145,6 +145,17 @@ export class MSearchList extends MElement {
         }, this.debounce);
     }
 
+    /**
+     * Programmatically filter items based on the current input value.
+     * This can be called to force an immediate filter update without waiting for debounce.
+     */
+    public filter() {
+        if (this.debounceTimeout) {
+            clearTimeout(this.debounceTimeout);
+        }
+        this.searchItems(this.input?.value || '');
+    }
+
     private searchItems(query: string) {
         let matchCount = 0;
         const totalCount = this.items.length;

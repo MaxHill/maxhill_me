@@ -125,6 +125,61 @@ describe('m-combobox', () => {
       expect(Array.isArray(el.value)).to.equal(true);
       expect(el.value).to.deep.equal([]);
     });
+
+    it('should initialize value from pre-selected option', async () => {
+      const form = await fixture<HTMLFormElement>(html`
+        <form>
+          <m-combobox name="fruit">
+            <m-option value="apple">Apple</m-option>
+            <m-option value="pear" selected>Pear</m-option>
+            <m-option value="orange">Orange</m-option>
+          </m-combobox>
+        </form>
+      `);
+
+      await waitUntil(() => form.querySelectorAll('m-option').length === 3);
+      const combobox = form.querySelector('m-combobox') as MCombobox;
+      
+      // Value should be set
+      expect(combobox.value).to.equal('pear');
+      
+      // Input field should display the selected option's text
+      const input = combobox.shadowRoot!.querySelector('m-input') as any;
+      expect(input.value).to.equal('Pear');
+      
+      // Form data should include the value
+      const formData = new FormData(form);
+      expect(formData.get('fruit')).to.equal('pear');
+    });
+
+    it('should initialize value from multiple pre-selected options', async () => {
+      const form = await fixture<HTMLFormElement>(html`
+        <form>
+          <m-combobox name="fruits" multiple>
+            <m-option value="apple" selected>Apple</m-option>
+            <m-option value="banana">Banana</m-option>
+            <m-option value="cherry" selected>Cherry</m-option>
+          </m-combobox>
+        </form>
+      `);
+
+      await waitUntil(() => form.querySelectorAll('m-option').length === 3);
+      const combobox = form.querySelector('m-combobox') as MCombobox;
+      
+      // Value should be an array of selected values
+      expect(combobox.value).to.deep.equal(['apple', 'cherry']);
+      expect(combobox.selectedValues).to.deep.equal(['apple', 'cherry']);
+      
+      // Multiselect chips should be rendered
+      const multiSelectList = combobox.shadowRoot!.querySelector('#multi-select-list') as HTMLUListElement;
+      expect(multiSelectList.children.length).to.equal(2);
+      expect(multiSelectList.textContent).to.include('Apple');
+      expect(multiSelectList.textContent).to.include('Cherry');
+      
+      // Form data should include all values
+      const formData = new FormData(form);
+      expect(formData.getAll('fruits')).to.deep.equal(['apple', 'cherry']);
+    });
   });
 
   describe('events', () => {
@@ -917,6 +972,113 @@ describe('m-combobox', () => {
         await new Promise(resolve => setTimeout(resolve, 0));
 
         expect(input.value).to.equal('');
+      });
+
+      it('should reset filter when input is reset to empty', async () => {
+        const el = await fixture<MCombobox>(html`
+          <m-combobox>
+            <m-option value="spain">Spain</m-option>
+            <m-option value="france">France</m-option>
+            <m-option value="italy">Italy</m-option>
+          </m-combobox>
+        `);
+
+        await waitUntil(() => el.querySelectorAll('m-option').length === 3);
+        const options = el.querySelectorAll('m-option');
+
+        el.focus();
+        const input = el.shadowRoot!.querySelector('m-input') as any;
+        
+        // Type to filter
+        input.value = 'spain';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Verify filtering happened
+        expect(options[0].getAttribute('data-match')).to.equal('true');
+        expect(options[1].getAttribute('data-match')).to.equal('false');
+        expect(options[2].getAttribute('data-match')).to.equal('false');
+
+        // Hit Escape to reset
+        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Input should be empty
+        expect(input.value).to.equal('');
+
+        // All options should be unfiltered (data-match="true" or no data-match)
+        expect(options[0].getAttribute('data-match')).to.not.equal('false');
+        expect(options[1].getAttribute('data-match')).to.not.equal('false');
+        expect(options[2].getAttribute('data-match')).to.not.equal('false');
+      });
+
+      it('should reset filter to match selected value on escape', async () => {
+        const el = await fixture<MCombobox>(html`
+          <m-combobox>
+            <m-option value="spain">Spain</m-option>
+            <m-option value="france">France</m-option>
+            <m-option value="italy">Italy</m-option>
+          </m-combobox>
+        `);
+
+        await waitUntil(() => el.querySelectorAll('m-option').length === 3);
+        const options = el.querySelectorAll('m-option');
+
+        // Select spain
+        el.focus();
+        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        await waitUntil(() => el.getAttribute('aria-activedescendant') === options[0].id);
+        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const input = el.shadowRoot!.querySelector('m-input') as any;
+        expect(input.value).to.equal('Spain');
+        expect(el.getAttribute('aria-expanded')).to.equal('false'); // Popover closed after selection
+        expect(el.value).to.equal('spain'); // Verify Spain is actually selected
+        expect(el.selectedOptions.length).to.equal(1);
+        expect(el.selectedOptions[0]).to.equal(options[0]);
+
+        // Blur the element to ensure clean state
+        el.blur();
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // Focus and set input to "france" to filter
+        el.focus();
+        await new Promise(resolve => setTimeout(resolve, 50));
+        input.value = 'france';
+        
+        // Manually trigger filter to match input value
+        const searchList = el.shadowRoot!.querySelector('m-search-list') as any;
+        searchList.filter();
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // Verify popover opened and filtering to france
+        await waitUntil(() => el.getAttribute('aria-expanded') === 'true');
+        expect(options[0].getAttribute('data-match')).to.equal('false');
+        expect(options[1].getAttribute('data-match')).to.equal('true');
+        expect(options[2].getAttribute('data-match')).to.equal('false');
+
+        // Verify popover is open before Escape
+        const popover = el.shadowRoot!.querySelector('#popover') as HTMLElement;
+        expect(popover.matches(':popover-open')).to.equal(true);
+
+        // Debug: check what text content we have
+        const selectedOption = el.selectedOptions[0];
+        const expectedText = selectedOption?.textContent || '';
+        
+        // Hit Escape to reset to selected value
+        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // Input should reset to selected option's text
+        expect(input.value).to.equal(expectedText.trim());
+
+        // Wait for filter to complete
+        await waitUntil(() => options[0].getAttribute('data-match') === 'true');
+        
+        // Filter should reset - Spain should match
+        expect(options[0].getAttribute('data-match')).to.equal('true');
+        // Note: fuzzy search may match other items too, so we just verify Spain matches
       });
     });
 
