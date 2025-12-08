@@ -1,13 +1,13 @@
 import { QueryOptions } from "./query";
 
-interface OptionLike extends HTMLElement {
+export interface OptionLike extends HTMLElement {
     selected?: boolean;
     focused?: boolean;
     value?: string;
     disabled?: boolean;
 }
 
-interface SelectionResult {
+export interface SelectionResult {
     itemToSelect: OptionLike;
     itemsToDeselect: OptionLike[];
     shouldToggle: boolean;
@@ -70,26 +70,33 @@ export class OptionListManager {
         }, []);
     }
 
-    get value(): string | string[] | null {
-        if (this.multiple) return this.selectedValues;
-        return this.selectedOptions[0]?.value ?? null;
-    }
-
     constructor(
         target: HTMLElement, 
         optionsQuerySelector: string, 
-        callbacks = {
-            selectCallback: (_selection: SelectionResult) => {},
-            focusCallback: (_focus: OptionLike) => {}
-        },
-        multiple?: boolean, 
+        callbacksOrMultiple?: { selectCallback(selection: SelectionResult): void, focusCallback(focus: OptionLike): void } | boolean,
+        multipleOrOptionsQuery?: boolean | QueryOptions, 
         optionsQuery?: QueryOptions
     ) {
         this.target = target;
         this.optionsQuerySelector = optionsQuerySelector;
-        this.callbacks = callbacks;
-        this.optionsQuery = optionsQuery;
-        this.multiple = multiple || false;
+        
+        // Handle overloaded constructor signatures
+        // Signature 1: (target, selector, callbacks, multiple?, optionsQuery?)
+        // Signature 2: (target, selector, multiple?, optionsQuery?)
+        if (typeof callbacksOrMultiple === 'object') {
+            // Signature 1: callbacks provided
+            this.callbacks = callbacksOrMultiple;
+            this.multiple = (multipleOrOptionsQuery as boolean) || false;
+            this.optionsQuery = optionsQuery;
+        } else {
+            // Signature 2: multiple provided (or nothing)
+            this.callbacks = {
+                selectCallback: (_selection: SelectionResult) => {},
+                focusCallback: (_focus: OptionLike) => {}
+            };
+            this.multiple = (callbacksOrMultiple as boolean) || false;
+            this.optionsQuery = multipleOrOptionsQuery as QueryOptions;
+        }
     }
 
 

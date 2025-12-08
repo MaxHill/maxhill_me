@@ -1,7 +1,7 @@
 export interface MInvalidEventDetail {
     validity: ValidityState;
     validationMessage: string;
-    value: string | string[];
+    value: string | string[] | null;
 }
 
 export class MInvalidEvent extends CustomEvent<MInvalidEventDetail> {
