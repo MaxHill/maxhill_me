@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-Combobox Slot & Attribute Test</title>
+    <script type="module" src="./src/register-all.ts"></script>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        h2 {
+            margin-top: 0;
+        }
+        m-combobox {
+            display: block;
+            margin: 10px 0;
+        }
+        .icon {
+            width: 20px;
+            height: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>M-Combobox: Slots & Attributes Test</h1>
+
+    <div class="test-section">
+        <h2>1. Placeholder Attribute</h2>
+        <m-combobox 
+            name="test1" 
+            label="Choose a color"
+            placeholder="Type to search colors..."
+        >
+            <m-option value="red">Red</m-option>
+            <m-option value="blue">Blue</m-option>
+            <m-option value="green">Green</m-option>
+        </m-combobox>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Clearable Attribute (Default)</h2>
+        <m-combobox 
+            name="test2" 
+            label="Choose a fruit"
+            value="apple"
+        >
+            <m-option value="apple">Apple</m-option>
+            <m-option value="banana">Banana</m-option>
+            <m-option value="orange">Orange</m-option>
+        </m-combobox>
+        <p style="color: #666; font-size: 14px; margin-top: 10px;">
+            Clear button appears by default when value is set.
+        </p>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Clearable Disabled</h2>
+        <m-combobox 
+            name="test3" 
+            label="Choose a color"
+            clearable="false"
+            value="red"
+        >
+            <m-option value="red">Red</m-option>
+            <m-option value="blue">Blue</m-option>
+            <m-option value="green">Green</m-option>
+        </m-combobox>
+        <p style="color: #666; font-size: 14px; margin-top: 10px;">
+            Clear button is disabled with clearable="false", even though value is set.
+        </p>
+    </div>
+
+    <div class="test-section">
+        <h2>4. After Slot with Clearable</h2>
+        <m-combobox 
+            name="test4" 
+            label="Email"
+            placeholder="Enter email..."
+            autocomplete="email"
+            value="user@example.com"
+        >
+            <svg slot="after" class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="20" height="16" x="2" y="4" rx="2"/>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            </svg>
+            <m-option value="user@example.com">user@example.com</m-option>
+            <m-option value="admin@example.com">admin@example.com</m-option>
+            <m-option value="test@example.com">test@example.com</m-option>
+        </m-combobox>
+        <p style="color: #666; font-size: 14px; margin-top: 10px;">
+            After slot icon with default clear button (appears when value is set).
+        </p>
+    </div>
+
+    <div class="test-section">
+        <h2>5. After Slot (Search Icon)</h2>
+        <m-combobox 
+            name="test5" 
+            label="Search countries"
+            placeholder="Search..."
+        >
+            <svg slot="after" class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <m-option value="us">United States</m-option>
+            <m-option value="uk">United Kingdom</m-option>
+            <m-option value="ca">Canada</m-option>
+        </m-combobox>
+    </div>
+
+    <div class="test-section">
+        <h2>6. Multiple Mode with Clear</h2>
+        <m-combobox 
+            name="test6" 
+            label="Select tags"
+            multiple
+            placeholder="Add tags..."
+        >
+            <svg slot="after" class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                <line x1="7" x2="7.01" y1="7" y2="7"/>
+            </svg>
+            <m-option value="javascript">JavaScript</m-option>
+            <m-option value="typescript">TypeScript</m-option>
+            <m-option value="react">React</m-option>
+            <m-option value="vue">Vue</m-option>
+            <m-option value="angular">Angular</m-option>
+        </m-combobox>
+        <p style="color: #666; font-size: 14px; margin-top: 10px;">
+            In multiple mode, the clear button only clears the search input, not the selected tags. Clear button appears by default.
+        </p>
+    </div>
+
+    <div class="test-section">
+        <h2>7. Size & Autocomplete Attributes</h2>
+        <m-combobox 
+            name="test7" 
+            label="Username"
+            placeholder="Username..."
+            size="10"
+            autocomplete="username"
+        >
+            <m-option value="john_doe">john_doe</m-option>
+            <m-option value="jane_smith">jane_smith</m-option>
+            <m-option value="bob_wilson">bob_wilson</m-option>
+        </m-combobox>
+    </div>
+
+    <div class="test-section">
+        <h2>8. Disabled State</h2>
+        <m-combobox 
+            name="test8" 
+            label="Disabled combobox"
+            disabled
+            value="option1"
+            placeholder="Cannot interact..."
+        >
+            <m-option value="option1">Option 1</m-option>
+            <m-option value="option2">Option 2</m-option>
+            <m-option value="option3">Option 3</m-option>
+        </m-combobox>
+        <p style="color: #666; font-size: 14px; margin-top: 10px;">
+            The input should appear visually disabled and not accept interaction.
+        </p>
+    </div>
+
+    <div class="test-section">
+        <h2>9. Readonly State</h2>
+        <m-combobox 
+            name="test9" 
+            label="Readonly combobox"
+            readonly
+            value="option2"
+            placeholder="Cannot edit..."
+        >
+            <m-option value="option1">Option 1</m-option>
+            <m-option value="option2">Option 2</m-option>
+            <m-option value="option3">Option 3</m-option>
+        </m-combobox>
+        <p style="color: #666; font-size: 14px; margin-top: 10px;">
+            The input should be readonly (value visible but not editable).
+        </p>
+    </div>
+
+    <script>
+        // Log events to console
+        document.querySelectorAll('m-combobox').forEach(combo => {
+            combo.addEventListener('m-combobox-change', (e) => {
+                console.log(`${combo.getAttribute('name')}: Selection changed`, e.detail);
+            });
+            
+            combo.addEventListener('m-input-clear', (e) => {
+                console.log(`${combo.getAttribute('name')}: Clear button clicked`, e.detail);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -350,6 +350,7 @@ focusDemo.addEventListener('m-listbox-change', (e) => {
 `m-listbox` supports full keyboard navigation following the ARIA listbox pattern:
 
 - **Arrow Up/Down**: Navigate between options
+- **Ctrl+P / Ctrl+N**: Navigate to previous/next option (Emacs-style)
 - **Home**: Jump to first option
 - **End**: Jump to last option
 - **Space/Enter**: Toggle selection of focused option
@@ -373,7 +374,7 @@ All keyboard interactions wrap around (moving past the last option goes to the f
   <div class="box" data-variant="surface" data-span="2" style="padding: var(--size-2);">
     <strong>Keyboard shortcuts:</strong>
     <ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem;">
-      <li>↑/↓ - Navigate</li>
+      <li>↑/↓ or Ctrl+P/N - Navigate</li>
       <li>Home/End - First/Last</li>
       <li>Space/Enter - Select</li>
       <li>Shift + ↑/↓ - Extended selection</li>

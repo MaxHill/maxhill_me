@@ -18,12 +18,18 @@ baseStyleSheet.replaceSync(styles);
  * @tagname m-combobox
  * 
  * @slot - Default slot for m-option elements
+ * @slot after - Content after the input element (icons, buttons)
  * 
  * @attr {string} name - The form control name
  * @attr {boolean} disabled - Whether the combobox is disabled
  * @attr {boolean} multiple - Whether multiple items can be selected
  * @attr {string} value - The value of the selected item (or comma-separated values in multiple mode)
  * @attr {string} label - Accessible label for the combobox
+ * @attr {string} placeholder - Placeholder text for the input
+ * @attr {boolean} clearable - Shows a clear button when input has value (default: true)
+ * @attr {string} autocomplete - Autocomplete hint (e.g., email, username)
+ * @attr {number} size - Visual width in characters
+ * @attr {boolean} autofocus - Automatically focuses the input on page load
  * 
  * @prop {string | string[] | null} value - The value from the listbox
  * @prop {boolean} multiple - Whether multiple selection is enabled
@@ -35,13 +41,28 @@ baseStyleSheet.replaceSync(styles);
 export class MCombobox extends MFormAssociatedElement {
     static tagName = 'm-combobox';
     static formAssociated = true;
-    static observedAttributes = [...MFormAssociatedElement.observedAttributes, 'multiple', 'debounce'];
+    static observedAttributes = [...MFormAssociatedElement.observedAttributes, 'multiple', 'debounce', 'placeholder', 'clearable', 'autocomplete', 'size', 'autofocus'];
 
     @BindAttribute()
     multiple: boolean = false;
 
     @BindAttribute()
     debounce: number = 150;
+
+    @BindAttribute()
+    placeholder?: string;
+
+    @BindAttribute()
+    clearable: boolean = true;
+
+    @BindAttribute()
+    autocomplete?: string;
+
+    @BindAttribute()
+    size?: number;
+
+    @BindAttribute()
+    autofocus: boolean = false;
 
     private _shadowRoot: ShadowRoot;
     private popoverCleanup?: () => void;
@@ -249,6 +270,18 @@ export class MCombobox extends MFormAssociatedElement {
                 // TODO: maybe this is not needed?
                 if (this.inputElement) {
                     this.inputElement.removeAttribute("label");
+                }
+            }
+        }
+        
+        // Forward input-related attributes to m-input element
+        const inputForwardAttributes = ['placeholder', 'autocomplete', 'size', 'autofocus', 'clearable', 'disabled', 'readonly'];
+        if (inputForwardAttributes.includes(name)) {
+            if (this.inputElement) {
+                if (newValue !== null) {
+                    this.inputElement.setAttribute(name, newValue);
+                } else {
+                    this.inputElement.removeAttribute(name);
                 }
             }
         }
@@ -543,8 +576,19 @@ export class MCombobox extends MFormAssociatedElement {
     private render() {
         this._shadowRoot.innerHTML = `
             <m-search-list debounce="${this.debounce}" target="#popover slot">
-                <m-input type="text" ${this.label ? `label="${this.label}"` : ''}>
+                <m-input 
+                    type="text" 
+                    ${this.label ? `label="${this.label}"` : ''}
+                    ${this.placeholder ? `placeholder="${this.placeholder}"` : ''}
+                    ${this.clearable ? 'clearable' : ''}
+                    ${this.autocomplete ? `autocomplete="${this.autocomplete}"` : ''}
+                    ${this.size != null ? `size="${this.size}"` : ''}
+                    ${this.autofocus ? 'autofocus' : ''}
+                    ${this.disabled ? 'disabled' : ''}
+                    ${this.readonly ? 'readonly' : ''}
+                >
                     <ul slot="before" id="multi-select-list"></ul>
+                    <slot name="after" slot="after"></slot>
                 </m-input>
 
                 <div 

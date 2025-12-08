@@ -139,19 +139,31 @@ You can pre-select options in two ways:
 <section class="example-section" data-width="feature">
 <div class="typesetting">
 
-Since `m-combobox` wraps `m-input`, it inherits the `clearable` attribute. Adding this displays a clear button when the input has content.
+The combobox shows a clear button by default when the input has a value. The clear button allows users to quickly reset their selection.
 
+- Enabled by default (`clearable="true"`)
 - The clear button uses `tabindex="-1"` so it's not tabbable
-- Clicking clear resets the selection and input value
+- In multiple selection mode, the clear button only clears the search input, not the selected items
 - The `m-input-clear` event fires before clearing and can be prevented
+- To disable the clear button, set `clearable="false"`
 
 </div>
 <CodeExample html={`<div class="form">
   <m-combobox 
     name="clearable-example" 
-    label="Clearable combobox" 
+    label="Clearable combobox (default)" 
     value="orange"
-    clearable
+  >
+    <m-option value="apple">Apple</m-option>
+    <m-option value="orange">Orange</m-option>
+    <m-option value="pear">Pear</m-option>
+  </m-combobox>
+  
+  <m-combobox 
+    name="not-clearable" 
+    label="Not clearable" 
+    value="pear"
+    clearable="false"
   >
     <m-option value="apple">Apple</m-option>
     <m-option value="orange">Orange</m-option>
@@ -412,6 +424,7 @@ focusDemo.addEventListener('m-combobox-change', (e) => {
 `m-combobox` supports full keyboard navigation following the ARIA combobox pattern:
 
 - **Arrow Up/Down**: Navigate between options (opens popover automatically)
+- **Ctrl+P / Ctrl+N**: Navigate to previous/next option (Emacs-style)
 - **Home**: Jump to first option
 - **End**: Jump to last option
 - **Space/Enter**: Select the focused option
@@ -435,7 +448,7 @@ In single-select mode, arrow keys move focus only. Press Enter or Space to selec
   <div class="box" data-variant="surface" data-span="2" style="padding: var(--size-2);">
     <strong>Keyboard shortcuts:</strong>
     <ul style="margin: 0.5rem 0 0 0; padding-left: 1.5rem;">
-      <li>↑/↓ - Navigate (opens list)</li>
+      <li>↑/↓ or Ctrl+P/N - Navigate (opens list)</li>
       <li>Home/End - First/Last</li>
       <li>Space/Enter - Select</li>
       <li>Escape - Close popover</li>
@@ -453,12 +466,10 @@ In single-select mode, arrow keys move focus only. Press Enter or Space to selec
 <div class="typesetting">
 
 Since `m-combobox` wraps `m-input`, it inherits slot support for inline customization:
-- `before` — content before the input (icons, chips, buttons)
-- `after` — content after the input
-- `clear` — replaces the built-in clear button
+- `after` — content after the input (e.g., search icons)
 - default slot — `<m-option>` elements for the listbox
 
-These slots make it easy to add search icons, tags, or custom clear buttons.
+**Note**: The `before` slot is used internally for multi-select chips and is not available for custom content.
 
 </div>
 <CodeExample html={`<div class="form">
