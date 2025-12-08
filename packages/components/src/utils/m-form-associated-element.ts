@@ -26,6 +26,12 @@ export abstract class MFormAssociatedElement extends MElement {
      */
     static formAssociated = true;
 
+
+    /**
+     * Returns the associated form element, if any.
+     */
+    get form(): HTMLFormElement | null { return this.internals.form; }
+
     /**
      * Label that can be used in the ui and also set as the aria-label
      */
@@ -57,37 +63,42 @@ export abstract class MFormAssociatedElement extends MElement {
      * This is used on form reset
      */
     @BindAttribute({ attribute: "value" })
-    defaultValue: string = '';
+    defaultValue: string | null = null;
 
-    private _value: string | string[] = '';
+    private _value: string | string[] | null = null;
     /**
      *
-     * @returns {string|string[]} - The value of the element
+     * @returns {string|string[]|null} - The value of the element
      */
-    get value(): string | string[] {
+    get value(): string | string[] | null {
         return this._value
     }
 
     /**
-     * @param {string|string[]} value - sets both the value and the form value for the element
+     * @param {string|string[]|null} value - sets both the value and the form value for the element
      */
-    set value(value: string | string[]) {
+    set value(value: string | string[] | null) {
         // Don't set value if the element is disabled
         if (this.disabled) return;
         if (this.value === value) return;
 
         if (Array.isArray(value)) {
-            if (this.name) {
-                const formData = new FormData();
-                for (const val of value) {
-                    formData.append(this.name, val as string);
-                }
-                this._value = value;
-                this.internals.setFormValue(formData);
+            if (!this.name) {
+                console.error(
+                    `Cannot set array value without name attribute. Component: ${this.tagName}`
+                );
+                return;
             }
+            const formData = new FormData();
+            for (const val of value) {
+                formData.append(this.name, val as string);
+            }
+            this._value = value;
+            this.internals.setFormValue(formData);
         } else {
             this._value = value;
-            this.internals.setFormValue(value)
+            // Only set form value if value is not null
+            this.internals.setFormValue(value ?? '')
         }
 
         this.onValueChange && this.onValueChange(value)
@@ -97,7 +108,7 @@ export abstract class MFormAssociatedElement extends MElement {
     /**
      * Implement this to hook into when the value is updated
      */
-    protected onValueChange?: (value: string | string[]) => void;
+    protected onValueChange?: (value: string | string[] | null) => void;
 
     /**
      * Implement this to hook into when the validation state changes.
@@ -136,28 +147,30 @@ export abstract class MFormAssociatedElement extends MElement {
 
     connectedCallback() {
         this.addEventListener("invalid", this.handleInvalid);
-        
+
         if (this.defaultValue) {
             this.value = this.defaultValue;
         }
-        
+
         // Note: updateValidity() should be called by subclasses after they render their DOM
         // TODO: fix this behavior
     }
-    
+
     disconnectedCallback() {
         this.removeEventListener("invalid", this.handleInvalid);
     }
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
-        this.updateValidity();
 
+        // Guard: Don't process if internals not yet initialized
+        if (!this.internals) return;
+
+        this.updateValidity();
 
         if (name === "label") {
             this.internals.ariaLabel = newValue as string;
         }
-
 
         if (name === "disabled") {
             if (this.disabled) {
@@ -175,11 +188,11 @@ export abstract class MFormAssociatedElement extends MElement {
         // Prevent native validation bubble and focus handling
         // (native browser can't focus through shadow DOM, so we handle it ourselves)
         e.preventDefault();
-        
+
         // Update custom validation state
         this.hasInteracted = true;
         this.updateValidity();
-        
+
         // Focus the first invalid element only
         const form = this.internals.form;
         if (form) {
@@ -242,8 +255,8 @@ export abstract class MFormAssociatedElement extends MElement {
      * @param anchor - Optional anchor element for constraint validation API
      */
     protected updateValidationState(
-        validityState: ValidityStateFlags, 
-        validationMessage: string = '', 
+        validityState: ValidityStateFlags,
+        validationMessage: string = '',
         anchor?: HTMLElement
     ): void {
         // Set validity on internals
@@ -310,7 +323,7 @@ export abstract class MFormAssociatedElement extends MElement {
         // Trigger validation with UI
         this.hasInteracted = true;
         this.updateValidity();
-        
+
         // Fire 'invalid' event if needed (handled by handleInvalid)
         // Note: We use checkValidity() not reportValidity() to avoid native browser UI
         return this.internals.checkValidity();
@@ -337,9 +350,9 @@ export abstract class MFormAssociatedElement extends MElement {
      *
      * @param {KeyboardEvent} e - Keydown event to listen for enter key
      */
-    protected submitOnEnter = (e: KeyboardEvent) =>  {
+    protected submitOnEnter = (e: KeyboardEvent) => {
         const form = this.internals.form as HTMLFormElement | null;
-        if(e.key === "Enter" && form) {
+        if (e.key === "Enter" && form) {
             form.requestSubmit();
         }
     }

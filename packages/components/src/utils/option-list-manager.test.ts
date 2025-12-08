@@ -232,120 +232,9 @@ describe('OptionListManager', () => {
         });
     });
 
-    describe('value getter - single select mode', () => {
-        it('should return value of first selected option', async () => {
-            const container = await fixture<HTMLElement>(html`
-                <div>
-                    <m-option value="1">Option 1</m-option>
-                    <m-option value="2" selected>Option 2</m-option>
-                    <m-option value="3" selected>Option 3</m-option>
-                </div>
-            `);
-            
-            const manager = new OptionListManager(
-                container, 
-                'm-option', 
-                false, 
-                { dom: 'light' }
-            );
-            
-            expect(manager.value).to.equal('2');
-        });
-
-        it('should return null when no option is selected', async () => {
-            const container = await fixture<HTMLElement>(html`
-                <div>
-                    <m-option value="1">Option 1</m-option>
-                    <m-option value="2">Option 2</m-option>
-                </div>
-            `);
-            
-            const manager = new OptionListManager(
-                container, 
-                'm-option', 
-                false, 
-                { dom: 'light' }
-            );
-            
-            expect(manager.value).to.be.null;
-        });
-
-        it('should return empty string when selected option has no value', async () => {
-            const container = await fixture<HTMLElement>(html`
-                <div>
-                    <m-option selected>Option without value</m-option>
-                </div>
-            `);
-            
-            const manager = new OptionListManager(
-                container, 
-                'm-option', 
-                false, 
-                { dom: 'light' }
-            );
-            
-            expect(manager.value).to.equal('');
-        });
-    });
-
-    describe('value getter - multiple select mode', () => {
-        it('should return array of selected values', async () => {
-            const container = await fixture<HTMLElement>(html`
-                <div>
-                    <m-option value="1" selected>Option 1</m-option>
-                    <m-option value="2">Option 2</m-option>
-                    <m-option value="3" selected>Option 3</m-option>
-                    <m-option value="4" selected>Option 4</m-option>
-                </div>
-            `);
-            
-            const manager = new OptionListManager(
-                container, 
-                'm-option', 
-                true, 
-                { dom: 'light' }
-            );
-            
-            expect(manager.value).to.deep.equal(['1', '3', '4']);
-        });
-
-        it('should return empty array when no options are selected', async () => {
-            const container = await fixture<HTMLElement>(html`
-                <div>
-                    <m-option value="1">Option 1</m-option>
-                    <m-option value="2">Option 2</m-option>
-                </div>
-            `);
-            
-            const manager = new OptionListManager(
-                container, 
-                'm-option', 
-                true, 
-                { dom: 'light' }
-            );
-            
-            expect(manager.value).to.deep.equal([]);
-        });
-
-        it('should exclude options without values from array', async () => {
-            const container = await fixture<HTMLElement>(html`
-                <div>
-                    <m-option value="1" selected>Option 1</m-option>
-                    <m-option selected>Option without value</m-option>
-                    <m-option value="3" selected>Option 3</m-option>
-                </div>
-            `);
-            
-            const manager = new OptionListManager(
-                container, 
-                'm-option', 
-                true, 
-                { dom: 'light' }
-            );
-            
-            expect(manager.value).to.deep.equal(['1', '3']);
-        });
-    });
+    // Note: value getter was removed from OptionListManager
+    // Value is now managed at the component level (e.g., MListbox)
+    // Components use selectedValues to compute their value property
 
     describe('integration with MOption', () => {
         it('should work with MOption custom elements', async () => {
@@ -416,7 +305,7 @@ describe('OptionListManager', () => {
             option1.selected = true;
             
             expect(manager.selectedOptions).to.have.lengthOf(1);
-            expect(manager.value).to.equal('1');
+            expect(manager.selectedValues).to.deep.equal(['1']);
             
             const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
             option2.selected = true;
@@ -439,7 +328,6 @@ describe('OptionListManager', () => {
             expect(manager.options).to.have.lengthOf(0);
             expect(manager.selectedOptions).to.have.lengthOf(0);
             expect(manager.selectedValues).to.deep.equal([]);
-            expect(manager.value).to.be.null;
         });
 
         it('should handle all options being disabled', async () => {
@@ -773,7 +661,7 @@ describe('OptionListManager', () => {
             });
         });
 
-        describe('focusSet method', () => {
+        describe('focus method', () => {
             it('should set focused property on the option', async () => {
                 const container = await fixture<HTMLElement>(html`
                     <div>
@@ -791,7 +679,7 @@ describe('OptionListManager', () => {
                 
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 
                 expect(option1.focused).to.be.true;
                 expect(manager.focusedElement).to.equal(option1);
@@ -815,10 +703,10 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 expect(option1.focused).to.be.true;
                 
-                manager.focusSet(option2);
+                manager.focus(option2);
                 expect(option1.hasAttribute('focused')).to.be.false;
                 expect(option2.focused).to.be.true;
                 expect(manager.focusedElement).to.equal(option2);
@@ -840,10 +728,10 @@ describe('OptionListManager', () => {
                 
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 expect(manager.focusedElement).to.equal(option1);
                 
-                manager.focusSet(null);
+                manager.focus(null);
                 expect(manager.focusedElement).to.equal(option1);
             });
         });
@@ -950,7 +838,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 manager.focusNext();
                 
                 expect(manager.focusedElement).to.equal(option2);
@@ -977,7 +865,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option3 = container.querySelector<MOption>('m-option[value="3"]')!;
                 
-                manager.focusSet(option3);
+                manager.focus(option3);
                 manager.focusNext();
                 
                 expect(manager.focusedElement).to.equal(option1);
@@ -1029,7 +917,7 @@ describe('OptionListManager', () => {
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 const option3 = container.querySelector<MOption>('m-option[value="3"]')!;
                 
-                manager.focusSet(option3);
+                manager.focus(option3);
                 manager.focusPrev();
                 
                 expect(manager.focusedElement).to.equal(option2);
@@ -1056,7 +944,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option3 = container.querySelector<MOption>('m-option[value="3"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 manager.focusPrev();
                 
                 expect(manager.focusedElement).to.equal(option3);
@@ -1106,7 +994,7 @@ describe('OptionListManager', () => {
                 
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 expect(manager.focusedElement).to.equal(option1);
                 expect(option1.focused).to.be.true;
                 
@@ -1585,7 +1473,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 manager.select(option2);
                 
                 expect(manager.focusedElement).to.equal(option2);
@@ -1694,7 +1582,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 manager.select(option2);
                 
                 expect(manager.focusedElement).to.equal(option1);
@@ -1719,7 +1607,7 @@ describe('OptionListManager', () => {
                 
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 
-                manager.focusSet(option2);
+                manager.focus(option2);
                 manager.selectFocused();
                 
                 expect(option2.selected).to.be.true;
@@ -1761,7 +1649,7 @@ describe('OptionListManager', () => {
                 
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 manager.selectFocused();
                 expect(option1.selected).to.be.true;
                 
@@ -1870,7 +1758,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 manager.selectNext();
                 
                 expect(option2.selected).to.be.true;
@@ -1912,7 +1800,7 @@ describe('OptionListManager', () => {
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 const option3 = container.querySelector<MOption>('m-option[value="3"]')!;
                 
-                manager.focusSet(option3);
+                manager.focus(option3);
                 manager.selectPrev();
                 
                 expect(option2.selected).to.be.true;
@@ -2003,7 +1891,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 
-                manager.focusSet(option2);
+                manager.focus(option2);
                 
                 const result = manager.createSelectionResultMultiple(option1);
                 
@@ -2031,7 +1919,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 
                 const result = manager.createSelectionResultMultiple(option2);
                 
@@ -2167,7 +2055,7 @@ describe('OptionListManager', () => {
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 
                 // Set initial focus
-                manager.focusSet(option1);
+                manager.focus(option1);
                 
                 const event = new KeyboardEvent('keydown', { key: 'ArrowDown' });
                 manager.handleKeydown(event);
@@ -2195,7 +2083,7 @@ describe('OptionListManager', () => {
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 
                 // Set initial focus
-                manager.focusSet(option2);
+                manager.focus(option2);
                 
                 const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
                 manager.handleKeydown(event);
@@ -2272,7 +2160,7 @@ describe('OptionListManager', () => {
                 );
                 
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
-                manager.focusSet(option2);
+                manager.focus(option2);
                 
                 const event = new KeyboardEvent('keydown', { key: ' ' });
                 manager.handleKeydown(event);
@@ -2297,7 +2185,7 @@ describe('OptionListManager', () => {
                 );
                 
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
-                manager.focusSet(option2);
+                manager.focus(option2);
                 
                 const event = new KeyboardEvent('keydown', { key: 'Enter' });
                 manager.handleKeydown(event);
@@ -2326,7 +2214,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 
                 const event = new KeyboardEvent('keydown', { key: 'ArrowDown' });
                 manager.handleKeydown(event);
@@ -2355,7 +2243,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 
                 const event = new KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true });
                 manager.handleKeydown(event);
@@ -2383,7 +2271,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 
-                manager.focusSet(option2);
+                manager.focus(option2);
                 
                 const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
                 manager.handleKeydown(event);
@@ -2412,7 +2300,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
                 
-                manager.focusSet(option2);
+                manager.focus(option2);
                 
                 const event = new KeyboardEvent('keydown', { key: 'ArrowUp', shiftKey: true });
                 manager.handleKeydown(event);
@@ -2440,7 +2328,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option3 = container.querySelector<MOption>('m-option[value="3"]')!;
                 
-                manager.focusSet(option3);
+                manager.focus(option3);
                 
                 const event = new KeyboardEvent('keydown', { key: 'Home' });
                 manager.handleKeydown(event);
@@ -2468,7 +2356,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option3 = container.querySelector<MOption>('m-option[value="3"]')!;
                 
-                manager.focusSet(option3);
+                manager.focus(option3);
                 
                 const event = new KeyboardEvent('keydown', { key: 'Home', shiftKey: true });
                 manager.handleKeydown(event);
@@ -2496,7 +2384,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option3 = container.querySelector<MOption>('m-option[value="3"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 
                 const event = new KeyboardEvent('keydown', { key: 'End' });
                 manager.handleKeydown(event);
@@ -2524,7 +2412,7 @@ describe('OptionListManager', () => {
                 const option1 = container.querySelector<MOption>('m-option[value="1"]')!;
                 const option3 = container.querySelector<MOption>('m-option[value="3"]')!;
                 
-                manager.focusSet(option1);
+                manager.focus(option1);
                 
                 const event = new KeyboardEvent('keydown', { key: 'End', shiftKey: true });
                 manager.handleKeydown(event);
@@ -2550,7 +2438,7 @@ describe('OptionListManager', () => {
                 );
                 
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
-                manager.focusSet(option2);
+                manager.focus(option2);
                 
                 const event = new KeyboardEvent('keydown', { key: ' ' });
                 manager.handleKeydown(event);
@@ -2577,7 +2465,7 @@ describe('OptionListManager', () => {
                 );
                 
                 const option2 = container.querySelector<MOption>('m-option[value="2"]')!;
-                manager.focusSet(option2);
+                manager.focus(option2);
                 
                 const event = new KeyboardEvent('keydown', { key: 'Enter' });
                 manager.handleKeydown(event);

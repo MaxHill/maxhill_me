@@ -139,6 +139,11 @@ export class MInput extends MFormAssociatedElement {
             delegatesFocus: true
         });
         this._shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+        
+        // Set default value to empty string for text inputs (not null like listbox)
+        if (this.value === null) {
+            this.value = '';
+        }
     }
 
     connectedCallback() {
@@ -204,13 +209,14 @@ export class MInput extends MFormAssociatedElement {
     /**
      * Tie wrapped native input value to m-input value
      */
-    protected onValueChange = (value: string | string[]) => {
+    protected onValueChange = (value: string | string[] | null) => {
         if (Array.isArray(value)) {
             console.error("trying to set array value to string input", this.tagName, value);
             return;
         }
         if (this.inputElement) {
-            this.inputElement.value = value;
+            // Convert null to empty string for native input element
+            this.inputElement.value = value ?? '';
         }
     }
 
@@ -274,7 +280,7 @@ export class MInput extends MFormAssociatedElement {
             this.updateValidationState({}, '');
             return;
         }
-        const value = this.value as string;
+        const value = (this.value ?? '') as string;
         const validityState: ValidityStateFlags = {};
         let validationMessage = '';
         

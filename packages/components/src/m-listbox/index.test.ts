@@ -33,8 +33,8 @@ describe('m-listbox', () => {
     });
   });
 
-  describe('list box items ARIA', () => {
-    it('should set aria-selected="true" on selected item', async () => {
+  describe('list box options ARIA', () => {
+    it('should set aria-selected="true" on selected option', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox value="apple">
           <m-option value="apple">Apple</m-option>
@@ -43,12 +43,12 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const items = el.querySelectorAll('m-option');
-      const appleItem = items[0] as MOption;
-      const pearItem = items[1] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const appleOption = options[0] as MOption;
+      const pearOption = options[1] as MOption;
 
-      expect(appleItem.getAttribute('aria-selected')).to.equal('true');
-      expect(pearItem.getAttribute('aria-selected')).to.equal('false');
+      expect(appleOption.getAttribute('aria-selected')).to.equal('true');
+      expect(pearOption.getAttribute('aria-selected')).to.equal('false');
     });
   });
 
@@ -63,17 +63,17 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 3);
-      const items = el.querySelectorAll('m-option');
-      const firstItem = items[0] as MOption;
-      const secondItem = items[1] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const firstOption = options[0] as MOption;
+      const secondOption = options[1] as MOption;
 
       el.focus();
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
       
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
 
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === secondItem.id);
-      expect(el.getAttribute('aria-activedescendant')).to.equal(secondItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === secondOption.id);
+      expect(el.getAttribute('aria-activedescendant')).to.equal(secondOption.id);
     });
 
     it('should move focus to previous option with ArrowUp', async () => {
@@ -86,28 +86,28 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 3);
-      const items = el.querySelectorAll('m-option');
-      const firstItem = items[0] as MOption;
-      const secondItem = items[1] as MOption;
-      const thirdItem = items[2] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const firstOption = options[0] as MOption;
+      const secondOption = options[1] as MOption;
+      const thirdOption = options[2] as MOption;
 
       el.focus();
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
       
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
 
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === thirdItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === thirdOption.id);
       
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
       
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === secondItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === secondOption.id);
       
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
       
-      expect(el.getAttribute('aria-activedescendant')).to.equal(firstItem.id);
+      expect(el.getAttribute('aria-activedescendant')).to.equal(firstOption.id);
     });
 
     it('should move focus to last option with End', async () => {
@@ -120,14 +120,14 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 3);
-      const items = el.querySelectorAll('m-option');
-      const lastItem = items[2] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const lastOption = options[2] as MOption;
 
       el.focus();
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
 
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === lastItem.id);
-      expect(el.getAttribute('aria-activedescendant')).to.equal(lastItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === lastOption.id);
+      expect(el.getAttribute('aria-activedescendant')).to.equal(lastOption.id);
     });
 
     it('should select focused option with Space', async () => {
@@ -139,16 +139,16 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const items = el.querySelectorAll('m-option');
-      const firstItem = items[0] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const firstOption = options[0] as MOption;
 
       el.focus();
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
       
       el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
 
       expect(el.value).to.equal('apple');
-      expect(firstItem.getAttribute('aria-selected')).to.equal('true');
+      expect(firstOption.getAttribute('aria-selected')).to.equal('true');
     });
 
     it('should select focused option with Enter', async () => {
@@ -160,21 +160,21 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const items = el.querySelectorAll('m-option');
-      const firstItem = items[0] as MOption;
-      const secondItem = items[1] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const firstOption = options[0] as MOption;
+      const secondOption = options[1] as MOption;
 
       el.focus();
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === secondItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === secondOption.id);
       
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 
       expect(el.value).to.equal('banana');
-      expect(secondItem.getAttribute('aria-selected')).to.equal('true');
+      expect(secondOption.getAttribute('aria-selected')).to.equal('true');
     });
 
-    it('should wrap to first item when ArrowDown is pressed on last item', async () => {
+    it('should wrap to first option when ArrowDown is pressed on last option', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
           <m-option value="apple">Apple</m-option>
@@ -183,21 +183,21 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const items = el.querySelectorAll('m-option');
-      const firstItem = items[0] as MOption;
-      const lastItem = items[1] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const firstOption = options[0] as MOption;
+      const lastOption = options[1] as MOption;
 
       el.focus();
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === lastItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === lastOption.id);
       
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
 
-      expect(el.getAttribute('aria-activedescendant')).to.equal(firstItem.id);
+      expect(el.getAttribute('aria-activedescendant')).to.equal(firstOption.id);
     });
 
-    it('should wrap to last item when ArrowUp is pressed on first item', async () => {
+    it('should wrap to last option when ArrowUp is pressed on first option', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox>
           <m-option value="apple">Apple</m-option>
@@ -206,18 +206,18 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const items = el.querySelectorAll('m-option');
-      const firstItem = items[0] as MOption;
-      const lastItem = items[1] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const firstOption = options[0] as MOption;
+      const lastOption = options[1] as MOption;
 
       el.focus();
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
       
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === lastItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === lastOption.id);
 
-      expect(el.getAttribute('aria-activedescendant')).to.equal(lastItem.id);
+      expect(el.getAttribute('aria-activedescendant')).to.equal(lastOption.id);
     });
 
     it('should set :state(focus) on virtually focused item', async () => {
@@ -229,26 +229,26 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const items = el.querySelectorAll('m-option');
-      const firstItem = items[0] as MOption;
-      const secondItem = items[1] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const firstOption = options[0] as MOption;
+      const secondOption = options[1] as MOption;
 
       el.focus();
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
       
-      expect((firstItem as any)._internals.states.has('focus')).to.equal(true);
-      expect((secondItem as any)._internals.states.has('focus')).to.equal(false);
+      expect((firstOption as any)._internals.states.has('focus')).to.equal(true);
+      expect((secondOption as any)._internals.states.has('focus')).to.equal(false);
 
       el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === secondItem.id);
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === secondOption.id);
 
-      expect((firstItem as any)._internals.states.has('focus')).to.equal(false);
-      expect((secondItem as any)._internals.states.has('focus')).to.equal(true);
+      expect((firstOption as any)._internals.states.has('focus')).to.equal(false);
+      expect((secondOption as any)._internals.states.has('focus')).to.equal(true);
     });
   });
 
   describe('single selection behavior', () => {
-    it('should select item on click', async () => {
+    it('should select option on click', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox name="fruit">
           <m-option value="apple">Apple</m-option>
@@ -257,14 +257,14 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const items = el.querySelectorAll('m-option');
-      const appleItem = items[0] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const appleOption = options[0] as MOption;
 
-      appleItem.click();
+      appleOption.click();
 
       expect(el.value).to.equal('apple');
-      expect(appleItem.selected).to.equal(true);
-      expect(appleItem.getAttribute('aria-selected')).to.equal('true');
+      expect(appleOption.selected).to.equal(true);
+      expect(appleOption.getAttribute('aria-selected')).to.equal('true');
     });
 
     it('should set virtual focus on click', async () => {
@@ -276,16 +276,16 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const items = el.querySelectorAll('m-option');
-      const appleItem = items[0] as MOption;
-      const bananaItem = items[1] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const appleOption = options[0] as MOption;
+      const bananaOption = options[1] as MOption;
 
-      bananaItem.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-      bananaItem.click();
+      bananaOption.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+      bananaOption.click();
 
-      expect(el.getAttribute('aria-activedescendant')).to.equal(bananaItem.id);
-      expect((bananaItem as any)._internals.states.has('focus')).to.equal(true);
-      expect((appleItem as any)._internals.states.has('focus')).to.equal(false);
+      expect(el.getAttribute('aria-activedescendant')).to.equal(bananaOption.id);
+      expect((bananaOption as any)._internals.states.has('focus')).to.equal(true);
+      expect((appleOption as any)._internals.states.has('focus')).to.equal(false);
     });
 
     it('should only allow one selection at a time', async () => {
@@ -297,17 +297,17 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const items = el.querySelectorAll('m-option');
-      const appleItem = items[0] as MOption;
-      const bananaItem = items[1] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const appleOption = options[0] as MOption;
+      const bananaOption = options[1] as MOption;
 
-      appleItem.click();
+      appleOption.click();
       expect(el.value).to.equal('apple');
 
-      bananaItem.click();
+      bananaOption.click();
       expect(el.value).to.equal('banana');
-      expect(appleItem.getAttribute('aria-selected')).to.equal('false');
-      expect(bananaItem.getAttribute('aria-selected')).to.equal('true');
+      expect(appleOption.getAttribute('aria-selected')).to.equal('false');
+      expect(bananaOption.getAttribute('aria-selected')).to.equal('true');
     });
 
     it('should dispatch change event when value changes', async () => {
@@ -318,14 +318,14 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 1);
-      const item = el.querySelector('m-option') as MOption;
+      const option = el.querySelector('m-option') as MOption;
 
       let changeEventFired = false;
       el.addEventListener('change', () => {
         changeEventFired = true;
       });
 
-      item.click();
+      option.click();
 
       expect(changeEventFired).to.equal(true);
     });
@@ -342,17 +342,17 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 3);
-      const items = el.querySelectorAll('m-option');
-      const appleItem = items[0] as MOption;
-      const bananaItem = items[1] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const appleOption = options[0] as MOption;
+      const bananaOption = options[1] as MOption;
 
-      appleItem.click();
+      appleOption.click();
       expect(el.value).to.deep.equal(['apple']);
 
-      bananaItem.click();
+      bananaOption.click();
       expect(el.value).to.deep.equal(['apple', 'banana']);
-      expect(appleItem.getAttribute('aria-selected')).to.equal('true');
-      expect(bananaItem.getAttribute('aria-selected')).to.equal('true');
+      expect(appleOption.getAttribute('aria-selected')).to.equal('true');
+      expect(bananaOption.getAttribute('aria-selected')).to.equal('true');
     });
 
     it('should toggle selection on click in multiple mode', async () => {
@@ -363,15 +363,15 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 1);
-      const item = el.querySelector('m-option') as MOption;
+      const option = el.querySelector('m-option') as MOption;
 
-      item.click();
+      option.click();
       expect(el.value).to.deep.equal(['apple']);
-      expect(item.getAttribute('aria-selected')).to.equal('true');
+      expect(option.getAttribute('aria-selected')).to.equal('true');
 
-      item.click();
+      option.click();
       expect(el.value).to.deep.equal([]);
-      expect(item.getAttribute('aria-selected')).to.equal('false');
+      expect(option.getAttribute('aria-selected')).to.equal('false');
     });
 
     it('should toggle selection with Space in multiple mode', async () => {
@@ -383,10 +383,10 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const items = el.querySelectorAll('m-option');
-      const appleItem = items[0] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const appleOption = options[0] as MOption;
 
-      el.setFocus(appleItem);
+      el.setFocus(appleOption);
       el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
       expect(el.value).to.deep.equal(['apple']);
 
@@ -424,13 +424,54 @@ describe('m-listbox', () => {
 
       await waitUntil(() => form.querySelectorAll('m-option').length === 2);
       const listBox = form.querySelector('m-listbox') as MListbox;
-      const items = form.querySelectorAll('m-option');
-      const bananaItem = items[1] as MOption;
+      const options = form.querySelectorAll('m-option');
+      const bananaOption = options[1] as MOption;
 
-      bananaItem.click();
+      bananaOption.click();
 
       const formData = new FormData(form);
       expect(formData.get('fruit')).to.equal('banana');
+    });
+
+    it('should initialize value from pre-selected option', async () => {
+      const form = await fixture<HTMLFormElement>(html`
+        <form>
+          <m-listbox name="fruit">
+            <m-option value="apple">Apple</m-option>
+            <m-option value="banana" selected>Banana</m-option>
+            <m-option value="cherry">Cherry</m-option>
+          </m-listbox>
+        </form>
+      `);
+
+      await waitUntil(() => form.querySelectorAll('m-option').length === 3);
+      const listBox = form.querySelector('m-listbox') as MListbox;
+      
+      expect(listBox.value).to.equal('banana');
+      
+      const formData = new FormData(form);
+      expect(formData.get('fruit')).to.equal('banana');
+    });
+
+    it('should initialize value from multiple pre-selected options', async () => {
+      const form = await fixture<HTMLFormElement>(html`
+        <form>
+          <m-listbox name="fruits" multiple>
+            <m-option value="apple" selected>Apple</m-option>
+            <m-option value="banana">Banana</m-option>
+            <m-option value="cherry" selected>Cherry</m-option>
+          </m-listbox>
+        </form>
+      `);
+
+      await waitUntil(() => form.querySelectorAll('m-option').length === 3);
+      const listBox = form.querySelector('m-listbox') as MListbox;
+      
+      expect(listBox.value).to.deep.equal(['apple', 'cherry']);
+      expect(listBox.selectedValues).to.deep.equal(['apple', 'cherry']);
+      
+      const formData = new FormData(form);
+      expect(formData.getAll('fruits')).to.deep.equal(['apple', 'cherry']);
     });
 
     it.skip('should handle disabled state from form', async () => {
@@ -451,8 +492,8 @@ describe('m-listbox', () => {
     });
   });
 
-  describe('disabled items', () => {
-    it('should not select disabled items', async () => {
+  describe('disabled options', () => {
+    it('should not select disabled options', async () => {
       const el = await fixture<MListbox>(html`
         <m-listbox name="fruit">
           <m-option value="apple" disabled>Apple</m-option>
@@ -461,13 +502,13 @@ describe('m-listbox', () => {
       `);
 
       await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const items = el.querySelectorAll('m-option');
-      const appleItem = items[0] as MOption;
+      const options = el.querySelectorAll('m-option');
+      const appleOption = options[0] as MOption;
 
-      appleItem.click();
+      appleOption.click();
 
       expect(el.value).to.equal(null);
-      expect(appleItem.getAttribute('aria-selected')).to.equal('false');
+      expect(appleOption.getAttribute('aria-selected')).to.equal('false');
     });
   });
 });
