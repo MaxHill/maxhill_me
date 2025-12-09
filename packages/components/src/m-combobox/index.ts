@@ -79,7 +79,7 @@ export class MCombobox extends MFormAssociatedElement {
     private inputElement!: HTMLInputElement;
 
     @query('m-search-list')
-    private searchListElement!: HTMLElement & { filter: (query: string) => void };
+    private searchListElement!: HTMLElement & { filter: () => void };
 
     /*** ----------------------------
      *  OptionListManager Setup
@@ -569,7 +569,7 @@ export class MCombobox extends MFormAssociatedElement {
 
     private renderMultiselect() {
         this.multiSelectListElement.innerHTML = this.selectedOptions.reduce((acc, i) => {
-            return `${acc}<li>${i.textContent.trim()}</li>`
+            return `${acc}<button>${i.textContent.trim()}</button>`
         }, "")
     }
 
