@@ -30,7 +30,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: pnpm dlx playwright@1.56.1 install --with-deps chromium
 
       - name: Build all packages and apps
         run: pnpm build
