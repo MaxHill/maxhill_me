@@ -68,64 +68,6 @@ On push to `main` (after CI passes):
 
 Both deployments run in parallel.
 
-### GitHub Secrets Setup
-
-Required secrets (add via GitHub repo Settings → Secrets and variables →
-Actions):
-
-#### 1. `CLOUDFLARE_API_TOKEN`
-
-**How to create:**
-
-1. Go to https://dash.cloudflare.com/profile/api-tokens
-2. Click "Create Token"
-3. Use "Edit Cloudflare Workers" template
-4. Add permissions:
-   - Account → Cloudflare Pages → Edit
-   - Account → Workers Scripts → Edit
-5. Continue to summary → Create Token
-6. Copy the token (shown only once)
-7. Add to GitHub: Settings → Secrets → New repository secret
-   - Name: `CLOUDFLARE_API_TOKEN`
-   - Secret: [paste token]
-
-#### 2. `CLOUDFLARE_ACCOUNT_ID`
-
-**How to find:**
-
-1. Go to https://dash.cloudflare.com/
-2. Copy Account ID from right sidebar
-3. Or run: `pnpm wrangler whoami` (shows Account ID)
-4. Add to GitHub: Settings → Secrets → New repository secret
-   - Name: `CLOUDFLARE_ACCOUNT_ID`
-   - Secret: [paste account ID]
-
-### Migrating from Cloudflare Pages Dashboard
-
-The site is currently deployed via Cloudflare Pages dashboard Git
-integration. After GitHub Actions is set up, you need to disconnect the old
-deployment:
-
-**Migration Steps:**
-
-- [ ] Complete GitHub Actions setup (add secrets, merge workflow)
-- [ ] Verify first GitHub Actions deployment succeeds
-- [ ] Go to Cloudflare dashboard → Pages → maxhill-me project
-- [ ] Navigate to Settings → Builds & deployments
-- [ ] Under "Production branch", click "Disconnect" (or "Remove Git
-      integration")
-- [ ] Confirm disconnection
-- [ ] Verify subsequent pushes to `main` only trigger GitHub Actions (not
-      Cloudflare dashboard builds)
-
-**Note:** Disconnecting Git integration does NOT delete your Pages project
-or existing deployments. It only stops automatic deployments from
-Cloudflare's side. GitHub Actions will continue deploying to the same
-project.
-
-**Rollback:** If needed, you can reconnect the Git integration in
-Cloudflare dashboard settings.
-
 ### Local Testing Before Push
 
 Test CI checks locally before pushing:
