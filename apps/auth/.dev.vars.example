@@ -1,0 +1,4 @@
+# No environment variables needed for local development with MemoryStorage
+# For production with email sending, add your email service credentials:
+# SENDGRID_API_KEY=your-key-here
+# RESEND_API_KEY=your-key-here

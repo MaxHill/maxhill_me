@@ -32,9 +32,6 @@
     outline-offset: var(--outline-offset);
 }
 
-    transform: translateY(0);
-}
-
 :host([data-rounded="false"]) {
     border-radius: 0;
 }
