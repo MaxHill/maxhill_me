@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package account;
+
+option go_package = "./pb";
+
+service Account {
+  rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message PingRequest {
+  int64 ping = 1;
+}
+
+message PingResponse {
+  int64 pong = 1;
+}
