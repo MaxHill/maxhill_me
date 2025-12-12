@@ -8,6 +8,8 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "check": "turbo check",
+    "lint": "turbo lint",
+    "test": "turbo test",
     "clean": "turbo clean",
     "docs": "turbo docs",
     "generate": "plop"

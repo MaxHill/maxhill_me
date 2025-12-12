@@ -17,8 +17,8 @@ const documentation = defineCollection({
 });
 
 const componentDocs = defineCollection({
-  loader: glob({ 
-    pattern: "*/DOCS.mdx", 
+  loader: glob({
+    pattern: "*/DOCS.mdx",
     base: path.resolve(__dirname, "../../../../packages/components/src")
   }),
 });
