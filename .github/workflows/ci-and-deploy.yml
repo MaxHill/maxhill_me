@@ -54,7 +54,7 @@ jobs:
           retention-days: 1
 
   check:
-    name: Type Check
+    name: Check & Lint
     runs-on: ubuntu-latest
     needs: build
 
@@ -81,42 +81,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
-      - name: Type check
+      - name: Check & Lint
         run: pnpm check
-        env:
-          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.19.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
-
-      - name: Lint
-        run: pnpm lint
         env:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
           TURBO_TEAM: ${{ vars.TURBO_TEAM }}
@@ -206,7 +172,7 @@ jobs:
   deploy-site:
     name: Deploy Site to Cloudflare Pages
     runs-on: ubuntu-latest
-    needs: [build, check, lint, test]
+    needs: [build, check, test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
