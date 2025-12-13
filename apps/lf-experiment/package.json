@@ -1,0 +1,22 @@
+{
+  "name": "lf-experiment",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "dev": "air",
+    "build": "go build -o ./.tmp/main ./build && ./.tmp/main",
+    "clean": "rm -rf dist/ .tmp/"
+  },
+  "dependencies": {
+    "@maxhill/components": "workspace:*",
+    "@maxhill/css": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.19.0"
+}

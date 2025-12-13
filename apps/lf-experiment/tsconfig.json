@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "moduleResolution": "bundler",
+    "outDir": "./dist/js",
+    "rootDir": "./src",
+    
+    // Strict type checking (matching your site config)
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    
+    // Module resolution
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    
+    // Output
+    "declaration": false,
+    "sourceMap": true,
+    "removeComments": false,
+    "noEmitOnError": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", ".tmp", "build"]
+}
