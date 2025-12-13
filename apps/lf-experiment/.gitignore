@@ -1,0 +1,26 @@
+# Build artifacts
+.tmp/
+dist/
+
+# Go build cache
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Air temporary files
+.air.toml.bak
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
