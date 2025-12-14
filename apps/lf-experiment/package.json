@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "air",
-    "build": "go build -o ./.tmp/main ./build && ./.tmp/main",
-    "clean": "rm -rf dist/ .tmp/"
+    "build:binary": "go build -o ./build/main ./build",
+    "build": "pnpm run build:binary && ./build/main",
+    "clean": "rm -rf dist/ .tmp/ build/main"
   },
   "dependencies": {
     "@maxhill/components": "workspace:*",
