@@ -4,17 +4,17 @@ tmp_dir = ".tmp"
 
 [build]
   bin = "./build/main"
-  cmd = ""
+  cmd = "true"
   args_bin = ["-env=dev"]
   delay = 1
-  exclude_dir = [".tmp", "dist", "build/.tmp", "node_modules"]
+  exclude_dir = [".tmp", "dist", "build/.tmp"]
   exclude_file = []
-  exclude_regex = ["_test.go", "node_modules/@maxhill"]
+  exclude_regex = ["_test.go"]
   exclude_unchanged = false
-  follow_symlink = true
+  follow_symlink = false
   full_bin = ""
-  include_dir = ["node_modules/@maxhill/components/dist", "node_modules/@maxhill/css/dist"]
-  include_ext = ["html", "ts", "js", "css"]
+  include_dir = []
+  include_ext = ["html", "ts", "css"]
   include_file = []
   kill_delay = "0s"
   log = "build-errors.log"

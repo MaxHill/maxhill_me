@@ -27,38 +27,9 @@ pnpm clean --filter=lf-experiment
 
 **Fast Workflow (20ms rebuilds):**
 1. Build Go binary **once**: `pnpm run build:binary` → creates `build/main` (16 MB, includes esbuild)
-2. Run Turbo dev: `pnpm dev --filter=lf-experiment`
-   - Turbo builds workspace dependencies first (`@maxhill/components`, `@maxhill/css`)
-   - Then starts Air with the pre-built binary
-3. Edit files: Air watches `.html`, `.ts`, `.css` files in `lf-experiment` and `node_modules/@maxhill/*/dist`
+2. Run Air: `pnpm dev` → runs the pre-built binary with `--env=dev` flag
+3. Edit files: Air watches `.html`, `.ts`, `.css` files in lf-experiment
 4. On change: Air **restarts** the binary (no recompilation!) → esbuild rebuilds in ~20ms
-
-**Workspace Package Development:**
-
-To develop workspace packages (`@maxhill/components`, `@maxhill/css`) alongside lf-experiment:
-
-**Option 1: Separate terminals (recommended for active component development)**
-```bash
-# Terminal 1: Watch @maxhill/components
-pnpm dev --filter=@maxhill/components
-
-# Terminal 2: Watch @maxhill/css  
-pnpm dev --filter=@maxhill/css
-
-# Terminal 3: Watch lf-experiment
-pnpm dev --filter=lf-experiment
-```
-Air will detect changes in `node_modules/@maxhill/*/dist` and trigger rebuilds.
-
-**Option 2: Single dev command (for lf-experiment-focused development)**
-```bash
-# Just run lf-experiment - uses pre-built workspace packages
-pnpm dev --filter=lf-experiment
-```
-If you edit workspace packages, manually rebuild them:
-```bash
-pnpm build --filter=@maxhill/components --filter=@maxhill/css
-```
 
 **When to rebuild the Go binary:**
 - After changing Go source code in `build/` directory
@@ -69,7 +40,6 @@ pnpm build --filter=@maxhill/components --filter=@maxhill/css
 - Air doesn't rebuild Go (~100ms saved per change)
 - Only esbuild runs (~20ms per asset change)
 - Go binary handles all bundling via esbuild's Go API
-- Air follows symlinks to watch workspace package outputs
 
 ## Architecture
 
