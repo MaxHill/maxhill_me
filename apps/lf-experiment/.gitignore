@@ -1,9 +1,10 @@
 # Build artifacts
 .tmp/
 dist/
+build/main
+build/main.exe
 
 # Go build cache
-*.exe
 *.exe~
 *.dll
 *.so

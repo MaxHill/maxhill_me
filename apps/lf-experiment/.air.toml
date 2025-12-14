@@ -3,18 +3,18 @@ testdata_dir = "testdata"
 tmp_dir = ".tmp"
 
 [build]
-  bin = "./.tmp/main"
-  cmd = "go build -o ./.tmp/main ./build"
+  bin = "./build/main"
+  cmd = ""
   args_bin = ["-env=dev"]
-  delay = 1000
-  exclude_dir = [".tmp", "dist", "build/.tmp"]
+  delay = 1
+  exclude_dir = [".tmp", "dist", "build/.tmp", "node_modules"]
   exclude_file = []
-  exclude_regex = ["_test.go"]
+  exclude_regex = ["_test.go", "node_modules/@maxhill"]
   exclude_unchanged = false
-  follow_symlink = false
+  follow_symlink = true
   full_bin = ""
-  include_dir = []
-  include_ext = ["go", "html", "ts", "css"]
+  include_dir = ["node_modules/@maxhill/components/dist", "node_modules/@maxhill/css/dist"]
+  include_ext = ["html", "ts", "js", "css"]
   include_file = []
   kill_delay = "0s"
   log = "build-errors.log"
@@ -23,7 +23,7 @@ tmp_dir = ".tmp"
   post_cmd = []
   pre_cmd = []
   rerun = false
-  rerun_delay = 500
+  rerun_delay = 1
   send_interrupt = false
   stop_on_error = false
 
