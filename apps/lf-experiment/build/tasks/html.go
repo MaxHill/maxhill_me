@@ -10,17 +10,20 @@ import (
 	"strings"
 )
 
-// PageData holds data to be passed to page templates
-type PageData struct {
-	// Empty for now - can add page-specific data as needed
+type BuildHtmlOptions struct {
+	workDir string
 }
 
-// GenerateSite processes HTML pages from the pages/ directory and renders them
-// using templates from templates/ directory.
-func GenerateSite() {
+func (options BuildHtmlOptions) Build() BuildResult {
+	buildResult := BuildResult{
+		Errors:   make([]string, 0),
+		Warnings: make([]string, 0),
+	}
+
 	tmpl, err := template.ParseGlob("templates/*.html")
 	if err != nil {
-		log.Fatalf("Error parsing templates: %v", err)
+		buildResult.Errors = append(buildResult.Errors, fmt.Sprintf("Error parsing templates: %v", err))
+		return buildResult
 	}
 
 	err = filepath.Walk("pages", func(path string, info fs.FileInfo, err error) error {
@@ -67,12 +70,23 @@ func GenerateSite() {
 			return err
 		}
 
-		log.Printf("Generated %s", outPath)
+		log.Printf("  Generated %s", outPath)
 		return nil
 	})
+
 	if err != nil {
-		log.Fatalf("Error processing pages: %v", err)
+		buildResult.Errors = append(buildResult.Errors, fmt.Sprintf("Error processing pages: %v", err))
+		return buildResult
 	}
 
-	fmt.Println("✓ Site generation complete")
+	log.Println("  ✓ HTML generation complete")
+	return buildResult
+}
+
+func (options BuildHtmlOptions) Watch() BuildResult {
+	return BuildResult{}
+}
+
+func NewHtmlBuildStep(workDir string, isDev bool) (BuildTask, error) {
+	return BuildHtmlOptions{workDir: workDir}, nil
 }
