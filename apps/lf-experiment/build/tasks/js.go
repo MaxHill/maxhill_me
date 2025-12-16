@@ -7,6 +7,14 @@ import (
 	"github.com/evanw/esbuild/pkg/api"
 )
 
+const (
+	jsEntryPointMain          = "src/main.ts"
+	jsEntryPointServiceWorker = "src/serviceworker.ts"
+	jsOutputPathMain          = "js/main"
+	jsOutputPathServiceWorker = "serviceworker"
+	jsOutdir                  = "dist"
+)
+
 type BuildJsOptions struct {
 	ctx api.BuildContext
 }
@@ -83,8 +91,11 @@ func (builder JsStepBuilder) Create() (BuildTask, error) {
 	}
 
 	options := api.BuildOptions{
-		EntryPoints:   []string{"src/main.ts"},
-		Outfile:       "dist/js/main.js",
+		EntryPointsAdvanced: []api.EntryPoint{
+			{InputPath: jsEntryPointMain, OutputPath: jsOutputPathMain},
+			{InputPath: jsEntryPointServiceWorker, OutputPath: jsOutputPathServiceWorker},
+		},
+		Outdir:        jsOutdir,
 		Bundle:        true,
 		Write:         true,
 		Platform:      api.PlatformBrowser,

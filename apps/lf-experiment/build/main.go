@@ -15,10 +15,33 @@ import (
 	"github.com/evanw/esbuild/pkg/api"
 )
 
+const (
+	// Environment modes
+	envDev         = "dev"
+	envDevelopment = "development"
+	envProduction  = "production"
+
+	// Directories
+	distDir      = "dist"
+	templatesDir = "./templates"
+	pagesDir     = "./pages"
+
+	// Watch paths
+	watchPathComponents = "../../packages/components/dist"
+	watchPathCSS        = "../../packages/css/dist"
+
+	// Server config
+	serverPort    = "8080"
+	serverDistDir = "./dist"
+
+	// Cache config
+	fileCacheInitialCapacity = 100
+)
+
 func main() {
-	env := flag.String("env", "production", "environment mode: development or production")
+	env := flag.String("env", envProduction, "environment mode: development or production")
 	flag.Parse()
-	isDev := *env == "dev" || *env == "development"
+	isDev := *env == envDev || *env == envDevelopment
 
 	absWorkDir, err := filepath.Abs(".")
 	if err != nil {
@@ -29,14 +52,19 @@ func main() {
 
 	//  Run tasks
 	//  ------------------------------------------------------------------------
-	if *env == "dev" || *env == "development" {
+	if *env == envDev || *env == envDevelopment {
 		clearDist(absWorkDir)
-		buildAll(buildAllCtx)
+		if err := buildAll(buildAllCtx); err != nil {
+			log.Printf("Initial build failed: %v", err)
+			log.Println("Continuing in dev mode with watch...")
+		}
 		watchAll(absWorkDir, isDev, buildAllCtx)
 		startServer()
 	} else {
 		clearDist(absWorkDir)
-		buildAll(buildAllCtx)
+		if err := buildAll(buildAllCtx); err != nil {
+			log.Fatalf("Build failed: %v", err)
+		}
 	}
 }
 
@@ -77,42 +105,43 @@ func newBuildAllCtx(absWorkDir string, isDev bool) BuildAllCtx {
 }
 
 func clearDist(absWorkDir string) {
-	distPath := filepath.Join(absWorkDir, "dist")
+	distPath := filepath.Join(absWorkDir, distDir)
 	if err := os.RemoveAll(distPath); err != nil {
 		log.Printf("Warning: failed to remove dist directory: %v", err)
 	}
 }
 
-func buildAll(buildCtx BuildAllCtx) {
+func buildAll(buildCtx BuildAllCtx) error {
 	log.Println("Building assets...")
 
 	// Fonts
 	fontsRes := buildCtx.fontsTask.Build()
 	if len(fontsRes.Errors) != 0 {
-		log.Fatalf("Fonts build failed with %d errors", len(fontsRes.Errors))
+		return fmt.Errorf("fonts build failed with %d errors: %v", len(fontsRes.Errors), fontsRes.Errors)
 	}
 
 	// Css
 	cssRes := buildCtx.cssTask.Build()
 	if len(cssRes.Errors) != 0 {
-		log.Fatalf("CSS build failed with %d errors", len(cssRes.Errors))
+		return fmt.Errorf("CSS build failed with %d errors: %v", len(cssRes.Errors), cssRes.Errors)
 	}
 	log.Println("✓ CSS built")
 
 	// Js
 	jsRes := buildCtx.jsTask.Build()
 	if len(jsRes.Errors) != 0 {
-		log.Fatalf("JS build failed with %d errors", len(jsRes.Errors))
+		return fmt.Errorf("JS build failed with %d errors: %v", len(jsRes.Errors), jsRes.Errors)
 	}
 	log.Println("✓ JS built")
 
 	// Html
 	htmlRes := buildCtx.htmlTask.Build()
 	if len(htmlRes.Errors) != 0 {
-		log.Fatalf("HTML build failed with %d errors", len(htmlRes.Errors))
+		return fmt.Errorf("HTML build failed with %d errors: %v", len(htmlRes.Errors), htmlRes.Errors)
 	}
 
 	log.Println("✓ Build complete")
+	return nil
 }
 
 func watchAll(absWorkDir string, isDev bool, buildAllCtx BuildAllCtx) {
@@ -120,14 +149,14 @@ func watchAll(absWorkDir string, isDev bool, buildAllCtx BuildAllCtx) {
 
 	// Poll workspace package dist directories for changes
 	watchPaths := []string{
-		"../../packages/components/dist",
-		"../../packages/css/dist",
-		"./templates",
-		"./pages",
+		watchPathComponents,
+		watchPathCSS,
+		templatesDir,
+		pagesDir,
 	}
 
 	go tasks.PollPaths(watchPaths, func() {
-		log.Println("Workspace packages changed, rebuilding JS...")
+		log.Println("Workspace packages changed, rebuilding...")
 
 		jsRes := buildAllCtx.jsTask.Build()
 		if len(jsRes.Errors) > 0 {
@@ -171,9 +200,9 @@ func watchAll(absWorkDir string, isDev bool, buildAllCtx BuildAllCtx) {
 }
 
 func postBuild(absWorkDir string) {
-	filesToCache := make([]string, 0, 100)
+	filesToCache := make([]string, 0, fileCacheInitialCapacity)
 
-	distPath := filepath.Join(absWorkDir, "dist")
+	distPath := filepath.Join(absWorkDir, distDir)
 	fmt.Println("Current files:")
 	filepath.Walk(distPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -195,13 +224,12 @@ func postBuild(absWorkDir string) {
 }
 
 func startServer() {
-	port := "8080"
-	log.Printf("Starting server on http://localhost:%s", port)
-	log.Printf("Serving files from ./dist directory")
+	log.Printf("Starting server on http://localhost:%s", serverPort)
+	log.Printf("Serving files from %s directory", serverDistDir)
 
-	http.Handle("/", http.FileServer(http.Dir("./dist")))
+	http.Handle("/", http.FileServer(http.Dir(serverDistDir)))
 
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
+	if err := http.ListenAndServe(":"+serverPort, nil); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }

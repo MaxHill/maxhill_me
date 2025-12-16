@@ -7,6 +7,12 @@ import (
 	"github.com/evanw/esbuild/pkg/api"
 )
 
+const (
+	cssEntryPoint = "src/main.css"
+	cssOutfile    = "dist/css/style.css"
+	cssExternal   = "/fonts/*"
+)
+
 type BuildCssOptions struct {
 	ctx api.BuildContext
 }
@@ -79,8 +85,8 @@ func (builder StepBuilder) Create() (BuildTask, error) {
 	}
 
 	options := api.BuildOptions{
-		EntryPoints:   []string{"src/main.css"},
-		Outfile:       "dist/css/style.css",
+		EntryPoints:   []string{cssEntryPoint},
+		Outfile:       cssOutfile,
 		Bundle:        true,
 		Write:         true,
 		AbsWorkingDir: builder.workDir,
@@ -100,7 +106,7 @@ func (builder StepBuilder) Create() (BuildTask, error) {
 		Plugins: plugins,
 
 		// Keep font URLs as-is (fonts copied separately)
-		External: []string{"/fonts/*"},
+		External: []string{cssExternal},
 	}
 
 	ctx, err := api.Context(options)

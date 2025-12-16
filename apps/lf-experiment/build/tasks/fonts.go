@@ -7,6 +7,12 @@ import (
 	"path/filepath"
 )
 
+const (
+	fontsSrcDir  = "../site/public/fonts/optimized"
+	fontsDestDir = "dist/fonts/optimized"
+	fontsDirPerm = 0755
+)
+
 type BuildFontsOptions struct {
 	workDir string
 }
@@ -19,11 +25,11 @@ func (options BuildFontsOptions) Build() BuildResult {
 
 	// Source: apps/site/public/fonts/optimized
 	// Target: dist/fonts/optimized
-	srcDir := filepath.Join(options.workDir, "../site/public/fonts/optimized")
-	destDir := filepath.Join(options.workDir, "dist/fonts/optimized")
+	srcDir := filepath.Join(options.workDir, fontsSrcDir)
+	destDir := filepath.Join(options.workDir, fontsDestDir)
 
 	// Create destination directory
-	if err := os.MkdirAll(destDir, 0755); err != nil {
+	if err := os.MkdirAll(destDir, fontsDirPerm); err != nil {
 		buildResult.Errors = append(buildResult.Errors, fmt.Sprintf("failed to create fonts directory: %v", err))
 		return buildResult
 	}
