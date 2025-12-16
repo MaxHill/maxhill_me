@@ -53,25 +53,40 @@ func (options BuildCssOptions) Watch() BuildResult {
 	return BuildResult{}
 }
 
-func NewCssBuildStep(workDir string, isDev bool) (BuildTask, error) {
-	ctx, err := buildContext(workDir, isDev)
-	if err != nil {
-		return nil, err
-	}
-
-	return BuildCssOptions{ctx: ctx}, nil
+type StepBuilder struct {
+	workDir       string
+	isDev         bool
+	onEndCallback func(api.BuildResult)
 }
 
-func buildContext(workDir string, isDev bool) (api.BuildContext, error) {
+func NewCssBuildStep(workDir string, isDev bool) StepBuilder {
+	return StepBuilder{
+		workDir:       workDir,
+		isDev:         isDev,
+		onEndCallback: nil,
+	}
+}
+
+func (builder StepBuilder) WithOnEndCallback(onEndCallback func(api.BuildResult)) StepBuilder {
+	builder.onEndCallback = onEndCallback
+	return builder
+}
+
+func (builder StepBuilder) Create() (BuildTask, error) {
+	plugins := []api.Plugin{}
+	if builder.onEndCallback != nil {
+		plugins = append(plugins, CreateOnEndPlugin(builder.onEndCallback))
+	}
+
 	options := api.BuildOptions{
 		EntryPoints:   []string{"src/main.css"},
 		Outfile:       "dist/css/style.css",
 		Bundle:        true,
 		Write:         true,
-		AbsWorkingDir: workDir,
+		AbsWorkingDir: builder.workDir,
 
 		// Minification (production only)
-		MinifyWhitespace: !isDev,
+		MinifyWhitespace: !builder.isDev,
 
 		// Logging
 		LogLevel: api.LogLevelInfo,
@@ -82,6 +97,8 @@ func buildContext(workDir string, isDev bool) (api.BuildContext, error) {
 			".css": api.LoaderCSS,
 		},
 
+		Plugins: plugins,
+
 		// Keep font URLs as-is (fonts copied separately)
 		External: []string{"/fonts/*"},
 	}
@@ -91,6 +108,54 @@ func buildContext(workDir string, isDev bool) (api.BuildContext, error) {
 		return nil, err
 	}
 
-	return ctx, nil
-
+	return BuildCssOptions{ctx: ctx}, nil
 }
+
+// func NewCssBuildStep(workDir string, isDev bool, onEndCallback func(api.BuildResult)) (BuildTask, error) {
+// 	ctx, err := buildContext(workDir, isDev, onEndCallback)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	return BuildCssOptions{ctx: ctx}, nil
+// }
+//
+// func buildContext(workDir string, isDev bool, onEndCallback func(api.BuildResult)) (api.BuildContext, error) {
+// 	plugins := []api.Plugin{}
+// 	if onEndCallback != nil {
+// 		plugins = append(plugins, CreateOnEndPlugin(onEndCallback))
+// 	}
+//
+// 	options := api.BuildOptions{
+// 		EntryPoints:   []string{"src/main.css"},
+// 		Outfile:       "dist/css/style.css",
+// 		Bundle:        true,
+// 		Write:         true,
+// 		AbsWorkingDir: workDir,
+//
+// 		// Minification (production only)
+// 		MinifyWhitespace: !isDev,
+//
+// 		// Logging
+// 		LogLevel: api.LogLevelInfo,
+// 		Color:    api.ColorAlways,
+//
+// 		// Loader
+// 		Loader: map[string]api.Loader{
+// 			".css": api.LoaderCSS,
+// 		},
+//
+// 		Plugins: plugins,
+//
+// 		// Keep font URLs as-is (fonts copied separately)
+// 		External: []string{"/fonts/*"},
+// 	}
+//
+// 	ctx, err := api.Context(options)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	return ctx, nil
+//
+// }
