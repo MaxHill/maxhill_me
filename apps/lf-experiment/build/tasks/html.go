@@ -10,6 +10,15 @@ import (
 	"strings"
 )
 
+const (
+	htmlTemplatesGlob = "templates/*.html"
+	htmlPagesDir      = "pages"
+	htmlDistDir       = "dist"
+	htmlBaseTemplate  = "base.html"
+	htmlContentName   = "content"
+	htmlFileExtension = ".html"
+)
+
 type BuildHtmlOptions struct {
 	workDir string
 }
@@ -20,13 +29,13 @@ func (options BuildHtmlOptions) Build() BuildResult {
 		Warnings: make([]string, 0),
 	}
 
-	tmpl, err := template.ParseGlob("templates/*.html")
+	tmpl, err := template.ParseGlob(htmlTemplatesGlob)
 	if err != nil {
 		buildResult.Errors = append(buildResult.Errors, fmt.Sprintf("Error parsing templates: %v", err))
 		return buildResult
 	}
 
-	err = filepath.Walk("pages", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(htmlPagesDir, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -35,7 +44,7 @@ func (options BuildHtmlOptions) Build() BuildResult {
 			return nil
 		}
 
-		if !strings.HasSuffix(info.Name(), ".html") {
+		if !strings.HasSuffix(info.Name(), htmlFileExtension) {
 			return nil
 		}
 
@@ -48,13 +57,13 @@ func (options BuildHtmlOptions) Build() BuildResult {
 		if err != nil {
 			return err
 		}
-		pageTemplate.New("content").Parse(string(pageContent))
+		pageTemplate.New(htmlContentName).Parse(string(pageContent))
 
-		relPath, err := filepath.Rel("pages", path)
+		relPath, err := filepath.Rel(htmlPagesDir, path)
 		if err != nil {
 			return err
 		}
-		outPath := filepath.Join("dist", relPath)
+		outPath := filepath.Join(htmlDistDir, relPath)
 
 		os.MkdirAll(filepath.Dir(outPath), os.ModePerm)
 
@@ -65,7 +74,7 @@ func (options BuildHtmlOptions) Build() BuildResult {
 		defer outFile.Close()
 
 		// Execute template with no data (or empty PageData)
-		err = pageTemplate.ExecuteTemplate(outFile, "base.html", nil)
+		err = pageTemplate.ExecuteTemplate(outFile, htmlBaseTemplate, nil)
 		if err != nil {
 			return err
 		}

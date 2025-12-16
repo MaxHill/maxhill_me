@@ -9,6 +9,7 @@
       "outputs": ["dist/**", ".astro/**", ".tmp/**"]
     },
     "dev": {
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     },
