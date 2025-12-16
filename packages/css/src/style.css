@@ -8,107 +8,110 @@
 @import "utils.css";
 
 @layer base {
-    html {
-        -moz-text-size-adjust: none;
-        -webkit-text-size-adjust: none;
-        text-size-adjust: none;
-        tab-size: 2;
-        word-break: break-word;
+  html {
+    -moz-text-size-adjust: none;
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+    tab-size: 2;
+    word-break: break-word;
 
-        /* Allow transition to height auto */
-        interpolate-size: allow-keywords;
+    /* Allow transition to height auto */
+    interpolate-size: allow-keywords;
 
-        /* Don't smooth scroll if cmd+f search */
-        &:focus-within {
-            scroll-behavior: smooth;
-        }
+    /* Don't smooth scroll if cmd+f search */
+    &:focus-within {
+      scroll-behavior: smooth;
     }
+  }
 
-    ::view-transition-old(root),
-    ::view-transition-new(root) {
-        animation-duration: 0.1s;
-    }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.1s;
+  }
 
-    body {
-        font-size: 17px;
-        font-family: var(--ff);
-        background-color: var(--color-background);
-        color: var(--color-text);
-    }
+  body {
+    font-size: 17px;
+    font-family: var(--ff);
+    background-color: var(--color-background);
+    color: var(--color-text);
+  }
 
-    /*  ------------------------------------------------------------------------
+  /*  ------------------------------------------------------------------------
     /*  Default border shape                                                                     
     /*  ------------------------------------------------------------------------ */
-    * {
-        corner-shape: squircle;
-    }
+  * {
+    corner-shape: squircle;
+  }
 
-    /*  ------------------------------------------------------------------------
+  /*  ------------------------------------------------------------------------
     /*  Focus management                                                                     
     /*  ------------------------------------------------------------------------ */
-    :where(*) {
-        --outline-size: max(2px, 0.08em);
-        --outline-style: solid;
-        --outline-color: var(--color-primary-fill-mid);
-    }
+  :where(*) {
+    --outline-size: max(2px, 0.08em);
+    --outline-style: solid;
+    --outline-color: var(--color-primary-fill-mid);
+  }
 
-    :where(*):focus {
-        outline: none;
-    }
+  :where(*):focus {
+    outline: none;
+  }
 
-    :where(*):focus-visible {
-        outline: var(--outline);
-        outline-offset: var(--outline-offset);
-    }
+  :where(*):focus-visible {
+    outline: var(--outline);
+    outline-offset: var(--outline-offset);
+  }
 
-    /* TODO: this cannot only be on the element. 
+  /* TODO: this cannot only be on the element. 
      * Utility classes are in utils.css */
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        font: var(--h2);
-        letter-spacing: var(--font-letterspacing-0);
-    }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font: var(--h2);
+    letter-spacing: var(--font-letterspacing-0);
+  }
 
-    p,
-    li,
-    dd {
-        text-wrap: pretty;
-    }
+  p,
+  li,
+  dd {
+    text-wrap: pretty;
+  }
 
-    a,
-    a:active {
-        color: var(--color-text-link);
-        text-underline-offset: 2px;
+  a,
+  a:active {
+    color: var(--color-text-link);
+    text-underline-offset: 2px;
 
-        &:not(:is(:hover, :focus)) {
-            text-decoration-color: color-mix(in srgb, currentColor, transparent 50%);
-        }
+    &:not(:is(:hover, :focus)) {
+      text-decoration-color: color-mix(
+        in srgb,
+        currentColor,
+        transparent 50%
+      );
     }
+  }
+
+  ul,
+  ol,
+  dl {
+    margin: 0;
+    padding: 0;
+    list-style-position: inside;
 
     ul,
     ol,
     dl {
-        margin: 0;
-        padding: 0;
-        list-style-position: inside;
-
-        ul,
-        ol,
-        dl {
-            padding-inline-start: 2ch;
-        }
+      padding-inline-start: 2ch;
     }
+  }
 
-    /*TODO: resolve potential conflict with reset.css*/
-    ul[class],
-    ol[class] {
-        margin: 0;
-        padding: 0;
-        list-style: none;
-    }
-
+  /*TODO: resolve potential conflict with reset.css*/
+  ul[class],
+  ol[class] {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
 }

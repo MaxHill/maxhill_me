@@ -4,7 +4,7 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "dev": "air",
+    "dev": "./build/main -env=dev",
     "build:binary": "go build -o ./build/main ./build",
     "build": "pnpm run build:binary && ./build/main",
     "clean": "rm -rf dist/ .tmp/ build/main"
