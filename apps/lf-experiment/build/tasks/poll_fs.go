@@ -28,35 +28,39 @@ type DirectoryPoll struct {
 	callback      func(map[string]FilePollEntry)
 }
 
-func NewFileSystemPoller(pathsToSearch []string, callback func(map[string]FilePollEntry)) DirectoryPoll {
+func NewFileSystemPoller(pathsToSearch []string, callback func(map[string]FilePollEntry)) (*DirectoryPoll, error) {
 	directoryPoll := DirectoryPoll{
 		pathsToSearch: pathsToSearch,
 		filesToWatch:  make(map[string]FilePollEntry, 0),
 		callback:      callback,
 	}
+	err := directoryPoll.buildWatchList()
+	if err != nil {
+		return &directoryPoll, err
+	}
 
-	directoryPoll.buildWatchList()
-	fmt.Printf("%+v", directoryPoll)
-
-	return directoryPoll
+	return &directoryPoll, nil
 }
 
-func (directoryPoll *DirectoryPoll) Poll() {
+func (directoryPoll *DirectoryPoll) Poll() error {
 	changes, err := directoryPoll.getChangedFiles()
 	if err != nil {
 		fmt.Printf("Error: %+v", err)
+		return err
 	}
 
 	if len(changes) > 0 {
-		fmt.Printf("Success: %+v | directoryPoll: %+v", changes, directoryPoll)
 		directoryPoll.callback(changes)
 	}
 
+	return nil
 }
 
 func (directoryPoll *DirectoryPoll) getChangedFiles() (map[string]FilePollEntry, error) {
 
 	changedFiles := map[string]FilePollEntry{}
+
+	var firstError error
 
 	for key, filePollEntry := range directoryPoll.filesToWatch {
 		stat, err := os.Stat(filePollEntry.Path)
@@ -64,13 +68,17 @@ func (directoryPoll *DirectoryPoll) getChangedFiles() (map[string]FilePollEntry,
 			if os.IsNotExist(err) {
 				// File was removed - this is a change!
 				changedFiles[key] = filePollEntry
+				delete(directoryPoll.filesToWatch, key)
 				continue
 			}
-			return changedFiles, err
+			fmt.Printf("Warning: failed to stat %s: %v", filePollEntry.Path, err)
+			if firstError == nil {
+				firstError = err
+			}
+			continue
 		}
 
 		if stat.ModTime().UnixNano() > filePollEntry.ModifiedTime {
-			fmt.Printf("Changed! (modified different)")
 			filePollEntry.ModifiedTime = stat.ModTime().UnixNano()
 			filePollEntry.Size = stat.Size()
 			changedFiles[key] = filePollEntry
@@ -79,14 +87,14 @@ func (directoryPoll *DirectoryPoll) getChangedFiles() (map[string]FilePollEntry,
 		}
 	}
 
-	return changedFiles, nil
+	return changedFiles, firstError
 }
 
 func (directoryPoll *DirectoryPoll) buildWatchList() error {
 	fileNames := make(map[string]FilePollEntry)
 
 	for _, path := range directoryPoll.pathsToSearch {
-		newFiles, err := getAllFiles(path)
+		newFiles, err := scanDirectoryRecursive(path)
 		if err != nil {
 			return err
 		}
@@ -101,7 +109,7 @@ func (directoryPoll *DirectoryPoll) FindNewFiles() error {
 	fileNames := directoryPoll.filesToWatch
 
 	for _, path := range directoryPoll.pathsToSearch {
-		newFiles, err := getAllFiles(path)
+		newFiles, err := scanDirectoryRecursive(path)
 		if err != nil {
 			return err
 		}
@@ -119,7 +127,7 @@ func (directoryPoll *DirectoryPoll) FindNewFiles() error {
 	return nil
 }
 
-func getAllFiles(dir string) (map[string]FilePollEntry, error) {
+func scanDirectoryRecursive(dir string) (map[string]FilePollEntry, error) {
 	Assert(dir != "", "Path cannot be empty")
 
 	filesFound := make(map[string]FilePollEntry)
@@ -153,8 +161,6 @@ func Poll(paths []string, callback func()) {
 	}
 	Assert(len(lastModTimes) == len(paths), "LastModTimes length (%d) does not match paths to poll (%d)", len(lastModTimes), len(paths))
 
-	fmt.Println("Watching paths:", paths)
-
 	// Poll for changes every 300ms
 	ticker := time.NewTicker(300 * time.Millisecond)
 	defer ticker.Stop()
@@ -165,7 +171,6 @@ func Poll(paths []string, callback func()) {
 			Assert(i < 100, "Too files watched. Itteration %d, Max 100", i)
 			currentModTime := getLatestModTime(path)
 			if currentModTime.After(lastModTimes[path]) {
-				fmt.Printf("%s changed, triggering rebuild...\n", path)
 				lastModTimes[path] = currentModTime
 				changed = true
 			}
