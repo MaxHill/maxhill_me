@@ -7,8 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/evanw/esbuild/pkg/api"
 )
 
 type BuildResult struct {
@@ -18,7 +16,6 @@ type BuildResult struct {
 
 type BuildTask interface {
 	Build() BuildResult
-	Watch() BuildResult
 }
 
 func PollPaths(paths []string, callback func()) {
@@ -103,20 +100,15 @@ func CopyFile(src, dest string) error {
 	return err
 }
 
-func CreateOnEndPlugin(onEnd func(api.BuildResult)) api.Plugin {
-	return api.Plugin{
-		Name: "on-end-trigger",
-		Setup: func(build api.PluginBuild) {
-			build.OnEnd(func(result *api.BuildResult) (api.OnEndResult, error) {
-				// Call your callback after build
-				onEnd(*result)
-				return api.OnEndResult{}, nil
-			})
-		},
-	}
-}
 func Assert(condition bool, format string, args ...interface{}) {
 	if !condition {
 		log.Fatalf(format, args...)
+	}
+}
+
+func ClearDist(absWorkDir string, distDir string) {
+	distPath := filepath.Join(absWorkDir, distDir)
+	if err := os.RemoveAll(distPath); err != nil {
+		log.Printf("Warning: failed to remove dist directory: %v", err)
 	}
 }

@@ -62,10 +62,6 @@ func (options BuildFontsOptions) Build() BuildResult {
 	return buildResult
 }
 
-func (options BuildFontsOptions) Watch() BuildResult {
-	return BuildResult{}
-}
-
 func NewFontsBuildStep(workDir string, isDev bool) (BuildTask, error) {
 	return BuildFontsOptions{workDir: workDir}, nil
 }
