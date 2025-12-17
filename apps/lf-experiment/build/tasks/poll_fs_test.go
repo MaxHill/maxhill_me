@@ -51,7 +51,7 @@ func FuzzPoll2(f *testing.F) {
 			}
 		}
 
-		fileSystemPoller, err := tasks.NewFileSystemPoller([]string{tempDir}, callback)
+		fileSystemPoller, err := tasks.NewFileSystemPoller([]string{tempDir}, nil, callback)
 		if err != nil {
 			t.Errorf("Could not create fileSystemPoller %s)", err)
 		}

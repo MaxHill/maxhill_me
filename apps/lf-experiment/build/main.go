@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -116,8 +117,8 @@ func watchAll(buildAllCtx BuildAllCtx) {
 		srcDir,
 	}
 
-	go tasks.PollPaths(watchPaths, func() {
-		log.Println("Files changed, rebuilding...")
+	poller, err := tasks.NewFileSystemPoller(watchPaths, nil, func(changes map[string]tasks.FilePollEntry) {
+		log.Printf("Files changed (%d files), rebuilding...", len(changes))
 
 		// Rebuild everything using the same buildAll function
 		if err := buildAll(buildAllCtx); err != nil {
@@ -125,4 +126,17 @@ func watchAll(buildAllCtx BuildAllCtx) {
 			return
 		}
 	})
+	if err != nil {
+		log.Fatalf("Failed to create file system poller: %v", err)
+	}
+
+	// Start polling in background with context
+	// In a real application, you might want to pass context from main
+	// for graceful shutdown handling
+	ctx := context.Background()
+	go func() {
+		if err := poller.Start(ctx); err != nil {
+			log.Printf("Poller stopped: %v", err)
+		}
+	}()
 }
