@@ -18,38 +18,6 @@ type BuildTask interface {
 	Build() BuildResult
 }
 
-func PollPaths(paths []string, callback func()) {
-	Assert(len(paths) < 100, "Too many paths to watch. Got %d, Max 100", len(paths))
-	// Initialize last modification times for all paths
-	lastModTimes := make(map[string]time.Time)
-	for _, path := range paths {
-		lastModTimes[path] = getLatestModTime(path)
-	}
-	Assert(len(lastModTimes) == len(paths), "LastModTimes length (%d) does not match paths to poll (%d)", len(lastModTimes), len(paths))
-
-	fmt.Println("Watching paths:", paths)
-
-	// Poll for changes every 300ms
-	ticker := time.NewTicker(300 * time.Millisecond)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		changed := false
-		for i, path := range paths {
-			Assert(i < 100, "Too files watched. Itteration %d, Max 100", i)
-			currentModTime := getLatestModTime(path)
-			if currentModTime.After(lastModTimes[path]) {
-				fmt.Printf("%s changed, triggering rebuild...\n", path)
-				lastModTimes[path] = currentModTime
-				changed = true
-			}
-		}
-		if changed {
-			callback()
-		}
-	}
-}
-
 func getLatestModTime(dir string) time.Time {
 	Assert(dir != "", "Path cannot be empty")
 
