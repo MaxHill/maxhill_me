@@ -44,7 +44,6 @@ func FuzzPoll2(f *testing.F) {
 		actualChangedFiles := make(map[string]int)
 
 		callback := func(changed map[string]tasks.FilePollEntry) {
-			fmt.Printf("%+v", changed)
 			actualCallbacks++
 			// Track which files changed
 			for path := range changed {
@@ -52,7 +51,10 @@ func FuzzPoll2(f *testing.F) {
 			}
 		}
 
-		fileSystemPoller := tasks.NewFileSystemPoller([]string{tempDir}, callback)
+		fileSystemPoller, err := tasks.NewFileSystemPoller([]string{tempDir}, callback)
+		if err != nil {
+			t.Errorf("Could not create fileSystemPoller %s)", err)
+		}
 
 		// Perform random operations
 		seed := operationSeed
@@ -97,8 +99,16 @@ func FuzzPoll2(f *testing.F) {
 					}
 				}
 			}
-			fileSystemPoller.FindNewFiles()
-			fileSystemPoller.Poll()
+
+			err := fileSystemPoller.FindNewFiles()
+			if err != nil {
+				t.Errorf("FindNewFiles failed: %s", err)
+			}
+
+			err = fileSystemPoller.Poll()
+			if err != nil {
+				t.Errorf("Polling failed: %s", err)
+			}
 		}
 
 		// Final validation
