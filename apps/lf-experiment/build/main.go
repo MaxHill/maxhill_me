@@ -117,7 +117,7 @@ func watchAll(buildAllCtx BuildAllCtx) {
 		srcDir,
 	}
 
-	poller, err := tasks.NewFileSystemPoller(watchPaths, nil, func(changes map[string]tasks.FilePollEntry) {
+	poller, err := tasks.NewFileSystemPoller(watchPaths, nil, func(changes map[string]tasks.WatchedFile) {
 		log.Printf("Files changed (%d files), rebuilding...", len(changes))
 
 		// Rebuild everything using the same buildAll function

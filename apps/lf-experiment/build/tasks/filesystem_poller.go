@@ -11,19 +11,19 @@ import (
 	"time"
 )
 
-// FilePollEntry represents a file being monitored for changes.
+// WatchedFile represents a file being monitored for changes.
 // ModifiedTime is stored in nanoseconds since Unix epoch.
 // A ModifiedTime of 0 indicates a newly discovered file that should trigger on next poll.
-type FilePollEntry struct {
+type WatchedFile struct {
 	Path         string
 	ModifiedTime int64
 	Size         int64
 }
 
-// NewFilePollEntry creates a FilePollEntry from a file path and FileInfo.
+// newWatchedFile creates a WatchedFile from a file path and FileInfo.
 // The modification time is converted to nanoseconds since Unix epoch.
-func NewFilePollEntry(filePath string, info os.FileInfo) FilePollEntry {
-	return FilePollEntry{
+func newWatchedFile(filePath string, info os.FileInfo) WatchedFile {
+	return WatchedFile{
 		Path:         filePath,
 		ModifiedTime: info.ModTime().UnixNano(),
 		Size:         info.Size(),
@@ -35,8 +35,8 @@ func NewFilePollEntry(filePath string, info os.FileInfo) FilePollEntry {
 // Changes are reported through a callback that receives a map of changed files keyed by absolute path.
 type DirectoryPoll struct {
 	pathsToSearch []string
-	filesToWatch  map[string]FilePollEntry
-	callback      func(map[string]FilePollEntry)
+	filesToWatch  map[string]WatchedFile
+	callback      func(map[string]WatchedFile)
 
 	// Configurable timing
 	pollInterval         time.Duration // How often to run Poll() (default: 300ms)
@@ -70,7 +70,7 @@ func DefaultPollerConfig() PollerConfig {
 //
 // Usage pattern with Start():
 //
-//	poller, err := NewFileSystemPoller([]string{"./src"}, nil, func(changes map[string]FilePollEntry) {
+//	poller, err := NewFileSystemPoller([]string{"./src"}, nil, func(changes map[string]WatchedFile) {
 //	    fmt.Printf("Detected %d changes\n", len(changes))
 //	})
 //	ctx, cancel := context.WithCancel(context.Background())
@@ -81,7 +81,7 @@ func DefaultPollerConfig() PollerConfig {
 //
 //	// Call poller.FindNewFiles() periodically to scan for new files (e.g., every 2 seconds)
 //	// Call poller.Poll() frequently to detect modifications (e.g., every 300ms)
-func NewFileSystemPoller(pathsToSearch []string, config *PollerConfig, callback func(map[string]FilePollEntry)) (*DirectoryPoll, error) {
+func NewFileSystemPoller(pathsToSearch []string, config *PollerConfig, callback func(map[string]WatchedFile)) (*DirectoryPoll, error) {
 	if config == nil {
 		defaultCfg := DefaultPollerConfig()
 		config = &defaultCfg
@@ -89,7 +89,7 @@ func NewFileSystemPoller(pathsToSearch []string, config *PollerConfig, callback 
 
 	directoryPoll := DirectoryPoll{
 		pathsToSearch:        pathsToSearch,
-		filesToWatch:         make(map[string]FilePollEntry),
+		filesToWatch:         make(map[string]WatchedFile),
 		callback:             callback,
 		pollInterval:         config.PollInterval,
 		findNewFilesInterval: config.FindNewFilesInterval,
@@ -122,9 +122,9 @@ func (directoryPoll *DirectoryPoll) Poll() error {
 	return nil
 }
 
-func (directoryPoll *DirectoryPoll) getChangedFiles() (map[string]FilePollEntry, error) {
+func (directoryPoll *DirectoryPoll) getChangedFiles() (map[string]WatchedFile, error) {
 
-	changedFiles := map[string]FilePollEntry{}
+	changedFiles := map[string]WatchedFile{}
 
 	var firstError error
 
@@ -158,7 +158,7 @@ func (directoryPoll *DirectoryPoll) getChangedFiles() (map[string]FilePollEntry,
 }
 
 func (directoryPoll *DirectoryPoll) buildWatchList() error {
-	fileNames := make(map[string]FilePollEntry)
+	fileNames := make(map[string]WatchedFile)
 
 	for _, path := range directoryPoll.pathsToSearch {
 		newFiles, err := scanDirectoryRecursive(path)
@@ -264,17 +264,17 @@ func (dp *DirectoryPoll) IsRunning() bool {
 	return dp.isRunning
 }
 
-func scanDirectoryRecursive(dir string) (map[string]FilePollEntry, error) {
+func scanDirectoryRecursive(dir string) (map[string]WatchedFile, error) {
 	Assert(dir != "", "Path cannot be empty")
 
-	filesFound := make(map[string]FilePollEntry)
+	filesFound := make(map[string]WatchedFile)
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if !info.IsDir() {
-			filesFound[path] = NewFilePollEntry(path, info)
+			filesFound[path] = newWatchedFile(path, info)
 		}
 		return nil
 	})
