@@ -28,7 +28,6 @@ func (options BuildJsOptions) Build() BuildResult {
 
 	if len(result.Errors) > 0 {
 		for _, err := range result.Errors {
-			// TODO: maybe not print here
 			log.Printf("  JS Error: %s", err.Text)
 			buildResult.Errors = append(
 				buildResult.Errors,
@@ -39,7 +38,6 @@ func (options BuildJsOptions) Build() BuildResult {
 
 	if len(result.Warnings) > 0 {
 		for _, warning := range result.Warnings {
-			// TODO: maybe not print here
 			log.Printf("  JS Warning: %s", warning.Text)
 			buildResult.Warnings = append(
 				buildResult.Warnings,
@@ -51,42 +49,9 @@ func (options BuildJsOptions) Build() BuildResult {
 	return buildResult
 }
 
-func (options BuildJsOptions) Watch() BuildResult {
-	err := options.ctx.Watch(api.WatchOptions{})
-	if err != nil {
-		log.Fatalf("could not start js watching")
-	}
-
-	return BuildResult{}
-}
-
-type JsStepBuilder struct {
-	workDir       string
-	isDev         bool
-	onEndCallback func(api.BuildResult)
-}
-
-func NewJsBuildStep(workDir string, isDev bool) JsStepBuilder {
-	return JsStepBuilder{
-		workDir:       workDir,
-		isDev:         isDev,
-		onEndCallback: nil,
-	}
-}
-
-func (builder JsStepBuilder) WithOnEndCallback(onEndCallback func(api.BuildResult)) JsStepBuilder {
-	builder.onEndCallback = onEndCallback
-	return builder
-}
-
-func (builder JsStepBuilder) Create() (BuildTask, error) {
-	plugins := []api.Plugin{}
-	if builder.onEndCallback != nil {
-		plugins = append(plugins, CreateOnEndPlugin(builder.onEndCallback))
-	}
-
+func NewJsBuildStep(workDir string, isDev bool) (BuildTask, error) {
 	sourcemap := api.SourceMapNone
-	if builder.isDev {
+	if isDev {
 		sourcemap = api.SourceMapLinked
 	}
 
@@ -101,21 +66,19 @@ func (builder JsStepBuilder) Create() (BuildTask, error) {
 		Platform:      api.PlatformBrowser,
 		Target:        api.ES2020,
 		Format:        api.FormatESModule,
-		AbsWorkingDir: builder.workDir,
+		AbsWorkingDir: workDir,
 
 		// Sourcemaps
 		Sourcemap: sourcemap,
 
 		// Minification (production only)
-		MinifyWhitespace:  !builder.isDev,
-		MinifyIdentifiers: !builder.isDev,
-		MinifySyntax:      !builder.isDev,
+		MinifyWhitespace:  !isDev,
+		MinifyIdentifiers: !isDev,
+		MinifySyntax:      !isDev,
 
 		// Logging
 		LogLevel: api.LogLevelInfo,
 		Color:    api.ColorAlways,
-
-		Plugins: plugins,
 
 		// Loader configuration
 		// Note: ALL .css imports become text strings, not just those with ?inline

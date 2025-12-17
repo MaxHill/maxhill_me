@@ -92,10 +92,6 @@ func (options BuildHtmlOptions) Build() BuildResult {
 	return buildResult
 }
 
-func (options BuildHtmlOptions) Watch() BuildResult {
-	return BuildResult{}
-}
-
 func NewHtmlBuildStep(workDir string, isDev bool) (BuildTask, error) {
 	return BuildHtmlOptions{workDir: workDir}, nil
 }
