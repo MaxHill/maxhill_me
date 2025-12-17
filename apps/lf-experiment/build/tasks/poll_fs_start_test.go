@@ -21,7 +21,7 @@ func TestStart_BasicOperation(t *testing.T) {
 	}
 
 	callbackCount := 0
-	poller, err := tasks.NewFileSystemPoller([]string{tempDir}, nil, func(changes map[string]tasks.FilePollEntry) {
+	poller, err := tasks.NewFileSystemPoller([]string{tempDir}, nil, func(changes map[string]tasks.WatchedFile) {
 		callbackCount++
 		t.Logf("Callback %d: detected %d changes", callbackCount, len(changes))
 	})
@@ -92,7 +92,7 @@ func TestStart_CustomIntervals(t *testing.T) {
 	}
 
 	callbackCount := 0
-	poller, err := tasks.NewFileSystemPoller([]string{tempDir}, config, func(changes map[string]tasks.FilePollEntry) {
+	poller, err := tasks.NewFileSystemPoller([]string{tempDir}, config, func(changes map[string]tasks.WatchedFile) {
 		callbackCount++
 	})
 	if err != nil {
@@ -140,7 +140,7 @@ func TestStart_FindNewFilesInterval(t *testing.T) {
 	}
 
 	changesDetected := make(map[string]bool)
-	poller, err := tasks.NewFileSystemPoller([]string{tempDir}, config, func(changes map[string]tasks.FilePollEntry) {
+	poller, err := tasks.NewFileSystemPoller([]string{tempDir}, config, func(changes map[string]tasks.WatchedFile) {
 		for path := range changes {
 			changesDetected[path] = true
 			t.Logf("Detected change: %s", filepath.Base(path))
@@ -180,7 +180,7 @@ func TestStart_FindNewFilesInterval(t *testing.T) {
 func TestStart_ConcurrentStartError(t *testing.T) {
 	tempDir := t.TempDir()
 
-	poller, err := tasks.NewFileSystemPoller([]string{tempDir}, nil, func(changes map[string]tasks.FilePollEntry) {})
+	poller, err := tasks.NewFileSystemPoller([]string{tempDir}, nil, func(changes map[string]tasks.WatchedFile) {})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -229,7 +229,7 @@ func TestStart_ConcurrentStartError(t *testing.T) {
 func TestStart_ContextCancellation(t *testing.T) {
 	tempDir := t.TempDir()
 
-	poller, err := tasks.NewFileSystemPoller([]string{tempDir}, nil, func(changes map[string]tasks.FilePollEntry) {})
+	poller, err := tasks.NewFileSystemPoller([]string{tempDir}, nil, func(changes map[string]tasks.WatchedFile) {})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -277,7 +277,7 @@ func TestStart_ErrorHandling(t *testing.T) {
 	}
 
 	callbackCount := 0
-	poller, err := tasks.NewFileSystemPoller([]string{tempDir}, nil, func(changes map[string]tasks.FilePollEntry) {
+	poller, err := tasks.NewFileSystemPoller([]string{tempDir}, nil, func(changes map[string]tasks.WatchedFile) {
 		callbackCount++
 	})
 	if err != nil {
@@ -312,7 +312,7 @@ func TestStart_ErrorHandling(t *testing.T) {
 func TestStart_DefaultConfig(t *testing.T) {
 	tempDir := t.TempDir()
 
-	poller, err := tasks.NewFileSystemPoller([]string{tempDir}, nil, func(changes map[string]tasks.FilePollEntry) {})
+	poller, err := tasks.NewFileSystemPoller([]string{tempDir}, nil, func(changes map[string]tasks.WatchedFile) {})
 	if err != nil {
 		t.Fatal(err)
 	}

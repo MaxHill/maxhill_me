@@ -43,7 +43,7 @@ func FuzzPoll2(f *testing.F) {
 		actualCallbacks := 0
 		actualChangedFiles := make(map[string]int)
 
-		callback := func(changed map[string]tasks.FilePollEntry) {
+		callback := func(changed map[string]tasks.WatchedFile) {
 			actualCallbacks++
 			// Track which files changed
 			for path := range changed {
