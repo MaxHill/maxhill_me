@@ -30,10 +30,10 @@ func newWatchedFile(filePath string, info os.FileInfo) WatchedFile {
 	}
 }
 
-// DirectoryPoll monitors filesystem paths for changes and triggers callbacks when changes are detected.
+// FileSystemPoller monitors filesystem paths for changes and triggers callbacks when changes are detected.
 // It uses polling to detect file modifications, additions (via FindNewFiles), and deletions.
 // Changes are reported through a callback that receives a map of changed files keyed by absolute path.
-type DirectoryPoll struct {
+type FileSystemPoller struct {
 	pathsToSearch []string
 	filesToWatch  map[string]WatchedFile
 	callback      func(map[string]WatchedFile)
@@ -47,7 +47,7 @@ type DirectoryPoll struct {
 	isRunning bool
 }
 
-// PollerConfig holds optional configuration for DirectoryPoll.
+// PollerConfig holds optional configuration for FileSystemPoller.
 // Use SetPollInterval() and SetFindNewFilesInterval() to customize timing.
 type PollerConfig struct {
 	PollInterval         time.Duration // How often to run Poll() (default: 300ms)
@@ -81,13 +81,41 @@ func DefaultPollerConfig() PollerConfig {
 //
 //	// Call poller.FindNewFiles() periodically to scan for new files (e.g., every 2 seconds)
 //	// Call poller.Poll() frequently to detect modifications (e.g., every 300ms)
-func NewFileSystemPoller(pathsToSearch []string, config *PollerConfig, callback func(map[string]WatchedFile)) (*DirectoryPoll, error) {
+func NewFileSystemPoller(pathsToSearch []string, config *PollerConfig, callback func(map[string]WatchedFile)) (*FileSystemPoller, error) {
+	// Validate callback
+	if callback == nil {
+		return nil, fmt.Errorf("callback cannot be nil")
+	}
+
+	// Validate paths
+	if len(pathsToSearch) == 0 {
+		return nil, fmt.Errorf("pathsToSearch cannot be empty")
+	}
+	for i, path := range pathsToSearch {
+		if path == "" {
+			return nil, fmt.Errorf("pathsToSearch[%d] is empty", i)
+		}
+		// Verify path exists
+		if _, err := os.Stat(path); err != nil {
+			return nil, fmt.Errorf("pathsToSearch[%d] (%s): %w", i, path, err)
+		}
+	}
+
+	// Apply default config if nil
 	if config == nil {
 		defaultCfg := DefaultPollerConfig()
 		config = &defaultCfg
 	}
 
-	directoryPoll := DirectoryPoll{
+	// Validate config
+	if config.PollInterval <= 0 {
+		return nil, fmt.Errorf("pollInterval must be positive, got %v", config.PollInterval)
+	}
+	if config.FindNewFilesInterval <= 0 {
+		return nil, fmt.Errorf("findNewFilesInterval must be positive, got %d", config.FindNewFilesInterval)
+	}
+
+	fsp := FileSystemPoller{
 		pathsToSearch:        pathsToSearch,
 		filesToWatch:         make(map[string]WatchedFile),
 		callback:             callback,
@@ -95,12 +123,13 @@ func NewFileSystemPoller(pathsToSearch []string, config *PollerConfig, callback 
 		findNewFilesInterval: config.FindNewFilesInterval,
 		isRunning:            false,
 	}
-	err := directoryPoll.buildWatchList()
+
+	err := fsp.buildWatchList()
 	if err != nil {
-		return &directoryPoll, err
+		return nil, fmt.Errorf("initial filesystem scan: %w", err)
 	}
 
-	return &directoryPoll, nil
+	return &fsp, nil
 }
 
 // Poll checks all monitored files for modifications and deletions, invoking the callback if changes are detected.
@@ -109,32 +138,32 @@ func NewFileSystemPoller(pathsToSearch []string, config *PollerConfig, callback 
 //
 // Note: Poll() only detects modifications to existing files and deletions.
 // Call FindNewFiles() separately to detect newly created files.
-func (directoryPoll *DirectoryPoll) Poll() error {
-	changes, err := directoryPoll.getChangedFiles()
+func (fsp *FileSystemPoller) Poll() error {
+	changes, err := fsp.getChangedFiles()
 	if err != nil {
 		return err
 	}
 
 	if len(changes) > 0 {
-		directoryPoll.callback(changes)
+		fsp.callback(changes)
 	}
 
 	return nil
 }
 
-func (directoryPoll *DirectoryPoll) getChangedFiles() (map[string]WatchedFile, error) {
+func (fsp *FileSystemPoller) getChangedFiles() (map[string]WatchedFile, error) {
 
 	changedFiles := map[string]WatchedFile{}
 
 	var firstError error
 
-	for key, filePollEntry := range directoryPoll.filesToWatch {
-		stat, err := os.Stat(filePollEntry.Path)
+	for filePath, currentState := range fsp.filesToWatch {
+		stat, err := os.Stat(currentState.Path)
 		if err != nil {
 			if os.IsNotExist(err) {
 				// File was removed - this is a change!
-				changedFiles[key] = filePollEntry
-				delete(directoryPoll.filesToWatch, key)
+				changedFiles[filePath] = currentState
+				delete(fsp.filesToWatch, filePath)
 				continue
 			}
 			// Note: Silently continue on stat errors (e.g., permission denied)
@@ -145,22 +174,22 @@ func (directoryPoll *DirectoryPoll) getChangedFiles() (map[string]WatchedFile, e
 			continue
 		}
 
-		if stat.ModTime().UnixNano() > filePollEntry.ModifiedTime {
-			filePollEntry.ModifiedTime = stat.ModTime().UnixNano()
-			filePollEntry.Size = stat.Size()
-			changedFiles[key] = filePollEntry
+		if stat.ModTime().UnixNano() > currentState.ModifiedTime {
+			currentState.ModifiedTime = stat.ModTime().UnixNano()
+			currentState.Size = stat.Size()
+			changedFiles[filePath] = currentState
 
-			directoryPoll.filesToWatch[key] = filePollEntry
+			fsp.filesToWatch[filePath] = currentState
 		}
 	}
 
 	return changedFiles, firstError
 }
 
-func (directoryPoll *DirectoryPoll) buildWatchList() error {
+func (fsp *FileSystemPoller) buildWatchList() error {
 	fileNames := make(map[string]WatchedFile)
 
-	for _, path := range directoryPoll.pathsToSearch {
+	for _, path := range fsp.pathsToSearch {
 		newFiles, err := scanDirectoryRecursive(path)
 		if err != nil {
 			return err
@@ -168,7 +197,7 @@ func (directoryPoll *DirectoryPoll) buildWatchList() error {
 		maps.Copy(fileNames, newFiles)
 	}
 
-	directoryPoll.filesToWatch = fileNames
+	fsp.filesToWatch = fileNames
 	return nil
 }
 
@@ -176,25 +205,22 @@ func (directoryPoll *DirectoryPoll) buildWatchList() error {
 // New files are marked with ModifiedTime=0 to trigger detection on the next Poll() call.
 // This should be called less frequently than Poll() (e.g., every 2 seconds) as it's more expensive.
 // Returns an error if the directory scan fails.
-func (directoryPoll *DirectoryPoll) FindNewFiles() error {
-	fileNames := directoryPoll.filesToWatch
-
-	for _, path := range directoryPoll.pathsToSearch {
+func (fsp *FileSystemPoller) FindNewFiles() error {
+	for _, path := range fsp.pathsToSearch {
 		newFiles, err := scanDirectoryRecursive(path)
 		if err != nil {
 			return err
 		}
-		for key, value := range newFiles {
-			if _, exists := fileNames[key]; !exists {
+		for filePath, fileInfo := range newFiles {
+			if _, exists := fsp.filesToWatch[filePath]; !exists {
 				// Set modified time to 0 so it
 				// gets picked up as a change on next poll
-				value.ModifiedTime = 0
-				fileNames[key] = value
+				fileInfo.ModifiedTime = 0
+				fsp.filesToWatch[filePath] = fileInfo
 			}
 		}
 	}
 
-	directoryPoll.filesToWatch = fileNames
 	return nil
 }
 
@@ -214,22 +240,22 @@ func (directoryPoll *DirectoryPoll) FindNewFiles() error {
 //	        log.Printf("Poller stopped with error: %v", err)
 //	    }
 //	}()
-func (dp *DirectoryPoll) Start(ctx context.Context) error {
-	dp.mu.Lock()
-	if dp.isRunning {
-		dp.mu.Unlock()
+func (fsp *FileSystemPoller) Start(ctx context.Context) error {
+	fsp.mu.Lock()
+	if fsp.isRunning {
+		fsp.mu.Unlock()
 		return fmt.Errorf("poller already running")
 	}
-	dp.isRunning = true
-	dp.mu.Unlock()
+	fsp.isRunning = true
+	fsp.mu.Unlock()
 
 	defer func() {
-		dp.mu.Lock()
-		dp.isRunning = false
-		dp.mu.Unlock()
+		fsp.mu.Lock()
+		fsp.isRunning = false
+		fsp.mu.Unlock()
 	}()
 
-	ticker := time.NewTicker(dp.pollInterval)
+	ticker := time.NewTicker(fsp.pollInterval)
 	defer ticker.Stop()
 
 	iteration := 0
@@ -242,14 +268,14 @@ func (dp *DirectoryPoll) Start(ctx context.Context) error {
 			iteration++
 
 			// Every Nth iteration, scan for new files first
-			if iteration%dp.findNewFilesInterval == 0 {
-				if err := dp.FindNewFiles(); err != nil {
+			if iteration%fsp.findNewFilesInterval == 0 {
+				if err := fsp.FindNewFiles(); err != nil {
 					log.Printf("FindNewFiles error: %v (continuing...)", err)
 				}
 			}
 
 			// Always poll for changes
-			if err := dp.Poll(); err != nil {
+			if err := fsp.Poll(); err != nil {
 				log.Printf("Poll error: %v (continuing...)", err)
 			}
 		}
@@ -258,10 +284,10 @@ func (dp *DirectoryPoll) Start(ctx context.Context) error {
 
 // IsRunning returns whether the poller is currently running.
 // Useful for debugging or preventing duplicate Start() calls.
-func (dp *DirectoryPoll) IsRunning() bool {
-	dp.mu.Lock()
-	defer dp.mu.Unlock()
-	return dp.isRunning
+func (fsp *FileSystemPoller) IsRunning() bool {
+	fsp.mu.Lock()
+	defer fsp.mu.Unlock()
+	return fsp.isRunning
 }
 
 func scanDirectoryRecursive(dir string) (map[string]WatchedFile, error) {
@@ -269,11 +295,15 @@ func scanDirectoryRecursive(dir string) (map[string]WatchedFile, error) {
 
 	filesFound := make(map[string]WatchedFile)
 
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() {
+		if !d.IsDir() {
+			info, err := d.Info()
+			if err != nil {
+				return err
+			}
 			filesFound[path] = newWatchedFile(path, info)
 		}
 		return nil
