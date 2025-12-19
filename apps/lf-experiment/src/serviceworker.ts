@@ -1,26 +1,26 @@
-const CACHE_NAME = "lf-experiment-v1";
+// The values of these constants are replaced by the buildscript.
+// Do not change the values as that might break the replacing.
+// Look in /build/tasts/serviceworker.go to see implementation
+const CACHE_NAME = "cache_name_placeholder";
+const FILES_TO_CACHE = ["assets_to_cache_placeholder"];
 
-const ASSETS_TO_CACHE = ["replaced_by_build_script"];
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
 
-self.addEventListener("install", (event: ExtendableEvent) => {
-  console.log("Service Worker: Installing...");
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log("Service Worker: Caching assets");
-      return cache.addAll(ASSETS_TO_CACHE);
+      return cache.addAll(FILES_TO_CACHE);
     }),
   );
 });
 
-self.addEventListener("activate", (event: ExtendableEvent) => {
-  console.log("Service Worker: Activating...");
+self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log("Service Worker: Deleting old cache:", cacheName);
-            return caches.delete(cacheName);
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            return caches.delete(cache);
           }
         }),
       );
@@ -28,20 +28,22 @@ self.addEventListener("activate", (event: ExtendableEvent) => {
   );
 });
 
-self.addEventListener("fetch", (event: FetchEvent) => {
+self.addEventListener("fetch", (event) => {
+  const normalizedUrl = normalizeUrl(event.request.url);
+
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Return cached version or fetch from network
-      return (
-        response ||
-        fetch(event.request).then((fetchResponse) => {
-          // Cache new resources
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, fetchResponse.clone());
-            return fetchResponse;
-          });
-        })
-      );
+    caches.match(normalizedUrl).then((response) => {
+      return response || fetch(event.request);
     }),
   );
 });
+
+function normalizeUrl(url) {
+  const urlObj = new URL(url);
+
+  if (urlObj.search) {
+    urlObj.search = "";
+  }
+
+  return urlObj.toString();
+}

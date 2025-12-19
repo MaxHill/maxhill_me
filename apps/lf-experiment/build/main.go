@@ -51,7 +51,10 @@ func main() {
 			log.Printf("Initial build failed: %v", err)
 			log.Println("Continuing in dev mode with watch...")
 		}
-		watchAll(buildAllCtx)
+
+		watchCtx := context.Background()
+		watchAll(buildAllCtx, watchCtx)
+
 		startServer()
 	} else {
 		tasks.ClearDist(absWorkDir, distDir)
@@ -106,7 +109,7 @@ func buildAll(buildCtx BuildAllCtx) error {
 	return nil
 }
 
-func watchAll(buildAllCtx BuildAllCtx) {
+func watchAll(buildAllCtx BuildAllCtx, watchCtx context.Context) {
 	log.Println("Starting watch...")
 
 	watchPaths := []string{
@@ -130,12 +133,8 @@ func watchAll(buildAllCtx BuildAllCtx) {
 		log.Fatalf("Failed to create file system poller: %v", err)
 	}
 
-	// Start polling in background with context
-	// In a real application, you might want to pass context from main
-	// for graceful shutdown handling
-	ctx := context.Background()
 	go func() {
-		if err := poller.Start(ctx); err != nil {
+		if err := poller.Start(watchCtx); err != nil {
 			log.Printf("Poller stopped: %v", err)
 		}
 	}()
