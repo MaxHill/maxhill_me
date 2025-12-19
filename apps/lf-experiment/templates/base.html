@@ -5,7 +5,6 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>lf-experiment</title>
 
-		<!-- Global CSS styles -->
 		<link rel="stylesheet" href="/css/style.css">
 	</head>
 	<body>
@@ -13,10 +12,8 @@
 			{{template "content" .}}
 		</main>
 
-		<!-- Bundled JavaScript with web components -->
 		<script type="module" src="/js/main.js"></script>
 
-		<!-- Service Worker Registration -->
 		<script>
 			if ('serviceWorker' in navigator) {
 				window.addEventListener('load', () => {
@@ -29,7 +26,7 @@
 							});
 							});
 							
-							// Auto-reload when new service worker takes control
+							{{if not .IsDev}}
 							let refreshing = false;
 							navigator.serviceWorker.addEventListener('controllerchange', () => {
 								if (!refreshing) {
@@ -38,7 +35,33 @@
 									window.location.reload();
 								}
 								});
+								{{end}}
 							}
 		</script>
+
+		<!-- Live Reload (Dev Mode Only) -->
+		{{if .IsDev}}
+		<script>
+			document.addEventListener('DOMContentLoaded', () => {
+				const eventSource = new EventSource('/dev/reload-stream');
+				
+				eventSource.addEventListener('reload', (event) => {
+					console.log('Dev server: Reloading...');
+					window.location.reload();
+					});
+					
+					eventSource.addEventListener('open', () => {
+						console.log('Dev server: Live reload connected');
+						});
+						
+						eventSource.addEventListener('error', (e) => {
+							// EventSource automatically reconnects, only log if connection is closed
+							if (eventSource.readyState === EventSource.CLOSED) {
+								console.log('Dev server: Connection closed');
+							}
+							});
+							})
+		</script>
+		{{end}}
 	</body>
 </html>

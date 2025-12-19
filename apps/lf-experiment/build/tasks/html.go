@@ -19,8 +19,14 @@ const (
 	htmlFileExtension = ".html"
 )
 
+// TemplateData holds data passed to HTML templates
+type TemplateData struct {
+	IsDev bool
+}
+
 type BuildHtmlOptions struct {
 	workDir string
+	isDev   bool
 }
 
 func (options BuildHtmlOptions) Build() BuildResult {
@@ -73,8 +79,11 @@ func (options BuildHtmlOptions) Build() BuildResult {
 		}
 		defer outFile.Close()
 
-		// Execute template with no data (or empty PageData)
-		err = pageTemplate.ExecuteTemplate(outFile, htmlBaseTemplate, nil)
+		// Execute template with data
+		templateData := TemplateData{
+			IsDev: options.isDev,
+		}
+		err = pageTemplate.ExecuteTemplate(outFile, htmlBaseTemplate, templateData)
 		if err != nil {
 			return err
 		}
@@ -93,5 +102,8 @@ func (options BuildHtmlOptions) Build() BuildResult {
 }
 
 func NewHtmlBuildStep(workDir string, isDev bool) (BuildTask, error) {
-	return BuildHtmlOptions{workDir: workDir}, nil
+	return BuildHtmlOptions{
+		workDir: workDir,
+		isDev:   isDev,
+	}, nil
 }
