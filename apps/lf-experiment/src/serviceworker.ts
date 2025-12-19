@@ -29,6 +29,11 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  // Skip service worker for dev endpoints (like SSE live reload)
+  if (event.request.url.includes('/dev/')) {
+    return;
+  }
+
   const normalizedUrl = normalizeUrl(event.request.url);
 
   event.respondWith(

@@ -41,11 +41,13 @@ func main() {
 		log.Fatalf("failed to get working directory: %s", err)
 	}
 
-	buildAllCtx := newBuildAllCtx(absWorkDir, isDev)
-
 	//  Run tasks
 	//  ------------------------------------------------------------------------
 	if isDev {
+		// Initialize SSE broker for live reload
+		sseBroker := tasks.NewSSEBroker()
+		buildAllCtx := newBuildAllCtx(absWorkDir, isDev, sseBroker)
+
 		tasks.ClearDist(absWorkDir, distDir)
 		if err := buildAll(buildAllCtx); err != nil {
 			log.Printf("Initial build failed: %v", err)
@@ -55,8 +57,10 @@ func main() {
 		watchCtx := context.Background()
 		watchAll(buildAllCtx, watchCtx)
 
-		startServer()
+		startServer(sseBroker)
 	} else {
+		buildAllCtx := newBuildAllCtx(absWorkDir, isDev, nil)
+
 		tasks.ClearDist(absWorkDir, distDir)
 		if err := buildAll(buildAllCtx); err != nil {
 			log.Fatalf("Build failed: %v", err)
@@ -68,7 +72,7 @@ type BuildAllCtx struct {
 	tasks []tasks.BuildTask
 }
 
-func newBuildAllCtx(absWorkDir string, isDev bool) BuildAllCtx {
+func newBuildAllCtx(absWorkDir string, isDev bool, sseBroker *tasks.SSEBroker) BuildAllCtx {
 	buildTasks := []tasks.BuildTask{}
 
 	// Define all build steps in order
@@ -90,6 +94,15 @@ func newBuildAllCtx(absWorkDir string, isDev bool) BuildAllCtx {
 			log.Fatalf("failed to create %s task: %v", tb.name, err)
 		}
 		buildTasks = append(buildTasks, task)
+	}
+
+	// Add reload task for dev mode (runs last, broadcasts to browsers)
+	if isDev && sseBroker != nil {
+		reloadTask, err := tasks.NewReloadBuildStep(absWorkDir, isDev, sseBroker)
+		if err != nil {
+			log.Fatalf("failed to create reload task: %v", err)
+		}
+		buildTasks = append(buildTasks, reloadTask)
 	}
 
 	return BuildAllCtx{tasks: buildTasks}
