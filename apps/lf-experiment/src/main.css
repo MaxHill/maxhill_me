@@ -3,5 +3,10 @@
 /* Project-specific global styles */
 :root {
   /* Add any lf-experiment specific CSS variables/overrides here */
-  background: green;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  height: 100dvh;
 }
