@@ -21,14 +21,24 @@
 			if ('serviceWorker' in navigator) {
 				window.addEventListener('load', () => {
 					navigator.serviceWorker.register('/serviceworker.js')
-						.then(registration => {
-							console.log('Service Worker registered:', registration.scope);
+					.then(registration => {
+						console.log('Service Worker registered:', registration.scope);
 						})
 						.catch(error => {
 							console.error('Service Worker registration failed:', error);
-						});
-				});
-			}
+							});
+							});
+							
+							// Auto-reload when new service worker takes control
+							let refreshing = false;
+							navigator.serviceWorker.addEventListener('controllerchange', () => {
+								if (!refreshing) {
+									refreshing = true;
+									console.log('Service Worker updated, reloading page...');
+									window.location.reload();
+								}
+								});
+							}
 		</script>
 	</body>
 </html>
