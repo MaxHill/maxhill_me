@@ -1,0 +1,20 @@
+{
+  "imports": {
+    "@std/streams": "jsr:@std/streams@^1.0.0"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window"]
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 80,
+    "indentWidth": 2,
+    "semiColons": true,
+    "singleQuote": false
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  }
+}

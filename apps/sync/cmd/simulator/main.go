@@ -15,7 +15,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var count = 1
+	var count = 0
 	for range 30 {
 		err = client.Call(map[string]int{"n": count}, &count)
 		if err != nil {

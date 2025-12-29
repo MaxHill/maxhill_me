@@ -1,10 +1,14 @@
-import { readLines } from "https://deno.land/std/io/read_lines.ts";
+import { TextLineStream } from "@std/streams/text-line-stream";
 
-for await (const line of readLines(Deno.stdin)) {
+const lines = Deno.stdin.readable
+  .pipeThrough(new TextDecoderStream())
+  .pipeThrough(new TextLineStream());
+
+for await (const line of lines) {
   try {
     const { payload } = JSON.parse(line);
 
-    const result = handle(payload); // pure or deterministic
+    const result = handle(payload);
 
     console.log(JSON.stringify({ result }));
   } catch (err) {
@@ -16,7 +20,9 @@ for await (const line of readLines(Deno.stdin)) {
   }
 }
 
-function handle(payload: any) {
+function handle(payload: { n: number }) {
   console.error(payload);
-  return payload.n * 2;
+  if (!payload) return 1;
+  if (!payload.n) return 1;
+  return Math.abs(payload.n) * 2;
 }
