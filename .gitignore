@@ -25,3 +25,26 @@ pnpm-debug.log*
 
 # turbo
 .turbo/
+
+# Compiled binaries (prevent large files in git)
+**/main
+!**/main.go
+!**/main.ts
+!**/main.js
+
+# Build artifacts and caches
+**/.zig-cache/
+**/build/tmp/
+**/*.test
+!**/*.test.ts
+!**/*.test.js
+!**/*.test.go
+
+# Go binaries
+apps/account/main
+apps/lf-experiment/main
+apps/sync/main
+
+# Zig artifacts
+ssg/zine
+**/build_zcu.o
