@@ -2,7 +2,7 @@ package tasks_test
 
 import (
 	"fmt"
-	"lf-experiment/build/tasks"
+	"lf-experiment/tasks"
 	"os"
 	"path/filepath"
 	"testing"

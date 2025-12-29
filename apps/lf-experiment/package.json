@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm run build:binary && ./build/main -env=dev",
-    "dev2": "wgo run -root ../../packages/components/dist -root ../../packages/css/dist -xdir '^dist$' -file .html -file .css -file .ts -file .js ./build --env=dev",
-    "build:binary": "go build -o ./build/main ./build",
+    "build:binary": "cd ./build && go build -o ./main .",
     "build": "pnpm run build:binary && ./build/main",
     "clean": "rm -rf dist/ .tmp/ build/main"
   },

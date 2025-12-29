@@ -7,7 +7,7 @@ import (
 	"log"
 	"path/filepath"
 
-	"lf-experiment/build/tasks"
+	"lf-experiment/tasks"
 )
 
 const (
