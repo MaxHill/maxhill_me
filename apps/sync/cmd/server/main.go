@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"sync/internal/database"
+	"sync/internal/server"
 	"sync/internal/sync_engine"
 	"time"
 )
@@ -23,12 +24,12 @@ func main() {
 		MaxIdleConns:    20,
 		ConnMaxLifetime: time.Duration(0), // Zero meand never timeout
 	})
-	syncHandler := sync_engine.NewSyncService(db)
+	syncService := sync_engine.NewSyncService(db)
 
 	// Start server
-	server := NewServer(*db.Queries(), syncHandler)
+	mux := server.NewServer(syncService, maxConcurrentConnections)
 	log.Printf("Server listening on http://localhost%s\n", serverPort)
-	if err := http.ListenAndServe(serverPort, server); err != nil {
+	if err := http.ListenAndServe(serverPort, mux); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }

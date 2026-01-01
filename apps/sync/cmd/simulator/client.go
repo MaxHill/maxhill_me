@@ -23,8 +23,8 @@ type Client struct {
 	stdout *bufio.Reader
 }
 
-func StartClient(file string) (*Client, error) {
-	cmd := exec.Command("deno", "run", "--quiet", file)
+func StartClient(file string, seed string) (*Client, error) {
+	cmd := exec.Command("deno", "run", "--allow-all", "--no-check", "--quiet", file, seed)
 
 	stdin, err := cmd.StdinPipe()
 	stdout, err := cmd.StdoutPipe()

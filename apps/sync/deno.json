@@ -1,9 +1,14 @@
 {
   "imports": {
-    "@std/streams": "jsr:@std/streams@^1.0.0"
+    "@std/streams": "jsr:@std/streams@^1.0.0",
+    "@maxhill/idb-distribute": "../../packages/idb-distribute/src/index.ts",
+    "idb": "npm:idb@^8.0.3",
+    "fake-indexeddb/": "npm:/fake-indexeddb/",
+    "seedrandom": "npm:seedrandom@^3.0.5",
+    "@types/seedrandom": "npm:@types/seedrandom@^3.0.8"
   },
   "compilerOptions": {
-    "lib": ["deno.window"]
+    "lib": ["deno.window", "dom"]
   },
   "fmt": {
     "useTabs": false,
