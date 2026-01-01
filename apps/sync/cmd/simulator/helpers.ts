@@ -19,6 +19,7 @@ export interface ClientDbSchema extends DBSchema {
 
 export interface SimClient {
   db: IDBPDatabase<ClientDbSchema & InternalDbSchema>;
+  realDb: IDBPDatabase<ClientDbSchema & InternalDbSchema>; // Underlying non-proxied db
   wal: WAL;
   scheduler: Scheduler;
 }
@@ -52,6 +53,7 @@ export const newClient = async (prng: seedrandom.PRNG): Promise<SimClient> => {
       db as unknown as IDBPDatabase<InternalDbSchema & ClientDbSchema>,
       wal,
     ),
+    realDb: db as unknown as IDBPDatabase<InternalDbSchema & ClientDbSchema>,
     wal,
     scheduler,
   };

@@ -176,7 +176,7 @@ export class WAL {
    * @param {SyncResponse} response - Response with the wal entries
    */
   async receiveExternalWALEntries(db: IDBPDatabase, request: SyncRequest, response: SyncResponse) {
-    const tx = db.transaction(db.objectStoreNames, "readwrite");
+    const tx = db.transaction(Array.from(db.objectStoreNames), "readwrite");
     if (response.entries.length) {
       await this.batchWriteSyncedEntries(response.entries, tx);
 
@@ -195,18 +195,21 @@ export class WAL {
           }),
         );
 
-        console.info("Database reset, starting re-application of WAL");
+        console.error("Database reset, starting re-application of WAL");
         await dbCommands.putLastAppliedVersion(tx, -1);
         await this.applyPendingEntries(tx);
       } else {
         await this.applyPendingEntries(tx);
       }
 
-      // Sync clock
-      const highestVersion = response.entries.reduce((prev, curr) => {
-        return Math.max(prev, curr.version);
-      }, -1);
-      await logicalClock.sync(tx, highestVersion);
+      // Sync clock with highest version from response
+      // Only sync if we received entries to prevent clock drift
+      if (response.entries.length > 0) {
+        const highestVersion = response.entries.reduce((prev, curr) => {
+          return Math.max(prev, curr.version);
+        }, -1);
+        await logicalClock.sync(tx, highestVersion);
+      }
     }
 
     // TODO: Can we acheive this without looking at the request?
@@ -236,7 +239,7 @@ export class WAL {
       entries: toSync,
     });
 
-    const tx = db.transaction(db.objectStoreNames, "readwrite");
+    const tx = db.transaction(Array.from(db.objectStoreNames), "readwrite");
     if (res.entries.length) {
       await this.batchWriteSyncedEntries(res.entries, tx);
 
@@ -255,18 +258,21 @@ export class WAL {
           }),
         );
 
-        console.info("Database reset, starting re-application of WAL");
+        console.error("Database reset, starting re-application of WAL");
         await dbCommands.putLastAppliedVersion(tx, -1);
         await this.applyPendingEntries(tx);
       } else {
         await this.applyPendingEntries(tx);
       }
 
-      // Sync clock
-      const highestVersion = res.entries.reduce((prev, curr) => {
-        return Math.max(prev, curr.version);
-      }, -1);
-      await logicalClock.sync(tx, highestVersion);
+      // Sync clock with highest version from response
+      // Only sync if we received entries to prevent clock drift
+      if (res.entries.length > 0) {
+        const highestVersion = res.entries.reduce((prev, curr) => {
+          return Math.max(prev, curr.version);
+        }, -1);
+        await logicalClock.sync(tx, highestVersion);
+      }
     }
 
     if (toSync.length > 0) {

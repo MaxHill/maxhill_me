@@ -8,13 +8,40 @@ import { type IDBPTransaction } from "idb";
 import {
   newClient,
   Post,
-  randomChance,
-  randomInt,
   randomUUID,
   shuffleArray,
   User,
 } from "./helpers.ts";
 import { type InternalDbSchema } from "@maxhill/idb-distribute";
+
+//  ------------------------------------------------------------------------
+//  Types
+//  ------------------------------------------------------------------------
+type ActionRequest = {
+  writeUser: boolean;
+  deleteUser: boolean;
+  clearUser: boolean;
+  writePost: boolean;
+  deletePost: boolean;
+  clearPost: boolean;
+  requestSync: boolean;
+};
+
+type SyncDeliveryRequest = {
+  syncRequest: any;
+  syncResponse: any;
+};
+
+type StateResponse = {
+  walEntries: any[];
+  clockValue: number;
+  syncRequest?: any;
+};
+
+type Message = {
+  type: string;
+  payload: any;
+};
 
 //  ------------------------------------------------------------------------
 //  Setup database
@@ -27,6 +54,11 @@ const prng = seedrandom(seed);
 const client = await newClient(prng);
 
 //  ------------------------------------------------------------------------
+//  Store last sync request for delivery
+//  ------------------------------------------------------------------------
+let lastSyncRequest: any = null;
+
+//  ------------------------------------------------------------------------
 //  Communicate with go
 //  ------------------------------------------------------------------------
 const lines = Deno.stdin.readable
@@ -35,9 +67,16 @@ const lines = Deno.stdin.readable
 
 for await (const line of lines) {
   try {
-    const { payload } = JSON.parse(line);
+    const { type, payload } = JSON.parse(line) as Message;
 
-    const result = await tick(payload);
+    let result: StateResponse;
+    if (type === "action") {
+      result = await handleAction(payload as ActionRequest);
+    } else if (type === "sync_delivery") {
+      result = await handleSyncDelivery(payload as SyncDeliveryRequest);
+    } else {
+      throw new Error(`Unknown message type: ${type}`);
+    }
 
     console.log(JSON.stringify({ result }));
   } catch (err) {
@@ -46,50 +85,77 @@ for await (const line of lines) {
 }
 
 //  ------------------------------------------------------------------------
-//  Do one simulation run
+//  Handle action request
 //  ------------------------------------------------------------------------
-async function tick(payload: { n: number }) {
-  if (!payload) return [];
+async function handleAction(request: ActionRequest): Promise<StateResponse> {
+  // Perform actions based on booleans
+  if (request.writeUser) await writeUser(prng);
+  if (request.deleteUser) await deleteUser(prng);
+  if (request.clearUser) await clearUser();
+  if (request.writePost) await writePost(prng);
+  if (request.deletePost) await deletePost(prng);
+  if (request.clearPost) await clearPost();
 
-  // User action
-  let chance = randomChance(prng, .3);
-  if (chance) await writeUser(prng);
-
-  chance = randomChance(prng, .3);
-  if (chance) await deleteUser(prng);
-
-  chance = randomChance(prng, .1);
-  if (chance) await clearUser();
-
-  // Posts action
-  chance = randomChance(prng, .3);
-  if (chance) await writePost(prng);
-
-  chance = randomChance(prng, .3);
-  if (chance) await deletePost(prng);
-
-  chance = randomChance(prng, .1);
-  if (chance) await clearPost();
-
-  // Return wal to go process
-  const tx2 = client.db.transaction("_wal") as unknown as IDBPTransaction<
+  // Get current WAL entries
+  const tx = client.db.transaction("_wal") as unknown as IDBPTransaction<
     InternalDbSchema,
     ["_wal", ...[]],
     "readwrite" | "readonly"
   >;
-  const walEntries = await client.wal.getEntries(0, tx2);
-  await tx2.done;
+  const walEntries = await client.wal.getEntries(0, tx);
+  await tx.done;
 
-  const syncRequest = await client.wal.getEntriesToSync(client.db);
+  // Get clock value directly from IndexedDB
+  const clockTx = client.db.transaction(["_logicalClock"], "readonly");
+  const clockStore = clockTx.objectStore("_logicalClock");
+  const clockValue = (await clockStore.get("value")) ?? -1;
+  await clockTx.done;
 
-  return { walEntries, syncRequest };
+  // Optionally compute sync request
+  let syncRequest = undefined;
+  if (request.requestSync) {
+    syncRequest = await client.wal.getEntriesToSync(client.realDb);
+    lastSyncRequest = syncRequest; // Store for later delivery
+  }
+
+  return { walEntries, clockValue, syncRequest };
+}
+
+//  ------------------------------------------------------------------------
+//  Handle sync delivery
+//  ------------------------------------------------------------------------
+async function handleSyncDelivery(
+  request: SyncDeliveryRequest,
+): Promise<StateResponse> {
+  // Apply sync response to client using realDb (non-proxied)
+  await client.wal.receiveExternalWALEntries(
+    client.realDb,
+    request.syncRequest,
+    request.syncResponse,
+  );
+
+  // Get updated WAL entries
+  const walTx = client.db.transaction("_wal") as unknown as IDBPTransaction<
+    InternalDbSchema,
+    ["_wal", ...[]],
+    "readwrite" | "readonly"
+  >;
+  const walEntries = await client.wal.getEntries(0, walTx);
+  await walTx.done;
+
+  // Get updated clock value
+  const clockTx = client.db.transaction(["_logicalClock"], "readonly");
+  const clockStore = clockTx.objectStore("_logicalClock");
+  const clockValue = (await clockStore.get("value")) ?? -1;
+  await clockTx.done;
+
+  return { walEntries, clockValue, syncRequest: undefined };
 }
 
 //  ------------------------------------------------------------------------
 //  Actions
 //  ------------------------------------------------------------------------
 async function writePost(prng: seedrandom.PRNG) {
-  console.error("writePost");
   const id = randomUUID(prng);
   const tx = client.db.transaction(["posts"], "readwrite");
   const store = tx.objectStore("posts");
@@ -104,7 +170,6 @@ async function writePost(prng: seedrandom.PRNG) {
 }
 
 async function deletePost(prng: seedrandom.PRNG) {
-  console.error("deletePost");
   const posts: Post[] = await client.db.getAll("posts");
   const [selected] = shuffleArray(prng, posts);
   if (selected) {
@@ -113,13 +178,11 @@ async function deletePost(prng: seedrandom.PRNG) {
 }
 
 async function clearPost() {
-  console.error("clearPost");
   await client.db.clear("posts");
 }
 
 async function writeUser(prng: seedrandom.PRNG) {
-  console.error("writeUser");
-  const id = randomInt(prng, 0, 100000000);
+  const id = Math.floor(prng() * 100000000);
   const returnedId = await client.db.put("users", {
     id,
     name: "Test user",
@@ -130,7 +193,6 @@ async function writeUser(prng: seedrandom.PRNG) {
 }
 
 async function deleteUser(prng: seedrandom.PRNG) {
-  console.error("deleteUser");
   const users: User[] = await client.db.getAll("users");
   const [selected] = shuffleArray(prng, users);
   if (selected) {
@@ -139,6 +201,5 @@ async function deleteUser(prng: seedrandom.PRNG) {
 }
 
 async function clearUser() {
-  console.error("clearUser");
   await client.db.clear("users");
 }

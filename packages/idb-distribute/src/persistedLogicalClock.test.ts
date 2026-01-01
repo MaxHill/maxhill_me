@@ -34,10 +34,10 @@ describe("PersistedLogicalClock", () => {
         const tx = db.transaction(["_logicalClock"], "readwrite")
 		await logicalClock.putVersion(tx, 5);
 
-		const newValue = await logicalClock.sync(tx, 10); // max(5,10)+1 = 11
-		expect(newValue).toBe(11);
+		const newValue = await logicalClock.sync(tx, 10); // max(5,10) = 10
+		expect(newValue).toBe(10);
 		const stored = await logicalClock.getVersion(tx);
-		expect(stored).toBe(11);
+		expect(stored).toBe(10);
         await tx.done
 	});
 
@@ -45,10 +45,10 @@ describe("PersistedLogicalClock", () => {
         const tx = db.transaction(["_logicalClock"], "readwrite")
 		await logicalClock.putVersion(tx, 10);
 
-		const newValue = await logicalClock.sync(tx,5); // max(10,5)+1 = 11
-		expect(newValue).toBe(11);
+		const newValue = await logicalClock.sync(tx,5); // max(10,5) = 10
+		expect(newValue).toBe(10);
 		const stored = await logicalClock.getVersion(tx);
-		expect(stored).toBe(11);
+		expect(stored).toBe(10);
         await tx.done
 	});
 
@@ -65,14 +65,14 @@ describe("PersistedLogicalClock", () => {
         await tx.done
 	});
 
-	it("should not change when syncing with self (except +1)", async () => {
+	it("should not change when syncing with self", async () => {
         const tx = db.transaction(["_logicalClock"], "readwrite")
 		await logicalClock.putVersion(tx, 20);
 
 
 		const current = await logicalClock.getVersion(tx);
 		const newValue = await logicalClock.sync(tx,current);
-		expect(newValue).toBe(current + 1);
+		expect(newValue).toBe(current);
         await tx.done
 	});
 
@@ -100,9 +100,9 @@ describe("PersistedLogicalClock", () => {
 		await logicalClock.putVersion(tx, -5)
 
 		const result = await logicalClock.sync(tx, -10);
-		expect(result).toBe(-4); // max(-5, -10) + 1
+		expect(result).toBe(-5); // max(-5, -10)
 		const current = await logicalClock.getVersion(tx);
-		expect(current).toBe(-4);
+		expect(current).toBe(-5);
         
         await tx.done
 	});

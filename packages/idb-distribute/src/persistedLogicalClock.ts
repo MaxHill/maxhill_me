@@ -22,7 +22,7 @@ import type { InternalDbSchema } from "./db.ts";
  *
  * // Synchronize with another clock's value
  * const otherVersion = 5;
- * await clock.sync(otherVersion); // clock value is now 6 (max(1, 5) + 1)
+ * await clock.sync(tx, otherVersion); // clock value is now 5 (max(1, 5))
  *
  * // Continue with a local event
  * await clock.tick(); // clock value is now 7
@@ -49,8 +49,15 @@ export async function tick(
 }
 
 /**
- * Synchronizes this clock with another clock's value, typically when receiving a message.
- * Sets this clock to the maximum of its current value and the other value, plus 1.
+ * Synchronizes this clock with another clock's value when receiving remote state.
+ * Sets this clock to the maximum of its current value and the other value.
+ * 
+ * Note: Unlike traditional Lamport clocks which increment on receive (max+1),
+ * we only increment during local writes via tick(). This prevents clock drift
+ * during convergence when syncing repeatedly with the same remote state.
+ * The "send" increment happens in tick() before writing the WAL entry.
+ * 
+ * @param tx - Transaction to use
  * @param otherVersion - The other clock's version to synchronize with
  * @returns The new clock value after synchronization
  */
@@ -62,7 +69,7 @@ export async function sync(
 
     // Read current version
     const currentVersion = await store.get('value') ?? -1;
-    const newVersion = Math.max(currentVersion, otherVersion) + 1;
+    const newVersion = Math.max(currentVersion, otherVersion);
 
     // Write new version atomically
     await store.put(newVersion, 'value');
