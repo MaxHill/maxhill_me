@@ -203,13 +203,10 @@ export class WAL {
       }
 
       // Sync clock with highest version from response
-      // Only sync if we received entries to prevent clock drift
-      if (response.entries.length > 0) {
-        const highestVersion = response.entries.reduce((prev, curr) => {
-          return Math.max(prev, curr.version);
-        }, -1);
-        await logicalClock.sync(tx, highestVersion);
-      }
+      const highestVersion = response.entries.reduce((prev, curr) => {
+        return Math.max(prev, curr.version);
+      }, -1);
+      await logicalClock.sync(tx, highestVersion);
     }
 
     // TODO: Can we acheive this without looking at the request?
@@ -266,13 +263,10 @@ export class WAL {
       }
 
       // Sync clock with highest version from response
-      // Only sync if we received entries to prevent clock drift
-      if (res.entries.length > 0) {
-        const highestVersion = res.entries.reduce((prev, curr) => {
-          return Math.max(prev, curr.version);
-        }, -1);
-        await logicalClock.sync(tx, highestVersion);
-      }
+      const highestVersion = res.entries.reduce((prev, curr) => {
+        return Math.max(prev, curr.version);
+      }, -1);
+      await logicalClock.sync(tx, highestVersion);
     }
 
     if (toSync.length > 0) {
