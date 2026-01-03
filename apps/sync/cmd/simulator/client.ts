@@ -36,6 +36,9 @@ type StateResponse = {
   walEntries: any[];
   clockValue: number;
   syncRequest?: any;
+  actionTimeMs?: number;
+  walReceiveTimeMs?: number;
+  syncPrepTimeMs?: number;
 };
 
 type Message = {
@@ -88,6 +91,8 @@ for await (const line of lines) {
 //  Handle action request
 //  ------------------------------------------------------------------------
 async function handleAction(request: ActionRequest): Promise<StateResponse> {
+  const actionStart = performance.now();
+
   // Perform actions based on booleans
   if (request.writeUser) await writeUser(prng);
   if (request.deleteUser) await deleteUser(prng);
@@ -95,6 +100,8 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
   if (request.writePost) await writePost(prng);
   if (request.deletePost) await deletePost(prng);
   if (request.clearPost) await clearPost();
+
+  const actionTimeMs = performance.now() - actionStart;
 
   // Get current WAL entries
   const tx = client.db.transaction("_wal") as unknown as IDBPTransaction<
@@ -113,12 +120,21 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
 
   // Optionally compute sync request
   let syncRequest = undefined;
+  let syncPrepTimeMs = undefined;
   if (request.requestSync) {
+    const syncPrepStart = performance.now();
     syncRequest = await client.wal.getEntriesToSync(client.realDb);
+    syncPrepTimeMs = performance.now() - syncPrepStart;
     lastSyncRequest = syncRequest; // Store for later delivery
   }
 
-  return { walEntries, clockValue, syncRequest };
+  return { 
+    walEntries, 
+    clockValue, 
+    syncRequest,
+    actionTimeMs,
+    syncPrepTimeMs
+  };
 }
 
 //  ------------------------------------------------------------------------
@@ -127,12 +143,16 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
 async function handleSyncDelivery(
   request: SyncDeliveryRequest,
 ): Promise<StateResponse> {
+  const walReceiveStart = performance.now();
+
   // Apply sync response to client using realDb (non-proxied)
   await client.wal.receiveExternalWALEntries(
     client.realDb,
     request.syncRequest,
     request.syncResponse,
   );
+
+  const walReceiveTimeMs = performance.now() - walReceiveStart;
 
   // Get updated WAL entries
   const walTx = client.db.transaction("_wal") as unknown as IDBPTransaction<
@@ -149,7 +169,12 @@ async function handleSyncDelivery(
   const clockValue = (await clockStore.get("value")) ?? -1;
   await clockTx.done;
 
-  return { walEntries, clockValue, syncRequest: undefined };
+  return { 
+    walEntries, 
+    clockValue, 
+    syncRequest: undefined,
+    walReceiveTimeMs
+  };
 }
 
 //  ------------------------------------------------------------------------

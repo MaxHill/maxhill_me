@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"sync/internal/database"
 	"sync/internal/server"
 	"sync/internal/sync_engine"
@@ -29,120 +30,106 @@ type SyncDeliveryResult struct {
 	Error       error
 }
 
+type SimulationStats struct {
+	ActionTimes      []float64
+	WalReceiveTimes  []float64
+	SyncPrepTimes    []float64
+	TotalActions     int
+	TotalSyncs       int
+	TotalEntriesSent int
+	TotalEntriesRecv int
+	ConvergenceStart time.Time
+	ConvergenceEnd   time.Time
+}
+
 func main() {
 	fileName := flag.String("file", "./cmd/simulator/client.ts", "Path to client file")
 	numClients := flag.Int("clients", 10, "Number of clients")
 	numTicks := flag.Int("ticks", 100, "Number of ticks per client")
-	seed := flag.String("seed", "A", "Random seed")
+	seed := flag.String("seed", "", "Random seed (generated if not provided)")
 	flag.Parse()
 
-	// Setup server
-	db := database.New(
-		database.DBConfig{
-			DBUrl:           ":memory:",
-			BusyTimeout:     1000,
-			MaxOpenConns:    1,
-			MaxIdleConns:    1,
-			ConnMaxLifetime: time.Duration(0),
-		})
-	syncService := sync_engine.NewSyncService(db)
-	server := &server.Server{
-		SyncService: syncService,
-	}
-
+	// Generate random seed if not provided
 	// Setup random
+	if *seed == "" {
+		*seed = fmt.Sprintf("%d", time.Now().UnixNano())
+	}
 	hash := sha256.Sum256([]byte(*seed))
 	seedInt64 := int64(binary.BigEndian.Uint64(hash[:8]))
 	random := rand.New(rand.NewSource(seedInt64))
 
-	// Create clients
-	clients := make([]*Client, *numClients)
-	for i := range clients {
-		clientID := fmt.Sprintf("%s-client-%d", *seed, i)
-		clientSeed := fmt.Sprintf("%s-%d", clientID, random.Int63())
+	// Setup server
+	server := createServer()
 
-		client, err := StartClient(*fileName, clientID, clientSeed)
-		if err != nil {
-			log.Fatal(err)
+	// Create clients
+	clients := createClients(random, *fileName, *numClients)
+	// Ensure all client processes are cleaned up on exit
+	defer func() {
+		for _, client := range clients {
+			if client != nil {
+				if err := client.Close(); err != nil {
+					log.Printf("Error closing client: %v", err)
+				}
+			}
 		}
-		clients[i] = client
-	}
+	}()
+
+	// Initialize statistics
+	stats := &SimulationStats{}
+
+	log.Printf("=== Simulation Starting ===")
+	log.Printf("Seed: %s", *seed)
+	log.Printf("Clients: %d, Ticks: %d", *numClients, *numTicks)
 
 	// Run simulation
 	for tick := 0; tick < *numTicks; tick++ {
 		log.Printf("=== Tick %d ===", tick)
 
-		// Phase 1: Pre-generate all random decisions (deterministic order)
-		allActions := make([]ActionRequest, len(clients))
-		allShouldSync := make([]bool, len(clients))
-		for i, client := range clients {
-			allActions[i] = client.GenerateRandomActions(random)
-			allShouldSync[i] = client.ShouldSync(random)
-		}
+		allActions, allShouldSync := generateAllRandomActions(random, clients)
 
-		// Phase 2: Send all action requests in parallel
-		results := make(chan ActionResult, len(clients))
-		for i, client := range clients {
-			go func(idx int, c *Client, actions ActionRequest, shouldSync bool) {
-				state, err := c.PerformActions(actions, shouldSync)
-				results <- ActionResult{ClientIndex: idx, State: state, Error: err}
-			}(i, client, allActions[i], allShouldSync[i])
-		}
+		results := executeAllActions(allActions, allShouldSync, clients)
 
-		// Phase 3: Collect action results in order
-		actionResults := make([]*StateResponse, len(clients))
-		for range clients {
-			result := <-results
-			if result.Error != nil {
-				log.Fatalf("Client %d action failed: %v", result.ClientIndex, result.Error)
-			}
-			actionResults[result.ClientIndex] = result.State
-		}
+		actionResults := collectAndSortActionResults(tick, results, clients)
 
-		// Phase 4: Log action results and process syncs in deterministic order
 		for i, state := range actionResults {
-			log.Printf("Client %d (%s)", i, clients[i].ClientID)
+			log.Printf("Client %d (%s;tick=%d)", i, clients[i].ClientID, tick)
 			log.Printf("  Clock: %d, WAL entries: %d", state.ClockValue, len(state.WalEntries))
 
-			// If client wants to sync, send to server (sequential for determinism)
-			if state.SyncRequest != nil {
-				log.Printf("  Syncing: sending %d entries, last seen version %d", len(state.SyncRequest.Entries), state.SyncRequest.ClientLastSeenVersion)
-
-				// Send to server
-				syncResp, err := sendSyncToServer(server, state.SyncRequest)
-				if err != nil {
-					log.Fatalf("Client %d sync request failed: %v", i, err)
-				}
-
-				log.Printf("  Received %d entries from server", len(syncResp.Entries))
-
-				// Deliver sync response back to client (can parallelize later)
-				delivery := SyncDeliveryRequest{
-					SyncRequest:  *state.SyncRequest,
-					SyncResponse: *syncResp,
-				}
-				newState, err := clients[i].DeliverSync(delivery)
-				if err != nil {
-					log.Fatalf("Client %d sync delivery failed: %v", i, err)
-				}
-
-				log.Printf("  After sync - Clock: %d, WAL: %d", newState.ClockValue, len(newState.WalEntries))
+			// Collect action timing stats
+			if state.ActionTimeMs > 0 {
+				stats.ActionTimes = append(stats.ActionTimes, state.ActionTimeMs)
+				stats.TotalActions++
 			}
+
+			if state.SyncPrepTimeMs > 0 {
+				stats.SyncPrepTimes = append(stats.SyncPrepTimes, state.SyncPrepTimeMs)
+			}
+
+			// If client wants to sync, send to server (sequential for determinism)
+			processAllSyncRequests(stats, server, clients[i], state)
 		}
 	}
 
 	log.Println("Simulation complete")
 
 	// Convergence check
+	stats.ConvergenceStart = time.Now()
 	if err := convergeAllClients(clients, server); err != nil {
 		log.Fatalf("Convergence failed: %v", err)
 	}
+	stats.ConvergenceEnd = time.Now()
 
 	if err := verifyWALsMatch(clients); err != nil {
 		log.Fatalf("WAL verification failed: %v", err)
 	}
 
 	log.Println("✓ Convergence verification passed!")
+
+	// Print statistics
+	printSimulationStats(stats)
+
+	log.Printf("=== Simulation Complete ===")
+	log.Printf("Seed: %s", *seed)
 }
 
 func convergeAllClients(clients []*Client, server *server.Server) error {
@@ -323,4 +310,191 @@ func sendSyncToServer(server *server.Server, req *sync_engine.SyncRequest) (*syn
 	}
 
 	return &resp, nil
+}
+
+func average(values []float64) float64 {
+	if len(values) == 0 {
+		return 0
+	}
+	sum := 0.0
+	for _, v := range values {
+		sum += v
+	}
+	return sum / float64(len(values))
+}
+
+func percentile(sorted []float64, p float64) float64 {
+	if len(sorted) == 0 {
+		return 0
+	}
+	index := int(float64(len(sorted)) * p)
+	if index >= len(sorted) {
+		index = len(sorted) - 1
+	}
+	return sorted[index]
+}
+
+func printSimulationStats(stats *SimulationStats) {
+	log.Println("=== Simulation Statistics ===")
+
+	// Action timing
+	if len(stats.ActionTimes) > 0 {
+		sort.Float64s(stats.ActionTimes)
+		log.Printf("Action Execution Time:")
+		log.Printf("  Count: %d", stats.TotalActions)
+		log.Printf("  Min: %.2fms, Max: %.2fms, Avg: %.2fms",
+			stats.ActionTimes[0],
+			stats.ActionTimes[len(stats.ActionTimes)-1],
+			average(stats.ActionTimes))
+		log.Printf("  P50: %.2fms, P95: %.2fms, P99: %.2fms",
+			percentile(stats.ActionTimes, 0.5),
+			percentile(stats.ActionTimes, 0.95),
+			percentile(stats.ActionTimes, 0.99))
+	}
+
+	// WAL receive timing
+	if len(stats.WalReceiveTimes) > 0 {
+		sort.Float64s(stats.WalReceiveTimes)
+		log.Printf("WAL Receive Time:")
+		log.Printf("  Count: %d", len(stats.WalReceiveTimes))
+		log.Printf("  Min: %.2fms, Max: %.2fms, Avg: %.2fms",
+			stats.WalReceiveTimes[0],
+			stats.WalReceiveTimes[len(stats.WalReceiveTimes)-1],
+			average(stats.WalReceiveTimes))
+		log.Printf("  P50: %.2fms, P95: %.2fms, P99: %.2fms",
+			percentile(stats.WalReceiveTimes, 0.5),
+			percentile(stats.WalReceiveTimes, 0.95),
+			percentile(stats.WalReceiveTimes, 0.99))
+	}
+
+	// Sync prep timing
+	if len(stats.SyncPrepTimes) > 0 {
+		sort.Float64s(stats.SyncPrepTimes)
+		log.Printf("Sync Preparation Time:")
+		log.Printf("  Count: %d", len(stats.SyncPrepTimes))
+		log.Printf("  Min: %.2fms, Max: %.2fms, Avg: %.2fms",
+			stats.SyncPrepTimes[0],
+			stats.SyncPrepTimes[len(stats.SyncPrepTimes)-1],
+			average(stats.SyncPrepTimes))
+		log.Printf("  P50: %.2fms, P95: %.2fms, P99: %.2fms",
+			percentile(stats.SyncPrepTimes, 0.5),
+			percentile(stats.SyncPrepTimes, 0.95),
+			percentile(stats.SyncPrepTimes, 0.99))
+	}
+
+	// Totals
+	log.Printf("Sync Operations:")
+	log.Printf("  Total syncs: %d", stats.TotalSyncs)
+	log.Printf("  Total entries sent: %d", stats.TotalEntriesSent)
+	log.Printf("  Total entries received: %d", stats.TotalEntriesRecv)
+
+	// Convergence
+	if !stats.ConvergenceEnd.IsZero() {
+		duration := stats.ConvergenceEnd.Sub(stats.ConvergenceStart)
+		log.Printf("Convergence Time: %.2fms", float64(duration.Microseconds())/1000.0)
+	}
+}
+
+func createClients(random *rand.Rand, fileName string, numClients int) []*Client {
+	clients := make([]*Client, numClients)
+
+	for i := range clients {
+		clientID := fmt.Sprintf("client-%d", random.Int63())
+		clientSeed := fmt.Sprintf("%s-%d", clientID, random.Int63())
+
+		client, err := StartClient(fileName, clientID, clientSeed)
+		if err != nil {
+			log.Fatal(err)
+		}
+		clients[i] = client
+	}
+
+	return clients
+}
+
+func createServer() *server.Server {
+	db := database.New(
+		database.DBConfig{
+			DBUrl:           ":memory:",
+			BusyTimeout:     1000,
+			MaxOpenConns:    1,
+			MaxIdleConns:    1,
+			ConnMaxLifetime: time.Duration(0),
+		})
+	syncService := sync_engine.NewSyncService(db)
+	server := &server.Server{
+		SyncService: syncService,
+	}
+
+	return server
+}
+
+func generateAllRandomActions(random *rand.Rand, clients []*Client) ([]ActionRequest, []bool) {
+	allActions := make([]ActionRequest, len(clients))
+	allShouldSync := make([]bool, len(clients))
+	for i, client := range clients {
+		allActions[i] = client.GenerateRandomActions(random)
+		allShouldSync[i] = client.ShouldSync(random)
+	}
+
+	return allActions, allShouldSync
+}
+
+func executeAllActions(allActions []ActionRequest, allShouldSync []bool, clients []*Client) chan ActionResult {
+	results := make(chan ActionResult, len(clients))
+	for i, client := range clients {
+		go func(idx int, c *Client, actions ActionRequest, shouldSync bool) {
+			state, err := c.PerformActions(actions, shouldSync)
+			results <- ActionResult{ClientIndex: idx, State: state, Error: err}
+		}(i, client, allActions[i], allShouldSync[i])
+	}
+
+	return results
+}
+
+func collectAndSortActionResults(tick int, results chan ActionResult, clients []*Client) []*StateResponse {
+	actionResults := make([]*StateResponse, len(clients))
+	for range clients {
+		result := <-results
+		if result.Error != nil {
+			log.Fatalf("Tick %d: Client %d action failed: %v", tick, result.ClientIndex, result.Error)
+		}
+		actionResults[result.ClientIndex] = result.State
+	}
+	return actionResults
+}
+
+func processAllSyncRequests(stats *SimulationStats, server *server.Server, client *Client, state *StateResponse) {
+	if state.SyncRequest != nil {
+		stats.TotalSyncs++
+		stats.TotalEntriesSent += len(state.SyncRequest.Entries)
+
+		log.Printf("  Syncing: sending %d entries, last seen version %d", len(state.SyncRequest.Entries), state.SyncRequest.ClientLastSeenVersion)
+
+		// Send to server
+		syncResp, err := sendSyncToServer(server, state.SyncRequest)
+		if err != nil {
+			log.Fatalf("Client %s sync request failed: %v", client.ClientID, err)
+		}
+
+		stats.TotalEntriesRecv += len(syncResp.Entries)
+		log.Printf("  Received %d entries from server", len(syncResp.Entries))
+
+		// Deliver sync response back to client (can parallelize later)
+		delivery := SyncDeliveryRequest{
+			SyncRequest:  *state.SyncRequest,
+			SyncResponse: *syncResp,
+		}
+		newState, err := client.DeliverSync(delivery)
+		if err != nil {
+			log.Fatalf("Client %s sync delivery failed: %v", client.ClientID, err)
+		}
+
+		// Collect WAL receive timing
+		if newState.WalReceiveTimeMs > 0 {
+			stats.WalReceiveTimes = append(stats.WalReceiveTimes, newState.WalReceiveTimeMs)
+		}
+
+		log.Printf("  After sync - Clock: %d, WAL: %d", newState.ClockValue, len(newState.WalEntries))
+	}
 }
