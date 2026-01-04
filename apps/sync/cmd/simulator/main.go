@@ -40,6 +40,12 @@ type SimulationStats struct {
 	TotalEntriesRecv int
 	ConvergenceStart time.Time
 	ConvergenceEnd   time.Time
+
+	// Fault injection stats
+	FaultDelayedSyncs       int
+	FaultCorruptedRequests  int
+	FaultCorruptedResponses int
+	FaultRejectedRequests   int // Corrupted requests rejected by server
 }
 
 func main() {
@@ -47,6 +53,14 @@ func main() {
 	numClients := flag.Int("clients", 10, "Number of clients")
 	numTicks := flag.Int("ticks", 100, "Number of ticks per client")
 	seed := flag.String("seed", "", "Random seed (generated if not provided)")
+
+	// Fault injection flags
+	faultDelayProb := flag.Float64("fault-delay-sync", 0.0, "Probability of delaying sync delivery (0.0-1.0)")
+	faultDelayMin := flag.Int("fault-delay-ticks-min", 1, "Minimum ticks to delay")
+	faultDelayMax := flag.Int("fault-delay-ticks-max", 5, "Maximum ticks to delay")
+	faultCorruptReq := flag.Float64("fault-corrupt-request", 0.0, "Probability of corrupting sync request (0.0-1.0)")
+	faultCorruptResp := flag.Float64("fault-corrupt-response", 0.0, "Probability of corrupting sync response (0.0-1.0)")
+
 	flag.Parse()
 
 	// Generate random seed if not provided
@@ -57,6 +71,17 @@ func main() {
 	hash := sha256.Sum256([]byte(*seed))
 	seedInt64 := int64(binary.BigEndian.Uint64(hash[:8]))
 	random := rand.New(rand.NewSource(seedInt64))
+
+	// Setup fault injector
+	faultConfig := FaultConfig{
+		DelayedSyncProbability:     *faultDelayProb,
+		DelayedSyncMinTicks:        *faultDelayMin,
+		DelayedSyncMaxTicks:        *faultDelayMax,
+		CorruptRequestProbability:  *faultCorruptReq,
+		CorruptResponseProbability: *faultCorruptResp,
+	}
+	faultInjector := NewFaultInjector(faultConfig, random)
+	faultsEnabled := *faultDelayProb > 0 || *faultCorruptReq > 0 || *faultCorruptResp > 0
 
 	// Setup server
 	server := createServer()
@@ -77,9 +102,24 @@ func main() {
 	// Initialize statistics
 	stats := &SimulationStats{}
 
+	// Queue for delayed syncs
+	delayedSyncs := []DelayedSync{}
+
 	log.Printf("=== Simulation Starting ===")
 	log.Printf("Seed: %s", *seed)
 	log.Printf("Clients: %d, Ticks: %d", *numClients, *numTicks)
+	if faultsEnabled {
+		log.Printf("FAULT INJECTION ENABLED:")
+		if *faultDelayProb > 0 {
+			log.Printf("  - Delayed syncs: %.1f%% (delay %d-%d ticks)", *faultDelayProb*100, *faultDelayMin, *faultDelayMax)
+		}
+		if *faultCorruptReq > 0 {
+			log.Printf("  - Request corruption: %.1f%%", *faultCorruptReq*100)
+		}
+		if *faultCorruptResp > 0 {
+			log.Printf("  - Response corruption: %.1f%%", *faultCorruptResp*100)
+		}
+	}
 
 	// Run simulation
 	for tick := 0; tick < *numTicks; tick++ {
@@ -106,7 +146,12 @@ func main() {
 			}
 
 			// If client wants to sync, send to server (sequential for determinism)
-			processAllSyncRequests(stats, server, clients[i], state)
+			processAllSyncRequests(stats, server, clients[i], state, faultInjector, faultsEnabled, tick, *numTicks, &delayedSyncs)
+		}
+
+		// Deliver any pending delayed syncs for this tick
+		if faultsEnabled {
+			delayedSyncs = deliverPendingSyncs(delayedSyncs, tick, stats)
 		}
 	}
 
@@ -301,7 +346,8 @@ func sendSyncToServer(server *server.Server, req *sync_engine.SyncRequest) (*syn
 	server.HandleSync(recorder, httpReq)
 
 	if recorder.Code != http.StatusOK {
-		return nil, fmt.Errorf("sync failed with status %d: %s", recorder.Code, recorder.Body.String())
+		log.Printf("    Sync request rejected with status %d: %s", recorder.Code, recorder.Body.String())
+		return nil, nil
 	}
 
 	var resp sync_engine.SyncResponse
@@ -393,6 +439,14 @@ func printSimulationStats(stats *SimulationStats) {
 		duration := stats.ConvergenceEnd.Sub(stats.ConvergenceStart)
 		log.Printf("Convergence Time: %.2fms", float64(duration.Microseconds())/1000.0)
 	}
+
+	// Fault injection stats
+	if stats.FaultDelayedSyncs > 0 || stats.FaultCorruptedRequests > 0 || stats.FaultCorruptedResponses > 0 {
+		log.Printf("Fault Injection:")
+		log.Printf("  Delayed syncs: %d", stats.FaultDelayedSyncs)
+		log.Printf("  Corrupted requests: %d (rejected: %d)", stats.FaultCorruptedRequests, stats.FaultRejectedRequests)
+		log.Printf("  Corrupted responses: %d", stats.FaultCorruptedResponses)
+	}
 }
 
 func createClients(random *rand.Rand, fileName string, numClients int) []*Client {
@@ -464,37 +518,142 @@ func collectAndSortActionResults(tick int, results chan ActionResult, clients []
 	return actionResults
 }
 
-func processAllSyncRequests(stats *SimulationStats, server *server.Server, client *Client, state *StateResponse) {
-	if state.SyncRequest != nil {
-		stats.TotalSyncs++
-		stats.TotalEntriesSent += len(state.SyncRequest.Entries)
-
-		log.Printf("  Syncing: sending %d entries, last seen version %d", len(state.SyncRequest.Entries), state.SyncRequest.ClientLastSeenVersion)
-
-		// Send to server
-		syncResp, err := sendSyncToServer(server, state.SyncRequest)
-		if err != nil {
-			log.Fatalf("Client %s sync request failed: %v", client.ClientID, err)
-		}
-
-		stats.TotalEntriesRecv += len(syncResp.Entries)
-		log.Printf("  Received %d entries from server", len(syncResp.Entries))
-
-		// Deliver sync response back to client (can parallelize later)
-		delivery := SyncDeliveryRequest{
-			SyncRequest:  *state.SyncRequest,
-			SyncResponse: *syncResp,
-		}
-		newState, err := client.DeliverSync(delivery)
-		if err != nil {
-			log.Fatalf("Client %s sync delivery failed: %v", client.ClientID, err)
-		}
-
-		// Collect WAL receive timing
-		if newState.WalReceiveTimeMs > 0 {
-			stats.WalReceiveTimes = append(stats.WalReceiveTimes, newState.WalReceiveTimeMs)
-		}
-
-		log.Printf("  After sync - Clock: %d, WAL: %d", newState.ClockValue, len(newState.WalEntries))
+func processAllSyncRequests(
+	stats *SimulationStats,
+	server *server.Server,
+	client *Client,
+	state *StateResponse,
+	faultInjector *FaultInjector,
+	faultsEnabled bool,
+	currentTick int,
+	totalTicks int,
+	delayedSyncs *[]DelayedSync,
+) {
+	if state.SyncRequest == nil {
+		return
 	}
+
+	stats.TotalSyncs++
+	stats.TotalEntriesSent += len(state.SyncRequest.Entries)
+
+	log.Printf("  Syncing: sending %d entries, last seen version %d",
+		len(state.SyncRequest.Entries), state.SyncRequest.ClientLastSeenVersion)
+
+	// FAULT INJECTION: Corrupt request
+	requestToSend := state.SyncRequest
+	requestWasCorrupted := false
+	if faultsEnabled && faultInjector.ShouldCorruptRequest() {
+		stats.FaultCorruptedRequests++
+		corruptedReq := *state.SyncRequest // copy
+		faultInjector.CorruptRequest(&corruptedReq)
+		requestToSend = &corruptedReq
+		requestWasCorrupted = true
+	}
+
+	// Send to server
+	syncResp, err := sendSyncToServer(server, requestToSend)
+	if err != nil {
+		log.Fatalf("Client %s sync request failed: %v", client.ClientID, err)
+	}
+
+	// If syncResp is nil, the server rejected the request (e.g., 400 error)
+	// This is expected for corrupted requests, so just skip delivery
+	if syncResp == nil {
+		if requestWasCorrupted {
+			stats.FaultRejectedRequests++
+		}
+		return
+	}
+
+	stats.TotalEntriesRecv += len(syncResp.Entries)
+	log.Printf("  Received %d entries from server", len(syncResp.Entries))
+
+	// Prepare delivery
+	delivery := SyncDeliveryRequest{
+		SyncRequest:  *state.SyncRequest,
+		SyncResponse: *syncResp,
+	}
+
+	// FAULT INJECTION: Corrupt response
+	responseWasCorrupted := false
+	if faultsEnabled && faultInjector.ShouldCorruptResponse() {
+		stats.FaultCorruptedResponses++
+		faultInjector.CorruptResponse(&delivery.SyncResponse)
+		responseWasCorrupted = true
+	}
+
+	// FAULT INJECTION: Delay delivery
+	if faultsEnabled && faultInjector.ShouldDelaySync() {
+		stats.FaultDelayedSyncs++
+		deliverAtTick := faultInjector.CalculateDelayTicks(currentTick, totalTicks)
+		actualDelay := (deliverAtTick - currentTick + totalTicks) % totalTicks
+
+		*delayedSyncs = append(*delayedSyncs, DelayedSync{
+			Client:        client,
+			Delivery:      delivery,
+			DeliverAtTick: deliverAtTick,
+			DelayedAtTick: currentTick,
+			WasCorrupted:  requestWasCorrupted || responseWasCorrupted,
+		})
+		log.Printf("    FAULT INJECTION: Sync delivery delayed by %d ticks (deliver at tick %d)",
+			actualDelay, deliverAtTick)
+		return
+	}
+
+	// Normal immediate delivery
+	newState, err := client.DeliverSync(delivery)
+	if err != nil {
+		// If response was corrupted or request was corrupted (causing server to send wrong data),
+		// this is an expected failure - log and continue
+		if responseWasCorrupted || requestWasCorrupted {
+			log.Printf("    FAULT INJECTION: Corrupted sync delivery failed (expected): %v", err)
+			stats.FaultRejectedRequests++
+			return
+		}
+		log.Fatalf("Client %s sync delivery failed: %v", client.ClientID, err)
+	}
+
+	// Collect WAL receive timing
+	if newState.WalReceiveTimeMs > 0 {
+		stats.WalReceiveTimes = append(stats.WalReceiveTimes, newState.WalReceiveTimeMs)
+	}
+
+	log.Printf("  After sync - Clock: %d, WAL: %d", newState.ClockValue, len(newState.WalEntries))
+}
+
+func deliverPendingSyncs(
+	delayed []DelayedSync,
+	currentTick int,
+	stats *SimulationStats,
+) []DelayedSync {
+	remaining := []DelayedSync{}
+
+	for _, ds := range delayed {
+		if ds.DeliverAtTick == currentTick {
+			log.Printf("  Delivering delayed sync to %s (delayed from tick %d)",
+				ds.Client.ClientID, ds.DelayedAtTick)
+
+			newState, err := ds.Client.DeliverSync(ds.Delivery)
+			if err != nil {
+				// If the delayed sync was corrupted, this is an expected failure
+				if ds.WasCorrupted {
+					log.Printf("    FAULT INJECTION: Corrupted delayed sync delivery failed (expected): %v", err)
+					stats.FaultRejectedRequests++
+					continue
+				}
+				log.Fatalf("Delayed sync delivery failed: %v", err)
+			}
+
+			// Collect WAL receive timing
+			if newState.WalReceiveTimeMs > 0 {
+				stats.WalReceiveTimes = append(stats.WalReceiveTimes, newState.WalReceiveTimeMs)
+			}
+
+			log.Printf("    After delayed sync - Clock: %d, WAL: %d", newState.ClockValue, len(newState.WalEntries))
+		} else {
+			remaining = append(remaining, ds)
+		}
+	}
+
+	return remaining
 }

@@ -73,6 +73,13 @@ func (server Server) HandleSync(writer http.ResponseWriter, request *http.Reques
 		return
 	}
 
+	// Validate request integrity
+	if err := sync_engine.ValidateSyncRequestIntegrity(syncReq); err != nil {
+		writer.WriteHeader(http.StatusBadRequest)
+		writer.Write([]byte(`{"error": "Request integrity check failed"}`))
+		return
+	}
+
 	syncResp, err := server.SyncService.Sync(request.Context(), syncReq)
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)

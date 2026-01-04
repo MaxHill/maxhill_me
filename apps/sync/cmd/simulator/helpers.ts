@@ -2,7 +2,6 @@
 import seedrandom from "seedrandom";
 import { type DBSchema, type IDBPDatabase } from "idb";
 import { InternalDbSchema, openAppDb, proxyIdb, Scheduler, WAL } from "@maxhill/idb-distribute";
-import { encodeWALEntry, SyncRequest } from "../../../../packages/idb-distribute/src/wal.ts";
 
 export type User = { id: number; name: string };
 export type Post = { id: string; content: string };
@@ -43,10 +42,7 @@ export const newClient = async (prng: seedrandom.PRNG): Promise<SimClient> => {
 
   // No need to specify interval since we tick manually
   const scheduler = new Scheduler(/* 300 or whatever interval */);
-  scheduler.registerTask(
-    "sync",
-    async () => await wal.sync(db as IDBPDatabase<any>),
-  );
+  // NOTE: Sync is handled manually in client.ts, not via scheduler
 
   return {
     db: proxyIdb<ClientDbSchema & InternalDbSchema>(
@@ -58,11 +54,6 @@ export const newClient = async (prng: seedrandom.PRNG): Promise<SimClient> => {
     scheduler,
   };
 };
-
-function createSyncRequest(req: SyncRequest) {
-  const body = { ...req, entries: req.entries.map(encodeWALEntry) };
-  return body;
-}
 
 //  ------------------------------------------------------------------------
 //  Random

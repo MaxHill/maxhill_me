@@ -6,13 +6,17 @@ import seedrandom from "seedrandom";
 import { TextLineStream } from "@std/streams/text-line-stream";
 import { type IDBPTransaction } from "idb";
 import {
+  createSyncRequest,
+  applySyncResponse,
+  type InternalDbSchema,
+} from "@maxhill/idb-distribute";
+import {
   newClient,
   Post,
   randomUUID,
   shuffleArray,
   User,
 } from "./helpers.ts";
-import { type InternalDbSchema } from "@maxhill/idb-distribute";
 
 //  ------------------------------------------------------------------------
 //  Types
@@ -123,7 +127,7 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
   let syncPrepTimeMs = undefined;
   if (request.requestSync) {
     const syncPrepStart = performance.now();
-    syncRequest = await client.wal.getEntriesToSync(client.realDb);
+    syncRequest = await createSyncRequest(client.realDb as any, client.wal);
     syncPrepTimeMs = performance.now() - syncPrepStart;
     lastSyncRequest = syncRequest; // Store for later delivery
   }
@@ -146,8 +150,9 @@ async function handleSyncDelivery(
   const walReceiveStart = performance.now();
 
   // Apply sync response to client using realDb (non-proxied)
-  await client.wal.receiveExternalWALEntries(
-    client.realDb,
+  await applySyncResponse(
+    client.realDb as any,
+    client.wal,
     request.syncRequest,
     request.syncResponse,
   );

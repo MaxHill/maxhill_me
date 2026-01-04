@@ -11,33 +11,8 @@ import (
 	"sync/internal/repository"
 )
 
-type WALEntry struct {
-	Key           string          `json:"key"`
-	Table         string          `json:"table"`
-	Operation     string          `json:"operation"` // "put" | "del"
-	Value         json.RawMessage `json:"value,omitempty"`
-	ValueKey      json.RawMessage `json:"valueKey,omitempty"`
-	Version       int64           `json:"version"` // Client's logical timestamp
-	ClientID      string          `json:"clientId"`
-	ServerVersion int64           `json:"serverVersion"` // Auto-incrementing sync marker
-}
-
-type SyncRequest struct {
-	ClientID              string     `json:"clientId"`
-	Entries               []WALEntry `json:"entries"`
-	ClientLastSeenVersion int64      `json:"clientLastSeenVersion"` // Last ServerVersion client saw
-}
-
-type SyncResponse struct {
-	Entries []WALEntry `json:"entries"`
-}
-
 type SyncService struct {
 	db database.Service
-}
-
-type SyncServiceInterface interface {
-	Sync(ctx context.Context, req SyncRequest) (*SyncResponse, error)
 }
 
 func NewSyncService(db database.Service) *SyncService {
@@ -128,7 +103,14 @@ func (s *SyncService) Sync(ctx context.Context, req SyncRequest) (*SyncResponse,
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
+	responseHash, err := HashSyncResponse(newEntries, req.ClientLastSeenVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash response: %w", err)
+	}
+
 	return &SyncResponse{
-		Entries: newEntries,
+		Entries:           newEntries,
+		FromServerVersion: req.ClientLastSeenVersion,
+		ResponseHash:      responseHash,
 	}, nil
 }
