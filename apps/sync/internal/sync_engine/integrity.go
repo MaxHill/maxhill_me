@@ -30,7 +30,7 @@ func HashSyncRequest(req SyncRequest) (string, error) {
 		fmt.Sprintf("%d", req.ClientLastSeenVersion),
 	}
 
-	for _, entry := range req.Entries {
+	for _, entry := range req.Operations {
 		value := "null"
 		if entry.Value != nil {
 			value = string(entry.Value)
@@ -61,7 +61,7 @@ func HashSyncRequest(req SyncRequest) (string, error) {
 }
 
 // HashSyncResponse computes a SHA-256 hash of the sync response for integrity verification
-func HashSyncResponse(entries []WALEntry, fromServerVersion int64) (string, error) {
+func HashSyncResponse(entries []WALOperation, fromServerVersion int64) (string, error) {
 	parts := []string{
 		fmt.Sprintf("%d", fromServerVersion),
 	}

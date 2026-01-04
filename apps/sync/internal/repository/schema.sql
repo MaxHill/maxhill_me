@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS sync_server (
     version integer NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS wal_entries (
+CREATE TABLE IF NOT EXISTS wal_operations (
     server_version INTEGER PRIMARY KEY AUTOINCREMENT,
     KEY TEXT NOT NULL,
     table_name TEXT NOT NULL,
@@ -14,4 +14,4 @@ CREATE TABLE IF NOT EXISTS wal_entries (
     client_id TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_client_id ON wal_entries(client_id);
+CREATE INDEX IF NOT EXISTS idx_client_id ON wal_operations(client_id);

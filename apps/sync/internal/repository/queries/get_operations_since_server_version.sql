@@ -7,7 +7,7 @@ SELECT
     value_key,
     version,
     client_id
-FROM wal_entries
+FROM wal_operations
 WHERE server_version > ?
   AND client_id != ?
 ORDER BY server_version ASC;

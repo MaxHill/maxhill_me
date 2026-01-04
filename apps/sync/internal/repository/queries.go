@@ -12,11 +12,11 @@ var schemaSQL string
 //go:embed queries/init_server_version.sql
 var initServerVersionSQL string
 
-//go:embed queries/insert_wal_entry.sql
-var insertWALEntrySQL string
+//go:embed queries/insert_wal_operation.sql
+var insertWALOperationSQL string
 
-//go:embed queries/get_entries_since_server_version.sql
-var getEntriesSinceServerVersionSQL string
+//go:embed queries/get_operations_since_server_version.sql
+var getOperationsSinceServerVersionSQL string
 
 // InitSchema creates tables if they don't exist.
 func (q *Queries) InitSchema(ctx context.Context) error {
@@ -30,8 +30,8 @@ func (q *Queries) InitializeServerVersion(ctx context.Context) error {
 	return err
 }
 
-// InsertWALEntryParams contains parameters for inserting a WAL entry.
-type InsertWALEntryParams struct {
+// InsertWALOperationParams contains parameters for inserting a WAL operation.
+type InsertWALOperationParams struct {
 	Key       string
 	TableName string
 	Operation string
@@ -41,9 +41,9 @@ type InsertWALEntryParams struct {
 	ClientID  string
 }
 
-// InsertWALEntry inserts a WAL entry and returns the auto-generated server version.
-func (q *Queries) InsertWALEntry(ctx context.Context, arg InsertWALEntryParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, insertWALEntrySQL,
+// InsertWALOperation inserts a WAL operation and returns the auto-generated server version.
+func (q *Queries) InsertWALOperation(ctx context.Context, arg InsertWALOperationParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, insertWALOperationSQL,
 		arg.Key,
 		arg.TableName,
 		arg.Operation,
@@ -57,24 +57,24 @@ func (q *Queries) InsertWALEntry(ctx context.Context, arg InsertWALEntryParams) 
 	return serverVersion, err
 }
 
-// GetEntriesSinceServerVersionParams contains parameters for querying WAL entries.
-type GetEntriesSinceServerVersionParams struct {
+// GetOperationsSinceServerVersionParams contains parameters for querying WAL operations.
+type GetOperationsSinceServerVersionParams struct {
 	ServerVersion int64
 	ClientID      string
 }
 
-// GetEntriesSinceServerVersion retrieves all WAL entries since a given server version,
-// excluding entries from the specified client.
-func (q *Queries) GetEntriesSinceServerVersion(ctx context.Context, arg GetEntriesSinceServerVersionParams) ([]WalEntry, error) {
-	rows, err := q.db.QueryContext(ctx, getEntriesSinceServerVersionSQL, arg.ServerVersion, arg.ClientID)
+// GetOperationsSinceServerVersion retrieves all WAL operations since a given server version,
+// excluding operations from the specified client.
+func (q *Queries) GetOperationsSinceServerVersion(ctx context.Context, arg GetOperationsSinceServerVersionParams) ([]WalOperation, error) {
+	rows, err := q.db.QueryContext(ctx, getOperationsSinceServerVersionSQL, arg.ServerVersion, arg.ClientID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var items []WalEntry
+	var items []WalOperation
 	for rows.Next() {
-		var i WalEntry
+		var i WalOperation
 		if err := rows.Scan(
 			&i.ServerVersion,
 			&i.Key,

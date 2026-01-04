@@ -8,7 +8,7 @@ import {
   type StoreNames,
 } from "idb";
 import { WAL } from "./wal.ts";
-import type { WALEntry } from "./types.ts";
+import type { WALOperation } from "./types.ts";
 
 //  ------------------------------------------------------------------------
 //  Types
@@ -30,7 +30,7 @@ export interface InternalDbSchema extends DBSchema {
   };
   "_wal": {
     key: IDBValidKey;
-    value: WALEntry;
+    value: WALOperation;
     indexes: {
       version: number;
       table: string;
@@ -122,7 +122,7 @@ export const dbQueries = {
     const cursor = await index.openCursor(null, "prev");
 
     if (cursor) {
-      // cursor.value is the WALEntry with the highest serverVersion
+      // cursor.value is the WALOperation with the highest serverVersion
       return cursor.value.serverVersion || -1;
     }
 

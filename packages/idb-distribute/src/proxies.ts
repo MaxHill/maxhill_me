@@ -77,7 +77,7 @@ function proxyTransaction(tx: any, wal: WAL, originalStoreNames: any) {
 
             if (prop === 'done') {
                 return (async () => {
-                    await wal.applyPendingEntries(tx);
+                    await wal.applyPendingOperations(tx);
                     return await target.done;
                 })();
             }
@@ -93,7 +93,7 @@ function proxyStore(storeTarget: any, tx: any, wal: WAL, storeName: string) {
         get(target, prop) {
             if (prop === 'put') {
                 return async (value: any, key?: IDBValidKey) => {
-                    await wal.writeNewEntry(tx, {
+                    await wal.writeNewOperation(tx, {
                         operation: 'put',
                         table: storeName,
                         value, ...(key != null ? { valueKey: key } : {})
@@ -111,7 +111,7 @@ function proxyStore(storeTarget: any, tx: any, wal: WAL, storeName: string) {
 
             if (prop === 'delete') {
                 return async (key: IDBValidKey | IDBKeyRange) => {
-                    await wal.writeNewEntry(tx, {
+                    await wal.writeNewOperation(tx, {
                         operation: 'del',
                         table: storeName,
                         value: key
@@ -121,7 +121,7 @@ function proxyStore(storeTarget: any, tx: any, wal: WAL, storeName: string) {
 
             if (prop === 'clear') {
                 return async () => {
-                    await wal.writeNewEntry(tx, {
+                    await wal.writeNewOperation(tx, {
                         operation: 'clear',
                         table: storeName,
                         value: null,
@@ -170,7 +170,7 @@ async function proxyCursor(cursorPromise: Promise<IDBCursorWithValue>, tx: any, 
   // override methods explicitly
   (cursor as any).update = async (value: any) => {
     const key = cursor.primaryKey;
-    await wal.writeNewEntry(tx, {
+    await wal.writeNewOperation(tx, {
       operation: "put",
       table: storeName,
       value,
@@ -182,7 +182,7 @@ async function proxyCursor(cursorPromise: Promise<IDBCursorWithValue>, tx: any, 
   // override methods explicitly
   (cursor as any).delete = async () => {
     const key = cursor.primaryKey;
-    await wal.writeNewEntry(tx, {
+    await wal.writeNewOperation(tx, {
       operation: "del",
       table: storeName,
       value: key,
@@ -202,7 +202,7 @@ async function proxyKeyCursor(cursorRequest: any, tx: any, wal: WAL, storeName: 
     // Force override delete
   (cursor as any).delete = async () => {
     const key = cursor.primaryKey;
-    await wal.writeNewEntry(tx, {
+    await wal.writeNewOperation(tx, {
       operation: "del",
       table: storeName,
       value: key,

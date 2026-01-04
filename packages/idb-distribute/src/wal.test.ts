@@ -23,13 +23,13 @@ describe("Wal", () => {
 
     it("applies WAL entries to another DB and updates lastAppliedVersion", async () => {
         const tx = db.transaction(["_wal", "_logicalClock", "_clientId", "_lastAppliedVersion", "users"], "readwrite");
-        await wal.writeNewEntry((tx as unknown as IDBPTransaction<InternalDbSchema, any, "readwrite">), {
+        await wal.writeNewOperation((tx as unknown as IDBPTransaction<InternalDbSchema, any, "readwrite">), {
             operation: "put",
             table: "users",
             value: { id: "1", name: "Bob" },
         });
 
-        await wal.applyPendingEntries(tx);
+        await wal.applyPendingOperations(tx);
         await tx.done;
 
         const user = await db.get("users", "1");
@@ -45,25 +45,25 @@ describe("Wal", () => {
         const tx = db.transaction(["_wal", "_logicalClock", "_clientId", "_lastAppliedVersion", "users"], "readwrite");
 
         // Put some data
-        await wal.writeNewEntry((tx as unknown as IDBPTransaction<InternalDbSchema, any, "readwrite">), {
+        await wal.writeNewOperation((tx as unknown as IDBPTransaction<InternalDbSchema, any, "readwrite">), {
             operation: "put",
             table: "users",
             value: { id: "1", name: "Bob" },
         });
-        await wal.writeNewEntry((tx as unknown as IDBPTransaction<InternalDbSchema, any, "readwrite">), {
+        await wal.writeNewOperation((tx as unknown as IDBPTransaction<InternalDbSchema, any, "readwrite">), {
             operation: "put",
             table: "users",
             value: { id: "2", name: "Alice" },
         });
 
         // Clear the table
-        await wal.writeNewEntry((tx as unknown as IDBPTransaction<InternalDbSchema, any, "readwrite">), {
+        await wal.writeNewOperation((tx as unknown as IDBPTransaction<InternalDbSchema, any, "readwrite">), {
             operation: "clear",
             table: "users",
             value: null,
         });
 
-        await wal.applyPendingEntries(tx);
+        await wal.applyPendingOperations(tx);
         await tx.done;
 
         // Verify data is cleared

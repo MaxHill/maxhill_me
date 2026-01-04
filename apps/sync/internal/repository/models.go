@@ -17,7 +17,7 @@ type SyncServer struct {
 	Version int64
 }
 
-type WalEntry struct {
+type WalOperation struct {
 	ServerVersion int64
 	Key           string
 	TableName     string

@@ -39,10 +39,10 @@ func FuzzServerHandleSync(f *testing.F) {
 			numEntries = 100
 		}
 
-		// Build entries
-		entries := make([]sync_engine.WALEntry, numEntries)
+		// Build operations
+		operations := make([]sync_engine.WALOperation, numEntries)
 		for i := 0; i < numEntries; i++ {
-			entries[i] = sync_engine.WALEntry{
+			operations[i] = sync_engine.WALOperation{
 				Key:       fmt.Sprintf("key-%d", i),
 				Table:     "test-table",
 				Operation: "put",
@@ -54,7 +54,7 @@ func FuzzServerHandleSync(f *testing.F) {
 
 		syncReq := sync_engine.SyncRequest{
 			ClientID:              clientID,
-			Entries:               entries,
+			Operations:            operations,
 			ClientLastSeenVersion: lastSeenVersion,
 		}
 
@@ -128,13 +128,13 @@ type MockSyncService struct {
 func (m *MockSyncService) Sync(ctx context.Context, req sync_engine.SyncRequest) (*sync_engine.SyncResponse, error) {
 	switch m.errorType {
 	case ErrorTypeNone:
-		return &sync_engine.SyncResponse{Entries: req.Entries}, nil
+		return &sync_engine.SyncResponse{Operations: req.Operations}, nil
 
 	case ErrorTypeSyncError:
 		return nil, fmt.Errorf("mock sync error")
 
 	case ErrorTypeInvalidJSON:
-		entries := []sync_engine.WALEntry{
+		operations := []sync_engine.WALOperation{
 			{
 				Key:       "test",
 				Table:     "test",
@@ -144,12 +144,12 @@ func (m *MockSyncService) Sync(ctx context.Context, req sync_engine.SyncRequest)
 				ClientID:  req.ClientID,
 			},
 		}
-		return &sync_engine.SyncResponse{Entries: entries}, nil
+		return &sync_engine.SyncResponse{Operations: operations}, nil
 
 	case ErrorTypeNilResponse:
 		return nil, nil
 
 	default:
-		return &sync_engine.SyncResponse{Entries: req.Entries}, nil
+		return &sync_engine.SyncResponse{Operations: req.Operations}, nil
 	}
 }

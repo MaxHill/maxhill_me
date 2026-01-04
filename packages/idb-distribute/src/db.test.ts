@@ -101,17 +101,17 @@ describe("openAppDb", () => {
 
         // Add some data
         const tx1 = db.transaction(['testStore', '_wal', '_logicalClock', '_clientId', '_lastAppliedVersion'], 'readwrite');
-        await wal.writeNewEntry(tx1 as unknown as IDBPTransaction<InternalDbSchema, ["_wal", "_logicalClock", "_clientId", ...any[]], "readwrite">, {
+        await wal.writeNewOperation(tx1 as unknown as IDBPTransaction<InternalDbSchema, ["_wal", "_logicalClock", "_clientId", ...any[]], "readwrite">, {
             operation: 'put',
             table: 'testStore',
             value: { id: '1', data: 'first' },
         });
-        await wal.writeNewEntry(tx1 as unknown as IDBPTransaction<InternalDbSchema, ["_wal", "_logicalClock", "_clientId", ...any[]], "readwrite">, {
+        await wal.writeNewOperation(tx1 as unknown as IDBPTransaction<InternalDbSchema, ["_wal", "_logicalClock", "_clientId", ...any[]], "readwrite">, {
             operation: 'put',
             table: 'testStore',
             value: { id: '2', data: 'second' },
         });
-        await wal.applyPendingEntries(tx1);
+        await wal.applyPendingOperations(tx1);
         await tx1.done;
 
         // Verify data exists
@@ -121,12 +121,12 @@ describe("openAppDb", () => {
 
         // Clear the table
         const tx2 = db.transaction(['testStore', '_wal', '_logicalClock', '_clientId', '_lastAppliedVersion'], 'readwrite');
-        await wal.writeNewEntry(tx2 as unknown as IDBPTransaction<InternalDbSchema, ["_wal", "_logicalClock", "_clientId", ...any[]], "readwrite">, {
+        await wal.writeNewOperation(tx2 as unknown as IDBPTransaction<InternalDbSchema, ["_wal", "_logicalClock", "_clientId", ...any[]], "readwrite">, {
             operation: 'clear',
             table: 'testStore',
             value: null,
         });
-        await wal.applyPendingEntries(tx2);
+        await wal.applyPendingOperations(tx2);
         await tx2.done;
 
         // Verify data is cleared

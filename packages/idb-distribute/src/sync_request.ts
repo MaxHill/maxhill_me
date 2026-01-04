@@ -1,9 +1,9 @@
 import type { IDBPDatabase } from "idb";
-import type { SyncRequest, SyncResponse, WALEntry } from "./types.ts";
+import type { SyncRequest, SyncResponse, WALOperation } from "./types.ts";
 import type { WAL } from "./wal.ts";
 import { dbCommands, dbQueries, INTERNAL_DB_STORES, type InternalDbSchema } from "./db.ts";
 import * as logicalClock from "./persistedLogicalClock.ts";
-import { encodeWALEntry, decodeWALEntry } from "./serialization.ts";
+import { encodeWALOperation, decodeWALOperation } from "./serialization.ts";
 
 //  ------------------------------------------------------------------------
 //  Integrity / Hashing
@@ -29,12 +29,12 @@ async function sha256Array(parts: string[]): Promise<string> {
 export async function hashSyncRequest(
   clientId: string,
   clientLastSeenVersion: number,
-  entries: WALEntry[],
+  operations: WALOperation[],
 ): Promise<string> {
   const requestHashParts = [
     clientId,
     clientLastSeenVersion.toString(),
-    ...entries.flatMap((e) => [
+    ...operations.flatMap((e) => [
       String(e.key),
       e.table,
       e.operation,
@@ -51,12 +51,12 @@ export async function hashSyncRequest(
  * Hash a sync response for integrity verification.
  */
 export async function hashSyncResponse(
-  entries: WALEntry[],
+  operations: WALOperation[],
   fromServerVersion: number,
 ): Promise<string> {
   const responseHashParts = [
     fromServerVersion.toString(),
-    ...entries.flatMap((e) => [
+    ...operations.flatMap((e) => [
       String(e.key),
       e.table,
       e.operation,
@@ -75,7 +75,7 @@ export async function hashSyncResponse(
  * Returns true if the hash matches, false otherwise.
  */
 export async function validateSyncResponse(response: SyncResponse): Promise<boolean> {
-  const computedHash = await hashSyncResponse(response.entries, response.fromServerVersion);
+  const computedHash = await hashSyncResponse(response.operations, response.fromServerVersion);
   return computedHash === response.responseHash;
 }
 
@@ -85,7 +85,7 @@ export async function validateSyncResponse(response: SyncResponse): Promise<bool
 
 /**
  * Create a sync request from the current database state.
- * Extracts entries that need to be sent to the server.
+ * Extracts operations that need to be sent to the server.
  */
 export async function createSyncRequest(db: IDBPDatabase<InternalDbSchema>, wal: WAL): Promise<SyncRequest> {
   const tx = db.transaction(["_clientId", "_lastSyncedVersion", "_wal"]);
@@ -93,8 +93,8 @@ export async function createSyncRequest(db: IDBPDatabase<InternalDbSchema>, wal:
   const clientId = await dbQueries.getClientIdTx(tx);
   const lastSyncedVersion = await dbQueries.getLastSyncedVersionTx(tx);
 
-  const entries = await wal.getEntries(lastSyncedVersion + 1, tx as any);
-  const toSync = entries.filter((e) => e.clientId === clientId);
+  const operations = await wal.getOperations(lastSyncedVersion + 1, tx as any);
+  const toSync = operations.filter((e) => e.clientId === clientId);
 
   const lastSeenServerVersion = await dbQueries.getLastSeenServerVersion(tx as any);
   await tx.done;
@@ -104,7 +104,7 @@ export async function createSyncRequest(db: IDBPDatabase<InternalDbSchema>, wal:
   return {
     clientId,
     clientLastSeenVersion: lastSeenServerVersion,
-    entries: toSync,
+    operations: toSync,
     requestHash,
   };
 }
@@ -115,7 +115,7 @@ export async function createSyncRequest(db: IDBPDatabase<InternalDbSchema>, wal:
 
 /**
  * Apply a sync response to the local database.
- * Validates integrity, merges WAL entries, and updates sync state.
+ * Validates integrity, merges WAL operations, and updates sync state.
  */
 export async function applySyncResponse(
   db: IDBPDatabase<InternalDbSchema>,
@@ -139,10 +139,10 @@ export async function applySyncResponse(
     return;
   }
 
-  if (response.entries.length) {
-    await wal.batchWriteSyncedEntries(response.entries, tx);
+  if (response.operations.length) {
+    await wal.batchWriteSyncedOperations(response.operations, tx);
 
-    const lowestVersion = response.entries.reduce((prev, curr) => {
+    const lowestVersion = response.operations.reduce((prev, curr) => {
       return Math.min(prev, curr.version);
     }, Infinity);
 
@@ -161,21 +161,21 @@ export async function applySyncResponse(
 
       console.error("Database reset, starting re-application of WAL");
       await dbCommands.putLastAppliedVersion(tx, -1);
-      await wal.applyPendingEntries(tx);
+      await wal.applyPendingOperations(tx);
     } else {
-      await wal.applyPendingEntries(tx);
+      await wal.applyPendingOperations(tx);
     }
 
     // Sync clock with highest version from response
-    const highestVersion = response.entries.reduce((prev, curr) => {
+    const highestVersion = response.operations.reduce((prev, curr) => {
       return Math.max(prev, curr.version);
     }, -1);
     await logicalClock.sync(tx, highestVersion);
   }
 
   // TODO: Can we achieve this without looking at the request?
-  if (request.entries.length > 0) {
-    const maxVersion = Math.max(...request.entries.map((e) => e.version));
+  if (request.operations.length > 0) {
+    const maxVersion = Math.max(...request.operations.map((e) => e.version));
     await dbCommands.putLastSyncedVersion(tx, maxVersion);
   }
   await tx.done;
@@ -187,10 +187,10 @@ export async function applySyncResponse(
 
 /**
  * Send a sync request to the server and return the response.
- * Handles encoding/decoding of WAL entries for network transmission.
+ * Handles encoding/decoding of WAL operations for network transmission.
  */
 export async function sendSyncRequest(req: SyncRequest): Promise<SyncResponse> {
-  const body = { ...req, entries: req.entries.map(encodeWALEntry) };
+  const body = { ...req, operations: req.operations.map(encodeWALOperation) };
   try {
     const response = await fetch("http://localhost:9900/api/sync", {
       method: "POST",
@@ -205,7 +205,7 @@ export async function sendSyncRequest(req: SyncRequest): Promise<SyncResponse> {
     }
 
     let syncResponse: SyncResponse = await response.json();
-    syncResponse = { ...syncResponse, entries: syncResponse.entries.map(decodeWALEntry) };
+    syncResponse = { ...syncResponse, operations: syncResponse.operations.map(decodeWALOperation) };
     return syncResponse;
   } catch (error) {
     console.error("Sync request failed:", error);

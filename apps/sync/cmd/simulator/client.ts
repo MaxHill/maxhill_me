@@ -37,7 +37,7 @@ type SyncDeliveryRequest = {
 };
 
 type StateResponse = {
-  walEntries: any[];
+  walOperations: any[];
   clockValue: number;
   syncRequest?: any;
   actionTimeMs?: number;
@@ -107,13 +107,13 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
 
   const actionTimeMs = performance.now() - actionStart;
 
-  // Get current WAL entries
+  // Get current WAL operations
   const tx = client.db.transaction("_wal") as unknown as IDBPTransaction<
     InternalDbSchema,
     ["_wal", ...[]],
     "readwrite" | "readonly"
   >;
-  const walEntries = await client.wal.getEntries(0, tx);
+  const walOperations = await client.wal.getOperations(0, tx);
   await tx.done;
 
   // Get clock value directly from IndexedDB
@@ -133,7 +133,7 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
   }
 
   return { 
-    walEntries, 
+    walOperations, 
     clockValue, 
     syncRequest,
     actionTimeMs,
@@ -159,13 +159,13 @@ async function handleSyncDelivery(
 
   const walReceiveTimeMs = performance.now() - walReceiveStart;
 
-  // Get updated WAL entries
+  // Get updated WAL operations
   const walTx = client.db.transaction("_wal") as unknown as IDBPTransaction<
     InternalDbSchema,
     ["_wal", ...[]],
     "readwrite" | "readonly"
   >;
-  const walEntries = await client.wal.getEntries(0, walTx);
+  const walOperations = await client.wal.getOperations(0, walTx);
   await walTx.done;
 
   // Get updated clock value
@@ -175,7 +175,7 @@ async function handleSyncDelivery(
   await clockTx.done;
 
   return { 
-    walEntries, 
+    walOperations, 
     clockValue, 
     syncRequest: undefined,
     walReceiveTimeMs

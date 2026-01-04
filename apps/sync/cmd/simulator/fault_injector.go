@@ -59,7 +59,7 @@ func (f *FaultInjector) ShouldCorruptResponse() bool {
 
 // Severe request corruption
 func (f *FaultInjector) CorruptRequest(req *sync_engine.SyncRequest) {
-	if len(req.Entries) == 0 {
+	if len(req.Operations) == 0 {
 		// If no entries, can only corrupt metadata fields
 		corruptionType := f.random.Intn(2)
 		switch corruptionType {
@@ -77,13 +77,13 @@ func (f *FaultInjector) CorruptRequest(req *sync_engine.SyncRequest) {
 
 	switch corruptionType {
 	case 0: // Null/invalid value
-		idx := f.random.Intn(len(req.Entries))
-		req.Entries[idx].Value = nil
+		idx := f.random.Intn(len(req.Operations))
+		req.Operations[idx].Value = nil
 		log.Printf("    FAULT INJECTION: Nullified request entry %d value", idx)
 
 	case 1: // Negative version (invalid)
-		idx := f.random.Intn(len(req.Entries))
-		req.Entries[idx].Version = -1 * f.random.Int63()
+		idx := f.random.Intn(len(req.Operations))
+		req.Operations[idx].Version = -1 * f.random.Int63()
 		log.Printf("    FAULT INJECTION: Corrupted request entry %d version to negative", idx)
 
 	case 2: // Empty required field (clientID)
@@ -95,15 +95,15 @@ func (f *FaultInjector) CorruptRequest(req *sync_engine.SyncRequest) {
 		log.Printf("    FAULT INJECTION: Corrupted request lastSeenVersion to 999999999")
 
 	case 4: // Remove operation field
-		idx := f.random.Intn(len(req.Entries))
-		req.Entries[idx].Operation = ""
+		idx := f.random.Intn(len(req.Operations))
+		req.Operations[idx].Operation = ""
 		log.Printf("    FAULT INJECTION: Cleared request entry %d operation", idx)
 	}
 }
 
 // Severe response corruption
 func (f *FaultInjector) CorruptResponse(resp *sync_engine.SyncResponse) {
-	if len(resp.Entries) == 0 {
+	if len(resp.Operations) == 0 {
 		return
 	}
 
@@ -111,23 +111,23 @@ func (f *FaultInjector) CorruptResponse(resp *sync_engine.SyncResponse) {
 
 	switch corruptionType {
 	case 0: // Null value
-		idx := f.random.Intn(len(resp.Entries))
-		resp.Entries[idx].Value = nil
+		idx := f.random.Intn(len(resp.Operations))
+		resp.Operations[idx].Value = nil
 		log.Printf("    FAULT INJECTION: Nullified response entry %d value", idx)
 
 	case 1: // Invalid server version
-		idx := f.random.Intn(len(resp.Entries))
-		resp.Entries[idx].ServerVersion = 0
+		idx := f.random.Intn(len(resp.Operations))
+		resp.Operations[idx].ServerVersion = 0
 		log.Printf("    FAULT INJECTION: Corrupted response entry %d serverVersion to 0", idx)
 
 	case 2: // Duplicate entry
-		idx := f.random.Intn(len(resp.Entries))
-		resp.Entries = append(resp.Entries, resp.Entries[idx])
+		idx := f.random.Intn(len(resp.Operations))
+		resp.Operations = append(resp.Operations, resp.Operations[idx])
 		log.Printf("    FAULT INJECTION: Duplicated response entry %d", idx)
 
 	case 3: // Wrong client ID on entry
-		idx := f.random.Intn(len(resp.Entries))
-		resp.Entries[idx].ClientID = "CORRUPTED-CLIENT-ID"
+		idx := f.random.Intn(len(resp.Operations))
+		resp.Operations[idx].ClientID = "CORRUPTED-CLIENT-ID"
 		log.Printf("    FAULT INJECTION: Corrupted response entry %d clientID", idx)
 	}
 }

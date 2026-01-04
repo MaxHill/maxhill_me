@@ -1,4 +1,4 @@
-import type { WALEntry } from "./types.ts";
+import type { WALOperation } from "./types.ts";
 
 /**
  * Encode an IndexedDB key for transmission over the network.
@@ -63,25 +63,25 @@ export function decodeKey(encoded: string): IDBValidKey {
 }
 
 /**
- * Encode a WAL entry for transmission to the server.
+ * Encode a WAL operation for transmission to the server.
  * Converts complex keys to strings that can be safely serialized to JSON.
  */
-export function encodeWALEntry(entry: WALEntry): WALEntry {
+export function encodeWALOperation(operation: WALOperation): WALOperation {
   return {
-    ...entry,
-    key: encodeKey(entry.key),
-    ...(entry.valueKey != null ? { valueKey: encodeKey(entry.valueKey) } : {}),
+    ...operation,
+    key: encodeKey(operation.key),
+    ...(operation.valueKey != null ? { valueKey: encodeKey(operation.valueKey) } : {}),
   };
 }
 
 /**
- * Decode a WAL entry received from the server.
+ * Decode a WAL operation received from the server.
  * Restores keys to their original types.
  */
-export function decodeWALEntry(entry: WALEntry): WALEntry {
+export function decodeWALOperation(operation: WALOperation): WALOperation {
   return {
-    ...entry,
-    key: decodeKey(entry.key as string),
-    ...(entry.valueKey != null ? { valueKey: decodeKey(entry.valueKey as string) } : {}),
+    ...operation,
+    key: decodeKey(operation.key as string),
+    ...(operation.valueKey != null ? { valueKey: decodeKey(operation.valueKey as string) } : {}),
   };
 }

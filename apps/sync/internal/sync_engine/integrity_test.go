@@ -17,7 +17,7 @@ func TestHashSyncRequest(t *testing.T) {
 			request: SyncRequest{
 				ClientID:              "test-client",
 				ClientLastSeenVersion: -1,
-				Entries:               []WALEntry{},
+				Operations:               []WALOperation{},
 			},
 			want:    "8c4ab6aba942a7f9e7b6e8f3e3f9c8b5d6f7e8a9b0c1d2e3f4a5b6c7d8e9f0a1", // Will compute actual
 			wantErr: false,
@@ -27,7 +27,7 @@ func TestHashSyncRequest(t *testing.T) {
 			request: SyncRequest{
 				ClientID:              "test-client",
 				ClientLastSeenVersion: 0,
-				Entries: []WALEntry{
+				Operations: []WALOperation{
 					{
 						Key:       "key1",
 						Table:     "users",
@@ -46,7 +46,7 @@ func TestHashSyncRequest(t *testing.T) {
 			request: SyncRequest{
 				ClientID:              "client-abc",
 				ClientLastSeenVersion: 5,
-				Entries: []WALEntry{
+				Operations: []WALOperation{
 					{
 						Key:       "key1",
 						Table:     "posts",
@@ -91,19 +91,19 @@ func TestHashSyncRequest(t *testing.T) {
 func TestHashSyncResponse(t *testing.T) {
 	tests := []struct {
 		name              string
-		entries           []WALEntry
+		entries           []WALOperation
 		fromServerVersion int64
 		wantErr           bool
 	}{
 		{
 			name:              "empty response",
-			entries:           []WALEntry{},
+			entries:           []WALOperation{},
 			fromServerVersion: -1,
 			wantErr:           false,
 		},
 		{
 			name: "response with entries",
-			entries: []WALEntry{
+			entries: []WALOperation{
 				{
 					Key:           "key1",
 					Table:         "users",
@@ -151,7 +151,7 @@ func TestValidateSyncRequestIntegrity(t *testing.T) {
 	validRequest := SyncRequest{
 		ClientID:              "test-client",
 		ClientLastSeenVersion: 0,
-		Entries:               []WALEntry{},
+		Operations:               []WALOperation{},
 	}
 
 	// Compute valid hash
@@ -173,7 +173,7 @@ func TestValidateSyncRequestIntegrity(t *testing.T) {
 			request: SyncRequest{
 				ClientID:              "test-client",
 				ClientLastSeenVersion: 0,
-				Entries:               []WALEntry{},
+				Operations:               []WALOperation{},
 				RequestHash:           "invalid-hash",
 			},
 			wantErr: true,
@@ -183,7 +183,7 @@ func TestValidateSyncRequestIntegrity(t *testing.T) {
 			request: SyncRequest{
 				ClientID:              "different-client",
 				ClientLastSeenVersion: 0,
-				Entries:               []WALEntry{},
+				Operations:               []WALOperation{},
 				RequestHash:           validHash, // Using hash from different data
 			},
 			wantErr: true,
@@ -205,7 +205,7 @@ func TestHashConsistency(t *testing.T) {
 	request := SyncRequest{
 		ClientID:              "consistency-test",
 		ClientLastSeenVersion: 10,
-		Entries: []WALEntry{
+		Operations: []WALOperation{
 			{
 				Key:       "test-key",
 				Table:     "test-table",

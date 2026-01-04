@@ -31,12 +31,12 @@ func (s *SyncService) Sync(ctx context.Context, req SyncRequest) (*SyncResponse,
 	queries := s.db.Queries().WithTx(tx)
 
 	// 1. Sort client entries by their logical version (causal ordering)
-	sort.Slice(req.Entries, func(i, j int) bool {
-		return req.Entries[i].Version < req.Entries[j].Version
+	sort.Slice(req.Operations, func(i, j int) bool {
+		return req.Operations[i].Version < req.Operations[j].Version
 	})
 
 	// 2. Insert each entry and get the auto-assigned ServerVersion
-	for i, entry := range req.Entries {
+	for i, entry := range req.Operations {
 		var valueStr sql.NullString
 		if entry.Value != nil {
 			valueStr = sql.NullString{String: string(entry.Value), Valid: true}
@@ -47,7 +47,7 @@ func (s *SyncService) Sync(ctx context.Context, req SyncRequest) (*SyncResponse,
 			valueKeyStr = sql.NullString{String: string(entry.ValueKey), Valid: true}
 		}
 
-		serverVersion, err := queries.InsertWALEntry(ctx, repository.InsertWALEntryParams{
+		serverVersion, err := queries.InsertWALOperation(ctx, repository.InsertWALOperationParams{
 			Key:       entry.Key,
 			TableName: entry.Table,
 			Operation: entry.Operation,
@@ -61,40 +61,40 @@ func (s *SyncService) Sync(ctx context.Context, req SyncRequest) (*SyncResponse,
 		}
 
 		// Update the entry with the server-assigned version
-		req.Entries[i].ServerVersion = serverVersion
+		req.Operations[i].ServerVersion = serverVersion
 	}
 
-	// 3. Get entries for client since their last seen ServerVersion
-	dbEntries, err := queries.GetEntriesSinceServerVersion(ctx, repository.GetEntriesSinceServerVersionParams{
+	// 3. Get operations for client since their last seen ServerVersion
+	dbOperations, err := queries.GetOperationsSinceServerVersion(ctx, repository.GetOperationsSinceServerVersionParams{
 		ServerVersion: req.ClientLastSeenVersion,
 		ClientID:      req.ClientID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get entries since server version: %w", err)
+		return nil, fmt.Errorf("failed to get operations since server version: %w", err)
 	}
 
-	// 4. Convert database entries to response format
-	newEntries := make([]WALEntry, len(dbEntries))
-	for i, dbEntry := range dbEntries {
+	// 4. Convert database operations to response format
+	newOperations := make([]WALOperation, len(dbOperations))
+	for i, dbOperation := range dbOperations {
 		var value json.RawMessage
-		if dbEntry.Value.Valid {
-			value = json.RawMessage(dbEntry.Value.String)
+		if dbOperation.Value.Valid {
+			value = json.RawMessage(dbOperation.Value.String)
 		}
 
 		var valueKey json.RawMessage
-		if dbEntry.ValueKey.Valid {
-			valueKey = json.RawMessage(dbEntry.ValueKey.String)
+		if dbOperation.ValueKey.Valid {
+			valueKey = json.RawMessage(dbOperation.ValueKey.String)
 		}
 
-		newEntries[i] = WALEntry{
-			Key:           dbEntry.Key,
-			Table:         dbEntry.TableName,
-			Operation:     dbEntry.Operation,
+		newOperations[i] = WALOperation{
+			Key:           dbOperation.Key,
+			Table:         dbOperation.TableName,
+			Operation:     dbOperation.Operation,
 			Value:         value,
 			ValueKey:      valueKey,
-			Version:       dbEntry.Version,
-			ClientID:      dbEntry.ClientID,
-			ServerVersion: dbEntry.ServerVersion,
+			Version:       dbOperation.Version,
+			ClientID:      dbOperation.ClientID,
+			ServerVersion: dbOperation.ServerVersion,
 		}
 	}
 
@@ -103,13 +103,13 @@ func (s *SyncService) Sync(ctx context.Context, req SyncRequest) (*SyncResponse,
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	responseHash, err := HashSyncResponse(newEntries, req.ClientLastSeenVersion)
+	responseHash, err := HashSyncResponse(newOperations, req.ClientLastSeenVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash response: %w", err)
 	}
 
 	return &SyncResponse{
-		Entries:           newEntries,
+		Operations:        newOperations,
 		FromServerVersion: req.ClientLastSeenVersion,
 		ResponseHash:      responseHash,
 	}, nil

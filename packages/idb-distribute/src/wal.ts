@@ -1,7 +1,7 @@
 import type { IDBPDatabase, IDBPTransaction } from "idb";
 import { dbCommands, dbQueries, type InternalDbSchema } from "./db.ts";
 import * as logicalClock from "./persistedLogicalClock.ts";
-import type { WALEntry } from "./types.ts";
+import type { WALOperation } from "./types.ts";
 
 export class WAL {
   private generateId: () => string;
@@ -12,20 +12,20 @@ export class WAL {
     this.generateId = generateId;
   }
 
-  async writeNewEntry(
+  async writeNewOperation(
     tx: IDBPTransaction<
       InternalDbSchema,
       ["_wal", "_logicalClock", "_clientId", ...[]],
       "readwrite"
     >,
-    entry: Omit<WALEntry, "key" | "version" | "clientId">,
+    operation: Omit<WALOperation, "key" | "version" | "clientId">,
   ): Promise<number> {
     const clientId = await dbQueries.getClientIdTx(tx);
 
     const version = await logicalClock.tick(tx);
     const walStore = tx.objectStore("_wal");
     await walStore.add({
-      ...entry,
+      ...operation,
       key: this.generateId(),
       version,
       clientId,
@@ -34,24 +34,24 @@ export class WAL {
     return version;
   }
 
-  async applyPendingEntries(tx: IDBPTransaction<any, string[], "readwrite">) {
+  async applyPendingOperations(tx: IDBPTransaction<any, string[], "readwrite">) {
     while (true) {
       // get last applied version inside the given transaction
       const lastAppliedVersion = await dbQueries.getLastAppliedVersionTx(tx as any);
 
       const from = lastAppliedVersion + 1;
-      const entries = await this.getEntries(from, tx as any);
+      const operations = await this.getOperations(from, tx as any);
 
-      if (!entries || !entries.length) {
+      if (!operations || !operations.length) {
         // nothing more to apply, exit
         return;
       }
 
       const BATCH_LIMIT = 1000;
-      const batch = entries.slice(0, BATCH_LIMIT);
+      const batch = operations.slice(0, BATCH_LIMIT);
 
       // group by table
-      const groups = batch.reduce<Record<string, WALEntry[]>>((acc, e) => {
+      const groups = batch.reduce<Record<string, WALOperation[]>>((acc, e) => {
         (acc[e.table] ||= []).push(e);
         return acc;
       }, {});
@@ -60,14 +60,14 @@ export class WAL {
         // Apply each group's operations using the provided transaction
         for (const table of Object.keys(groups)) {
           const store = tx.objectStore(table);
-          for (const entry of groups[table]) {
-            if (entry.operation === "put" && store.keyPath) {
-              store.put(entry.value);
-            } else if (entry.operation === "put" && !store.keyPath) {
-              store.put(entry.value, entry.valueKey);
-            } else if (entry.operation === "del") {
-              store.delete(entry.value);
-            } else if (entry.operation === "clear") {
+          for (const operation of groups[table]) {
+            if (operation.operation === "put" && store.keyPath) {
+              store.put(operation.value);
+            } else if (operation.operation === "put" && !store.keyPath) {
+              store.put(operation.value, operation.valueKey);
+            } else if (operation.operation === "del") {
+              store.delete(operation.value);
+            } else if (operation.operation === "clear") {
               store.clear();
             }
           }
@@ -85,19 +85,19 @@ export class WAL {
     }
   }
 
-  async getEntries(
+  async getOperations(
     from: number = 0,
     tx: IDBPTransaction<InternalDbSchema, ["_wal", ...[]], "readwrite" | "readonly">,
-  ): Promise<WALEntry[]> {
+  ): Promise<WALOperation[]> {
     const transaction = tx as IDBPTransaction<InternalDbSchema, ["_wal"], "readwrite" | "readonly">;
     const store = transaction.objectStore("_wal").index("version");
-    const entries = await store.getAll(IDBKeyRange.lowerBound(from));
+    const operations = await store.getAll(IDBKeyRange.lowerBound(from));
 
     if (!tx) {
       await transaction.done;
     }
 
-    const sorted = entries.toSorted((a, b) => {
+    const sorted = operations.toSorted((a, b) => {
       if (a.version !== b.version) return a.version - b.version;
 
       const tableCompare = String(a.table || "").localeCompare(String(b.table || ""));
@@ -117,17 +117,17 @@ export class WAL {
     return sorted;
   }
 
-  async batchWriteSyncedEntries(
-    entries: WALEntry[],
+  async batchWriteSyncedOperations(
+    operations: WALOperation[],
     tx: IDBPTransaction<InternalDbSchema, ["_wal", ...any[]], "readwrite">,
     chunkSize = 500,
   ) {
-    for (let i = 0; i < entries.length; i += chunkSize) {
-      const chunk = entries.slice(i, i + chunkSize);
+    for (let i = 0; i < operations.length; i += chunkSize) {
+      const chunk = operations.slice(i, i + chunkSize);
       const store = tx.objectStore("_wal");
 
-      for (const entry of chunk) {
-        await store.add(entry);
+      for (const operation of chunk) {
+        await store.add(operation);
       }
     }
   }

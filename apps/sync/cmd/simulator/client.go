@@ -32,7 +32,7 @@ type Client struct {
 	ChanceSync       float64
 
 	// Current state snapshot (updated after each tick)
-	WalEntries []sync_engine.WALEntry
+	WalOperations []sync_engine.WALOperation
 	ClockValue int64
 }
 
@@ -52,7 +52,7 @@ type SyncDeliveryRequest struct {
 }
 
 type StateResponse struct {
-	WalEntries       []sync_engine.WALEntry   `json:"walEntries"`
+	WalOperations       []sync_engine.WALOperation   `json:"walOperations"`
 	ClockValue       int64                    `json:"clockValue"`
 	SyncRequest      *sync_engine.SyncRequest `json:"syncRequest,omitempty"`
 	ActionTimeMs     float64                  `json:"actionTimeMs,omitempty"`
@@ -194,7 +194,7 @@ func (client *Client) call(messageType string, payload any, response any) error 
 }
 
 func (client *Client) updateState(response *StateResponse) {
-	client.WalEntries = response.WalEntries
+	client.WalOperations = response.WalOperations
 	client.ClockValue = response.ClockValue
 }
 

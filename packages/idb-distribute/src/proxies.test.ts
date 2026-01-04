@@ -27,7 +27,7 @@ describe("Proxy db", () => {
         expect(count).toEqual(1);
 
         const tx = db.transaction("_wal");
-        count = (await wal.getEntries(0, (tx as unknown as any))).length;
+        count = (await wal.getOperations(0, (tx as unknown as any))).length;
         expect(count).toEqual(1);
         await tx.done;
     });
@@ -40,7 +40,7 @@ describe("Proxy db", () => {
         expect(count).toEqual(0);
 
         const tx = db.transaction("_wal");
-        count = (await wal.getEntries(0, (tx as unknown as any))).length;
+        count = (await wal.getOperations(0, (tx as unknown as any))).length;
         expect(count).toEqual(2);
         await tx.done;
     });
@@ -71,7 +71,7 @@ describe("Proxy db", () => {
             expect(count).toEqual(2);
 
             const txWal = db.transaction("_wal");
-            count = (await wal.getEntries(0, (txWal as unknown as any))).length;
+            count = (await wal.getOperations(0, (txWal as unknown as any))).length;
             expect(count).toEqual(2);
             await txWal.done;
         });
@@ -91,7 +91,7 @@ describe("Proxy db", () => {
             expect(count).toEqual(0);
 
             const txWal = db.transaction("_wal");
-            count = (await wal.getEntries(0, (txWal as unknown as any))).length;
+            count = (await wal.getOperations(0, (txWal as unknown as any))).length;
             expect(count).toEqual(4);
             await txWal.done;
         });

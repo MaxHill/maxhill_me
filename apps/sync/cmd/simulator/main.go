@@ -36,8 +36,8 @@ type SimulationStats struct {
 	SyncPrepTimes    []float64
 	TotalActions     int
 	TotalSyncs       int
-	TotalEntriesSent int
-	TotalEntriesRecv int
+	TotalOperationsSent int
+	TotalOperationsRecv int
 	ConvergenceStart time.Time
 	ConvergenceEnd   time.Time
 
@@ -133,7 +133,7 @@ func main() {
 
 		for i, state := range actionResults {
 			log.Printf("Client %d (%s;tick=%d)", i, clients[i].ClientID, tick)
-			log.Printf("  Clock: %d, WAL entries: %d", state.ClockValue, len(state.WalEntries))
+			log.Printf("  Clock: %d, WAL operations: %d", state.ClockValue, len(state.WalOperations))
 
 			// Collect action timing stats
 			if state.ActionTimeMs > 0 {
@@ -246,20 +246,20 @@ func verifyWALsMatch(clients []*Client) error {
 		finalStates[i] = state
 	}
 
-	// Property 1: Verify clock >= max(wal_entry.version) for each client
+	// Property 1: Verify clock >= max(wal_operation.version) for each client
 	log.Println("Checking property: clock >= max(WAL entry versions)")
 	for i, state := range finalStates {
 		var maxWALVersion int64 = -1
-		for _, entry := range state.WalEntries {
+		for _, entry := range state.WalOperations {
 			if entry.Version > maxWALVersion {
 				maxWALVersion = entry.Version
 			}
 		}
 
 		log.Printf("Client %d: Clock=%d, Max WAL version=%d, WAL entries=%d",
-			i, state.ClockValue, maxWALVersion, len(state.WalEntries))
+			i, state.ClockValue, maxWALVersion, len(state.WalOperations))
 
-		if len(state.WalEntries) > 0 && state.ClockValue < maxWALVersion {
+		if len(state.WalOperations) > 0 && state.ClockValue < maxWALVersion {
 			return fmt.Errorf("INVARIANT VIOLATION: client %d has clock=%d but max WAL version=%d (clock must be >= max WAL version)",
 				i, state.ClockValue, maxWALVersion)
 		}
@@ -268,17 +268,17 @@ func verifyWALsMatch(clients []*Client) error {
 
 	// Property 2: Verify all WAL entries are identical
 	log.Println("Checking property: all WAL entries match")
-	baseWAL := finalStates[0].WalEntries
+	baseWAL := finalStates[0].WalOperations
 
 	for i := 1; i < len(finalStates); i++ {
-		if len(finalStates[i].WalEntries) != len(baseWAL) {
+		if len(finalStates[i].WalOperations) != len(baseWAL) {
 			return fmt.Errorf("WAL length mismatch: client 0 has %d entries, client %d has %d entries",
-				len(baseWAL), i, len(finalStates[i].WalEntries))
+				len(baseWAL), i, len(finalStates[i].WalOperations))
 		}
 
 		// Compare each WAL entry
 		for j := range baseWAL {
-			if !walEntriesEqual(&baseWAL[j], &finalStates[i].WalEntries[j]) {
+			if !walOperationsEqual(&baseWAL[j], &finalStates[i].WalOperations[j]) {
 				return fmt.Errorf("WAL entry %d mismatch between client 0 and client %d", j, i)
 			}
 		}
@@ -323,7 +323,7 @@ func verifyWALsMatch(clients []*Client) error {
 	return nil
 }
 
-func walEntriesEqual(a, b *sync_engine.WALEntry) bool {
+func walOperationsEqual(a, b *sync_engine.WALOperation) bool {
 	return a.Key == b.Key &&
 		a.Table == b.Table &&
 		a.Operation == b.Operation &&
@@ -431,8 +431,8 @@ func printSimulationStats(stats *SimulationStats) {
 	// Totals
 	log.Printf("Sync Operations:")
 	log.Printf("  Total syncs: %d", stats.TotalSyncs)
-	log.Printf("  Total entries sent: %d", stats.TotalEntriesSent)
-	log.Printf("  Total entries received: %d", stats.TotalEntriesRecv)
+	log.Printf("  Total operations sent: %d", stats.TotalOperationsSent)
+	log.Printf("  Total operations received: %d", stats.TotalOperationsRecv)
 
 	// Convergence
 	if !stats.ConvergenceEnd.IsZero() {
@@ -534,10 +534,10 @@ func processAllSyncRequests(
 	}
 
 	stats.TotalSyncs++
-	stats.TotalEntriesSent += len(state.SyncRequest.Entries)
+	stats.TotalOperationsSent += len(state.SyncRequest.Operations)
 
 	log.Printf("  Syncing: sending %d entries, last seen version %d",
-		len(state.SyncRequest.Entries), state.SyncRequest.ClientLastSeenVersion)
+		len(state.SyncRequest.Operations), state.SyncRequest.ClientLastSeenVersion)
 
 	// FAULT INJECTION: Corrupt request
 	requestToSend := state.SyncRequest
@@ -565,8 +565,8 @@ func processAllSyncRequests(
 		return
 	}
 
-	stats.TotalEntriesRecv += len(syncResp.Entries)
-	log.Printf("  Received %d entries from server", len(syncResp.Entries))
+	stats.TotalOperationsRecv += len(syncResp.Operations)
+	log.Printf("  Received %d operations from server", len(syncResp.Operations))
 
 	// Prepare delivery
 	delivery := SyncDeliveryRequest{
@@ -618,7 +618,7 @@ func processAllSyncRequests(
 		stats.WalReceiveTimes = append(stats.WalReceiveTimes, newState.WalReceiveTimeMs)
 	}
 
-	log.Printf("  After sync - Clock: %d, WAL: %d", newState.ClockValue, len(newState.WalEntries))
+	log.Printf("  After sync - Clock: %d, WAL: %d", newState.ClockValue, len(newState.WalOperations))
 }
 
 func deliverPendingSyncs(
@@ -649,7 +649,7 @@ func deliverPendingSyncs(
 				stats.WalReceiveTimes = append(stats.WalReceiveTimes, newState.WalReceiveTimeMs)
 			}
 
-			log.Printf("    After delayed sync - Clock: %d, WAL: %d", newState.ClockValue, len(newState.WalEntries))
+			log.Printf("    After delayed sync - Clock: %d, WAL: %d", newState.ClockValue, len(newState.WalOperations))
 		} else {
 			remaining = append(remaining, ds)
 		}

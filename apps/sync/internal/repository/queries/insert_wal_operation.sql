@@ -1,4 +1,4 @@
-INSERT INTO wal_entries (
+INSERT INTO wal_operations (
     KEY,
     table_name,
     operation,

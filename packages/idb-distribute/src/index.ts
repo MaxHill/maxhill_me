@@ -6,10 +6,10 @@ export { Scheduler } from './scheduler.ts';
 export * as logicalClock from './persistedLogicalClock.ts';
 
 // Types
-export type { WALEntry, SyncRequest, SyncResponse } from './types.ts';
+export type { WALOperation, SyncRequest, SyncResponse } from './types.ts';
 
 // Sync functionality
 export { createSyncRequest, applySyncResponse, sendSyncRequest, hashSyncRequest, hashSyncResponse, validateSyncResponse } from './sync_request.ts';
 
 // Serialization
-export { encodeWALEntry, decodeWALEntry, encodeKey, decodeKey } from './serialization.ts';
+export { encodeWALOperation, decodeWALOperation, encodeKey, decodeKey } from './serialization.ts';

@@ -67,9 +67,9 @@ func (server Server) HandleSync(writer http.ResponseWriter, request *http.Reques
 		writer.Write([]byte(`{"error": "ClientLastSeenVersion cannot be less than -1"}`))
 		return
 	}
-	if syncReq.Entries == nil {
+	if syncReq.Operations == nil {
 		writer.WriteHeader(http.StatusBadRequest)
-		writer.Write([]byte(`{"error": "Entries cannot be omitted"}`))
+		writer.Write([]byte(`{"error": "Operations cannot be omitted"}`))
 		return
 	}
 

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 )
 
-type WALEntry struct {
+type WALOperation struct {
 	Key           string          `json:"key"`
 	Table         string          `json:"table"`
 	Operation     string          `json:"operation"` // "put" | "del"
@@ -17,16 +17,16 @@ type WALEntry struct {
 }
 
 type SyncRequest struct {
-	ClientID              string     `json:"clientId"`
-	Entries               []WALEntry `json:"entries"`
-	ClientLastSeenVersion int64      `json:"clientLastSeenVersion"` // Last ServerVersion client saw
-	RequestHash           string     `json:"requestHash"`
+	ClientID              string         `json:"clientId"`
+	Operations            []WALOperation `json:"operations"`
+	ClientLastSeenVersion int64          `json:"clientLastSeenVersion"` // Last ServerVersion client saw
+	RequestHash           string         `json:"requestHash"`
 }
 
 type SyncResponse struct {
-	Entries           []WALEntry `json:"entries"`
-	FromServerVersion int64      `json:"fromServerVersion"`
-	ResponseHash      string     `json:"responseHash"`
+	Operations        []WALOperation `json:"operations"`
+	FromServerVersion int64          `json:"fromServerVersion"`
+	ResponseHash      string         `json:"responseHash"`
 }
 
 type SyncServiceInterface interface {

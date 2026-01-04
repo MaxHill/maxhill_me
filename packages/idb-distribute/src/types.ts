@@ -1,4 +1,4 @@
-export interface WALEntry {
+export interface WALOperation {
   key: IDBValidKey;
   table: string;
   operation: "put" | "del" | "clear";
@@ -11,7 +11,7 @@ export interface WALEntry {
 
 export interface SyncRequest {
   clientId: string;
-  entries: WALEntry[];
+  operations: WALOperation[];
   clientLastSeenVersion: number;
   requestHash: string; // sha-256 hash of the request, the request should be rehashed and compared to this to ensure integrity on the server
 }
@@ -19,5 +19,5 @@ export interface SyncRequest {
 export interface SyncResponse {
   fromServerVersion: number; // Used to determine if the response is ok to apply. Can be removed when crdt is implemented
   responseHash: string; // sha-256 hash of the response, the response should be rehashed and compared to this to ensure integrity
-  entries: WALEntry[];
+  operations: WALOperation[];
 }

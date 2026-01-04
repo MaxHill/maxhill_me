@@ -114,7 +114,7 @@ if (clients[0]) {
     ["_wal", ...any[]],
     "readwrite" | "readonly"
   >;
-  const firstClientWalEntries = await firstClient.wal.getEntries(0, tx);
+  const firstClientWalOperations = await firstClient.wal.getOperations(0, tx);
   await tx.done;
 
   for (let i = 0; i < clients.length; i++) {
@@ -132,21 +132,21 @@ if (clients[0]) {
       ["_wal", ...any[]],
       "readwrite" | "readonly"
     >;
-    const walEntries = await client.wal.getEntries(0, tx2);
+    const walOperations = await client.wal.getOperations(0, tx2);
     await tx2.done;
 
     // Length check
-    if (walEntries.length !== firstClientWalEntries.length) {
+    if (walOperations.length !== firstClientWalOperations.length) {
       console.error(`Length mismatch for client ${clientId}:`, {
-        expected: firstClientWalEntries.length,
-        actual: walEntries.length,
+        expected: firstClientWalOperations.length,
+        actual: walOperations.length,
       });
       throw new Error(`Length mismatch for client ${clientId}`);
     }
 
     // Order check
-    const expectedKeyOrder = firstClientWalEntries.map((entry) => entry.key);
-    const actualKeyOrder = walEntries.map((entry) => entry.key);
+    const expectedKeyOrder = firstClientWalOperations.map((operation) => operation.key);
+    const actualKeyOrder = walOperations.map((operation) => operation.key);
 
     for (let j = 0; j < expectedKeyOrder.length; j++) {
       if (expectedKeyOrder[j] !== actualKeyOrder[j]) {
@@ -158,9 +158,9 @@ if (clients[0]) {
     }
 
     // Content check (excluding serverVersion)
-    for (let j = 0; j < walEntries.length; j++) {
-      const expected = { ...firstClientWalEntries[j], serverVersion: 0 };
-      const actual = { ...walEntries[j], serverVersion: 0 };
+    for (let j = 0; j < walOperations.length; j++) {
+      const expected = { ...firstClientWalOperations[j], serverVersion: 0 };
+      const actual = { ...walOperations[j], serverVersion: 0 };
 
       try {
         deepStrictEqual(actual, expected);
