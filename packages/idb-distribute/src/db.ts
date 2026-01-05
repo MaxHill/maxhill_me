@@ -7,7 +7,6 @@ import {
   type OpenDBCallbacks,
   type StoreNames,
 } from "idb";
-import { WAL } from "./wal.ts";
 import type { WALOperation } from "./types.ts";
 
 //  ------------------------------------------------------------------------
@@ -57,17 +56,17 @@ export const INTERNAL_DB_STORES: (keyof InternalDbSchema)[] = [
 //  ------------------------------------------------------------------------
 export const dbCommands = {
   async putLastSyncedVersion(
-    tx: IDBPTransaction<InternalDbSchema, ["_lastSyncedVersion", ...any[]], "readwrite">,
+    tx: IDBPTransaction<InternalDbSchema, ["_lastSyncedVersion", ...[]], "readwrite">,
     version: number,
   ): Promise<void> {
-    let store = tx.objectStore("_lastSyncedVersion");
+    const store = tx.objectStore("_lastSyncedVersion");
     await store.put(version, "value");
   },
   async putLastAppliedVersion(
-    tx: IDBPTransaction<InternalDbSchema, ["_lastAppliedVersion", ...any[]], "readwrite">,
+    tx: IDBPTransaction<InternalDbSchema, ["_lastAppliedVersion", ...[]], "readwrite">,
     version: number,
   ): Promise<void> {
-    let store = tx.objectStore("_lastAppliedVersion");
+    const store = tx.objectStore("_lastAppliedVersion");
     await store.put(version, "value");
   },
 };
@@ -79,7 +78,7 @@ export const dbQueries = {
   async getLastSyncedVersionTx(
     tx: IDBPTransaction<
       InternalDbSchema,
-      ["_lastSyncedVersion", ...any[]],
+      ["_lastSyncedVersion", ...[]],
       "readwrite" | "readonly"
     >,
   ): Promise<number> {
@@ -89,7 +88,7 @@ export const dbQueries = {
   async getLastAppliedVersionTx(
     tx: IDBPTransaction<
       InternalDbSchema,
-      ["_lastAppliedVersion", ...any[]],
+      ["_lastAppliedVersion", ...[]],
       "readwrite" | "readonly"
     >,
   ): Promise<number> {
@@ -97,17 +96,17 @@ export const dbQueries = {
     return (await store.get("value")) ?? -1;
   },
   async getClientIdTx(
-    tx: IDBPTransaction<InternalDbSchema, ["_clientId", ...any[]], "readwrite" | "readonly">,
+    tx: IDBPTransaction<InternalDbSchema, ["_clientId", ...[]], "readwrite" | "readonly">,
   ): Promise<string> {
-    let store = tx.objectStore("_clientId");
-    let clientId = await store.get("value");
+    const store = tx.objectStore("_clientId");
+    const clientId = await store.get("value");
     if (!clientId) {
       throw new Error("No client id exists");
     }
     return clientId;
   },
   async getLastSeenServerVersion(
-    tx: IDBPTransaction<InternalDbSchema, ["_wal", ...any[]], "readwrite" | "readonly">,
+    tx: IDBPTransaction<InternalDbSchema, ["_wal", ...[]], "readwrite" | "readonly">,
   ): Promise<number> {
     // const tx = db.transaction('_wal', 'readonly');
     const store = tx.objectStore("_wal") as IDBPObjectStore<

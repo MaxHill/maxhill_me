@@ -38,7 +38,8 @@ func (s *SyncService) Sync(ctx context.Context, req SyncRequest) (*SyncResponse,
 	// 2. Insert each entry and get the auto-assigned ServerVersion
 	for i, entry := range req.Operations {
 		var valueStr sql.NullString
-		if entry.Value != nil {
+		// For clear operations, value should always be NULL (not the JSON literal "null")
+		if entry.Value != nil && entry.Operation != "clear" {
 			valueStr = sql.NullString{String: string(entry.Value), Valid: true}
 		}
 

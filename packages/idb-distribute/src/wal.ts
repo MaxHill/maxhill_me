@@ -20,6 +20,8 @@ export class WAL {
     >,
     operation: Omit<WALOperation, "key" | "version" | "clientId">,
   ): Promise<number> {
+    console.error("WALOPERATION", operation);
+
     const clientId = await dbQueries.getClientIdTx(tx);
 
     const version = await logicalClock.tick(tx);

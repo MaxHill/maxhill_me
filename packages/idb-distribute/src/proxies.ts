@@ -124,7 +124,7 @@ function proxyStore(storeTarget: any, tx: any, wal: WAL, storeName: string) {
                     await wal.writeNewOperation(tx, {
                         operation: 'clear',
                         table: storeName,
-                        value: null,
+                        value: undefined,
                     });
                     return undefined;
                 };

@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "fake-indexeddb": "^6.0.0",
+    "fast-check": "https://pkg.pr.new/fast-check@main",
     "jsdom": "^26.0.0",
     "typescript": "^5.9.3",
     "vite": "^6.0.11",

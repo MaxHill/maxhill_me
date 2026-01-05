@@ -175,6 +175,9 @@ importers:
       fake-indexeddb:
         specifier: ^6.0.0
         version: 6.2.5
+      fast-check:
+        specifier: https://pkg.pr.new/fast-check@main
+        version: https://pkg.pr.new/fast-check@main
       jsdom:
         specifier: ^26.0.0
         version: 26.1.0
@@ -2532,6 +2535,11 @@ packages:
     resolution: {integrity: sha512-CGnyrvbhPlWYMngksqrSSUT1BAVP49dZocrHuK0SvtR0D5TMs5wP0o3j7jexDJW01KSadjBp1M/71o/KR3nD1w==}
     engines: {node: '>=18'}
 
+  fast-check@https://pkg.pr.new/fast-check@main:
+    resolution: {tarball: https://pkg.pr.new/fast-check@main}
+    version: 4.5.3
+    engines: {node: '>=12.17.0'}
+
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
 
@@ -3790,6 +3798,9 @@ packages:
   puppeteer-core@24.30.0:
     resolution: {integrity: sha512-2S3Smy0t0W4wJnNvDe7W0bE7wDmZjfZ3ljfMgJd6hn2Hq/f0jgN+x9PULZo2U3fu5UUIJ+JP8cNUGllu8P91Pg==}
     engines: {node: '>=18'}
+
+  pure-rand@7.0.1:
+    resolution: {integrity: sha512-oTUZM/NAZS8p7ANR3SHh30kXB+zK2r2BPcEn/awJIbOvq82WoMN4p62AWWp3Hhw50G0xMsw1mhIBLqHw64EcNQ==}
 
   qs@6.14.0:
     resolution: {integrity: sha512-YWWTjgABSKcvs/nWBi9PycY/JiPJqOD4JA6o9Sej2AtvSGarXxKC3OQSk4pAarbdQlKAh5D4FCQkJNkW+GAn3w==}
@@ -7495,6 +7506,10 @@ snapshots:
 
   fake-indexeddb@6.2.5: {}
 
+  fast-check@https://pkg.pr.new/fast-check@main:
+    dependencies:
+      pure-rand: 7.0.1
+
   fast-deep-equal@3.1.3: {}
 
   fast-fifo@1.3.2: {}
@@ -9184,6 +9199,8 @@ snapshots:
       - react-native-b4a
       - supports-color
       - utf-8-validate
+
+  pure-rand@7.0.1: {}
 
   qs@6.14.0:
     dependencies:

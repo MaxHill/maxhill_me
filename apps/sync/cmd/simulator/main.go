@@ -31,15 +31,15 @@ type SyncDeliveryResult struct {
 }
 
 type SimulationStats struct {
-	ActionTimes      []float64
-	WalReceiveTimes  []float64
-	SyncPrepTimes    []float64
-	TotalActions     int
-	TotalSyncs       int
+	ActionTimes         []float64
+	WalReceiveTimes     []float64
+	SyncPrepTimes       []float64
+	TotalActions        int
+	TotalSyncs          int
 	TotalOperationsSent int
 	TotalOperationsRecv int
-	ConvergenceStart time.Time
-	ConvergenceEnd   time.Time
+	ConvergenceStart    time.Time
+	ConvergenceEnd      time.Time
 
 	// Fault injection stats
 	FaultDelayedSyncs       int
@@ -279,6 +279,46 @@ func verifyWALsMatch(clients []*Client) error {
 		// Compare each WAL entry
 		for j := range baseWAL {
 			if !walOperationsEqual(&baseWAL[j], &finalStates[i].WalOperations[j]) {
+				a := &baseWAL[j]
+				b := &finalStates[i].WalOperations[j]
+				log.Printf("WAL entry %d mismatch between client 0 and client %d:", j, i)
+				log.Printf("  Client 0: Key=%s, Table=%s, Op=%s, Ver=%d, ClientID=%s, ServerVer=%d",
+					a.Key, a.Table, a.Operation, a.Version, a.ClientID, a.ServerVersion)
+				log.Printf("    Value: %q (len=%d, nil=%v)", string(a.Value), len(a.Value), a.Value == nil)
+				log.Printf("    ValueKey: %q (len=%d, nil=%v)", string(a.ValueKey), len(a.ValueKey), a.ValueKey == nil)
+				log.Printf("  Client %d: Key=%s, Table=%s, Op=%s, Ver=%d, ClientID=%s, ServerVer=%d",
+					i, b.Key, b.Table, b.Operation, b.Version, b.ClientID, b.ServerVersion)
+				log.Printf("    Value: %q (len=%d, nil=%v)", string(b.Value), len(b.Value), b.Value == nil)
+				log.Printf("    ValueKey: %q (len=%d, nil=%v)", string(b.ValueKey), len(b.ValueKey), b.ValueKey == nil)
+
+				// Show which fields differ
+				diffs := []string{}
+				if a.Key != b.Key {
+					diffs = append(diffs, "Key")
+				}
+				if a.Table != b.Table {
+					diffs = append(diffs, "Table")
+				}
+				if a.Operation != b.Operation {
+					diffs = append(diffs, "Operation")
+				}
+				if a.Version != b.Version {
+					diffs = append(diffs, "Version")
+				}
+				if a.ClientID != b.ClientID {
+					diffs = append(diffs, "ClientID")
+				}
+				if a.ServerVersion != b.ServerVersion {
+					diffs = append(diffs, "ServerVersion")
+				}
+				if string(a.Value) != string(b.Value) {
+					diffs = append(diffs, "Value")
+				}
+				if string(a.ValueKey) != string(b.ValueKey) {
+					diffs = append(diffs, "ValueKey")
+				}
+				log.Printf("  Fields that differ: %v", diffs)
+
 				return fmt.Errorf("WAL entry %d mismatch between client 0 and client %d", j, i)
 			}
 		}
