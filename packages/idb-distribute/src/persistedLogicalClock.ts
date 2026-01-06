@@ -1,5 +1,4 @@
-import type { IDBPTransaction } from "idb";
-import type { InternalDbSchema } from "./db.ts";
+import { promisifyIDBRequest } from "./utils.ts";
 
 /**
  * A persisted logical clock implementation.
@@ -28,69 +27,66 @@ import type { InternalDbSchema } from "./db.ts";
  * await clock.tick(); // clock value is now 7
  * ```
  */
+
 /**
  * Increments the clock by 1, representing a local event.
  * @param tx - Optional transaction to use. If not provided, creates a new transaction.
  * @returns The new clock value after incrementing
  */
 export async function tick(
-    tx: IDBPTransaction<InternalDbSchema, ["_logicalClock", ...any[]], "readwrite">
+  tx: IDBTransaction,
 ): Promise<number> {
-    const store = tx.objectStore("_logicalClock");
+  const store = tx.objectStore("clientState");
 
-    // Read current version
-    const currentVersion = await store.get('value') ?? -1;
-    const newVersion = currentVersion + 1;
+  const currentVersion = await promisifyIDBRequest(store.get("logicalClock")) ?? -1;
 
-    // Write new version atomically
-    await store.put(newVersion, 'value');
-
-    return newVersion;
+  const newVersion = currentVersion + 1;
+  await promisifyIDBRequest(store.put(newVersion, "logicalClock"));
+  return newVersion;
 }
 
 /**
  * Synchronizes this clock with another clock's value when receiving remote state.
  * Sets this clock to the maximum of its current value and the other value.
- * 
+ *
  * Note: Unlike traditional Lamport clocks which increment on receive (max+1),
  * we only increment during local writes via tick(). This prevents clock drift
  * during convergence when syncing repeatedly with the same remote state.
  * The "send" increment happens in tick() before writing the WAL entry.
- * 
+ *
  * @param tx - Transaction to use
  * @param otherVersion - The other clock's version to synchronize with
  * @returns The new clock value after synchronization
  */
 export async function sync(
-    tx: IDBPTransaction<InternalDbSchema, ["_logicalClock", ...any[]], "readwrite">,
-    otherVersion: number
+  tx: IDBTransaction,
+  otherVersion: number,
 ): Promise<number> {
-    const store = tx.objectStore("_logicalClock");
+  const store = tx.objectStore("clientState");
 
-    // Read current version
-    const currentVersion = await store.get('value') ?? -1;
-    const newVersion = Math.max(currentVersion, otherVersion);
+  // Read current version
+  const currentVersion = await promisifyIDBRequest(store.get("logicalClock")) ?? -1;
+  const newVersion = Math.max(currentVersion, otherVersion);
 
-    // Write new version atomically
-    await store.put(newVersion, 'value');
+  // Write new version atomically
+  await promisifyIDBRequest(store.put(newVersion, "logicalClock"));
 
-    return newVersion;
+  return newVersion;
 }
 
 export async function getVersion(
-    tx: IDBPTransaction<InternalDbSchema, ["_logicalClock", ...any[]], "readonly" | "readwrite">
+  tx: IDBTransaction,
 ): Promise<number> {
-    const store = tx.objectStore("_logicalClock");
-    const result = await store.get('value');
-    return result !== undefined ? result : -1;
+  const store = tx.objectStore("clientState");
+  const result = await promisifyIDBRequest(store.get("logicalClock"));
+  return result !== undefined ? result : -1;
 }
 
 export async function putVersion(
-    tx: IDBPTransaction<InternalDbSchema, ["_logicalClock", ...any[]], "readwrite">,
-    version: number,
+  tx: IDBTransaction,
+  version: number,
 ): Promise<number> {
-    const store = tx.objectStore("_logicalClock")
-    await store.put(version, "value");
-    return version;
+  const store = tx.objectStore("clientState");
+  await promisifyIDBRequest(store.put(version, "logicalClock"));
+  return version;
 }
-

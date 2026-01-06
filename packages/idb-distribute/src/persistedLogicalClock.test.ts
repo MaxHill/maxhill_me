@@ -1,110 +1,130 @@
 import "fake-indexeddb/auto";
-import { describe, expect, it, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import * as logicalClock from "./persistedLogicalClock";
-import { openAppDb, type InternalDbSchema } from "./db";
+import { type InternalDbSchema, openAppDb } from "./db";
 import type { IDBPDatabase } from "idb";
+import { CRDTDatabase } from "./crdtDatabase";
+import { promisifyIDBRequest, txDone } from "./utils";
 
 describe("PersistedLogicalClock", () => {
-    let db: IDBPDatabase<InternalDbSchema>
+  let db: IDBDatabase;
 
-	beforeEach(async () => {
-        db = await openAppDb("logicalClockTest", 1);
-        await db.transaction('_logicalClock', 'readwrite').objectStore('_logicalClock').clear();
-	});
+  beforeEach(async () => {
+    const crdtDB = new CRDTDatabase("logicalClockTest");
+    await crdtDB.open();
+    assert(crdtDB.db);
+    db = crdtDB.db;
 
-	it("should initialize with -1 version", async () => {
-        const tx = db.transaction(["_logicalClock"], "readonly")
-		const version = await logicalClock.getVersion(tx);
-        await tx.done
-		expect(version).toEqual(-1);
-	});
+    await promisifyIDBRequest(
+      db.transaction("clientState", "readwrite").objectStore("clientState").clear(),
+    );
+  });
 
-	it("should tick and increment version", async () => {
-        const tx = db.transaction(["_logicalClock"], "readwrite")
-		const result1 = await logicalClock.tick(tx);
-		expect(result1).toEqual(0);
-		const result2 = await logicalClock.tick(tx);
-		expect(result2).toBe(1);
-		const result3 = await logicalClock.tick(tx);
-		expect(result3).toBe(2);
-        await tx.done
-	});
+  it("should initialize with -1 version", async () => {
+    const tx = db.transaction(["clientState"], "readonly");
+    const version = await logicalClock.getVersion(tx);
+    await txDone(tx);
 
-	it("should sync with a greater clock value", async () => {
-        const tx = db.transaction(["_logicalClock"], "readwrite")
-		await logicalClock.putVersion(tx, 5);
+    expect(version).toEqual(-1);
+  });
 
-		const newValue = await logicalClock.sync(tx, 10); // max(5,10) = 10
-		expect(newValue).toBe(10);
-		const stored = await logicalClock.getVersion(tx);
-		expect(stored).toBe(10);
-        await tx.done
-	});
+  it("should tick and increment version", async () => {
+    let tx = db.transaction(["clientState"], "readwrite");
+    const result1 = await logicalClock.tick(tx);
+    expect(result1).toEqual(0);
+    await txDone(tx);
 
-	it("should sync with a smaller clock value", async () => {
-        const tx = db.transaction(["_logicalClock"], "readwrite")
-		await logicalClock.putVersion(tx, 10);
+    tx = db.transaction(["clientState"], "readwrite");
+    const result2 = await logicalClock.tick(tx);
+    expect(result2).toBe(1);
+    await txDone(tx);
 
-		const newValue = await logicalClock.sync(tx,5); // max(10,5) = 10
-		expect(newValue).toBe(10);
-		const stored = await logicalClock.getVersion(tx);
-		expect(stored).toBe(10);
-        await tx.done
-	});
+    tx = db.transaction(["clientState"], "readwrite");
+    const result3 = await logicalClock.tick(tx);
+    expect(result3).toBe(2);
+    await txDone(tx);
+  });
 
-	it("should increment by exactly N after N ticks", async () => {
-        const tx = db.transaction(["_logicalClock"], "readwrite")
-		await logicalClock.putVersion(tx,10);
+  it("should sync with a greater clock value", async () => {
+    const tx = db.transaction(["clientState"], "readwrite");
 
-		for (let i = 0; i < 5; i++) {
-			await logicalClock.tick(tx);
-		}
+    await logicalClock.putVersion(tx, 5);
 
-		const final = await logicalClock.getVersion(tx)
-		expect(final).toBe(15);
-        await tx.done
-	});
+    const newValue = await logicalClock.sync(tx, 10); // max(5,10) = 10
+    expect(newValue).toBe(10);
 
-	it("should not change when syncing with self", async () => {
-        const tx = db.transaction(["_logicalClock"], "readwrite")
-		await logicalClock.putVersion(tx, 20);
+    const stored = await logicalClock.getVersion(tx);
+    expect(stored).toBe(10);
 
+    await txDone(tx);
+  });
 
-		const current = await logicalClock.getVersion(tx);
-		const newValue = await logicalClock.sync(tx,current);
-		expect(newValue).toBe(current);
-        await tx.done
-	});
+  it("should sync with a smaller clock value", async () => {
+    const tx = db.transaction(["clientState"], "readwrite");
+    await logicalClock.putVersion(tx, 10);
 
-	it("should never decrease through any operation", async () => {
-        const tx = db.transaction("_logicalClock", "readwrite")
-		await logicalClock.putVersion(tx, 10);
-		let prev = await logicalClock.getVersion(tx);
+    const newValue = await logicalClock.sync(tx, 5); // max(10,5) = 10
+    expect(newValue).toBe(10);
 
-		for (let i = 0; i < 10; i++) {
-			if (Math.random() < 0.5) {
-				await logicalClock.tick(tx);
-			} else {
-				await logicalClock.sync(tx, Math.floor(Math.random() * 20));
-			}
-			const current = await logicalClock.getVersion(tx);
-			expect(current).toBeGreaterThanOrEqual(prev);
-			prev = current;
-		}
+    const stored = await logicalClock.getVersion(tx);
+    expect(stored).toBe(10);
 
-        await tx.done
-	});
+    await txDone(tx);
+  });
 
-	it("should handle negative clock values", async () => {
-        const tx = db.transaction("_logicalClock", "readwrite")
-		await logicalClock.putVersion(tx, -5)
+  it("should increment by exactly N after N ticks", async () => {
+    const tx = db.transaction(["clientState"], "readwrite");
+    await logicalClock.putVersion(tx, 10);
 
-		const result = await logicalClock.sync(tx, -10);
-		expect(result).toBe(-5); // max(-5, -10)
-		const current = await logicalClock.getVersion(tx);
-		expect(current).toBe(-5);
-        
-        await tx.done
-	});
+    for (let i = 0; i < 5; i++) {
+      await logicalClock.tick(tx);
+    }
 
+    const final = await logicalClock.getVersion(tx);
+    expect(final).toBe(15);
+
+    await txDone(tx);
+  });
+
+  it("should not change when syncing with self", async () => {
+    const tx = db.transaction(["clientState"], "readwrite");
+    await logicalClock.putVersion(tx, 20);
+
+    const current = await logicalClock.getVersion(tx);
+    const newValue = await logicalClock.sync(tx, current);
+    expect(newValue).toBe(current);
+    await txDone(tx);
+  });
+
+  it("should never decrease through any operation", async () => {
+    const tx = db.transaction("clientState", "readwrite");
+    await logicalClock.putVersion(tx, 10);
+    let prev = await logicalClock.getVersion(tx);
+
+    for (let i = 0; i < 10; i++) {
+      if (Math.random() < 0.5) {
+        await logicalClock.tick(tx);
+      } else {
+        await logicalClock.sync(tx, Math.floor(Math.random() * 20));
+      }
+
+      const current = await logicalClock.getVersion(tx);
+      expect(current).toBeGreaterThanOrEqual(prev);
+      prev = current;
+    }
+
+    await txDone(tx);
+  });
+
+  it("should handle negative clock values", async () => {
+    const tx = db.transaction("clientState", "readwrite");
+    await logicalClock.putVersion(tx, -5);
+
+    const result = await logicalClock.sync(tx, -10);
+    expect(result).toBe(-5); // max(-5, -10)
+    const current = await logicalClock.getVersion(tx);
+    expect(current).toBe(-5);
+
+    await txDone(tx);
+  });
 });
