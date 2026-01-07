@@ -46,7 +46,6 @@ export class CRDTDatabase {
         if (!db.objectStoreNames.contains("clientState")) {
           const s = db.createObjectStore("clientState");
           // clientId
-          // counter
           // logicalClock
           s.put(-1, "logicalClock");
         }

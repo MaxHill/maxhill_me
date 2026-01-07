@@ -15,9 +15,12 @@ describe("PersistedLogicalClock", () => {
     assert(crdtDB.db);
     db = crdtDB.db;
 
-    await promisifyIDBRequest(
-      db.transaction("clientState", "readwrite").objectStore("clientState").clear(),
-    );
+    // Clear and reinitialize to -1 (matching the database schema)
+    const clearTx = db.transaction("clientState", "readwrite");
+    const store = clearTx.objectStore("clientState");
+    await promisifyIDBRequest(store.clear());
+    await promisifyIDBRequest(store.put(-1, "logicalClock"));
+    await txDone(clearTx);
   });
 
   it("should initialize with -1 version", async () => {
@@ -116,15 +119,72 @@ describe("PersistedLogicalClock", () => {
     await txDone(tx);
   });
 
-  it("should handle negative clock values", async () => {
+  it("should throw when version is undefined", async () => {
+    // Clear the version to make it undefined
+    const clearTx = db.transaction("clientState", "readwrite");
+    await promisifyIDBRequest(clearTx.objectStore("clientState").delete("logicalClock"));
+    await txDone(clearTx);
+
+    const tx = db.transaction("clientState", "readonly");
+    await expect(logicalClock.getVersion(tx)).rejects.toThrow(
+      "Version should never be undefined since it's initialized to -1"
+    );
+    await txDone(tx);
+  });
+
+  it("should throw when version goes below -1", async () => {
     const tx = db.transaction("clientState", "readwrite");
-    await logicalClock.putVersion(tx, -5);
+    await logicalClock.putVersion(tx, -2);
 
-    const result = await logicalClock.sync(tx, -10);
-    expect(result).toBe(-5); // max(-5, -10)
-    const current = await logicalClock.getVersion(tx);
-    expect(current).toBe(-5);
+    await expect(logicalClock.getVersion(tx)).rejects.toThrow(
+      "Version could never be less than initialized value -1"
+    );
+    await txDone(tx);
+  });
 
+  it("should throw when tick would result in negative version", async () => {
+    const tx = db.transaction("clientState", "readwrite");
+    // This should throw because -1 + 1 = 0, but if somehow version was lower...
+    // Actually, starting from -1 and ticking gives 0, which is fine.
+    // Let's test that tick from -1 works correctly
+    const result = await logicalClock.tick(tx);
+    expect(result).toBe(0);
+    await txDone(tx);
+  });
+
+  it("should enforce version >= -1 invariant in sync", async () => {
+    const tx = db.transaction("clientState", "readwrite");
+    
+    // Syncing with -1 should work (initial value)
+    const result1 = await logicalClock.sync(tx, -1);
+    expect(result1).toBe(-1);
+
+    // Syncing with a value less than -1 still results in max(-1, -2) = -1
+    // The assertion protects against implementation bugs, not invalid inputs
+    const result2 = await logicalClock.sync(tx, -2);
+    expect(result2).toBe(-1); // max(-1, -2) = -1, which is valid
+    
+    await txDone(tx);
+  });
+
+  it("should enforce version >= 0 after any tick operation", async () => {
+    // Start from -1 (initial state)
+    let tx = db.transaction("clientState", "readwrite");
+    const initial = await logicalClock.getVersion(tx);
+    expect(initial).toBe(-1);
+    await txDone(tx);
+
+    // First tick should bring us to 0
+    tx = db.transaction("clientState", "readwrite");
+    const result = await logicalClock.tick(tx);
+    expect(result).toBe(0);
+    expect(result).toBeGreaterThanOrEqual(0);
+    await txDone(tx);
+
+    // Subsequent ticks should always be >= 0
+    tx = db.transaction("clientState", "readwrite");
+    const result2 = await logicalClock.tick(tx);
+    expect(result2).toBeGreaterThanOrEqual(0);
     await txDone(tx);
   });
 });

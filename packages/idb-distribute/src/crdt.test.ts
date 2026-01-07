@@ -123,7 +123,10 @@ describe("compareDots", () => {
     it("antisymmetric: compareDots(a, b) === -compareDots(b, a)", () => {
       fc.assert(
         fc.property(generateDot(), generateDot(), (a, b) => {
-          expect(compareDots(a, b)).toBe(-compareDots(b, a));
+          const ab = compareDots(a, b);
+          const ba = compareDots(b, a);
+          // Use == instead of toBe to avoid +0/-0 distinction
+          expect(ab).toEqual(-ba);
         })
       );
     });
