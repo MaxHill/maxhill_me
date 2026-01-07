@@ -36,12 +36,18 @@ import { promisifyIDBRequest } from "./utils.ts";
 export async function tick(
   tx: IDBTransaction,
 ): Promise<number> {
-  const store = tx.objectStore("clientState");
+  if (!tx.objectStoreNames.contains("clientState")) {
+    throw new Error("Transaction is missing clientState objectStore");
+  }
 
-  const currentVersion = await promisifyIDBRequest(store.get("logicalClock")) ?? -1;
+  const currentVersion = await getVersion(tx);
 
   const newVersion = currentVersion + 1;
-  await promisifyIDBRequest(store.put(newVersion, "logicalClock"));
+  await putVersion(tx, newVersion);
+
+  if (newVersion < 0) {
+    throw new Error("Version could never be less than 0 after ticking. Got: " + newVersion);
+  }
   return newVersion;
 }
 
@@ -62,30 +68,49 @@ export async function sync(
   tx: IDBTransaction,
   otherVersion: number,
 ): Promise<number> {
-  const store = tx.objectStore("clientState");
+  if (!tx.objectStoreNames.contains("clientState")) {
+    throw new Error("Transaction is missing clientState objectStore");
+  }
 
   // Read current version
-  const currentVersion = await promisifyIDBRequest(store.get("logicalClock")) ?? -1;
+  const currentVersion = await getVersion(tx);
   const newVersion = Math.max(currentVersion, otherVersion);
 
   // Write new version atomically
-  await promisifyIDBRequest(store.put(newVersion, "logicalClock"));
+  await putVersion(tx, newVersion);
 
+  if (newVersion < -1) {
+    throw new Error("Version could never be less than initialized value -1. Got: " + newVersion);
+  }
   return newVersion;
 }
 
 export async function getVersion(
   tx: IDBTransaction,
 ): Promise<number> {
+  if (!tx.objectStoreNames.contains("clientState")) {
+    throw new Error("Transaction is missing clientState objectStore");
+  }
+
   const store = tx.objectStore("clientState");
-  const result = await promisifyIDBRequest(store.get("logicalClock"));
-  return result !== undefined ? result : -1;
+  const version = await promisifyIDBRequest(store.get("logicalClock"));
+
+  if (version === undefined) {
+    throw new Error("Version should never be undefined since it's initialized to -1");
+  }
+  if (version < -1) {
+    throw new Error("Version could never be less than initialized value -1. Got: " + version);
+  }
+  return version;
 }
 
 export async function putVersion(
   tx: IDBTransaction,
   version: number,
 ): Promise<number> {
+  if (!tx.objectStoreNames.contains("clientState")) {
+    throw new Error("Transaction is missing clientState objectStore");
+  }
   const store = tx.objectStore("clientState");
   await promisifyIDBRequest(store.put(version, "logicalClock"));
   return version;

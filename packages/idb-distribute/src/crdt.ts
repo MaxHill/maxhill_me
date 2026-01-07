@@ -58,6 +58,16 @@ export function compareDots(a: Dot, b: Dot): number {
   return a.clientId.localeCompare(b.clientId);
 }
 
+/**
+ * Deterministic comparison of values for tiebreaking when dots are equal.
+ * Uses JSON serialization for consistent ordering.
+ */
+function compareValues(a: any, b: any): number {
+  const aStr = JSON.stringify(a);
+  const bStr = JSON.stringify(b);
+  return aStr.localeCompare(bStr);
+}
+
 export function applyOpToRow(row: ORMapRow, op: CRDTOperation): void {
   if (op.type === "set") {
     // Check if tombstone dominates
@@ -74,8 +84,19 @@ export function applyOpToRow(row: ORMapRow, op: CRDTOperation): void {
     }
     const existing = row.fields[field];
 
-    if (!existing || compareDots(op.dot, existing.dot) > 0) {
+    if (!existing) {
+      // No existing value, just set it
       row.fields[field] = { value: op.value, dot: op.dot };
+    } else {
+      const cmp = compareDots(op.dot, existing.dot);
+      if (cmp > 0) {
+        // New dot is higher, replace
+        row.fields[field] = { value: op.value, dot: op.dot };
+      } else if (cmp === 0 && compareValues(op.value, existing.value) > 0) {
+        // Dots are equal, use value tiebreaker for deterministic convergence
+        row.fields[field] = { value: op.value, dot: op.dot };
+      }
+      // Otherwise keep existing (cmp < 0 or cmp === 0 with lower value)
     }
   } else if (op.type === "setRow") {
     // Check if tombstone dominates
@@ -89,26 +110,37 @@ export function applyOpToRow(row: ORMapRow, op: CRDTOperation): void {
     for (const [field, value] of Object.entries(op.value)) {
       const existing = row.fields[field];
 
-      if (!existing || compareDots(op.dot, existing.dot) > 0) {
+      if (!existing) {
+        // No existing value, just set it
         row.fields[field] = { value, dot: op.dot };
+      } else {
+        const cmp = compareDots(op.dot, existing.dot);
+        if (cmp > 0) {
+          // New dot is higher, replace
+          row.fields[field] = { value, dot: op.dot };
+        } else if (cmp === 0 && compareValues(value, existing.value) > 0) {
+          // Dots are equal, use value tiebreaker for deterministic convergence
+          row.fields[field] = { value, dot: op.dot };
+        }
+        // Otherwise keep existing (cmp < 0 or cmp === 0 with lower value)
       }
     }
   } else if (op.type === "remove") {
     // Merge with existing tombstone if present
     let finalTombstone: { dot: Dot; context: Record<string, number> };
-    
+
     if (row.tombstone) {
       // Use LWW for tombstone dots, and merge contexts
       const cmp = compareDots(op.dot, row.tombstone.dot);
       const winningDot = cmp > 0 ? op.dot : row.tombstone.dot;
-      
+
       // Merge contexts: take max version for each client
       const mergedContext: Record<string, number> = { ...row.tombstone.context };
       for (const [clientId, version] of Object.entries(op.context)) {
         const existing = mergedContext[clientId];
         mergedContext[clientId] = existing !== undefined ? Math.max(existing, version) : version;
       }
-      
+
       finalTombstone = { dot: winningDot, context: mergedContext };
     } else {
       finalTombstone = { dot: op.dot, context: op.context };
