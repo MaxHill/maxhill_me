@@ -1,162 +1,54 @@
+import { IDBRepository } from "./IDBRepository";
 import { applyOpToRow, CRDTOperation, Dot, LWWField, ORMapRow, ValidKey } from "./crdt";
-import * as logicalClock from "./persistedLogicalClock";
+import { PersistedLogicalClock } from "./persistedLogicalClock";
+import { txDone } from "./utils";
 
 export class CRDTDatabase {
-  // TODO: should be private but needed for logical clock test
-  db: IDBDatabase | null = null;
   private clientId: string;
+  private idbRepository: IDBRepository;
+  private logicalClock: PersistedLogicalClock;
 
   constructor(
     private dbName: string = "crdt-db",
     generateId: () => string = crypto.randomUUID.bind(crypto),
+    clientPersistance = new IDBRepository(),
   ) {
+    this.idbRepository = clientPersistance;
+    this.logicalClock = new PersistedLogicalClock(this.idbRepository);
     this.clientId = generateId();
   }
 
   async open(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.dbName, 1);
-
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        this.db = request.result;
-        this.loadClientState().then(resolve);
-      };
-
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-
-        // Store individual rows
-        if (!db.objectStoreNames.contains("rows")) {
-          const rowStore = db.createObjectStore("rows", { keyPath: ["tableName", "rowKey"] });
-          rowStore.createIndex("by-table", "tableName", { unique: false });
-        }
-
-        // Store operations log
-        if (!db.objectStoreNames.contains("operations")) {
-          const opStore = db.createObjectStore("operations", {
-            keyPath: "id",
-            autoIncrement: true,
-          });
-          opStore.createIndex("by-synced", "synced", { unique: false });
-          opStore.createIndex("by-timestamp", "timestamp", { unique: false });
-        }
-
-        // Store client state
-        if (!db.objectStoreNames.contains("clientState")) {
-          const s = db.createObjectStore("clientState");
-          // clientId
-          // logicalClock
-          s.put(-1, "logicalClock");
-        }
-      };
-    });
+    await this.idbRepository.open(this.dbName);
+    await this.loadClientState();
   }
 
   private async loadClientState(): Promise<void> {
-    const tx = this.db!.transaction(["clientState"], "readonly");
-    const store = tx.objectStore("clientState");
-
-    const clientIdReq = store.get("clientId");
-
-    return new Promise((resolve, reject) => {
-      tx.oncomplete = () => {
-        if (clientIdReq.result) {
-          this.clientId = clientIdReq.result;
-        } else {
-          this.saveClientId();
-        }
-
-        resolve();
-      };
-      tx.onerror = () => reject(tx.error);
-    });
-  }
-
-  private async saveClientId(): Promise<void> {
-    const tx = this.db!.transaction(["clientState"], "readwrite");
-    const store = tx.objectStore("clientState");
-    store.put(this.clientId, "clientId");
-
-    return new Promise((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
+    const tx = this.idbRepository!.transaction(["clientState"], "readwrite");
+    const clientState = await this.idbRepository.getClientState(tx);
+    if (clientState.clientId) {
+      this.clientId = clientState.clientId;
+    } else {
+      await this.idbRepository.saveClientId(tx, this.clientId);
+    }
+    await txDone(tx);
   }
 
   private async nextDot(): Promise<Dot> {
-    if (!this.db) {
-      throw new Error("Database is undefined in nextDot");
+    if (!this.idbRepository) {
+      throw new Error("idbRepository is undefined in nextDot");
     }
-    const tx = this.db?.transaction("clientState", "readwrite");
-    const version = await logicalClock.tick(tx);
+    const tx = this.idbRepository?.transaction("clientState", "readwrite");
+    const version = await this.logicalClock.tick(tx);
     return { clientId: this.clientId, version };
-  }
-
-  /**
-   * Get a single row from IndexedDB
-   */
-  private async getRow(tableName: string, rowKey: ValidKey): Promise<ORMapRow> {
-    const tx = this.db!.transaction(["rows"], "readonly");
-    const store = tx.objectStore("rows");
-    const request = store.get([
-      tableName,
-      rowKey as IDBValidKey, /*Casting is fine here since ValidKey is a subset of IDBValidKey*/
-    ]);
-
-    return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        resolve(request.result?.row ?? { fields: {} });
-      };
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  /**
-   * Save a single row to IndexedDB
-   */
-  private async saveRow(tableName: string, rowKey: ValidKey, row: ORMapRow): Promise<void> {
-    const tx = this.db!.transaction(["rows"], "readwrite");
-    const store = tx.objectStore("rows");
-
-    // Only save if the row has data or a tombstone
-    if (Object.keys(row.fields).length > 0 || row.tombstone) {
-      store.put({ tableName, rowKey, row });
-    } else {
-      // Remove empty rows
-      store.delete([
-        tableName,
-        rowKey as IDBValidKey, /*Casting is fine here since ValidKey is a subset of IDBValidKey*/
-      ]);
-    }
-
-    return new Promise((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  }
-
-  private async logOperation(op: CRDTOperation): Promise<void> {
-    const tx = this.db!.transaction(["operations"], "readwrite");
-    const store = tx.objectStore("operations");
-    store.add({
-      op,
-      timestamp: Date.now(),
-      synced: false,
-    });
-
-    return new Promise((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
   }
 
   /**
    * Set a single field in a row
    */
   async setCell(table: string, rowKey: ValidKey, field: string, value: any): Promise<void> {
-    // Read only the specific row
-    const row = await this.getRow(table, rowKey);
+    const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
+    const row = await this.idbRepository.getRow(tx, table, rowKey);
 
     const dot = await this.nextDot();
     const op: CRDTOperation = {
@@ -168,13 +60,12 @@ export class CRDTDatabase {
       dot,
     };
 
-    // Apply operation to the row in memory
     applyOpToRow(row, op);
 
-    // Save only this row back
     await Promise.all([
-      this.saveRow(table, rowKey, row),
-      this.logOperation(op),
+      this.idbRepository.saveRow(tx, table, rowKey, row),
+      this.idbRepository.logOperation(tx, op),
+      txDone(tx),
     ]);
   }
 
@@ -182,8 +73,8 @@ export class CRDTDatabase {
    * Set an entire row
    */
   async setRow(table: string, rowKey: ValidKey, value: Record<string, any>): Promise<void> {
-    // Read only the specific row
-    const row = await this.getRow(table, rowKey);
+    const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
+    const row = await this.idbRepository.getRow(tx, table, rowKey);
 
     const dot = await this.nextDot();
     const op: CRDTOperation = {
@@ -194,13 +85,12 @@ export class CRDTDatabase {
       dot,
     };
 
-    // Apply operation to the row in memory
     applyOpToRow(row, op);
 
-    // Save only this row back
     await Promise.all([
-      this.saveRow(table, rowKey, row),
-      this.logOperation(op),
+      this.idbRepository.saveRow(tx, table, rowKey, row),
+      this.idbRepository.logOperation(tx, op),
+      txDone(tx),
     ]);
   }
 
@@ -208,7 +98,8 @@ export class CRDTDatabase {
    * Get a row's user-facing data
    */
   async get(table: string, rowKey: ValidKey): Promise<Record<string, any> | undefined> {
-    const row = await this.getRow(table, rowKey);
+    const tx = this.idbRepository.transaction(["rows"], "readonly");
+    const row = await this.idbRepository.getRow(tx, table, rowKey);
 
     if (Object.keys(row.fields).length === 0) {
       return undefined;
@@ -225,7 +116,8 @@ export class CRDTDatabase {
    * Delete a row
    */
   async deleteRow(table: string, rowKey: ValidKey): Promise<void> {
-    const row = await this.getRow(table, rowKey);
+    const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
+    const row = await this.idbRepository.getRow(tx, table, rowKey);
 
     // Build context from current fields
     const context: Record<string, number> = {};
@@ -246,8 +138,9 @@ export class CRDTDatabase {
     applyOpToRow(row, op);
 
     await Promise.all([
-      this.saveRow(table, rowKey, row),
-      this.logOperation(op),
+      this.idbRepository.saveRow(tx, table, rowKey, row),
+      this.idbRepository.logOperation(tx, op),
+      txDone(tx),
     ]);
   }
 
@@ -255,7 +148,7 @@ export class CRDTDatabase {
    * Get all rows in a table (uses IndexedDB index)
    */
   async getAllRows(table: string): Promise<Map<IDBValidKey, Record<string, any>>> {
-    const tx = this.db!.transaction(["rows"], "readonly");
+    const tx = this.idbRepository!.transaction(["rows"], "readonly");
     const store = tx.objectStore("rows");
     const index = store.index("by-table");
     const request = index.getAll(table);
@@ -283,7 +176,7 @@ export class CRDTDatabase {
   /**
    * Apply remote operations (from sync)
    */
-  async applyRemoteOps(ops: CRDTOperation[]): Promise<void> {
+  private async applyRemoteOps(ops: CRDTOperation[]): Promise<void> {
     // Group operations by row for efficiency
     const opsByRow = new Map<string, CRDTOperation[]>();
 
@@ -292,25 +185,29 @@ export class CRDTDatabase {
       if (!opsByRow.has(key)) {
         opsByRow.set(key, []);
       }
+      // TODO: We should add a Merge function to CRDT.ts and merge the ops here.
+      // The benefit would be that we could remove the nested loop
+      // when doing applyOpToRow
+      // Then we could do:
+      //    opsByRow.set(key, crdt.merge(opsByRow.get(key), op));
       opsByRow.get(key)!.push(op);
     }
 
-    // Process each row
+    const tx = this.idbRepository.transaction(["rows"], "readwrite");
     for (const [_key, rowOps] of opsByRow) {
       const firstOp = rowOps[0];
-      const row = await this.getRow(firstOp.table, firstOp.rowKey);
+      const row = await this.idbRepository.getRow(tx, firstOp.table, firstOp.rowKey);
 
-      // Apply all operations to this row
       for (const op of rowOps) {
         applyOpToRow(row, op);
       }
 
-      // Save the row once
-      await this.saveRow(firstOp.table, firstOp.rowKey, row);
+      await this.idbRepository.saveRow(tx, firstOp.table, firstOp.rowKey, row);
     }
+    await txDone(tx);
   }
 
   async close(): Promise<void> {
-    this.db?.close();
+    this.idbRepository.close();
   }
 }
