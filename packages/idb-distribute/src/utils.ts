@@ -27,3 +27,32 @@ export async function txDone(tx: IDBTransaction): Promise<null> {
     tx.onabort = () => reject("Transaction aborted");
   });
 }
+
+/**
+ * Wrap a IDBRequest<IDBCursorWithValue> in a async Iterator for convenience
+ * @param request - IDBRequest to iterate over
+ * @returns AsyncIterableIterator over the result
+ */
+export function asyncCursorIterator<T>(
+  request: IDBRequest<IDBCursorWithValue | null>,
+): AsyncIterableIterator<T> {
+  return (async function* () {
+    let cursor: IDBCursorWithValue | null = await new Promise(
+      (resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      },
+    );
+
+    while (cursor) {
+      yield cursor.value as T;
+      cursor = await new Promise<IDBCursorWithValue | null>(
+        (resolve, reject) => {
+          cursor!.continue();
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        },
+      );
+    }
+  })();
+}
