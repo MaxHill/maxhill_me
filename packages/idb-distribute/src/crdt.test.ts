@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import {
+  applyOperationToRow,
   compareDots,
-  applyOpToRow,
+  type CRDTOperation,
   type Dot,
   type LWWField,
   type ORMapRow,
-  type CRDTOperation,
 } from "./crdt.ts";
 
 //  ------------------------------------------------------------------------
@@ -30,7 +30,7 @@ const generateLWWField = (): fc.Arbitrary<LWWField> =>
 
 const generateSafeFieldName = (): fc.Arbitrary<string> =>
   fc.string({ minLength: 1, maxLength: 10 }).filter(
-    (s) => !["__proto__", "constructor", "prototype", "toString", "valueOf"].includes(s)
+    (s) => !["__proto__", "constructor", "prototype", "toString", "valueOf"].includes(s),
   );
 
 const generateORMapRow = (): fc.Arbitrary<ORMapRow> =>
@@ -41,11 +41,11 @@ const generateORMapRow = (): fc.Arbitrary<ORMapRow> =>
         dot: generateDot(),
         context: fc.dictionary(generateClientId(), fc.nat({ max: 1000 })),
       }),
-      { nil: undefined }
+      { nil: undefined },
     ),
   });
 
-const generateSetOp = (): fc.Arbitrary<CRDTOperation> =>
+const generateSetOperation = (): fc.Arbitrary<CRDTOperation> =>
   fc.record({
     type: fc.constant("set" as const),
     table: fc.constant("test_table"),
@@ -55,19 +55,19 @@ const generateSetOp = (): fc.Arbitrary<CRDTOperation> =>
     dot: generateDot(),
   });
 
-const generateSetRowOp = (): fc.Arbitrary<CRDTOperation> =>
+const generateSetRowOperation = (): fc.Arbitrary<CRDTOperation> =>
   fc.record({
     type: fc.constant("setRow" as const),
     table: fc.constant("test_table"),
     rowKey: fc.oneof(fc.string(), fc.integer()),
     value: fc.dictionary(
       generateSafeFieldName(),
-      fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null))
+      fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
     ),
     dot: generateDot(),
   });
 
-const generateRemoveOp = (): fc.Arbitrary<CRDTOperation> =>
+const generateRemoveOperation = (): fc.Arbitrary<CRDTOperation> =>
   fc.record({
     type: fc.constant("remove" as const),
     table: fc.constant("test_table"),
@@ -76,8 +76,8 @@ const generateRemoveOp = (): fc.Arbitrary<CRDTOperation> =>
     context: fc.dictionary(generateClientId(), fc.nat({ max: 1000 })),
   });
 
-const generateCRDTOp = (): fc.Arbitrary<CRDTOperation> =>
-  fc.oneof(generateSetOp(), generateSetRowOp(), generateRemoveOp());
+const generateCRDTOperation = (): fc.Arbitrary<CRDTOperation> =>
+  fc.oneof(generateSetOperation(), generateSetRowOperation(), generateRemoveOperation());
 
 //  ------------------------------------------------------------------------
 //  compareDots Tests
@@ -116,7 +116,7 @@ describe("compareDots", () => {
       fc.assert(
         fc.property(generateDot(), (dot) => {
           expect(compareDots(dot, dot)).toBe(0);
-        })
+        }),
       );
     });
 
@@ -127,7 +127,7 @@ describe("compareDots", () => {
           const ba = compareDots(b, a);
           // Use == instead of toBe to avoid +0/-0 distinction
           expect(ab).toEqual(-ba);
-        })
+        }),
       );
     });
 
@@ -141,7 +141,7 @@ describe("compareDots", () => {
           if (ab < 0 && bc < 0) {
             expect(ac).toBeLessThan(0);
           }
-        })
+        }),
       );
     });
 
@@ -151,7 +151,7 @@ describe("compareDots", () => {
           const result = compareDots(a, b);
           expect(typeof result).toBe("number");
           expect(result === 0 || result > 0 || result < 0).toBe(true);
-        })
+        }),
       );
     });
   });
@@ -174,7 +174,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 1 },
       };
 
-      applyOpToRow(row, op);
+      applyOperationToRow(row, op);
 
       expect(row.fields.name).toEqual({
         value: "Alice",
@@ -197,7 +197,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 2 },
       };
 
-      applyOpToRow(row, op);
+      applyOperationToRow(row, op);
 
       expect(row.fields.name.value).toBe("Bob");
       expect(row.fields.name.dot.version).toBe(2);
@@ -218,7 +218,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 3 },
       };
 
-      applyOpToRow(row, op);
+      applyOperationToRow(row, op);
 
       expect(row.fields.name.value).toBe("Bob");
       expect(row.fields.name.dot.version).toBe(5);
@@ -239,7 +239,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client2", version: 5 },
       };
 
-      applyOpToRow(row, op);
+      applyOperationToRow(row, op);
 
       // client2 > client1 lexicographically
       expect(row.fields.name.value).toBe("Bob");
@@ -257,7 +257,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 1 },
       };
 
-      expect(() => applyOpToRow(row, op)).toThrow("Set operation is missing field");
+      expect(() => applyOperationToRow(row, op)).toThrow("Set operation is missing field");
     });
 
     it("should reject set dominated by tombstone", () => {
@@ -277,7 +277,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 5 },
       };
 
-      applyOpToRow(row, op);
+      applyOperationToRow(row, op);
 
       expect(row.fields.name).toBeUndefined();
     });
@@ -299,7 +299,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 6 },
       };
 
-      applyOpToRow(row, op);
+      applyOperationToRow(row, op);
 
       expect(row.fields.name).toEqual({
         value: "Alice",
@@ -324,7 +324,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client2", version: 1 },
       };
 
-      applyOpToRow(row, op);
+      applyOperationToRow(row, op);
 
       expect(row.fields.name).toEqual({
         value: "Alice",
@@ -336,24 +336,26 @@ describe("applyOpToRow", () => {
       fc.assert(
         fc.property(
           generateORMapRow(),
-          fc.array(generateSetOp(), { minLength: 2, maxLength: 5 }),
-          (initialRow, ops) => {
+          fc.array(generateSetOperation(), { minLength: 2, maxLength: 5 }),
+          (initialRow, operations) => {
             // Ensure all ops target the same field
             const field = "testField";
-            const normalizedOps = ops.map((op) => ({ ...op, field }));
+            const normalizedOperations = operations.map((operation) => ({ ...operation, field }));
 
             // Apply in original order
             const row1: ORMapRow = JSON.parse(JSON.stringify(initialRow));
-            normalizedOps.forEach((op) => applyOpToRow(row1, op));
+            normalizedOperations.forEach((operation) => applyOperationToRow(row1, operation));
 
             // Apply in reverse order
             const row2: ORMapRow = JSON.parse(JSON.stringify(initialRow));
-            [...normalizedOps].reverse().forEach((op) => applyOpToRow(row2, op));
+            [...normalizedOperations].reverse().forEach((operation) =>
+              applyOperationToRow(row2, operation)
+            );
 
             // Both should converge to same result
             expect(row1.fields[field]).toEqual(row2.fields[field]);
-          }
-        )
+          },
+        ),
       );
     });
   });
@@ -361,7 +363,7 @@ describe("applyOpToRow", () => {
   describe("setRow operations", () => {
     it("should set multiple fields with same dot", () => {
       const row: ORMapRow = { fields: {} };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "setRow",
         table: "test",
         rowKey: "row1",
@@ -369,7 +371,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 1 },
       };
 
-      applyOpToRow(row, op);
+      applyOperationToRow(row, operation);
 
       expect(row.fields.name).toEqual({
         value: "Alice",
@@ -396,7 +398,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 3 },
       };
 
-      applyOpToRow(row, op);
+      applyOperationToRow(row, op);
 
       // name stays Bob (version 5 > 3)
       expect(row.fields.name.value).toBe("Bob");
@@ -420,7 +422,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 5 },
       };
 
-      applyOpToRow(row, op);
+      applyOperationToRow(row, op);
 
       expect(Object.keys(row.fields)).toHaveLength(0);
     });
@@ -429,22 +431,22 @@ describe("applyOpToRow", () => {
       fc.assert(
         fc.property(
           generateORMapRow(),
-          generateSetRowOp(),
-          generateSetRowOp(),
+          generateSetRowOperation(),
+          generateSetRowOperation(),
           (initialRow, op1, op2) => {
             // Apply ops in both orders
             const row1: ORMapRow = JSON.parse(JSON.stringify(initialRow));
-            applyOpToRow(row1, op1);
-            applyOpToRow(row1, op2);
+            applyOperationToRow(row1, op1);
+            applyOperationToRow(row1, op2);
 
             const row2: ORMapRow = JSON.parse(JSON.stringify(initialRow));
-            applyOpToRow(row2, op2);
-            applyOpToRow(row2, op1);
+            applyOperationToRow(row2, op2);
+            applyOperationToRow(row2, op1);
 
             // Should converge
             expect(row1).toEqual(row2);
-          }
-        )
+          },
+        ),
       );
     });
   });
@@ -465,7 +467,7 @@ describe("applyOpToRow", () => {
         context: { client1: 5, client2: 2 },
       };
 
-      applyOpToRow(row, op);
+      applyOperationToRow(row, op);
 
       // age is dominated (client2: 2 <= 2), name is not (client1: 3 > 5 is false, but 3 <= 5)
       expect(row.fields.name).toBeUndefined();
@@ -491,7 +493,7 @@ describe("applyOpToRow", () => {
         context: { client1: 5, client2: 2 },
       };
 
-      applyOpToRow(row, op);
+      applyOperationToRow(row, op);
 
       // name survives (6 > 5), age is removed (2 <= 2)
       expect(row.fields.name).toEqual({
@@ -516,7 +518,7 @@ describe("applyOpToRow", () => {
         context: { client1: 5 },
       };
 
-      applyOpToRow(row, op);
+      applyOperationToRow(row, op);
 
       // age survives (client3 not in context)
       expect(row.fields.name).toBeUndefined();
@@ -529,8 +531,8 @@ describe("applyOpToRow", () => {
     it("property: tombstone dominates all earlier writes from observed clients", () => {
       fc.assert(
         fc.property(
-          generateRemoveOp(),
-          fc.array(generateSetOp(), { minLength: 1, maxLength: 5 }),
+          generateRemoveOperation(),
+          fc.array(generateSetOperation(), { minLength: 1, maxLength: 5 }),
           (removeOp, setOps) => {
             const row: ORMapRow = { fields: {} };
 
@@ -547,8 +549,8 @@ describe("applyOpToRow", () => {
               return op;
             });
 
-            dominatedSets.forEach((op) => applyOpToRow(row, op));
-            applyOpToRow(row, removeOp);
+            dominatedSets.forEach((op) => applyOperationToRow(row, op));
+            applyOperationToRow(row, removeOp);
 
             // All fields from clients in context with version <= context should be gone
             Object.values(row.fields).forEach((field) => {
@@ -557,8 +559,8 @@ describe("applyOpToRow", () => {
                 expect(field.dot.version).toBeGreaterThan(contextVersion);
               }
             });
-          }
-        )
+          },
+        ),
       );
     });
 
@@ -566,33 +568,33 @@ describe("applyOpToRow", () => {
       fc.assert(
         fc.property(
           generateORMapRow(),
-          generateRemoveOp(),
-          generateSetOp(),
+          generateRemoveOperation(),
+          generateSetOperation(),
           (initialRow, removeOp, setOp) => {
             const row: ORMapRow = JSON.parse(JSON.stringify(initialRow));
 
             // Apply remove
-            applyOpToRow(row, removeOp);
+            applyOperationToRow(row, removeOp);
 
             // Check the FINAL merged context after remove operation
             const finalContext = row.tombstone?.context ?? {};
             const clientId = setOp.dot.clientId;
             const contextVersion = finalContext[clientId] ?? 0;
-            
+
             // Create a set with version higher than the merged context
             const resurrectOp: CRDTOperation = {
               ...setOp,
               dot: { clientId, version: contextVersion + 1 },
             };
 
-            applyOpToRow(row, resurrectOp);
+            applyOperationToRow(row, resurrectOp);
 
             // Field should exist because version is higher than context
             if (resurrectOp.type === "set" && resurrectOp.field) {
               expect(row.fields[resurrectOp.field]).toBeDefined();
             }
-          }
-        )
+          },
+        ),
       );
     });
   });
@@ -602,13 +604,13 @@ describe("applyOpToRow", () => {
       fc.assert(
         fc.property(
           generateORMapRow(),
-          fc.array(generateCRDTOp(), { minLength: 2, maxLength: 10 }),
+          fc.array(generateCRDTOperation(), { minLength: 2, maxLength: 10 }),
           (initialRow, ops) => {
             // Apply in original order
             const row1: ORMapRow = JSON.parse(JSON.stringify(initialRow));
             ops.forEach((op) => {
               try {
-                applyOpToRow(row1, op);
+                applyOperationToRow(row1, op);
               } catch (e) {
                 // Ignore errors from missing fields in set ops
               }
@@ -619,7 +621,7 @@ describe("applyOpToRow", () => {
             const shuffled = [...ops].sort(() => Math.random() - 0.5);
             shuffled.forEach((op) => {
               try {
-                applyOpToRow(row2, op);
+                applyOperationToRow(row2, op);
               } catch (e) {
                 // Ignore errors from missing fields in set ops
               }
@@ -627,8 +629,8 @@ describe("applyOpToRow", () => {
 
             // Should converge to same state
             expect(row1).toEqual(row2);
-          }
-        )
+          },
+        ),
       );
     });
   });

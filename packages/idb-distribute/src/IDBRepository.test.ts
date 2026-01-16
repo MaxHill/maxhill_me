@@ -157,7 +157,7 @@ describe("IDBRepository", () => {
       };
 
       const logTx = idbRepository.transaction("operations", "readwrite");
-      await idbRepository.logOperation(logTx, op);
+      await idbRepository.saveOperation(logTx, op);
       await txDone(logTx);
 
       const getTx = idbRepository.transaction("operations", "readonly");
@@ -178,7 +178,7 @@ describe("IDBRepository", () => {
       };
 
       const logTx = idbRepository.transaction("operations", "readwrite");
-      await idbRepository.logOperation(logTx, op);
+      await idbRepository.saveOperation(logTx, op);
       await txDone(logTx);
 
       const getTx = idbRepository.transaction("operations", "readonly");
@@ -199,7 +199,7 @@ describe("IDBRepository", () => {
       };
 
       const logTx = idbRepository.transaction("operations", "readwrite");
-      await idbRepository.logOperation(logTx, op);
+      await idbRepository.saveOperation(logTx, op);
       await txDone(logTx);
 
       const getTx = idbRepository.transaction("operations", "readonly");

@@ -70,6 +70,9 @@ export class PersistedLogicalClock {
     if (!tx.objectStoreNames.contains("clientState")) {
       throw new Error("Transaction is missing clientState objectStore");
     }
+    if (otherVersion < -1) {
+      throw new Error(`Cannot sync with invalid version: ${otherVersion}`);
+    }
 
     // Read current version
     const currentVersion = await this.idbRepository.getVersion(tx);
