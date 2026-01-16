@@ -1,6 +1,21 @@
 import { CRDTOperation, ORMapRow, ValidKey } from "./crdt";
 import { asyncCursorIterator, promisifyIDBRequest } from "./utils";
 
+// Stores
+const ROWS_STORE = "rows";
+const OPERATIONS_STORE = "operations";
+const CLIENT_STATE_STORE = "clientState";
+
+// Indexes
+const BY_TABLE_INDEX = "by-table";
+const BY_SYNCED_INDEX = "by-synced";
+const BY_TIMESTAMP_INDEX = "by-timestamp";
+
+// Client state keys
+const LAST_SEEN_SERVER_VERSION = "lastSeenServerVersion";
+const CLIENT_ID = "clientId";
+const LOGICAL_CLOCK = "logicalClock";
+
 export class IDBRepository {
   db: IDBDatabase | undefined;
 
@@ -18,27 +33,27 @@ export class IDBRepository {
         const db = (event.target as IDBOpenDBRequest).result;
 
         // Store individual rows
-        if (!db.objectStoreNames.contains("rows")) {
-          const rowStore = db.createObjectStore("rows", { keyPath: ["tableName", "rowKey"] });
-          rowStore.createIndex("by-table", "tableName", { unique: false });
+        if (!db.objectStoreNames.contains(ROWS_STORE)) {
+          const rowStore = db.createObjectStore(ROWS_STORE, { keyPath: ["tableName", "rowKey"] });
+          rowStore.createIndex(BY_TABLE_INDEX, "tableName", { unique: false });
         }
 
         // Store operations log
-        if (!db.objectStoreNames.contains("operations")) {
-          const opStore = db.createObjectStore("operations", {
+        if (!db.objectStoreNames.contains(OPERATIONS_STORE)) {
+          const opStore = db.createObjectStore(OPERATIONS_STORE, {
             keyPath: "id",
             autoIncrement: true,
           });
-          opStore.createIndex("by-synced", "synced", { unique: false });
-          opStore.createIndex("by-timestamp", "timestamp", { unique: false });
+          opStore.createIndex(BY_SYNCED_INDEX, "synced", { unique: false });
+          opStore.createIndex(BY_TIMESTAMP_INDEX, "timestamp", { unique: false });
         }
 
         // Store client state
-        if (!db.objectStoreNames.contains("clientState")) {
-          const s = db.createObjectStore("clientState");
+        if (!db.objectStoreNames.contains(CLIENT_STATE_STORE)) {
+          const s = db.createObjectStore(CLIENT_STATE_STORE);
           // clientId
-          s.put(-1, "logicalClock");
-          s.put(-1, "lastSeenServerVersion");
+          s.put(-1, LOGICAL_CLOCK);
+          s.put(-1, LAST_SEEN_SERVER_VERSION);
         }
       };
     });
@@ -58,8 +73,13 @@ export class IDBRepository {
     return this.db?.transaction(storeNames, mode, options);
   }
 
-  async saveRow(tx: IDBTransaction, tableName: string, rowKey: ValidKey, row: ORMapRow): Promise<void> {
-    if (!tx.objectStoreNames.contains("rows")) {
+  async saveRow(
+    tx: IDBTransaction,
+    tableName: string,
+    rowKey: ValidKey,
+    row: ORMapRow,
+  ): Promise<void> {
+    if (!tx.objectStoreNames.contains(ROWS_STORE)) {
       throw new Error("Transaction is missing rows objectStore");
     }
     if (tableName.length <= 0 || !tableName) {
@@ -68,7 +88,7 @@ export class IDBRepository {
     if (!row) throw new Error("Row must be set when saving a row");
     if (!row.fields) throw new Error("Row must have fields when saving a row");
 
-    const store = tx.objectStore("rows");
+    const store = tx.objectStore(ROWS_STORE);
 
     // TODO: Move business logic to CRDTDatabase
     // Only save if the row has data or a tombstone
@@ -84,7 +104,7 @@ export class IDBRepository {
   }
 
   async getRow(tx: IDBTransaction, tableName: string, rowKey: ValidKey): Promise<ORMapRow> {
-    if (!tx.objectStoreNames.contains("rows")) {
+    if (!tx.objectStoreNames.contains(ROWS_STORE)) {
       throw new Error("Transaction is missing rows objectStore");
     }
     if (tableName.length <= 0 || !tableName) {
@@ -92,7 +112,7 @@ export class IDBRepository {
     }
     if (!rowKey) throw new Error("RowKey must be set when getting Row");
 
-    const store = tx.objectStore("rows");
+    const store = tx.objectStore(ROWS_STORE);
     const result = await promisifyIDBRequest(store.get([
       tableName,
       rowKey as IDBValidKey, /*Casting is fine here since ValidKey is a subset of IDBValidKey*/
@@ -102,30 +122,36 @@ export class IDBRepository {
   }
 
   async logOperation(tx: IDBTransaction, op: CRDTOperation): Promise<void> {
-    if (!tx.objectStoreNames.contains("operations")) {
+    if (!tx.objectStoreNames.contains(OPERATIONS_STORE)) {
       throw new Error("Transaction is missing operations objectStore");
     }
     if (!op) {
       throw new Error("CRDTOperation must be set when saving row");
     }
 
-    const store = tx.objectStore("operations");
+    const store = tx.objectStore(OPERATIONS_STORE);
     await promisifyIDBRequest(store.add({
       op,
       timestamp: Date.now(),
+      // Note: Using 0/1 instead of false/true due to fake-indexeddb
+      // limitation with boolean IDBKeyRange
       synced: 0, // 0 = not synced, 1 = synced
     }));
     return;
   }
 
+  async saveOperationAsSynced(tx: IDBTransaction, operationId: string) {
+  }
+
   async getUnsyncedOperations(tx: IDBTransaction): Promise<CRDTOperation[]> {
-    const store = tx.objectStore("operations");
-    const index = store.index("by-synced");
-    
+    const store = tx.objectStore(OPERATIONS_STORE);
+    const index = store.index(BY_SYNCED_INDEX);
+
     const result: CRDTOperation[] = [];
-    // Note: Using 0/1 instead of false/true due to fake-indexeddb limitation with boolean IDBKeyRange
+    // Note: Using 0/1 instead of false/true due to fake-indexeddb
+    // limitation with boolean IDBKeyRange
     const cursorRequest = index.openCursor(IDBKeyRange.only(0)); // 0 = not synced
-    
+
     for await (const record of asyncCursorIterator<{ op: CRDTOperation }>(cursorRequest)) {
       result.push(record.op);
     }
@@ -136,36 +162,48 @@ export class IDBRepository {
   async getClientState(
     tx: IDBTransaction,
   ): Promise<{ clientId: string; lastSeenServerVersion: number }> {
-    if (!tx.objectStoreNames.contains("clientState")) {
+    if (!tx.objectStoreNames.contains(CLIENT_STATE_STORE)) {
       throw new Error("Transaction is missing clientState objectStore");
     }
-    const store = tx.objectStore("clientState");
+    const store = tx.objectStore(CLIENT_STATE_STORE);
 
-    const clientId = await promisifyIDBRequest(store.get("clientId"));
-    const lastSeenServerVersion = await promisifyIDBRequest(store.get("lastSeenServerVersion"));
+    const clientId = await promisifyIDBRequest(store.get(CLIENT_ID));
+    const lastSeenServerVersion = await promisifyIDBRequest(store.get(LAST_SEEN_SERVER_VERSION));
 
     return { clientId, lastSeenServerVersion };
   }
 
   async saveClientId(tx: IDBTransaction, clientId: string): Promise<void> {
-    if (!tx.objectStoreNames.contains("clientState")) {
+    if (!tx.objectStoreNames.contains(CLIENT_STATE_STORE)) {
       throw new Error("Transaction is missing clientState objectStore");
     }
     if (tx.mode !== "readwrite") {
       throw new Error("Transaction must be 'readwrite' to saveClientId");
     }
-    const store = tx.objectStore("clientState");
+    const store = tx.objectStore(CLIENT_STATE_STORE);
 
-    await promisifyIDBRequest(store.put(clientId, "clientId"));
+    await promisifyIDBRequest(store.put(clientId, CLIENT_ID));
+  }
+
+  async saveServerVersion(tx: IDBTransaction, newServerVersion: number): Promise<void> {
+    if (!tx.objectStoreNames.contains(CLIENT_STATE_STORE)) {
+      throw new Error("Transaction is missing clientState objectStore");
+    }
+    if (tx.mode !== "readwrite") {
+      throw new Error("Transaction must be 'readwrite' to saveClientId");
+    }
+    const store = tx.objectStore(CLIENT_STATE_STORE);
+
+    await promisifyIDBRequest(store.put(newServerVersion, LAST_SEEN_SERVER_VERSION));
   }
 
   async getVersion(tx: IDBTransaction): Promise<number> {
-    if (!tx.objectStoreNames.contains("clientState")) {
+    if (!tx.objectStoreNames.contains(CLIENT_STATE_STORE)) {
       throw new Error("Transaction is missing clientState objectStore");
     }
 
-    const store = tx.objectStore("clientState");
-    const version = await promisifyIDBRequest(store.get("logicalClock"));
+    const store = tx.objectStore(CLIENT_STATE_STORE);
+    const version = await promisifyIDBRequest(store.get(LOGICAL_CLOCK));
 
     if (version === undefined) {
       throw new Error("Version should never be undefined since it's initialized to -1");
@@ -177,14 +215,14 @@ export class IDBRepository {
   }
 
   async setVersion(tx: IDBTransaction, version: number): Promise<number> {
-    if (!tx.objectStoreNames.contains("clientState")) {
+    if (!tx.objectStoreNames.contains(CLIENT_STATE_STORE)) {
       throw new Error("Transaction is missing clientState objectStore");
     }
     if (tx.mode !== "readwrite") {
       throw new Error("Transaction must be 'readwrite' to saveClientId");
     }
-    const store = tx.objectStore("clientState");
-    await promisifyIDBRequest(store.put(version, "logicalClock"));
+    const store = tx.objectStore(CLIENT_STATE_STORE);
+    await promisifyIDBRequest(store.put(version, LOGICAL_CLOCK));
     return version;
   }
 }
