@@ -1,19 +1,28 @@
-import { IDBRepository } from "./IDBRepository";
-import { applyOpToRow, CRDTOperation, Dot, LWWField, ORMapRow, ValidKey } from "./crdt";
+import { CLIENT_STATE_STORE, IDBRepository, OPERATIONS_STORE, ROWS_STORE } from "./IDBRepository";
+import { applyOperationToRow, CRDTOperation, Dot, LWWField, ValidKey } from "./crdt";
 import { PersistedLogicalClock } from "./persistedLogicalClock";
+import { Sync } from "./sync";
 import { txDone } from "./utils";
 
 export class CRDTDatabase {
   private clientId: string;
   private idbRepository: IDBRepository;
   private logicalClock: PersistedLogicalClock;
+  private syncManager: Sync;
+  private syncRemote: string;
+  private dbName: string;
 
   constructor(
-    private dbName: string = "crdt-db",
-    generateId: () => string = crypto.randomUUID.bind(crypto),
+    dbName: string = "crdt-db",
+    syncRemote: string;
+    sync: Sync,
     clientPersistance = new IDBRepository(),
+    generateId: () => string = crypto.randomUUID.bind(crypto),
   ) {
+    this.dbName = dbName;
+    this.syncRemote = syncRemote;
     this.idbRepository = clientPersistance;
+    this.syncManager = sync;
     this.logicalClock = new PersistedLogicalClock(this.idbRepository);
     this.clientId = generateId();
   }
@@ -60,11 +69,11 @@ export class CRDTDatabase {
       dot,
     };
 
-    applyOpToRow(row, op);
+    applyOperationToRow(row, op);
 
     await Promise.all([
       this.idbRepository.saveRow(tx, table, rowKey, row),
-      this.idbRepository.logOperation(tx, op),
+      this.idbRepository.saveOperation(tx, op),
       txDone(tx),
     ]);
   }
@@ -85,11 +94,11 @@ export class CRDTDatabase {
       dot,
     };
 
-    applyOpToRow(row, op);
+    applyOperationToRow(row, op);
 
     await Promise.all([
       this.idbRepository.saveRow(tx, table, rowKey, row),
-      this.idbRepository.logOperation(tx, op),
+      this.idbRepository.saveOperation(tx, op),
       txDone(tx),
     ]);
   }
@@ -135,11 +144,11 @@ export class CRDTDatabase {
       context,
     };
 
-    applyOpToRow(row, op);
+    applyOperationToRow(row, op);
 
     await Promise.all([
       this.idbRepository.saveRow(tx, table, rowKey, row),
-      this.idbRepository.logOperation(tx, op),
+      this.idbRepository.saveOperation(tx, op),
       txDone(tx),
     ]);
   }
@@ -173,38 +182,16 @@ export class CRDTDatabase {
     });
   }
 
-  /**
-   * Apply remote operations (from sync)
-   */
-  private async applyRemoteOps(ops: CRDTOperation[]): Promise<void> {
-    // Group operations by row for efficiency
-    const opsByRow = new Map<string, CRDTOperation[]>();
-
-    for (const op of ops) {
-      const key = `${op.table}:${String(op.rowKey)}`;
-      if (!opsByRow.has(key)) {
-        opsByRow.set(key, []);
-      }
-      // TODO: We should add a Merge function to CRDT.ts and merge the ops here.
-      // The benefit would be that we could remove the nested loop
-      // when doing applyOpToRow
-      // Then we could do:
-      //    opsByRow.set(key, crdt.merge(opsByRow.get(key), op));
-      opsByRow.get(key)!.push(op);
-    }
-
-    const tx = this.idbRepository.transaction(["rows"], "readwrite");
-    for (const [_key, rowOps] of opsByRow) {
-      const firstOp = rowOps[0];
-      const row = await this.idbRepository.getRow(tx, firstOp.table, firstOp.rowKey);
-
-      for (const op of rowOps) {
-        applyOpToRow(row, op);
-      }
-
-      await this.idbRepository.saveRow(tx, firstOp.table, firstOp.rowKey, row);
-    }
+  async sync(): Promise<void> {
+    const tx = this.idbRepository.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE]);
+    const syncRequest = await this.syncManager.createSyncRequest(tx);
     await txDone(tx);
+
+    const response = await this.syncManager.sendSyncRequest(this.syncRemote, syncRequest);
+
+    const writeTx = this.idbRepository.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE], "readwrite");
+    await this.syncManager.handleSyncResponse(writeTx, this.logicalClock, response);
+    await txDone(writeTx);
   }
 
   async close(): Promise<void> {

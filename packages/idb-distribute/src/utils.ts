@@ -20,11 +20,18 @@ export async function promisifyIDBRequest<T>(req: IDBRequest<T>): Promise<T> {
  * @param tx - Transaction to use.
  * @returns Promise that can be awaited
  */
-export async function txDone(tx: IDBTransaction): Promise<null> {
+export async function txDone(tx: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve(null);
+    tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject("Transaction aborted");
+    tx.onabort = () =>
+      reject(
+        new Error(
+          `Transaction aborted. ` +
+            `Error: ${tx.error?.message || "unknown"}. ` +
+            `This usually indicates a constraint violation or concurrent modification.`,
+        ),
+      );
   });
 }
 
@@ -55,4 +62,29 @@ export function asyncCursorIterator<T>(
       );
     }
   })();
+}
+
+export function validateTransactionStores(
+  tx: IDBTransaction,
+  requiredStores: string[],
+  requiredMode?: IDBTransactionMode,
+): void {
+  const missing = requiredStores.filter((s) => !tx.objectStoreNames.contains(s));
+  if (missing.length > 0) {
+    throw new Error(
+      `Transaction missing required stores: ${missing.join(", ")}.\n` +
+        `Required: [${requiredStores.join(", ")}]\n` +
+        `Available: [${[...tx.objectStoreNames].join(", ")}]\n` +
+        `Create transaction with: repository.transaction([${requiredStores.join(", ")}], "${
+          requiredMode || "readonly"
+        }")`,
+    );
+  }
+
+  if (requiredMode && tx.mode !== requiredMode) {
+    throw new Error(
+      `Transaction mode is "${tx.mode}" but "${requiredMode}" required.\n` +
+        `This method modifies data and needs write access.`,
+    );
+  }
 }

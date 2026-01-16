@@ -1,9 +1,6 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
 import { PersistedLogicalClock } from "./persistedLogicalClock";
-import { type InternalDbSchema, openAppDb } from "./db";
-import type { IDBPDatabase } from "idb";
-import { CRDTDatabase } from "./crdtDatabase";
 import { promisifyIDBRequest, txDone } from "./utils";
 import { IDBRepository } from "./IDBRepository";
 
@@ -128,10 +125,8 @@ describe("PersistedLogicalClock", () => {
     const result1 = await logicalClock.sync(tx, -1);
     expect(result1).toBe(-1);
 
-    // Syncing with a value less than -1 still results in max(-1, -2) = -1
-    // The assertion protects against implementation bugs, not invalid inputs
-    const result2 = await logicalClock.sync(tx, -2);
-    expect(result2).toBe(-1); // max(-1, -2) = -1, which is valid
+    // Any other should throw
+    await expect(logicalClock.sync(tx, -2)).rejects.toThrow();
 
     await txDone(tx);
   });

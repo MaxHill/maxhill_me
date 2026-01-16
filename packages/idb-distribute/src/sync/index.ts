@@ -1,6 +1,7 @@
-import { applyOpToRow, CRDTOperation } from "../crdt";
-import { IDBRepository } from "../IDBRepository";
+import { applyOperationToRow, CRDTOperation, Dot, ORMapRow } from "../crdt";
+import { CLIENT_STATE_STORE, IDBRepository, OPERATIONS_STORE, ROWS_STORE } from "../IDBRepository";
 import { PersistedLogicalClock } from "../persistedLogicalClock";
+import { validateTransactionStores } from "../utils";
 
 export interface SyncRequest {
   clientId: string;
@@ -54,7 +55,7 @@ export interface SyncResponse {
    * Confirms which local operations were successfully persisted. This prevents
    * re-sending operations that have already been committed to the server.
    */
-  syncedOperations: string[];
+  syncedOperations: Dot[];
 }
 
 export class Sync {
@@ -64,12 +65,31 @@ export class Sync {
     this.idbRepository = idbRepository;
   }
 
+  /**
+   * Creates a sync request containing local changes to send to the server.
+   *
+   * Transaction requirements:
+   * - Stores: [CLIENT_STATE_STORE, OPERATIONS_STORE]
+   * - Mode: "readonly" (queries client state and unsynced operations)
+   *
+   * Example:
+   * ```typescript
+   * const tx = repo.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE], "readonly");
+   * const request = await sync.createSyncRequest(tx);
+   * await txDone(tx);
+   * *
+   * @param tx - Transaction with required stores (see above)
+   * @returns Sync request ready to send to server
+   * @throws {Error} If transaction is missing required stores
+   */
   async createSyncRequest(tx: IDBTransaction): Promise<SyncRequest> {
+    validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE]);
+
     const { clientId, lastSeenServerVersion } = await this.idbRepository
       .getClientState(tx);
 
     // Extract operations
-    let operations = await this.idbRepository.getUnsyncedOperations(tx as any);
+    let operations = await this.idbRepository.getUnsyncedOperations(tx);
     operations = operations.filter((e) => e.dot.clientId === clientId);
     // create integrity hash
     const requestHash = await this.createRequestHash(clientId, lastSeenServerVersion, operations);
@@ -97,15 +117,23 @@ export class Sync {
       });
 
       if (!response.ok) {
-        throw new Error(`Sync request encountered an error: ${response.status}`);
+        const debugInfo = { request, response };
+        new Error(`Sync failed: ${JSON.stringify(debugInfo)}`);
       }
       let syncResponse: SyncResponse = await response.json();
 
       return syncResponse;
-    } catch (error) {
-      console.error("Sync request failed", error);
-      // TODO: This is not good, we should handle the error
-      throw error;
+    } catch (error: any) {
+      if (!error || !error.message) {
+        throw new Error(`Unnown error occured during sync: ${error}`);
+      }
+      if (error instanceof TypeError || error.message.includes("fetch")) {
+        // Network error - potentially retryable
+        throw new Error(`Sync network failure: ${error.message}`, { cause: error });
+      } else {
+        // Other error - likely non-retryable
+        throw new Error(`Sync failed: ${error.message}`, { cause: error });
+      }
     }
   }
 
@@ -114,66 +142,106 @@ export class Sync {
     logicalClock: PersistedLogicalClock,
     response: SyncResponse,
   ): Promise<void> {
-    // Validate response hash
-    const localHash = await this.createResponseHash(response);
-    if (localHash !== response.responseHash) {
-      console.error("Sync response failed integrity check", localHash, response.responseHash);
+    validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE], "readwrite");
 
-      return Promise.reject("Sync response failed integrity check");
-    }
+    await this.validateResponseHash(response);
+    await this.validateServerResponseOrder(tx, response);
+
     // Save operations and apply operations to materialized view
-    this.applyRemoteOps(tx, response.operations);
+    this.applyRemoteOperations(tx, response.operations);
 
     // update lastSeenServerVersion to latestServerVersion from response
     this.idbRepository.saveServerVersion(tx, response.latestServerVersion);
 
     // update synced field on the synced local entries
-    for (const id of response.syncedOperations) {
-      // TODO: mark operation as synced.
+    const operationsPromises: Promise<void>[] = [];
+    for (const operationId of response.syncedOperations) {
+      operationsPromises.push(this.idbRepository.saveOperationAsSynced(tx, operationId));
+    }
+    await Promise.all(operationsPromises);
+
+    // We only sync the clocks if we get any new operations from the server
+    // otherwise it would be unnesesary work where we'd sync the clock with -1
+    // and keep the current value
+    if (response.operations.length) {
+      const highestVersion = response.operations.reduce((prev, curr) => {
+        return Math.max(prev, curr.dot.version);
+      }, -1);
+      await logicalClock.sync(tx, highestVersion);
     }
 
-    // Sync clocks
-    const highestVersion = response.operations.reduce((prev, curr) => {
-      return Math.max(prev, curr.dot.version);
-    }, -1);
-    await logicalClock.sync(tx, highestVersion);
-    return Promise.resolve();
+    return;
   }
 
   /**
    * Apply remote operations (from sync)
    */
-  private async applyRemoteOps(tx: IDBTransaction, ops: CRDTOperation[]): Promise<void> {
+  private async applyRemoteOperations(
+    tx: IDBTransaction,
+    operations: CRDTOperation[],
+  ): Promise<void> {
     // Group operations by row for efficiency
-    const opsByRow = new Map<string, CRDTOperation[]>();
+    const operationsByRow = new Map<string, CRDTOperation[]>();
 
-    for (const op of ops) {
-      const key = `${op.table}:${String(op.rowKey)}`;
-      if (!opsByRow.has(key)) {
-        opsByRow.set(key, []);
+    for (const operation of operations) {
+      const key = `${operation.table}:${String(operation.rowKey)}`;
+      if (!operationsByRow.has(key)) {
+        operationsByRow.set(key, []);
       }
-      // TODO: We should add a Merge function to CRDT.ts and merge the ops here.
-      // The benefit would be that we could remove the nested loop
-      // when doing applyOpToRow
-      // Then we could do:
-      //    opsByRow.set(key, crdt.merge(opsByRow.get(key), op));
-      opsByRow.get(key)!.push(op);
-
-      // TODO: This is a performance problem, we should do
-      // 1 promise.all for all operations and row saving
-      await this.idbRepository.logOperation(tx, op);
+      // TODO: IMPROVEMENT OPPORTUNITY (not benchmarked yet):
+      // We could implement a merge function for the methods, that way we
+      // could merge each operation directly (cpu bound) and end up with
+      // a Map<string, CRDTOperation> instead of the curent
+      // Map<string, CRDTOperation[]>. The performance benfit of applying would
+      // be a minor increase for typical workload but it would be a way to
+      // pre-garbage collect the crdtOperations.
+      //
+      // To implement, add  the function:
+      // crdt.mergeOperations(operationA: CRDTOperation, operationB: CRDTOperation): CRDTOperation
+      operationsByRow.get(key)!.push(operation);
     }
 
-    for (const [_key, rowOps] of opsByRow) {
-      const firstOp = rowOps[0];
-      const row = await this.idbRepository.getRow(tx, firstOp.table, firstOp.rowKey);
+    const saveOperationsPromise = this.idbRepository.batchSaveOperations(tx, operations);
+    const savePromises = this.batchUpdateRows(tx, operationsByRow);
 
-      for (const op of rowOps) {
-        applyOpToRow(row, op);
+    await Promise.all([saveOperationsPromise, savePromises]);
+  }
+
+  /**
+   * Batch apply operations to rows
+   * @param {IDBTransaction} tx - IDBTransaction
+   * @param {Map} operationsByRow - Map of the rowId, operations to apply
+   * @returns {Promise<void>[]} - A list of promises that can be awaited with promise.all
+   */
+  private async batchUpdateRows(
+    tx: IDBTransaction,
+    operationsByRow: Map<string, CRDTOperation[]>,
+  ): Promise<void> {
+    const rowFetchPromises = Array.from(operationsByRow.entries()).map(
+      async ([key, rowOperations]) => {
+        const firstOperation = rowOperations[0];
+        const row = await this.idbRepository.getRow(
+          tx,
+          firstOperation.table,
+          firstOperation.rowKey,
+        );
+        return { key, row, rowOperations: rowOperations, firstOp: firstOperation };
+      },
+    );
+
+    const rowsData = await Promise.all(rowFetchPromises);
+    for (const { row, rowOperations } of rowsData) {
+      for (const operation of rowOperations) {
+        applyOperationToRow(row, operation);
       }
-
-      await this.idbRepository.saveRow(tx, firstOp.table, firstOp.rowKey, row);
     }
+
+    const savePromises = rowsData.map(({ firstOp, row }) =>
+      this.idbRepository.saveRow(tx, firstOp.table, firstOp.rowKey, row)
+    );
+
+    await Promise.all(savePromises);
+    return;
   }
 
   //  ------------------------------------------------------------------------
@@ -192,13 +260,27 @@ export class Sync {
     return this.sha256Array([
       clientId,
       String(clientLastSeenVersion),
-      ...operations.flatMap((op: CRDTOperation) => [
-        op.type,
-        op.table,
-        String(op.rowKey),
-        op.dot.clientId,
-        String(op.dot.version),
-      ]),
+      ...operations.flatMap((operation: CRDTOperation) => {
+        const base = [
+          operation.type,
+          operation.table,
+          String(operation.rowKey),
+          operation.dot.clientId,
+          String(operation.dot.version),
+        ];
+
+        if (operation.type === "set") {
+          return [...base, operation.field || "", JSON.stringify(operation.value)];
+        } else if (operation.type === "setRow") {
+          return [...base, JSON.stringify(operation.value)];
+        } else if (operation.type === "remove") {
+          return [...base, JSON.stringify(operation.context)];
+        }
+
+        throw new Error(
+          `Uknon operation type (${operation["type"]})detected when creating request hash`,
+        );
+      }),
     ]);
   }
 
@@ -208,16 +290,45 @@ export class Sync {
     return this.sha256Array([
       String(response.baseServerVersion),
       String(response.latestServerVersion),
-      ...response.operations.flatMap((op: CRDTOperation) => [
-        op.type,
-        op.table,
-        String(op.rowKey),
-        op.dot.clientId,
-        String(op.dot.version),
+      ...response.operations.flatMap((operation: CRDTOperation) => [
+        operation.type,
+        operation.table,
+        String(operation.rowKey),
+        operation.dot.clientId,
+        String(operation.dot.version),
       ]),
-      ...response.syncedOperations.flatMap((id) => id),
+      ...response.syncedOperations.flatMap((dot) => [dot.clientId, String(dot.version)]),
     ]);
   }
+
+  private async validateResponseHash(response: SyncResponse): Promise<SyncResponse> {
+    const localHash = await this.createResponseHash(response);
+    if (localHash !== response.responseHash) {
+      const debugInfo = {
+        expected: response.responseHash,
+        actual: localHash,
+        baseServerVersion: response.baseServerVersion,
+        latestServerVersion: response.latestServerVersion,
+        operationCount: response.operations.length,
+        syncedOperationCount: response.syncedOperations.length,
+      };
+      console.error("Sync response failed integrity check", debugInfo);
+      return Promise.reject(
+        new Error(`Sync response failed integrity check: ${JSON.stringify(debugInfo)}`),
+      );
+    }
+    return response;
+  }
+
+  private async validateServerResponseOrder(tx: IDBTransaction, response: SyncResponse) {
+    const { lastSeenServerVersion } = await this.idbRepository.getClientState(tx);
+    if (lastSeenServerVersion !== response.baseServerVersion) {
+      throw new Error(
+        `Sync response out of order: expected base ${lastSeenServerVersion}, got ${response.baseServerVersion}`,
+      );
+    }
+  }
+
   /**
    * Compute SHA-256 hash from an array of strings.
    * Used for integrity verification of sync requests and responses.
