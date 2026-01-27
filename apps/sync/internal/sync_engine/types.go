@@ -2,31 +2,38 @@ package sync_engine
 
 import (
 	"context"
-	"encoding/json"
 )
 
-type WALOperation struct {
-	Key           string          `json:"key"`
-	Table         string          `json:"table"`
-	Operation     string          `json:"operation"` // "put" | "del"
-	Value         json.RawMessage `json:"value,omitempty"`
-	ValueKey      json.RawMessage `json:"valueKey,omitempty"`
-	Version       int64           `json:"version"` // Client's logical timestamp
-	ClientID      string          `json:"clientId"`
-	ServerVersion int64           `json:"serverVersion"` // Auto-incrementing sync marker
+type Dot struct {
+	ClientId string `json:"clientId"`
+	Version  int64  `json:"version"`
+}
+
+type CRDTOperation struct {
+	Type    string         `json:"type"`
+	Table   string         `json:"table"`
+	RowKey  string         `json:"rowKey"`
+	Field   *string        `json:"field,omitempty"`
+	Value   any            `json:"value,omitempty"` // Only for set and setRow operations
+	Context map[string]int `json:"context"`         // Only for remove operation
+	Dot     Dot            `json:"Dot"`
 }
 
 type SyncRequest struct {
-	ClientID              string         `json:"clientId"`
-	Operations            []WALOperation `json:"operations"`
-	ClientLastSeenVersion int64          `json:"clientLastSeenVersion"` // Last ServerVersion client saw
-	RequestHash           string         `json:"requestHash"`
+	ClientID              string          `json:"clientId"`
+	Operations            []CRDTOperation `json:"operations"`
+	LastSeenServerVersion int64           `json:"lastSeenServerVersion"` // Last ServerVersion client saw
+	RequestHash           string          `json:"requestHash"`
 }
 
 type SyncResponse struct {
-	Operations        []WALOperation `json:"operations"`
-	FromServerVersion int64          `json:"fromServerVersion"`
-	ResponseHash      string         `json:"responseHash"`
+	BaseServerVersion   int64 `json:"baseServerVersion"`
+	LatestServerVersion int64 `json:"latestServerVersion"`
+
+	Operations       []CRDTOperation `json:"operations"`
+	SyncedOperations []Dot           `json:"syncedOperations"`
+
+	ResponseHash string `json:"responseHash"`
 }
 
 type SyncServiceInterface interface {

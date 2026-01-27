@@ -7,14 +7,14 @@ export type Dot = {
   version: number;
 };
 
-export type ValidKey = string | number | symbol;
+export type ValidKey = string;
 
 export type CRDTOperation =
   | {
     type: "set";
     table: string;
-    rowKey: ValidKey;
-    field: string;
+    rowKey: string;
+    field?: string;
     value: any;
     dot: Dot;
   }

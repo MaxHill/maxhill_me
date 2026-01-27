@@ -62,9 +62,9 @@ func (server Server) HandleSync(writer http.ResponseWriter, request *http.Reques
 		writer.Write([]byte(`{"error": "ClientID must be a valid uuid"}`))
 		return
 	}
-	if syncReq.ClientLastSeenVersion < -1 {
+	if syncReq.LastSeenServerVersion < -1 {
 		writer.WriteHeader(http.StatusBadRequest)
-		writer.Write([]byte(`{"error": "ClientLastSeenVersion cannot be less than -1"}`))
+		writer.Write([]byte(`{"error": "LastSeenServerVersion cannot be less than -1"}`))
 		return
 	}
 	if syncReq.Operations == nil {

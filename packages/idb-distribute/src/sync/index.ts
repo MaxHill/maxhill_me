@@ -251,37 +251,40 @@ export class Sync {
   //  has a hash that is validated both on the server and client, this
   //  is not done for security reasons (even if it might help). Rather it's
   //  done to ensure correctness.
+  private async createRequestHash(req: SyncRequest): Promise<string> {
+    const parts: string[] = [
+      req.clientId,
+      String(req.lastSeenServerVersion),
+    ];
 
-  private async createRequestHash(
-    clientId: string,
-    clientLastSeenVersion: number,
-    operations: CRDTOperation[],
-  ) {
-    return this.sha256Array([
-      clientId,
-      String(clientLastSeenVersion),
-      ...operations.flatMap((operation: CRDTOperation) => {
-        const base = [
-          operation.type,
-          operation.table,
-          String(operation.rowKey),
-          operation.dot.clientId,
-          String(operation.dot.version),
-        ];
+    for (const op of req.operations) {
+      let value = "null";
+      let valueKey = "null";
 
-        if (operation.type === "set") {
-          return [...base, operation.field || "", JSON.stringify(operation.value)];
-        } else if (operation.type === "setRow") {
-          return [...base, JSON.stringify(operation.value)];
-        } else if (operation.type === "remove") {
-          return [...base, JSON.stringify(operation.context)];
-        }
+      if (op.type === "set") {
+        value = JSON.stringify(op.value);
+        valueKey = op.field ?? "null";
+      }
 
-        throw new Error(
-          `Uknon operation type (${operation["type"]})detected when creating request hash`,
-        );
-      }),
-    ]);
+      if (op.type === "setRow") {
+        value = JSON.stringify(op.value);
+      }
+
+      // op.type === "remove"
+      // value & valueKey stay "null" (matches Go)
+
+      parts.push(
+        String(op.rowKey),
+        op.table,
+        op.type,
+        value,
+        valueKey,
+        String(op.dot.version),
+        op.dot.clientId,
+      );
+    }
+
+    return this.sha256Array(parts);
   }
 
   private async createResponseHash(
