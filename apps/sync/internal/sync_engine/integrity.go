@@ -57,7 +57,7 @@ func HashSyncRequest(req SyncRequest) (string, error) {
 			value,
 			valueKey,
 			fmt.Sprintf("%d", op.Dot.Version),
-			op.Dot.ClientId,
+			op.Dot.ClientID,
 		)
 	}
 
@@ -79,7 +79,7 @@ func HashSyncResponse(resp SyncResponse) (string, error) {
 			op.Type,
 			op.Table,
 			op.RowKey,
-			op.Dot.ClientId,
+			op.Dot.ClientID,
 			fmt.Sprintf("%d", op.Dot.Version),
 		)
 	}
@@ -87,7 +87,7 @@ func HashSyncResponse(resp SyncResponse) (string, error) {
 	// Synced operations
 	for _, dot := range resp.SyncedOperations {
 		parts = append(parts,
-			dot.ClientId,
+			dot.ClientID,
 			fmt.Sprintf("%d", dot.Version),
 		)
 	}

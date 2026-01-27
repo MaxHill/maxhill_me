@@ -1,6 +1,6 @@
-import { IDBRepository } from "./IDBRepository";
-import { promisifyIDBRequest, txDone } from "./utils";
-import { CRDTOperation, ORMapRow } from "./crdt";
+import { IDBRepository } from "./IDBRepository.ts";
+import { promisifyIDBRequest, txDone } from "./utils.ts";
+import { CRDTOperation, ORMapRow } from "./crdt.ts";
 import "fake-indexeddb/auto";
 
 describe("IDBRepository", () => {

@@ -1,8 +1,8 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
-import { PersistedLogicalClock } from "./persistedLogicalClock";
-import { promisifyIDBRequest, txDone } from "./utils";
-import { IDBRepository } from "./IDBRepository";
+import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
+import { promisifyIDBRequest, txDone } from "./utils.ts";
+import { IDBRepository } from "./IDBRepository.ts";
 
 describe("PersistedLogicalClock", () => {
   let idbRepository: IDBRepository;

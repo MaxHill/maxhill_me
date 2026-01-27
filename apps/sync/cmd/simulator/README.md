@@ -12,7 +12,7 @@ type Client struct {
     ChanceSync int
 
     // State
-    WalEntries WALEntries[]
+    CRDTOperations []CRDTOperation
     ClockValue int
     ActiveSyncRequest sync_engine.SyncRequest
     ActiveSyncResponse sync_engine.SyncResponse
@@ -39,12 +39,12 @@ type TickRequest struct {
 // "tick_response" and payload will be this struct
 type TickResponse struct {
     NewSyncRequest sync_engine.SyncRequest
-    WalEntries sync_engine.SyncRequest
+    CRDTOperations []sync_engine.CRDTOperation
     ClockValue int
 }
 
 // Generate a new client based on seed
-func StartClient(file string, seed string) (*Client, error) {
+func StartClient(file string, seed string) (*Client, error)
 
 // Generates a new TickRequest sends it to the client
 // Parses the response message and marshalls it into a TickResponse

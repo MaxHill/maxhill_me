@@ -41,7 +41,7 @@ func (sync_service *SyncService) Sync(ctx context.Context, req SyncRequest) (*Sy
 	// Hash and validate the request
 	err := ValidateSyncRequestIntegrity(req)
 	if err != nil {
-		return nil, fmt.Errorf("Request and response hash did not match for request: %w", req)
+		return nil, fmt.Errorf("request integrity check failed for client %s: %w", req.ClientID, err)
 	}
 
 	tx, err := sync_service.db.Begin()

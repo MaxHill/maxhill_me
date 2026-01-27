@@ -37,11 +37,11 @@ type SyncDeliveryRequest = {
 };
 
 type StateResponse = {
-  walOperations: any[];
+  crdtOperations: any[];
   clockValue: number;
   syncRequest?: any;
   actionTimeMs?: number;
-  walReceiveTimeMs?: number;
+  operationsReceiveTimeMs?: number;
   syncPrepTimeMs?: number;
 };
 
@@ -107,13 +107,13 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
 
   const actionTimeMs = performance.now() - actionStart;
 
-  // Get current WAL operations
+  // Get current CRDT operations
   const tx = client.db.transaction("_wal") as unknown as IDBPTransaction<
     InternalDbSchema,
     ["_wal", ...[]],
     "readwrite" | "readonly"
   >;
-  const walOperations = await client.wal.getOperations(0, tx);
+  const crdtOperations = await client.wal.getOperations(0, tx);
   await tx.done;
 
   // Get clock value directly from IndexedDB
@@ -133,7 +133,7 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
   }
 
   return { 
-    walOperations, 
+    crdtOperations, 
     clockValue, 
     syncRequest,
     actionTimeMs,
@@ -147,7 +147,7 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
 async function handleSyncDelivery(
   request: SyncDeliveryRequest,
 ): Promise<StateResponse> {
-  const walReceiveStart = performance.now();
+  const operationsReceiveStart = performance.now();
 
   // Apply sync response to client using realDb (non-proxied)
   await applySyncResponse(
@@ -157,16 +157,16 @@ async function handleSyncDelivery(
     request.syncResponse,
   );
 
-  const walReceiveTimeMs = performance.now() - walReceiveStart;
+  const operationsReceiveTimeMs = performance.now() - operationsReceiveStart;
 
-  // Get updated WAL operations
-  const walTx = client.db.transaction("_wal") as unknown as IDBPTransaction<
+  // Get updated CRDT operations
+  const crdtTx = client.db.transaction("_wal") as unknown as IDBPTransaction<
     InternalDbSchema,
     ["_wal", ...[]],
     "readwrite" | "readonly"
   >;
-  const walOperations = await client.wal.getOperations(0, walTx);
-  await walTx.done;
+  const crdtOperations = await client.wal.getOperations(0, crdtTx);
+  await crdtTx.done;
 
   // Get updated clock value
   const clockTx = client.db.transaction(["_logicalClock"], "readonly");
@@ -175,10 +175,10 @@ async function handleSyncDelivery(
   await clockTx.done;
 
   return { 
-    walOperations, 
+    crdtOperations, 
     clockValue, 
     syncRequest: undefined,
-    walReceiveTimeMs
+    operationsReceiveTimeMs
   };
 }
 

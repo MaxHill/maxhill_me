@@ -1,8 +1,8 @@
-import { CLIENT_STATE_STORE, IDBRepository, OPERATIONS_STORE, ROWS_STORE } from "./IDBRepository";
-import { applyOperationToRow, CRDTOperation, Dot, LWWField, ValidKey } from "./crdt";
-import { PersistedLogicalClock } from "./persistedLogicalClock";
-import { Sync } from "./sync";
-import { txDone } from "./utils";
+import { CLIENT_STATE_STORE, IDBRepository, OPERATIONS_STORE, ROWS_STORE } from "./IDBRepository.ts";
+import { applyOperationToRow, CRDTOperation, Dot, LWWField, ValidKey } from "./crdt.ts";
+import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
+import { Sync } from "./sync/index.ts";
+import { txDone } from "./utils.ts";
 
 export class CRDTDatabase {
   private clientId: string;
@@ -14,7 +14,7 @@ export class CRDTDatabase {
 
   constructor(
     dbName: string = "crdt-db",
-    syncRemote: string;
+    syncRemote: string,
     sync: Sync,
     clientPersistance = new IDBRepository(),
     generateId: () => string = crypto.randomUUID.bind(crypto),
@@ -189,7 +189,11 @@ export class CRDTDatabase {
 
     const response = await this.syncManager.sendSyncRequest(this.syncRemote, syncRequest);
 
-    const writeTx = this.idbRepository.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE], "readwrite");
+    const writeTx = this.idbRepository.transaction([
+      CLIENT_STATE_STORE,
+      OPERATIONS_STORE,
+      ROWS_STORE,
+    ], "readwrite");
     await this.syncManager.handleSyncResponse(writeTx, this.logicalClock, response);
     await txDone(writeTx);
   }
