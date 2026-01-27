@@ -32,8 +32,8 @@ type Client struct {
 	ChanceSync       float64
 
 	// Current state snapshot (updated after each tick)
-	WalOperations []sync_engine.WALOperation
-	ClockValue int64
+	CRDTOperations []sync_engine.CRDTOperation `json:"crdtOperations"`
+	ClockValue     int64
 }
 
 type ActionRequest struct {
@@ -52,12 +52,12 @@ type SyncDeliveryRequest struct {
 }
 
 type StateResponse struct {
-	WalOperations       []sync_engine.WALOperation   `json:"walOperations"`
-	ClockValue       int64                    `json:"clockValue"`
-	SyncRequest      *sync_engine.SyncRequest `json:"syncRequest,omitempty"`
-	ActionTimeMs     float64                  `json:"actionTimeMs,omitempty"`
-	WalReceiveTimeMs float64                  `json:"walReceiveTimeMs,omitempty"`
-	SyncPrepTimeMs   float64                  `json:"syncPrepTimeMs,omitempty"`
+	CRDTOperations          []sync_engine.CRDTOperation `json:"crdtOperations"`
+	ClockValue              int64                       `json:"clockValue"`
+	SyncRequest             *sync_engine.SyncRequest    `json:"syncRequest,omitempty"`
+	ActionTimeMs            float64                     `json:"actionTimeMs,omitempty"`
+	OperationsReceiveTimeMs float64                     `json:"operationsReceiveTimeMs,omitempty"`
+	SyncPrepTimeMs          float64                     `json:"syncPrepTimeMs,omitempty"`
 }
 
 type Message struct {
@@ -194,7 +194,7 @@ func (client *Client) call(messageType string, payload any, response any) error 
 }
 
 func (client *Client) updateState(response *StateResponse) {
-	client.WalOperations = response.WalOperations
+	client.CRDTOperations = response.CRDTOperations
 	client.ClockValue = response.ClockValue
 }
 

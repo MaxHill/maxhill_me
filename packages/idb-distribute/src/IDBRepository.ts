@@ -1,5 +1,5 @@
-import { CRDTOperation, Dot, ORMapRow, ValidKey } from "./crdt";
-import { asyncCursorIterator, promisifyIDBRequest, validateTransactionStores } from "./utils";
+import { CRDTOperation, Dot, ORMapRow, ValidKey } from "./crdt.ts";
+import { asyncCursorIterator, promisifyIDBRequest, validateTransactionStores } from "./utils.ts";
 
 const SYNCED_STATUS = {
   NOT_SYNCED: 0,

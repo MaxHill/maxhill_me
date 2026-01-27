@@ -1,7 +1,7 @@
-import { applyOperationToRow, CRDTOperation, Dot, ORMapRow } from "../crdt";
-import { CLIENT_STATE_STORE, IDBRepository, OPERATIONS_STORE, ROWS_STORE } from "../IDBRepository";
-import { PersistedLogicalClock } from "../persistedLogicalClock";
-import { validateTransactionStores } from "../utils";
+import { applyOperationToRow, CRDTOperation, Dot, ORMapRow } from "../crdt.ts";
+import { CLIENT_STATE_STORE, IDBRepository, OPERATIONS_STORE, ROWS_STORE } from "../IDBRepository.ts";
+import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
+import { validateTransactionStores } from "../utils.ts";
 
 export interface SyncRequest {
   clientId: string;

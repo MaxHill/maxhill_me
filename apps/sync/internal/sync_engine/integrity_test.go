@@ -1,6 +1,7 @@
 package sync_engine
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -32,8 +33,8 @@ func TestHashSyncRequest(t *testing.T) {
 						Table:  "users",
 						RowKey: "42",
 						Field:  stringPtr("name"),
-						Value:  "Alice",
-						Dot:    Dot{ClientId: "test-client", Version: 1},
+						Value:  json.RawMessage(`"Alice"`),
+						Dot:    Dot{ClientID: "test-client", Version: 1},
 					},
 				},
 			},
@@ -50,15 +51,15 @@ func TestHashSyncRequest(t *testing.T) {
 						Table:  "posts",
 						RowKey: "p1",
 						Field:  stringPtr("title"),
-						Value:  "Hello",
-						Dot:    Dot{ClientId: "client-abc", Version: 6},
+						Value:  json.RawMessage(`"Hello"`),
+						Dot:    Dot{ClientID: "client-abc", Version: 6},
 					},
 					{
 						Type:   "remove",
 						Table:  "posts",
 						RowKey: "p2",
-						Dot:    Dot{ClientId: "client-abc", Version: 7},
-						Context: map[string]int{
+						Dot:    Dot{ClientID: "client-abc", Version: 7},
+						Context: map[string]int64{
 							"client-abc": 7,
 						},
 					},
@@ -116,20 +117,20 @@ func TestHashSyncResponse(t *testing.T) {
 						Table:  "users",
 						RowKey: "42",
 						Field:  stringPtr("name"),
-						Value:  "Alice",
-						Dot:    Dot{ClientId: "client-1", Version: 1},
+						Value:  json.RawMessage(`"Alice"`),
+						Dot:    Dot{ClientID: "client-1", Version: 1},
 					},
 					{
 						Type:   "setRow",
 						Table:  "posts",
 						RowKey: "p1",
-						Value:  map[string]any{"title": "Hello"},
-						Dot:    Dot{ClientId: "client-2", Version: 2},
+						Value:  json.RawMessage(`{"title":"Hello"}`),
+						Dot:    Dot{ClientID: "client-2", Version: 2},
 					},
 				},
 				SyncedOperations: []Dot{
-					{ClientId: "client-1", Version: 1},
-					{ClientId: "client-2", Version: 2},
+					{ClientID: "client-1", Version: 1},
+					{ClientID: "client-2", Version: 2},
 				},
 			},
 			wantErr: false,

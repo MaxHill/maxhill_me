@@ -31,15 +31,15 @@ type SyncDeliveryResult struct {
 }
 
 type SimulationStats struct {
-	ActionTimes         []float64
-	WalReceiveTimes     []float64
-	SyncPrepTimes       []float64
-	TotalActions        int
-	TotalSyncs          int
-	TotalOperationsSent int
-	TotalOperationsRecv int
-	ConvergenceStart    time.Time
-	ConvergenceEnd      time.Time
+	ActionTimes            []float64
+	OperationsReceiveTimes []float64
+	SyncPrepTimes          []float64
+	TotalActions           int
+	TotalSyncs             int
+	TotalOperationsSent    int
+	TotalOperationsRecv    int
+	ConvergenceStart       time.Time
+	ConvergenceEnd         time.Time
 
 	// Fault injection stats
 	FaultDelayedSyncs       int
@@ -133,7 +133,7 @@ func main() {
 
 		for i, state := range actionResults {
 			log.Printf("Client %d (%s;tick=%d)", i, clients[i].ClientID, tick)
-			log.Printf("  Clock: %d, WAL operations: %d", state.ClockValue, len(state.WalOperations))
+			log.Printf("  Clock: %d, CRDT operations: %d", state.ClockValue, len(state.CRDTOperations))
 
 			// Collect action timing stats
 			if state.ActionTimeMs > 0 {
@@ -164,8 +164,8 @@ func main() {
 	}
 	stats.ConvergenceEnd = time.Now()
 
-	if err := verifyWALsMatch(clients); err != nil {
-		log.Fatalf("WAL verification failed: %v", err)
+	if err := verifyCRDTsMatch(clients); err != nil {
+		log.Fatalf("CRDT verification failed: %v", err)
 	}
 
 	log.Println("✓ Convergence verification passed!")
@@ -233,10 +233,10 @@ func convergeAllClients(clients []*Client, server *server.Server) error {
 	return nil
 }
 
-func verifyWALsMatch(clients []*Client) error {
-	log.Println("=== Verifying WAL Convergence ===")
+func verifyCRDTsMatch(clients []*Client) error {
+	log.Println("=== Verifying CRDT Convergence ===")
 
-	// Get final state from all clients
+	// Collect all final states
 	finalStates := make([]*StateResponse, len(clients))
 	for i, client := range clients {
 		state, err := client.PerformActions(ActionRequest{}, false) // No actions, no sync
@@ -246,84 +246,110 @@ func verifyWALsMatch(clients []*Client) error {
 		finalStates[i] = state
 	}
 
-	// Property 1: Verify clock >= max(wal_operation.version) for each client
-	log.Println("Checking property: clock >= max(WAL entry versions)")
+	// Property 1: Verify clock >= max(crdt_operation.version) for each client
+	log.Println("Checking property: clock >= max(CRDT entry versions)")
 	for i, state := range finalStates {
-		var maxWALVersion int64 = -1
-		for _, entry := range state.WalOperations {
-			if entry.Version > maxWALVersion {
-				maxWALVersion = entry.Version
+		var maxCRDTVersion int64 = -1
+		for _, entry := range state.CRDTOperations {
+			if entry.Dot.Version > maxCRDTVersion {
+				maxCRDTVersion = entry.Dot.Version
 			}
 		}
 
-		log.Printf("Client %d: Clock=%d, Max WAL version=%d, WAL entries=%d",
-			i, state.ClockValue, maxWALVersion, len(state.WalOperations))
+		log.Printf("Client %d: Clock=%d, Max CRDT version=%d, CRDT entries=%d",
+			i, state.ClockValue, maxCRDTVersion, len(state.CRDTOperations))
 
-		if len(state.WalOperations) > 0 && state.ClockValue < maxWALVersion {
-			return fmt.Errorf("INVARIANT VIOLATION: client %d has clock=%d but max WAL version=%d (clock must be >= max WAL version)",
-				i, state.ClockValue, maxWALVersion)
+		if len(state.CRDTOperations) > 0 && state.ClockValue < maxCRDTVersion {
+			return fmt.Errorf("INVARIANT VIOLATION: client %d has clock=%d but max CRDT version=%d (clock must be >= max CRDT version)",
+				i, state.ClockValue, maxCRDTVersion)
 		}
 	}
 	log.Println("✓ Clock invariant satisfied for all clients")
 
-	// Property 2: Verify all WAL entries are identical
-	log.Println("Checking property: all WAL entries match")
-	baseWAL := finalStates[0].WalOperations
+	// Property 2: Verify all CRDT entries are identical
+	log.Println("Checking property: all CRDT entries match")
+	baseCRDT := finalStates[0].CRDTOperations
 
 	for i := 1; i < len(finalStates); i++ {
-		if len(finalStates[i].WalOperations) != len(baseWAL) {
-			return fmt.Errorf("WAL length mismatch: client 0 has %d entries, client %d has %d entries",
-				len(baseWAL), i, len(finalStates[i].WalOperations))
+		if len(finalStates[i].CRDTOperations) != len(baseCRDT) {
+			return fmt.Errorf("CRDT length mismatch: client 0 has %d entries, client %d has %d entries",
+				len(baseCRDT), i, len(finalStates[i].CRDTOperations))
 		}
 
-		// Compare each WAL entry
-		for j := range baseWAL {
-			if !walOperationsEqual(&baseWAL[j], &finalStates[i].WalOperations[j]) {
-				a := &baseWAL[j]
-				b := &finalStates[i].WalOperations[j]
-				log.Printf("WAL entry %d mismatch between client 0 and client %d:", j, i)
-				log.Printf("  Client 0: Key=%s, Table=%s, Op=%s, Ver=%d, ClientID=%s, ServerVer=%d",
-					a.Key, a.Table, a.Operation, a.Version, a.ClientID, a.ServerVersion)
-				log.Printf("    Value: %q (len=%d, nil=%v)", string(a.Value), len(a.Value), a.Value == nil)
-				log.Printf("    ValueKey: %q (len=%d, nil=%v)", string(a.ValueKey), len(a.ValueKey), a.ValueKey == nil)
-				log.Printf("  Client %d: Key=%s, Table=%s, Op=%s, Ver=%d, ClientID=%s, ServerVer=%d",
-					i, b.Key, b.Table, b.Operation, b.Version, b.ClientID, b.ServerVersion)
-				log.Printf("    Value: %q (len=%d, nil=%v)", string(b.Value), len(b.Value), b.Value == nil)
-				log.Printf("    ValueKey: %q (len=%d, nil=%v)", string(b.ValueKey), len(b.ValueKey), b.ValueKey == nil)
+		// Compare each CRDT entry
+		for j := range baseCRDT {
+			if !crdtOperationsEqual(&baseCRDT[j], &finalStates[i].CRDTOperations[j]) {
+				a := &baseCRDT[j]
+				b := &finalStates[i].CRDTOperations[j]
+
+				log.Printf("CRDT operation %d mismatch between client 0 and client %d:", j, i)
+				log.Printf("  Client 0: RowKey=%s, Table=%s, Type=%s, Dot=(ClientID=%s,Ver=%d)",
+					a.RowKey, a.Table, a.Type, a.Dot.ClientID, a.Dot.Version)
+
+				// Show type-specific fields for client 0
+				switch a.Type {
+				case "set":
+					fieldStr := ""
+					if a.Field != nil {
+						fieldStr = *a.Field
+					}
+					log.Printf("    Field=%s, Value=%q", fieldStr, string(a.Value))
+				case "setRow":
+					log.Printf("    Value=%q", string(a.Value))
+				case "remove":
+					log.Printf("    Context=%v", a.Context)
+				}
+
+				log.Printf("  Client %d: RowKey=%s, Table=%s, Type=%s, Dot=(ClientID=%s,Ver=%d)",
+					i, b.RowKey, b.Table, b.Type, b.Dot.ClientID, b.Dot.Version)
+
+				// Show type-specific fields for client i
+				switch b.Type {
+				case "set":
+					fieldStr := ""
+					if b.Field != nil {
+						fieldStr = *b.Field
+					}
+					log.Printf("    Field=%s, Value=%q", fieldStr, string(b.Value))
+				case "setRow":
+					log.Printf("    Value=%q", string(b.Value))
+				case "remove":
+					log.Printf("    Context=%v", b.Context)
+				}
 
 				// Show which fields differ
 				diffs := []string{}
-				if a.Key != b.Key {
-					diffs = append(diffs, "Key")
+				if a.RowKey != b.RowKey {
+					diffs = append(diffs, "RowKey")
 				}
 				if a.Table != b.Table {
 					diffs = append(diffs, "Table")
 				}
-				if a.Operation != b.Operation {
-					diffs = append(diffs, "Operation")
+				if a.Type != b.Type {
+					diffs = append(diffs, "Type")
 				}
-				if a.Version != b.Version {
-					diffs = append(diffs, "Version")
+				if a.Dot.Version != b.Dot.Version {
+					diffs = append(diffs, "Dot.Version")
 				}
-				if a.ClientID != b.ClientID {
-					diffs = append(diffs, "ClientID")
+				if a.Dot.ClientID != b.Dot.ClientID {
+					diffs = append(diffs, "Dot.ClientID")
 				}
-				if a.ServerVersion != b.ServerVersion {
-					diffs = append(diffs, "ServerVersion")
+				if !stringPtrEqual(a.Field, b.Field) {
+					diffs = append(diffs, "Field")
 				}
 				if string(a.Value) != string(b.Value) {
 					diffs = append(diffs, "Value")
 				}
-				if string(a.ValueKey) != string(b.ValueKey) {
-					diffs = append(diffs, "ValueKey")
+				if !contextEqual(a.Context, b.Context) {
+					diffs = append(diffs, "Context")
 				}
 				log.Printf("  Fields that differ: %v", diffs)
 
-				return fmt.Errorf("WAL entry %d mismatch between client 0 and client %d", j, i)
+				return fmt.Errorf("CRDT entry %d mismatch between client 0 and client %d", j, i)
 			}
 		}
 	}
-	log.Println("✓ All WAL entries match")
+	log.Println("✓ All CRDT entries match")
 
 	// Property 3: Check clock convergence (should be identical after our changes)
 	log.Println("Checking property: clock convergence")
@@ -359,18 +385,57 @@ func verifyWALsMatch(clients []*Client) error {
 			minClock, maxClock, spread)
 	}
 
-	log.Printf("✓ Convergence verification passed! WAL entries=%d", len(baseWAL))
+	log.Printf("✓ Convergence verification passed! CRDT entries=%d", len(baseCRDT))
 	return nil
 }
 
-func walOperationsEqual(a, b *sync_engine.WALOperation) bool {
-	return a.Key == b.Key &&
-		a.Table == b.Table &&
-		a.Operation == b.Operation &&
-		a.Version == b.Version &&
-		a.ClientID == b.ClientID &&
-		string(a.Value) == string(b.Value) &&
-		string(a.ValueKey) == string(b.ValueKey)
+func crdtOperationsEqual(a, b *sync_engine.CRDTOperation) bool {
+	// Compare core fields
+	if a.Type != b.Type ||
+		a.Table != b.Table ||
+		a.RowKey != b.RowKey ||
+		a.Dot.ClientID != b.Dot.ClientID ||
+		a.Dot.Version != b.Dot.Version {
+		return false
+	}
+
+	// Compare type-specific fields
+	switch a.Type {
+	case "set":
+		if !stringPtrEqual(a.Field, b.Field) {
+			return false
+		}
+		return string(a.Value) == string(b.Value)
+
+	case "setRow":
+		return string(a.Value) == string(b.Value)
+
+	case "remove":
+		return contextEqual(a.Context, b.Context)
+
+	default:
+		return false
+	}
+}
+func stringPtrEqual(a, b *string) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}
+func contextEqual(a, b map[string]int64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k, v := range a {
+		if b[k] != v {
+			return false
+		}
+	}
+	return true
 }
 
 func sendSyncToServer(server *server.Server, req *sync_engine.SyncRequest) (*sync_engine.SyncResponse, error) {
@@ -438,19 +503,19 @@ func printSimulationStats(stats *SimulationStats) {
 			percentile(stats.ActionTimes, 0.99))
 	}
 
-	// WAL receive timing
-	if len(stats.WalReceiveTimes) > 0 {
-		sort.Float64s(stats.WalReceiveTimes)
-		log.Printf("WAL Receive Time:")
-		log.Printf("  Count: %d", len(stats.WalReceiveTimes))
+	// Operations receive timing
+	if len(stats.OperationsReceiveTimes) > 0 {
+		sort.Float64s(stats.OperationsReceiveTimes)
+		log.Printf("Operations Receive Time:")
+		log.Printf("  Count: %d", len(stats.OperationsReceiveTimes))
 		log.Printf("  Min: %.2fms, Max: %.2fms, Avg: %.2fms",
-			stats.WalReceiveTimes[0],
-			stats.WalReceiveTimes[len(stats.WalReceiveTimes)-1],
-			average(stats.WalReceiveTimes))
+			stats.OperationsReceiveTimes[0],
+			stats.OperationsReceiveTimes[len(stats.OperationsReceiveTimes)-1],
+			average(stats.OperationsReceiveTimes))
 		log.Printf("  P50: %.2fms, P95: %.2fms, P99: %.2fms",
-			percentile(stats.WalReceiveTimes, 0.5),
-			percentile(stats.WalReceiveTimes, 0.95),
-			percentile(stats.WalReceiveTimes, 0.99))
+			percentile(stats.OperationsReceiveTimes, 0.5),
+			percentile(stats.OperationsReceiveTimes, 0.95),
+			percentile(stats.OperationsReceiveTimes, 0.99))
 	}
 
 	// Sync prep timing
@@ -577,7 +642,7 @@ func processAllSyncRequests(
 	stats.TotalOperationsSent += len(state.SyncRequest.Operations)
 
 	log.Printf("  Syncing: sending %d entries, last seen version %d",
-		len(state.SyncRequest.Operations), state.SyncRequest.ClientLastSeenVersion)
+		len(state.SyncRequest.Operations), state.SyncRequest.LastSeenServerVersion)
 
 	// FAULT INJECTION: Corrupt request
 	requestToSend := state.SyncRequest
@@ -653,12 +718,12 @@ func processAllSyncRequests(
 		log.Fatalf("Client %s sync delivery failed: %v", client.ClientID, err)
 	}
 
-	// Collect WAL receive timing
-	if newState.WalReceiveTimeMs > 0 {
-		stats.WalReceiveTimes = append(stats.WalReceiveTimes, newState.WalReceiveTimeMs)
+	// Collect operations receive timing
+	if newState.OperationsReceiveTimeMs > 0 {
+		stats.OperationsReceiveTimes = append(stats.OperationsReceiveTimes, newState.OperationsReceiveTimeMs)
 	}
 
-	log.Printf("  After sync - Clock: %d, WAL: %d", newState.ClockValue, len(newState.WalOperations))
+	log.Printf("  After sync - Clock: %d, CRDT operations: %d", newState.ClockValue, len(newState.CRDTOperations))
 }
 
 func deliverPendingSyncs(
@@ -684,12 +749,12 @@ func deliverPendingSyncs(
 				log.Fatalf("Delayed sync delivery failed: %v", err)
 			}
 
-			// Collect WAL receive timing
-			if newState.WalReceiveTimeMs > 0 {
-				stats.WalReceiveTimes = append(stats.WalReceiveTimes, newState.WalReceiveTimeMs)
+			// Collect operations receive timing
+			if newState.OperationsReceiveTimeMs > 0 {
+				stats.OperationsReceiveTimes = append(stats.OperationsReceiveTimes, newState.OperationsReceiveTimeMs)
 			}
 
-			log.Printf("    After delayed sync - Clock: %d, WAL: %d", newState.ClockValue, len(newState.WalOperations))
+			log.Printf("    After delayed sync - Clock: %d, CRDT operations: %d", newState.ClockValue, len(newState.CRDTOperations))
 		} else {
 			remaining = append(remaining, ds)
 		}
