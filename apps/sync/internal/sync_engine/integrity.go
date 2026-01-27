@@ -3,8 +3,10 @@ package sync_engine
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 )
 
 // ValidateSyncRequestIntegrity checks if the request hash matches the computed hash
@@ -27,72 +29,73 @@ func ValidateSyncRequestIntegrity(req SyncRequest) error {
 func HashSyncRequest(req SyncRequest) (string, error) {
 	parts := []string{
 		req.ClientID,
-		fmt.Sprintf("%d", req.ClientLastSeenVersion),
+		fmt.Sprintf("%d", req.LastSeenServerVersion),
 	}
 
-	for _, entry := range req.Operations {
+	for _, op := range req.Operations {
 		value := "null"
-		if entry.Value != nil {
-			value = string(entry.Value)
-		}
 		valueKey := "null"
-		if entry.ValueKey != nil {
-			valueKey = string(entry.ValueKey)
+
+		if op.Type == "set" || op.Type == "setRow" {
+			if op.Value != nil {
+				b, err := json.Marshal(op.Value)
+				if err != nil {
+					return "", err
+				}
+				value = string(b)
+			}
+		}
+
+		if op.Type == "set" && op.Field != nil {
+			valueKey = *op.Field
 		}
 
 		parts = append(parts,
-			entry.Key,
-			entry.Table,
-			entry.Operation,
+			op.RowKey,
+			op.Table,
+			op.Type,
 			value,
 			valueKey,
-			fmt.Sprintf("%d", entry.Version),
-			entry.ClientID,
+			fmt.Sprintf("%d", op.Dot.Version),
+			op.Dot.ClientId,
 		)
 	}
 
-	combined := parts[0]
-	for i := 1; i < len(parts); i++ {
-		combined += "|" + parts[i]
-	}
-
+	combined := strings.Join(parts, "|")
 	hash := sha256.Sum256([]byte(combined))
 	return hex.EncodeToString(hash[:]), nil
 }
 
 // HashSyncResponse computes a SHA-256 hash of the sync response for integrity verification
-func HashSyncResponse(entries []WALOperation, fromServerVersion int64) (string, error) {
+func HashSyncResponse(resp SyncResponse) (string, error) {
 	parts := []string{
-		fmt.Sprintf("%d", fromServerVersion),
+		fmt.Sprintf("%d", resp.BaseServerVersion),
+		fmt.Sprintf("%d", resp.LatestServerVersion),
 	}
 
-	for _, entry := range entries {
-		value := "null"
-		if entry.Value != nil {
-			value = string(entry.Value)
-		}
-		valueKey := "null"
-		if entry.ValueKey != nil {
-			valueKey = string(entry.ValueKey)
-		}
-
+	// Operations
+	for _, op := range resp.Operations {
 		parts = append(parts,
-			entry.Key,
-			entry.Table,
-			entry.Operation,
-			value,
-			valueKey,
-			fmt.Sprintf("%d", entry.Version),
-			entry.ClientID,
-			fmt.Sprintf("%d", entry.ServerVersion),
+			op.Type,
+			op.Table,
+			op.RowKey,
+			op.Dot.ClientId,
+			fmt.Sprintf("%d", op.Dot.Version),
 		)
 	}
 
-	combined := parts[0]
-	for i := 1; i < len(parts); i++ {
-		combined += "|" + parts[i]
+	// Synced operations
+	for _, dot := range resp.SyncedOperations {
+		parts = append(parts,
+			dot.ClientId,
+			fmt.Sprintf("%d", dot.Version),
+		)
 	}
 
+	// Join with |
+	combined := strings.Join(parts, "|")
+
+	// SHA256
 	hash := sha256.Sum256([]byte(combined))
 	return hex.EncodeToString(hash[:]), nil
 }

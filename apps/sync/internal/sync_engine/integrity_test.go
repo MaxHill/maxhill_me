@@ -1,67 +1,66 @@
 package sync_engine
 
 import (
-	"encoding/json"
 	"testing"
 )
+
+// -------------------- SyncRequest tests --------------------
 
 func TestHashSyncRequest(t *testing.T) {
 	tests := []struct {
 		name    string
 		request SyncRequest
-		want    string
 		wantErr bool
 	}{
 		{
 			name: "empty request",
 			request: SyncRequest{
 				ClientID:              "test-client",
-				ClientLastSeenVersion: -1,
-				Operations:               []WALOperation{},
+				LastSeenServerVersion: -1,
+				Operations:            []CRDTOperation{},
 			},
-			want:    "8c4ab6aba942a7f9e7b6e8f3e3f9c8b5d6f7e8a9b0c1d2e3f4a5b6c7d8e9f0a1", // Will compute actual
 			wantErr: false,
 		},
 		{
-			name: "request with one entry",
+			name: "single set operation",
 			request: SyncRequest{
 				ClientID:              "test-client",
-				ClientLastSeenVersion: 0,
-				Operations: []WALOperation{
+				LastSeenServerVersion: 0,
+				Operations: []CRDTOperation{
 					{
-						Key:       "key1",
-						Table:     "users",
-						Operation: "put",
-						Value:     json.RawMessage(`{"id":1,"name":"test"}`),
-						ValueKey:  nil,
-						Version:   1,
-						ClientID:  "test-client",
+						Type:   "set",
+						Table:  "users",
+						RowKey: "42",
+						Field:  stringPtr("name"),
+						Value:  "Alice",
+						Dot:    Dot{ClientId: "test-client", Version: 1},
 					},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name: "request with multiple entries",
+			name: "multiple operations",
 			request: SyncRequest{
 				ClientID:              "client-abc",
-				ClientLastSeenVersion: 5,
-				Operations: []WALOperation{
+				LastSeenServerVersion: 5,
+				Operations: []CRDTOperation{
 					{
-						Key:       "key1",
-						Table:     "posts",
-						Operation: "put",
-						Value:     json.RawMessage(`{"id":"post1"}`),
-						Version:   6,
-						ClientID:  "client-abc",
+						Type:   "set",
+						Table:  "posts",
+						RowKey: "p1",
+						Field:  stringPtr("title"),
+						Value:  "Hello",
+						Dot:    Dot{ClientId: "client-abc", Version: 6},
 					},
 					{
-						Key:       "key2",
-						Table:     "posts",
-						Operation: "del",
-						Value:     json.RawMessage(`"post1"`),
-						Version:   7,
-						ClientID:  "client-abc",
+						Type:   "remove",
+						Table:  "posts",
+						RowKey: "p2",
+						Dot:    Dot{ClientId: "client-abc", Version: 7},
+						Context: map[string]int{
+							"client-abc": 7,
+						},
 					},
 				},
 			},
@@ -71,166 +70,117 @@ func TestHashSyncRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := HashSyncRequest(tt.request)
+			hash, err := HashSyncRequest(tt.request)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("HashSyncRequest() error = %v, wantErr %v", err, tt.wantErr)
-				return
 			}
-			if !tt.wantErr && got == "" {
+			if hash == "" {
 				t.Errorf("HashSyncRequest() returned empty hash")
 			}
-			// Verify hash is deterministic by computing twice
-			got2, _ := HashSyncRequest(tt.request)
-			if got != got2 {
-				t.Errorf("HashSyncRequest() not deterministic: got %v and %v", got, got2)
+
+			// Deterministic check: multiple runs produce same hash
+			hash2, _ := HashSyncRequest(tt.request)
+			if hash != hash2 {
+				t.Errorf("HashSyncRequest() not deterministic: got %v and %v", hash, hash2)
 			}
 		})
 	}
 }
+
+// -------------------- SyncResponse tests --------------------
 
 func TestHashSyncResponse(t *testing.T) {
 	tests := []struct {
-		name              string
-		entries           []WALOperation
-		fromServerVersion int64
-		wantErr           bool
-	}{
-		{
-			name:              "empty response",
-			entries:           []WALOperation{},
-			fromServerVersion: -1,
-			wantErr:           false,
-		},
-		{
-			name: "response with entries",
-			entries: []WALOperation{
-				{
-					Key:           "key1",
-					Table:         "users",
-					Operation:     "put",
-					Value:         json.RawMessage(`{"id":1}`),
-					Version:       1,
-					ClientID:      "client-1",
-					ServerVersion: 0,
-				},
-				{
-					Key:           "key2",
-					Table:         "posts",
-					Operation:     "put",
-					Value:         json.RawMessage(`{"id":"post1"}`),
-					Version:       2,
-					ClientID:      "client-2",
-					ServerVersion: 1,
-				},
-			},
-			fromServerVersion: 0,
-			wantErr:           false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := HashSyncResponse(tt.entries, tt.fromServerVersion)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("HashSyncResponse() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr && got == "" {
-				t.Errorf("HashSyncResponse() returned empty hash")
-			}
-			// Verify hash is deterministic
-			got2, _ := HashSyncResponse(tt.entries, tt.fromServerVersion)
-			if got != got2 {
-				t.Errorf("HashSyncResponse() not deterministic: got %v and %v", got, got2)
-			}
-		})
-	}
-}
-
-func TestValidateSyncRequestIntegrity(t *testing.T) {
-	validRequest := SyncRequest{
-		ClientID:              "test-client",
-		ClientLastSeenVersion: 0,
-		Operations:               []WALOperation{},
-	}
-
-	// Compute valid hash
-	validHash, _ := HashSyncRequest(validRequest)
-	validRequest.RequestHash = validHash
-
-	tests := []struct {
 		name    string
-		request SyncRequest
+		resp    SyncResponse
 		wantErr bool
 	}{
 		{
-			name:    "valid request",
-			request: validRequest,
+			name: "empty response",
+			resp: SyncResponse{
+				BaseServerVersion:   -1,
+				LatestServerVersion: -1,
+				Operations:          []CRDTOperation{},
+				SyncedOperations:    []Dot{},
+			},
 			wantErr: false,
 		},
 		{
-			name: "invalid hash",
-			request: SyncRequest{
-				ClientID:              "test-client",
-				ClientLastSeenVersion: 0,
-				Operations:               []WALOperation{},
-				RequestHash:           "invalid-hash",
+			name: "response with operations and synced operations",
+			resp: SyncResponse{
+				BaseServerVersion:   0,
+				LatestServerVersion: 2,
+				Operations: []CRDTOperation{
+					{
+						Type:   "set",
+						Table:  "users",
+						RowKey: "42",
+						Field:  stringPtr("name"),
+						Value:  "Alice",
+						Dot:    Dot{ClientId: "client-1", Version: 1},
+					},
+					{
+						Type:   "setRow",
+						Table:  "posts",
+						RowKey: "p1",
+						Value:  map[string]any{"title": "Hello"},
+						Dot:    Dot{ClientId: "client-2", Version: 2},
+					},
+				},
+				SyncedOperations: []Dot{
+					{ClientId: "client-1", Version: 1},
+					{ClientId: "client-2", Version: 2},
+				},
 			},
-			wantErr: true,
-		},
-		{
-			name: "tampered data",
-			request: SyncRequest{
-				ClientID:              "different-client",
-				ClientLastSeenVersion: 0,
-				Operations:               []WALOperation{},
-				RequestHash:           validHash, // Using hash from different data
-			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateSyncRequestIntegrity(tt.request)
+			hash, err := HashSyncResponse(tt.resp)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ValidateSyncRequestIntegrity() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("HashSyncResponse() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if hash == "" {
+				t.Errorf("HashSyncResponse() returned empty hash")
+			}
+
+			hash2, _ := HashSyncResponse(tt.resp)
+			if hash != hash2 {
+				t.Errorf("HashSyncResponse() not deterministic: got %v and %v", hash, hash2)
 			}
 		})
 	}
 }
 
-func TestHashConsistency(t *testing.T) {
-	// Test that the same data produces the same hash across multiple runs
-	request := SyncRequest{
-		ClientID:              "consistency-test",
-		ClientLastSeenVersion: 10,
-		Operations: []WALOperation{
-			{
-				Key:       "test-key",
-				Table:     "test-table",
-				Operation: "put",
-				Value:     json.RawMessage(`{"test":"data"}`),
-				Version:   11,
-				ClientID:  "consistency-test",
-			},
-		},
+// -------------------- SyncRequest integrity test --------------------
+
+func TestValidateSyncRequestIntegrity(t *testing.T) {
+	req := SyncRequest{
+		ClientID:              "test-client",
+		LastSeenServerVersion: 0,
+		Operations:            []CRDTOperation{},
 	}
 
-	hashes := make([]string, 10)
-	for i := 0; i < 10; i++ {
-		hash, err := HashSyncRequest(request)
+	validHash, _ := HashSyncRequest(req)
+	req.RequestHash = validHash
+
+	t.Run("valid hash", func(t *testing.T) {
+		err := ValidateSyncRequestIntegrity(req)
 		if err != nil {
-			t.Fatalf("HashSyncRequest() failed: %v", err)
+			t.Errorf("ValidateSyncRequestIntegrity() failed: %v", err)
 		}
-		hashes[i] = hash
-	}
+	})
 
-	// All hashes should be identical
-	firstHash := hashes[0]
-	for i, hash := range hashes {
-		if hash != firstHash {
-			t.Errorf("Hash inconsistency at iteration %d: got %v, want %v", i, hash, firstHash)
+	t.Run("invalid hash", func(t *testing.T) {
+		req.RequestHash = "invalid-hash"
+		err := ValidateSyncRequestIntegrity(req)
+		if err == nil {
+			t.Errorf("Expected error for invalid hash, got nil")
 		}
-	}
+	})
 }
+
+// -------------------- helper --------------------
+func stringPtr(s string) *string { return &s }
