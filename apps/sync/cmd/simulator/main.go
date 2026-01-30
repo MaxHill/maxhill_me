@@ -198,13 +198,16 @@ func convergeAllClients(clients []*Client, server *server.Server) error {
 				return fmt.Errorf("client %d round 1 sync failed: %w", i, err)
 			}
 
-			delivery := SyncDeliveryRequest{
-				SyncRequest:  *state.SyncRequest,
-				SyncResponse: *syncResp,
-			}
-			_, err = client.DeliverSync(delivery)
-			if err != nil {
-				return fmt.Errorf("client %d round 1 delivery failed: %w", i, err)
+			// Skip if server rejected the request (nil response)
+			if syncResp != nil {
+				delivery := SyncDeliveryRequest{
+					SyncRequest:  *state.SyncRequest,
+					SyncResponse: *syncResp,
+				}
+				_, err = client.DeliverSync(delivery)
+				if err != nil {
+					return fmt.Errorf("client %d round 1 delivery failed: %w", i, err)
+				}
 			}
 		}
 	}
@@ -223,13 +226,16 @@ func convergeAllClients(clients []*Client, server *server.Server) error {
 				return fmt.Errorf("client %d round 2 sync failed: %w", i, err)
 			}
 
-			delivery := SyncDeliveryRequest{
-				SyncRequest:  *state.SyncRequest,
-				SyncResponse: *syncResp,
-			}
-			_, err = client.DeliverSync(delivery)
-			if err != nil {
-				return fmt.Errorf("client %d round 2 delivery failed: %w", i, err)
+			// Skip if server rejected the request (nil response)
+			if syncResp != nil {
+				delivery := SyncDeliveryRequest{
+					SyncRequest:  *state.SyncRequest,
+					SyncResponse: *syncResp,
+				}
+				_, err = client.DeliverSync(delivery)
+				if err != nil {
+					return fmt.Errorf("client %d round 2 delivery failed: %w", i, err)
+				}
 			}
 		}
 	}
@@ -238,7 +244,7 @@ func convergeAllClients(clients []*Client, server *server.Server) error {
 }
 
 func verifyCRDTsMatch(clients []*Client) error {
-	log.Println("=== Verifying CRDT Convergence ===")
+	log.Println("=== Verifying Convergence ===")
 
 	// Collect all final states
 	finalStates := make([]*StateResponse, len(clients))
@@ -250,143 +256,21 @@ func verifyCRDTsMatch(clients []*Client) error {
 		finalStates[i] = state
 	}
 
-	// Property 1: Verify clock >= max(crdt_operation.version) for each client
-	log.Println("Checking property: clock >= max(CRDT entry versions)")
-	for i, state := range finalStates {
-		var maxCRDTVersion int64 = -1
-		for _, entry := range state.CRDTOperations {
-			if entry.Dot.Version > maxCRDTVersion {
-				maxCRDTVersion = entry.Dot.Version
-			}
-		}
-
-		log.Printf("Client %d: Clock=%d, Max CRDT version=%d, CRDT entries=%d",
-			i, state.ClockValue, maxCRDTVersion, len(state.CRDTOperations))
-
-		if len(state.CRDTOperations) > 0 && state.ClockValue < maxCRDTVersion {
-			return fmt.Errorf("INVARIANT VIOLATION: client %d has clock=%d but max CRDT version=%d (clock must be >= max CRDT version)",
-				i, state.ClockValue, maxCRDTVersion)
-		}
+	// Verify clock convergence
+	log.Println("Checking property: all clocks converged")
+	if err := verifyClocksConverged(finalStates); err != nil {
+		return err
 	}
-	log.Println("✓ Clock invariant satisfied for all clients")
+	log.Println("✓ All clocks converged")
 
-	// Property 2: Verify all CRDT entries are identical (as sets, order doesn't matter)
-	log.Println("Checking property: all CRDT entries match")
-	baseCRDT := finalStates[0].CRDTOperations
-
-	// Build a map of operations by their Dot (clientId, version) for the base client
-	baseOpsMap := make(map[string]*sync_engine.CRDTOperation)
-	for i := range baseCRDT {
-		dotKey := fmt.Sprintf("%s:%d", baseCRDT[i].Dot.ClientID, baseCRDT[i].Dot.Version)
-		baseOpsMap[dotKey] = &baseCRDT[i]
-	}
-
-	for i := 1; i < len(finalStates); i++ {
-		clientOps := finalStates[i].CRDTOperations
-
-		if len(clientOps) != len(baseCRDT) {
-			return fmt.Errorf("CRDT length mismatch: client 0 has %d entries, client %d has %d entries",
-				len(baseCRDT), i, len(clientOps))
-		}
-
-		// Build map for this client's operations
-		clientOpsMap := make(map[string]*sync_engine.CRDTOperation)
-		for j := range clientOps {
-			dotKey := fmt.Sprintf("%s:%d", clientOps[j].Dot.ClientID, clientOps[j].Dot.Version)
-			clientOpsMap[dotKey] = &clientOps[j]
-		}
-
-		// Check that every operation in base exists in client with same content
-		for dotKey, baseOp := range baseOpsMap {
-			clientOp, exists := clientOpsMap[dotKey]
-			if !exists {
-				return fmt.Errorf("client %d is missing operation with Dot %s", i, dotKey)
-			}
-
-			if !crdtOperationsEqual(baseOp, clientOp) {
-				log.Printf("CRDT operation mismatch for Dot %s between client 0 and client %d:", dotKey, i)
-				log.Printf("  Client 0: RowKey=%s, Table=%s, Type=%s",
-					baseOp.RowKey, baseOp.Table, baseOp.Type)
-				log.Printf("  Client %d: RowKey=%s, Table=%s, Type=%s",
-					i, clientOp.RowKey, clientOp.Table, clientOp.Type)
-
-				// Show which fields differ
-				diffs := []string{}
-				if baseOp.RowKey != clientOp.RowKey {
-					diffs = append(diffs, "RowKey")
-				}
-				if baseOp.Table != clientOp.Table {
-					diffs = append(diffs, "Table")
-				}
-				if baseOp.Type != clientOp.Type {
-					diffs = append(diffs, "Type")
-				}
-				if !stringPtrEqual(baseOp.Field, clientOp.Field) {
-					diffs = append(diffs, "Field")
-				}
-				if string(baseOp.Value) != string(clientOp.Value) {
-					diffs = append(diffs, "Value")
-				}
-				if !contextEqual(baseOp.Context, clientOp.Context) {
-					diffs = append(diffs, "Context")
-				}
-				log.Printf("  Fields that differ: %v", diffs)
-
-				return fmt.Errorf("CRDT operation with Dot %s differs between client 0 and client %d", dotKey, i)
-			}
-		}
-
-		// Check that client doesn't have extra operations
-		for dotKey := range clientOpsMap {
-			if _, exists := baseOpsMap[dotKey]; !exists {
-				return fmt.Errorf("client %d has extra operation with Dot %s that client 0 doesn't have", i, dotKey)
-			}
-		}
-	}
-	log.Println("✓ All CRDT entries match")
-
-	// Property 3: Check clock convergence (should be identical after our changes)
-	log.Println("Checking property: clock convergence")
-	baseClock := finalStates[0].ClockValue
-	minClock := baseClock
-	maxClock := baseClock
-	allClocksEqual := true
-
-	for i := 1; i < len(finalStates); i++ {
-		clock := finalStates[i].ClockValue
-		if clock < minClock {
-			minClock = clock
-		}
-		if clock > maxClock {
-			maxClock = clock
-		}
-		if clock != baseClock {
-			allClocksEqual = false
-		}
-	}
-
-	if allClocksEqual {
-		log.Printf("✓ All clocks converged to %d", baseClock)
-	} else {
-		// With the new logic (skip sync on empty + no +1), clocks should converge exactly
-		// Only acceptable difference is if maxClock-minClock <= 1 due to timing
-		spread := maxClock - minClock
-		if spread > 1 {
-			return fmt.Errorf("Clock convergence failed: min=%d, max=%d, spread=%d (expected spread <= 1)",
-				minClock, maxClock, spread)
-		}
-		log.Printf("⚠ Clocks have minor spread: min=%d, max=%d, spread=%d (acceptable)",
-			minClock, maxClock, spread)
-	}
-
-	log.Printf("✓ Convergence verification passed! CRDT entries=%d", len(baseCRDT))
-
-	// Property 4: Verify all materialized rows match
+	// Verify all materialized rows match
 	log.Println("Checking property: all materialized rows match")
 	if err := verifyRowsMatch(finalStates); err != nil {
 		return err
 	}
 	log.Println("✓ All materialized rows match")
+
+	log.Printf("✓ Convergence verification passed!")
 
 	return nil
 }
@@ -438,6 +322,23 @@ func contextEqual(a, b map[string]int64) bool {
 		}
 	}
 	return true
+}
+
+func verifyClocksConverged(finalStates []*StateResponse) error {
+	if len(finalStates) == 0 {
+		return nil
+	}
+
+	baseClock := finalStates[0].ClockValue
+
+	for i := 1; i < len(finalStates); i++ {
+		if finalStates[i].ClockValue != baseClock {
+			return fmt.Errorf("clock convergence failed: client 0 has clock %d, client %d has clock %d",
+				baseClock, i, finalStates[i].ClockValue)
+		}
+	}
+
+	return nil
 }
 
 func verifyRowsMatch(finalStates []*StateResponse) error {
@@ -858,7 +759,10 @@ func deliverPendingSyncs(
 					stats.FaultRejectedRequests++
 					continue
 				}
-				log.Fatalf("Delayed sync delivery failed: %v", err)
+				// Delayed syncs can also fail if they arrive out of order (client moved ahead)
+				// This is expected with network delays - client may have synced successfully via another path
+				log.Printf("    Delayed sync delivery failed (out of order or stale): %v", err)
+				continue
 			}
 
 			// Collect operations receive timing

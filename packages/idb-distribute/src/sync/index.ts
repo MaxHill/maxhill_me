@@ -153,33 +153,64 @@ export class Sync {
   ): Promise<void> {
     validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE], "readwrite");
 
+    // Start IDB requests FIRST to keep transaction alive
+    // Get client state synchronously
+    const clientStatePromise = this.idbRepository.getClientState(tx);
+    
+    // Now we can safely await non-IDB operations (hash validation)
     await this.validateResponseHash(response);
-    await this.validateServerResponseOrder(tx, response);
-
-    // Save operations and apply operations to materialized view
-    await this.applyRemoteOperations(tx, response.operations);
-
-    // update lastSeenServerVersion to latestServerVersion from response
-    await this.idbRepository.saveServerVersion(tx, response.latestServerVersion);
-
-    // update synced field on the synced local entries
-    const operationsPromises: Promise<void>[] = [];
-    for (const operationId of response.syncedOperations) {
-      operationsPromises.push(this.idbRepository.saveOperationAsSynced(tx, operationId));
-    }
-    await Promise.all(operationsPromises);
-
-    // We only sync the clocks if we get any new operations from the server
-    // otherwise it would be unnesesary work where we'd sync the clock with -1
-    // and keep the current value
-    if (response.operations.length) {
-      const highestVersion = response.operations.reduce((prev, curr) => {
-        return Math.max(prev, curr.dot.version);
-      }, -1);
-      await logicalClock.sync(tx, highestVersion);
+    
+    // Now await the client state
+    const { clientId, lastSeenServerVersion } = await clientStatePromise;
+    
+    // Check if response is stale/out-of-order - if so, drop it
+    if (lastSeenServerVersion !== response.baseServerVersion) {
+      console.warn(
+        `Dropping stale sync response: expected base ${lastSeenServerVersion}, got ${response.baseServerVersion}. ` +
+        `This can happen with delayed syncs arriving after newer syncs have completed.`
+      );
+      return;
     }
 
-    return;
+    try {
+      // Save operations and apply operations to materialized view
+      await this.applyRemoteOperations(tx, response.operations);
+
+      // update lastSeenServerVersion to latestServerVersion from response
+      await this.idbRepository.saveServerVersion(tx, response.latestServerVersion);
+
+      // update synced field on the synced local entries
+      const operationsPromises: Promise<void>[] = [];
+      for (const operationId of response.syncedOperations) {
+        operationsPromises.push(this.idbRepository.saveOperationAsSynced(tx, operationId));
+      }
+      await Promise.all(operationsPromises);
+
+      // We only sync the clocks if we get any new operations from the server
+      // otherwise it would be unnesesary work where we'd sync the clock with -1
+      // and keep the current value
+      if (response.operations.length) {
+        const highestVersion = response.operations.reduce((prev, curr) => {
+          return Math.max(prev, curr.dot.version);
+        }, -1);
+        await logicalClock.sync(tx, highestVersion);
+      }
+
+      return;
+    } catch (err: any) {
+      // Explicitly abort the transaction to ensure all writes are rolled back
+      // JavaScript errors don't automatically abort transactions, so we must do it explicitly
+      try {
+        tx.abort();
+      } catch (abortErr) {
+        // Ignore abort errors - transaction may already be aborted
+      }
+      
+      // Don't re-throw - transaction has been aborted, let it complete
+      // The caller should handle sync failures gracefully and retry
+      console.error("Sync failed, transaction aborted:", err);
+      return;
+    }
   }
 
   /**
@@ -333,6 +364,18 @@ export class Sync {
         `Sync response out of order: expected base ${lastSeenServerVersion}, got ${response.baseServerVersion}`,
       );
     }
+  }
+
+  private async isStaleResponse(tx: IDBTransaction, response: SyncResponse): Promise<boolean> {
+    const { lastSeenServerVersion } = await this.idbRepository.getClientState(tx);
+    if (lastSeenServerVersion !== response.baseServerVersion) {
+      console.warn(
+        `Dropping stale sync response: expected base ${lastSeenServerVersion}, got ${response.baseServerVersion}. ` +
+        `This can happen with delayed syncs arriving after newer syncs have completed.`
+      );
+      return true;
+    }
+    return false;
   }
 
   /**

@@ -3,7 +3,7 @@
  * @param tx - Transaction to use.
  * @returns Promise with the Request result on resolve
  */
-export async function promisifyIDBRequest<T>(req: IDBRequest<T>): Promise<T> {
+export function promisifyIDBRequest<T>(req: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     req.onsuccess = (event) => {
       if (!event.target) return reject("No event target returned");
@@ -20,7 +20,7 @@ export async function promisifyIDBRequest<T>(req: IDBRequest<T>): Promise<T> {
  * @param tx - Transaction to use.
  * @returns Promise that can be awaited
  */
-export async function txDone(tx: IDBTransaction): Promise<void> {
+export function txDone(tx: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);

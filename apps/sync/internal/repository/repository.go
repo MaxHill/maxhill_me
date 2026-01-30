@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"reflect"
 )
 
 // Schema contains all table definitions for the sync system.
@@ -63,9 +64,12 @@ func InitSchema(ctx context.Context, db *sql.DB) error {
 }
 
 // InsertCRDTOperation inserts a single CRDT operation and returns the auto-generated server_version.
+// If the operation already exists (duplicate client_id, version), it verifies the operation is identical.
+// If the existing operation differs, this indicates a consistency violation and returns an error.
+// This makes the operation idempotent - safe to retry with the same data.
 // Works with both *sql.DB and *sql.Tx via the Execer interface.
 func InsertCRDTOperation(ctx context.Context, exec Execer, op *DBCRDTOperation) (int64, error) {
-	const query = `
+	const insertQuery = `
 		INSERT INTO crdt_operations 
 		(client_id, version, type, table_name, row_key, field, value, context)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -73,7 +77,7 @@ func InsertCRDTOperation(ctx context.Context, exec Execer, op *DBCRDTOperation) 
 	`
 
 	var serverVersion int64
-	err := exec.QueryRowContext(ctx, query,
+	err := exec.QueryRowContext(ctx, insertQuery,
 		op.ClientID,
 		op.Version,
 		op.Type,
@@ -84,7 +88,92 @@ func InsertCRDTOperation(ctx context.Context, exec Execer, op *DBCRDTOperation) 
 		op.Context,
 	).Scan(&serverVersion)
 
-	return serverVersion, err
+	// If no error, we successfully inserted and got the server_version
+	if err == nil {
+		return serverVersion, nil
+	}
+
+	// Check if this is a UNIQUE constraint violation (duplicate operation)
+	if isUniqueConstraintError(err) {
+		return handleDuplicateOperation(ctx, exec, op)
+	}
+
+	// Some other error occurred
+	return 0, err
+}
+
+// isUniqueConstraintError checks if the error is a UNIQUE constraint violation
+func isUniqueConstraintError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errMsg := err.Error()
+	return len(errMsg) >= 17 && errMsg[:17] == "UNIQUE constraint"
+}
+
+// handleDuplicateOperation verifies that a duplicate operation is identical to the existing one.
+// Returns the existing server_version if identical, or an error if different (consistency violation).
+func handleDuplicateOperation(ctx context.Context, exec Execer, op *DBCRDTOperation) (int64, error) {
+	const selectQuery = `
+		SELECT server_version, type, table_name, row_key, field, value, context
+		FROM crdt_operations 
+		WHERE client_id = ? AND version = ?
+	`
+
+	var existing DBCRDTOperation
+	existing.ClientID = op.ClientID
+	existing.Version = op.Version
+
+	err := exec.QueryRowContext(ctx, selectQuery, op.ClientID, op.Version).Scan(
+		&existing.ServerVersion,
+		&existing.Type,
+		&existing.TableName,
+		&existing.RowKey,
+		&existing.Field,
+		&existing.Value,
+		&existing.Context,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("failed to fetch existing operation for duplicate check: %w", err)
+	}
+
+	// Compare the operation data (excluding ServerVersion which is auto-generated)
+	if !operationsEqual(op, &existing) {
+		return 0, fmt.Errorf(
+			"CRDT consistency violation: duplicate operation (client_id=%s, version=%d) with different data. "+
+				"Existing: type=%s, table=%s, row=%s. Incoming: type=%s, table=%s, row=%s",
+			op.ClientID, op.Version,
+			existing.Type, existing.TableName, existing.RowKey,
+			op.Type, op.TableName, op.RowKey,
+		)
+	}
+
+	// Operation is identical - this is a valid retry, return existing server_version
+	return existing.ServerVersion, nil
+}
+
+// operationsEqual checks if two operations have identical data (excluding ServerVersion).
+// Uses deep equality for nullable fields.
+func operationsEqual(a, b *DBCRDTOperation) bool {
+	return a.ClientID == b.ClientID &&
+		a.Version == b.Version &&
+		a.Type == b.Type &&
+		a.TableName == b.TableName &&
+		a.RowKey == b.RowKey &&
+		reflect.DeepEqual(a.Field, b.Field) &&
+		reflect.DeepEqual(a.Value, b.Value) &&
+		reflect.DeepEqual(a.Context, b.Context)
+}
+
+// nullableStringEqual compares two nullable strings for equality
+func nullableStringEqual(a, b *string) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
 }
 
 // InsertCRDTOperations batch inserts multiple CRDT operations and returns their server_versions.

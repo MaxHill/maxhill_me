@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"sync/internal/sync_engine"
 
@@ -82,6 +83,7 @@ func (server Server) HandleSync(writer http.ResponseWriter, request *http.Reques
 
 	syncResp, err := server.SyncService.Sync(request.Context(), syncReq)
 	if err != nil {
+		log.Printf("Sync request failed for client %s: %v", syncReq.ClientID, err)
 		writer.WriteHeader(http.StatusInternalServerError)
 		writer.Write([]byte(`{"error": "Error when syncing request"}`))
 		return
