@@ -380,6 +380,14 @@ func verifyCRDTsMatch(clients []*Client) error {
 	}
 
 	log.Printf("✓ Convergence verification passed! CRDT entries=%d", len(baseCRDT))
+
+	// Property 4: Verify all materialized rows match
+	log.Println("Checking property: all materialized rows match")
+	if err := verifyRowsMatch(finalStates); err != nil {
+		return err
+	}
+	log.Println("✓ All materialized rows match")
+
 	return nil
 }
 
@@ -429,6 +437,111 @@ func contextEqual(a, b map[string]int64) bool {
 			return false
 		}
 	}
+	return true
+}
+
+func verifyRowsMatch(finalStates []*StateResponse) error {
+	if len(finalStates) == 0 {
+		return nil
+	}
+
+	// Get base rows from client 0
+	baseRows := finalStates[0].Rows
+	if baseRows == nil {
+		log.Println("⚠ No row data available for verification (rows field is nil)")
+		return nil
+	}
+
+	// Check each client against the base
+	for i := 1; i < len(finalStates); i++ {
+		clientRows := finalStates[i].Rows
+		if clientRows == nil {
+			return fmt.Errorf("client %d has nil rows field", i)
+		}
+
+		// Verify each table
+		for table, baseTableRows := range baseRows {
+			clientTableRows, exists := clientRows[table]
+			if !exists {
+				return fmt.Errorf("client %d is missing table %q", i, table)
+			}
+
+			// Check row counts match
+			if len(clientTableRows) != len(baseTableRows) {
+				return fmt.Errorf("table %q row count mismatch: client 0 has %d rows, client %d has %d rows",
+					table, len(baseTableRows), i, len(clientTableRows))
+			}
+
+			// Check each row
+			for rowKey, baseRow := range baseTableRows {
+				clientRow, exists := clientTableRows[rowKey]
+				if !exists {
+					return fmt.Errorf("client %d is missing row %q in table %q", i, rowKey, table)
+				}
+
+				// Compare row fields
+				if !rowDataEqual(baseRow, clientRow) {
+					log.Printf("Row data mismatch for table=%q, rowKey=%q between client 0 and client %d:", table, rowKey, i)
+					log.Printf("  Client 0: %+v", baseRow)
+					log.Printf("  Client %d: %+v", i, clientRow)
+					return fmt.Errorf("row data mismatch for table=%q, rowKey=%q between client 0 and client %d",
+						table, rowKey, i)
+				}
+			}
+
+			// Check that client doesn't have extra rows
+			for rowKey := range clientTableRows {
+				if _, exists := baseTableRows[rowKey]; !exists {
+					return fmt.Errorf("client %d has extra row %q in table %q that client 0 doesn't have",
+						i, rowKey, table)
+				}
+			}
+		}
+
+		// Check that client doesn't have extra tables
+		for table := range clientRows {
+			if _, exists := baseRows[table]; !exists {
+				return fmt.Errorf("client %d has extra table %q that client 0 doesn't have", i, table)
+			}
+		}
+	}
+
+	// Count total rows for logging
+	totalRows := 0
+	for _, tableRows := range baseRows {
+		totalRows += len(tableRows)
+	}
+	log.Printf("  Verified %d rows across %d tables", totalRows, len(baseRows))
+
+	return nil
+}
+
+func rowDataEqual(a, b map[string]any) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for key, aVal := range a {
+		bVal, exists := b[key]
+		if !exists {
+			return false
+		}
+
+		// Compare values using JSON serialization for deep equality
+		aJSON, err := json.Marshal(aVal)
+		if err != nil {
+			return false
+		}
+		bJSON, err := json.Marshal(bVal)
+		if err != nil {
+			return false
+		}
+
+		if string(aJSON) != string(bJSON) {
+			return false
+		}
+	}
+
 	return true
 }
 

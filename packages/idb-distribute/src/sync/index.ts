@@ -76,8 +76,8 @@ export class Sync {
    * ```typescript
    * const tx = repo.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE], "readonly");
    * const request = await sync.createSyncRequest(tx);
-   * await txDone(tx);
-   * *
+   * // Transaction auto-completes when all requests finish - no need to wait explicitly
+   * ```
    * @param tx - Transaction with required stores (see above)
    * @returns Sync request ready to send to server
    * @throws {Error} If transaction is missing required stores
