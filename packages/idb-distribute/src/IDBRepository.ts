@@ -14,6 +14,7 @@ export const CLIENT_STATE_STORE = "clientState";
 // Indexes
 const BY_TABLE_INDEX = "by-table";
 const BY_SYNCED_INDEX = "by-synced";
+const BY_CLIENT_SYNCED_INDEX = "by-client-synced";
 
 // Client state keys
 const LAST_SEEN_SERVER_VERSION = "lastSeenServerVersion";
@@ -48,6 +49,7 @@ export class IDBRepository {
             keyPath: ["op.dot.clientId", "op.dot.version"],
           });
           operationStore.createIndex(BY_SYNCED_INDEX, "synced", { unique: false });
+          operationStore.createIndex(BY_CLIENT_SYNCED_INDEX, ["op.dot.clientId", "synced"], { unique: false });
         }
 
         // Store client state
@@ -183,6 +185,23 @@ export class IDBRepository {
     // Note: Using 0/1 instead of false/true due to fake-indexeddb
     // limitation with boolean IDBKeyRange
     const cursorRequest = index.openCursor(IDBKeyRange.only(SYNCED_STATUS.NOT_SYNCED)); // 0 = not synced
+
+    for await (const record of asyncCursorIterator<{ op: CRDTOperation }>(cursorRequest)) {
+      result.push(record.op);
+    }
+
+    return result;
+  }
+
+  async getUnsyncedOperationsByClient(tx: IDBTransaction, clientId: string): Promise<CRDTOperation[]> {
+    validateTransactionStores(tx, [OPERATIONS_STORE]);
+    const store = tx.objectStore(OPERATIONS_STORE);
+    const index = store.index(BY_CLIENT_SYNCED_INDEX);
+
+    const result: CRDTOperation[] = [];
+    // Query using compound index [clientId, synced]
+    // Note: Using 0/1 instead of false/true due to fake-indexeddb limitation
+    const cursorRequest = index.openCursor(IDBKeyRange.only([clientId, SYNCED_STATUS.NOT_SYNCED]));
 
     for await (const record of asyncCursorIterator<{ op: CRDTOperation }>(cursorRequest)) {
       result.push(record.op);

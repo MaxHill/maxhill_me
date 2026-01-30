@@ -88,9 +88,8 @@ export class Sync {
     const { clientId, lastSeenServerVersion } = await this.idbRepository
       .getClientState(tx);
 
-    // Extract operations
-    let operations = await this.idbRepository.getUnsyncedOperations(tx);
-    operations = operations.filter((e) => e.dot.clientId === clientId);
+    // Extract operations using optimized compound index query
+    const operations = await this.idbRepository.getUnsyncedOperationsByClient(tx, clientId);
     
     // create integrity hash
     const requestHash = await this.createRequestHash({
