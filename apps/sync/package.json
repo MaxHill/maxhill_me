@@ -4,6 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "wgo -file=.go -xfile=_test.go go run ./cmd/server/",
-    "build": "go build -o sync ."
+    "build": "go build -o sync .",
+    "test": "go test ./...",
+    
+    "sim:quick": "go run ./cmd/simulator -clients=3 -ticks=20 -seed=quick-test -fault-delay-sync=0.1 -fault-corrupt-request=0.1 -fault-corrupt-response=0.1",
+    "sim:baseline": "go run ./cmd/simulator -clients=5 -ticks=50 -seed=baseline-test -fault-delay-sync=0.0 -fault-corrupt-request=0.0 -fault-corrupt-response=0.0",
+    "sim:faults": "go run ./cmd/simulator -clients=10 -ticks=100 -seed=faults-test -fault-delay-sync=0.2 -fault-corrupt-request=0.2 -fault-corrupt-response=0.2",
+    "sim:stress": "go run ./cmd/simulator -clients=20 -ticks=200 -seed=stress-test -fault-delay-sync=0.3 -fault-corrupt-request=0.3 -fault-corrupt-response=0.3",
+    "sim:extreme": "go run ./cmd/simulator -clients=50 -ticks=100 -seed=extreme-test -fault-delay-sync=0.3 -fault-corrupt-request=0.3 -fault-corrupt-response=0.3"
   }
 }

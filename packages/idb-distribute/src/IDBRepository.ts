@@ -142,6 +142,7 @@ export class IDBRepository {
     }
 
     const store = tx.objectStore(OPERATIONS_STORE);
+    
     await promisifyIDBRequest(store.add({
       op: operation,
       // Note: Using 0/1 instead of false/true due to fake-indexeddb
