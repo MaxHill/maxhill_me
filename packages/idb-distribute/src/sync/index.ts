@@ -220,6 +220,26 @@ export class Sync {
     tx: IDBTransaction,
     operations: CRDTOperation[],
   ): Promise<void> {
+    // Validate operations before processing to fail fast on corrupted data
+    for (const op of operations) {
+      if (op.type === "set") {
+        if (typeof op.field !== "string" || op.field === "") {
+          throw new Error(`Invalid set operation: field must be a non-empty string, got ${typeof op.field}`);
+        }
+        if (op.value === undefined || op.value === null) {
+          throw new Error(`Invalid set operation: value must be defined, got ${op.value}`);
+        }
+      } else if (op.type === "setRow") {
+        if (typeof op.value !== "object" || op.value === null || Array.isArray(op.value)) {
+          throw new Error(`Invalid setRow operation: value must be a plain object, got ${typeof op.value}`);
+        }
+      } else if (op.type === "remove") {
+        if (typeof op.context !== "object" || op.context === null || Array.isArray(op.context)) {
+          throw new Error(`Invalid remove operation: context must be a plain object, got ${typeof op.context}`);
+        }
+      }
+    }
+
     // Group operations by row for batch processing
     const operationsByRow = new Map<string, CRDTOperation[]>();
 
@@ -324,18 +344,45 @@ export class Sync {
   private async createResponseHash(
     response: Omit<SyncResponse, "responseHash">,
   ) {
-    return this.sha256Array([
+    const parts: string[] = [
       String(response.baseServerVersion),
       String(response.latestServerVersion),
-      ...response.operations.flatMap((operation: CRDTOperation) => [
-        operation.type,
-        operation.table,
-        String(operation.rowKey),
-        operation.dot.clientId,
-        String(operation.dot.version),
-      ]),
-      ...response.syncedOperations.flatMap((dot) => [dot.clientId, String(dot.version)]),
-    ]);
+    ];
+
+    // Add operation fields - must match server hash logic exactly
+    for (const operation of response.operations) {
+      parts.push(operation.type);
+      parts.push(operation.table);
+      parts.push(String(operation.rowKey));
+      parts.push(operation.dot.clientId);
+      parts.push(String(operation.dot.version));
+
+      // Include operation-specific fields
+      if (operation.type === "set") {
+        parts.push(operation.field ?? "null");
+        parts.push(JSON.stringify(operation.value));
+      } else if (operation.type === "setRow") {
+        parts.push("null"); // field placeholder for consistency
+        parts.push(JSON.stringify(operation.value));
+      } else if (operation.type === "remove") {
+        parts.push("null"); // field placeholder
+        parts.push("null"); // value placeholder
+        // Add context for remove operations
+        const contextKeys = Object.keys(operation.context).sort();
+        for (const key of contextKeys) {
+          parts.push(key);
+          parts.push(String(operation.context[key]));
+        }
+      }
+    }
+
+    // Add synced operations
+    for (const dot of response.syncedOperations) {
+      parts.push(dot.clientId);
+      parts.push(String(dot.version));
+    }
+
+    return this.sha256Array(parts);
   }
 
   private async validateResponseHash(response: SyncResponse): Promise<SyncResponse> {
@@ -355,27 +402,6 @@ export class Sync {
       );
     }
     return response;
-  }
-
-  private async validateServerResponseOrder(tx: IDBTransaction, response: SyncResponse) {
-    const { lastSeenServerVersion } = await this.idbRepository.getClientState(tx);
-    if (lastSeenServerVersion !== response.baseServerVersion) {
-      throw new Error(
-        `Sync response out of order: expected base ${lastSeenServerVersion}, got ${response.baseServerVersion}`,
-      );
-    }
-  }
-
-  private async isStaleResponse(tx: IDBTransaction, response: SyncResponse): Promise<boolean> {
-    const { lastSeenServerVersion } = await this.idbRepository.getClientState(tx);
-    if (lastSeenServerVersion !== response.baseServerVersion) {
-      console.warn(
-        `Dropping stale sync response: expected base ${lastSeenServerVersion}, got ${response.baseServerVersion}. ` +
-        `This can happen with delayed syncs arriving after newer syncs have completed.`
-      );
-      return true;
-    }
-    return false;
   }
 
   /**

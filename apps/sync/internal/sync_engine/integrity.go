@@ -73,7 +73,7 @@ func HashSyncResponse(resp SyncResponse) (string, error) {
 		fmt.Sprintf("%d", resp.LatestServerVersion),
 	}
 
-	// Operations
+	// Operations - include value, field, and context for integrity
 	for _, op := range resp.Operations {
 		parts = append(parts,
 			op.Type,
@@ -82,6 +82,64 @@ func HashSyncResponse(resp SyncResponse) (string, error) {
 			op.Dot.ClientID,
 			fmt.Sprintf("%d", op.Dot.Version),
 		)
+
+		// Include operation-specific fields to match client hash logic
+		if op.Type == "set" {
+			// Add field (or "null" if not present)
+			fieldValue := "null"
+			if op.Field != nil {
+				fieldValue = *op.Field
+			}
+			parts = append(parts, fieldValue)
+
+			// Add value (or "null" if not present)
+			if op.Value != nil {
+				b, err := json.Marshal(op.Value)
+				if err != nil {
+					return "", err
+				}
+				parts = append(parts, string(b))
+			} else {
+				parts = append(parts, "null")
+			}
+		} else if op.Type == "setRow" {
+			parts = append(parts, "null") // field placeholder for consistency
+
+			// Add value (or "null" if not present)
+			if op.Value != nil {
+				b, err := json.Marshal(op.Value)
+				if err != nil {
+					return "", err
+				}
+				parts = append(parts, string(b))
+			} else {
+				parts = append(parts, "null")
+			}
+		} else if op.Type == "remove" {
+			parts = append(parts, "null") // field placeholder
+			parts = append(parts, "null") // value placeholder
+
+			// Add context (sorted keys for deterministic hash)
+			if op.Context != nil {
+				// Sort context keys for deterministic ordering
+				keys := make([]string, 0, len(op.Context))
+				for k := range op.Context {
+					keys = append(keys, k)
+				}
+				// Sort keys alphabetically
+				for i := 0; i < len(keys); i++ {
+					for j := i + 1; j < len(keys); j++ {
+						if keys[i] > keys[j] {
+							keys[i], keys[j] = keys[j], keys[i]
+						}
+					}
+				}
+				for _, key := range keys {
+					parts = append(parts, key)
+					parts = append(parts, fmt.Sprintf("%d", op.Context[key]))
+				}
+			}
+		}
 	}
 
 	// Synced operations

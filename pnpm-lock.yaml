@@ -52,6 +52,9 @@ importers:
       '@maxhill/css':
         specifier: workspace:*
         version: link:../../packages/css
+      '@maxhill/idb-distribute':
+        specifier: workspace:*
+        version: link:../../packages/idb-distribute
     devDependencies:
       typescript:
         specifier: ^5.9.3

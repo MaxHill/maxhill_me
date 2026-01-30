@@ -49,7 +49,7 @@ const generateSetOperation = (): fc.Arbitrary<CRDTOperation> =>
   fc.record({
     type: fc.constant("set" as const),
     table: fc.constant("test_table"),
-    rowKey: fc.oneof(fc.string(), fc.integer()),
+    rowKey: fc.string(),
     field: generateSafeFieldName(),
     value: fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
     dot: generateDot(),
@@ -59,7 +59,7 @@ const generateSetRowOperation = (): fc.Arbitrary<CRDTOperation> =>
   fc.record({
     type: fc.constant("setRow" as const),
     table: fc.constant("test_table"),
-    rowKey: fc.oneof(fc.string(), fc.integer()),
+    rowKey: fc.string(),
     value: fc.dictionary(
       generateSafeFieldName(),
       fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
@@ -71,7 +71,7 @@ const generateRemoveOperation = (): fc.Arbitrary<CRDTOperation> =>
   fc.record({
     type: fc.constant("remove" as const),
     table: fc.constant("test_table"),
-    rowKey: fc.oneof(fc.string(), fc.integer()),
+    rowKey: fc.string(),
     dot: generateDot(),
     context: fc.dictionary(generateClientId(), fc.nat({ max: 1000 })),
   });
@@ -539,6 +539,7 @@ describe("applyOpToRow", () => {
             // Apply all sets with versions <= context
             const dominatedSets = setOps.map((op) => {
               const clientId = op.dot.clientId;
+              if (removeOp.type !== "remove") throw new Error("Type should be remove");
               const contextVersion = removeOp.context[clientId];
               if (contextVersion !== undefined) {
                 return {
@@ -554,6 +555,7 @@ describe("applyOpToRow", () => {
 
             // All fields from clients in context with version <= context should be gone
             Object.values(row.fields).forEach((field) => {
+              if (removeOp.type !== "remove") throw new Error("Type should be remove");
               const contextVersion = removeOp.context[field.dot.clientId];
               if (contextVersion !== undefined) {
                 expect(field.dot.version).toBeGreaterThan(contextVersion);

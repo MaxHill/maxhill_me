@@ -20,14 +20,14 @@ export class CRDTDatabase {
   constructor(
     dbName: string = "crdt-db",
     syncRemote: string,
-    sync: Sync,
+    sync?: Sync,
     clientPersistance = new IDBRepository(),
     generateId: () => string = crypto.randomUUID.bind(crypto),
   ) {
     this.dbName = dbName;
     this.syncRemote = syncRemote;
     this.idbRepository = clientPersistance;
-    this.syncManager = sync;
+    this.syncManager = sync || new Sync(clientPersistance);
     this.logicalClock = new PersistedLogicalClock(this.idbRepository);
     this.clientId = generateId();
   }
