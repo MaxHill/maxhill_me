@@ -1,5 +1,10 @@
-import { applyOperationToRow, CRDTOperation, Dot, ORMapRow } from "../crdt.ts";
-import { CLIENT_STATE_STORE, IDBRepository, OPERATIONS_STORE, ROWS_STORE } from "../IDBRepository.ts";
+import { applyOperationToRow, CRDTOperation, Dot } from "../crdt.ts";
+import {
+  CLIENT_STATE_STORE,
+  IDBRepository,
+  OPERATIONS_STORE,
+  ROWS_STORE,
+} from "../IDBRepository.ts";
 import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
 import { validateTransactionStores } from "../utils.ts";
 
@@ -90,7 +95,7 @@ export class Sync {
 
     // Extract operations using optimized compound index query
     const operations = await this.idbRepository.getUnsyncedOperationsByClient(tx, clientId);
-    
+
     // create integrity hash
     const requestHash = await this.createRequestHash({
       clientId,
@@ -122,14 +127,14 @@ export class Sync {
 
       if (!response.ok) {
         const debugInfo = { request, response };
-        new Error(`Sync failed: ${JSON.stringify(debugInfo)}`);
+        throw new Error(`Sync failed: ${JSON.stringify(debugInfo)}`);
       }
       let syncResponse: SyncResponse = await response.json();
 
       return syncResponse;
     } catch (error: any) {
       if (!error || !error.message) {
-        throw new Error(`Unnown error occured during sync: ${error}`);
+        throw new Error(`Unknown error occurred during sync: ${error}`);
       }
       if (error instanceof TypeError || error.message.includes("fetch")) {
         // Network error - potentially retryable
@@ -184,7 +189,7 @@ export class Sync {
     tx: IDBTransaction,
     operations: CRDTOperation[],
   ): Promise<void> {
-    // Group operations by row for efficiency
+    // Group operations by row for batch processing
     const operationsByRow = new Map<string, CRDTOperation[]>();
 
     for (const operation of operations) {
@@ -192,23 +197,14 @@ export class Sync {
       if (!operationsByRow.has(key)) {
         operationsByRow.set(key, []);
       }
-      // TODO: IMPROVEMENT OPPORTUNITY (not benchmarked yet):
-      // We could implement a merge function for the methods, that way we
-      // could merge each operation directly (cpu bound) and end up with
-      // a Map<string, CRDTOperation> instead of the curent
-      // Map<string, CRDTOperation[]>. The performance benfit of applying would
-      // be a minor increase for typical workload but it would be a way to
-      // pre-garbage collect the crdtOperations.
-      //
-      // To implement, add  the function:
-      // crdt.mergeOperations(operationA: CRDTOperation, operationB: CRDTOperation): CRDTOperation
       operationsByRow.get(key)!.push(operation);
     }
 
     const saveOperationsPromise = this.idbRepository.batchSaveOperations(tx, operations);
     const savePromises = this.batchUpdateRows(tx, operationsByRow);
 
-    await Promise.all([saveOperationsPromise, savePromises]);
+    await saveOperationsPromise;
+    await savePromises;
   }
 
   /**
@@ -234,6 +230,7 @@ export class Sync {
     );
 
     const rowsData = await Promise.all(rowFetchPromises);
+
     for (const { row, rowOperations } of rowsData) {
       for (const operation of rowOperations) {
         applyOperationToRow(row, operation);
@@ -245,6 +242,7 @@ export class Sync {
     );
 
     await Promise.all(savePromises);
+
     return;
   }
 
@@ -288,7 +286,8 @@ export class Sync {
       );
     }
 
-    return this.sha256Array(parts);
+    const result = await this.sha256Array(parts);
+    return result;
   }
 
   private async createResponseHash(
