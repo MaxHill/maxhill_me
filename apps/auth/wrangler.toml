@@ -11,4 +11,4 @@ compatibility_flags = ["nodejs_compat"]
 # id = "your-kv-namespace-id"
 
 [dev]
-port = 3001
+port = 3002

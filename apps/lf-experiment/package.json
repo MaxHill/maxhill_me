@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "@maxhill/components": "workspace:*",
-    "@maxhill/css": "workspace:*"
+    "@maxhill/css": "workspace:*",
+    "@maxhill/idb-distribute": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

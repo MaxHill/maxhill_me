@@ -26,6 +26,12 @@ func NewServer(syncService sync_engine.SyncServiceInterface, maxConcurrentConnec
 
 	mux := http.NewServeMux()
 
+	// Handle OPTIONS for CORS preflight
+	mux.HandleFunc("OPTIONS /sync", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	// Handle POST for actual sync requests
 	mux.HandleFunc("POST /sync", limitConcurrency(server.HandleSync, maxConcurrentConnections))
 
 	return mux
@@ -108,6 +114,22 @@ func (server Server) HandleSync(writer http.ResponseWriter, request *http.Reques
 // ------------------------------------------------------------------------
 // Middleware
 // ------------------------------------------------------------------------
+
+func Cors(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Access-Control-Allow-Origin", "*")
+		writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if request.Method == http.MethodOptions {
+			writer.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(writer, request)
+	})
+
+}
 
 // limitConcurrency limits all requests across all routes
 func limitConcurrency(next http.HandlerFunc, maxConcurrentConnections int) http.HandlerFunc {

@@ -43,7 +43,7 @@ func main() {
 	syncService := sync_engine.NewSyncService(db)
 
 	// Start server
-	mux := server.NewServer(syncService, maxConcurrentConnections)
+	mux := server.Cors(server.NewServer(syncService, maxConcurrentConnections))
 	log.Printf("Server listening on http://localhost%s\n", serverPort)
 	if err := http.ListenAndServe(serverPort, mux); err != nil {
 		log.Fatalf("Server failed to start: %v", err)

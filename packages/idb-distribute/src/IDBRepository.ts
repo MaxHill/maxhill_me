@@ -194,6 +194,16 @@ export class IDBRepository {
     return result;
   }
 
+  async countUnsyncedOperations(tx: IDBTransaction): Promise<number> {
+    validateTransactionStores(tx, [OPERATIONS_STORE]);
+    const store = tx.objectStore(OPERATIONS_STORE);
+    const index = store.index(BY_SYNCED_INDEX);
+
+    // Use count() instead of iterating through all operations
+    const countRequest = index.count(IDBKeyRange.only(SYNCED_STATUS.NOT_SYNCED));
+    return await promisifyIDBRequest(countRequest);
+  }
+
   async getUnsyncedOperationsByClient(tx: IDBTransaction, clientId: string): Promise<CRDTOperation[]> {
     validateTransactionStores(tx, [OPERATIONS_STORE]);
     const store = tx.objectStore(OPERATIONS_STORE);

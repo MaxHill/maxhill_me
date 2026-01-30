@@ -142,23 +142,30 @@ async function handleGetAllOps(): Promise<StateResponse> {
 //  ------------------------------------------------------------------------
 async function handleAction(request: ActionRequest): Promise<StateResponse> {
   const actionStart = performance.now();
+  const timings: Record<string, number> = {};
 
   // Perform actions based on booleans
+  const writeStart = performance.now();
   if (request.writeUser) await writeUser(prng);
   if (request.deleteUser) await deleteUser(prng);
   if (request.writePost) await writePost(prng);
   if (request.deletePost) await deletePost(prng);
+  timings.writes = performance.now() - writeStart;
 
   const actionTimeMs = performance.now() - actionStart;
 
-  // Get current CRDT operations (always use unsynced for action response)
+  // Get count of unsynced operations (for logging only - don't fetch all operations)
+  const opsStart = performance.now();
   const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
-  const crdtOperations = await client.repo.getUnsyncedOperations(opsTx);
+  const unsyncedCount = await client.repo.countUnsyncedOperations(opsTx);
+  timings.getOps = performance.now() - opsStart;
   // Readonly transaction - no need to explicitly wait for completion
 
   // Get clock value
+  const clockStart = performance.now();
   const clockTx = client.repo.transaction([CLIENT_STATE_STORE], "readonly");
   const clockValue = await client.repo.getVersion(clockTx);
+  timings.getClock = performance.now() - clockStart;
   // Readonly transaction - no need to explicitly wait for completion
 
   // Optionally compute sync request
@@ -170,10 +177,23 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
     syncRequest = await client.sync.createSyncRequest(syncTx);
     // Readonly transaction - no need to explicitly wait for completion
     syncPrepTimeMs = performance.now() - syncPrepStart;
+    timings.syncPrep = syncPrepTimeMs;
+  }
+
+  // Log if action took longer than 5 seconds
+  const totalTime = performance.now() - actionStart;
+  if (totalTime > 5000) {
+    console.error(`SLOW ACTION: ${totalTime.toFixed(0)}ms total`, {
+      writes: timings.writes?.toFixed(0) + "ms",
+      getOps: timings.getOps?.toFixed(0) + "ms",
+      getClock: timings.getClock?.toFixed(0) + "ms",
+      syncPrep: timings.syncPrep?.toFixed(0) + "ms",
+      unsyncedOps: unsyncedCount,
+    });
   }
 
   return {
-    crdtOperations,
+    crdtOperations: new Array(unsyncedCount), // Array with correct length but no actual data
     clockValue,
     syncRequest,
     actionTimeMs,

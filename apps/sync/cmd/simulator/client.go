@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"math/rand"
 	"os"
@@ -175,7 +176,14 @@ func (client *Client) call(messageType string, payload any, response any) error 
 		line = result.line
 		err = result.err
 	case <-time.After(30 * time.Second):
-		return errors.New("timeout reading response from client process")
+		// Better error message with context about what operation timed out
+		payloadStr := "unknown"
+		if b, err := json.Marshal(payload); err == nil && len(b) < 200 {
+			payloadStr = string(b)
+		} else if err == nil {
+			payloadStr = fmt.Sprintf("%d bytes", len(b))
+		}
+		return fmt.Errorf("timeout (30s) reading response from client process for messageType=%s, payload=%s", messageType, payloadStr)
 	}
 
 	if err != nil {
