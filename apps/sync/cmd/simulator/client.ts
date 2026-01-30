@@ -9,7 +9,6 @@ import {
   OPERATIONS_STORE,
   ROWS_STORE,
 } from "../../../../packages/idb-distribute/src/IDBRepository.ts";
-import { txDone } from "../../../../packages/idb-distribute/src/utils.ts";
 import type {
   SyncRequest,
   SyncResponse,
@@ -48,6 +47,11 @@ type StateResponse = {
   actionTimeMs?: number;
   operationsReceiveTimeMs?: number;
   syncPrepTimeMs?: number;
+  rows?: {
+    [table: string]: {
+      [rowKey: string]: Record<string, any>;
+    };
+  };
 };
 
 type Message = {
@@ -105,16 +109,31 @@ async function handleGetAllOps(): Promise<StateResponse> {
   // Get all CRDT operations (for convergence verification)
   const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
   const crdtOperations = await client.repo.getAllOperations(opsTx);
-  await txDone(opsTx);
+  // Readonly transaction - no need to explicitly wait for completion
 
   // Get clock value
   const clockTx = client.repo.transaction([CLIENT_STATE_STORE], "readonly");
   const clockValue = await client.repo.getVersion(clockTx);
-  await txDone(clockTx);
+  // Readonly transaction - no need to explicitly wait for completion
+
+  // Get all materialized rows for verification
+  const users = await client.crdtDb.getAllRows("users");
+  const posts = await client.crdtDb.getAllRows("posts");
+
+  // Convert Map to plain object for JSON serialization
+  const rows = {
+    users: Object.fromEntries(
+      Array.from(users.entries()).map(([key, value]) => [String(key), value])
+    ),
+    posts: Object.fromEntries(
+      Array.from(posts.entries()).map(([key, value]) => [String(key), value])
+    ),
+  };
 
   return {
     crdtOperations,
     clockValue,
+    rows,
   };
 }
 
@@ -135,12 +154,12 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
   // Get current CRDT operations (always use unsynced for action response)
   const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
   const crdtOperations = await client.repo.getUnsyncedOperations(opsTx);
-  await txDone(opsTx);
+  // Readonly transaction - no need to explicitly wait for completion
 
   // Get clock value
   const clockTx = client.repo.transaction([CLIENT_STATE_STORE], "readonly");
   const clockValue = await client.repo.getVersion(clockTx);
-  await txDone(clockTx);
+  // Readonly transaction - no need to explicitly wait for completion
 
   // Optionally compute sync request
   let syncRequest: SyncRequest | undefined = undefined;
@@ -149,7 +168,7 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
     const syncPrepStart = performance.now();
     const syncTx = client.repo.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE], "readonly");
     syncRequest = await client.sync.createSyncRequest(syncTx);
-    await txDone(syncTx);
+    // Readonly transaction - no need to explicitly wait for completion
     syncPrepTimeMs = performance.now() - syncPrepStart;
   }
 
@@ -176,19 +195,19 @@ async function handleSyncDelivery(
     "readwrite",
   );
   await client.sync.handleSyncResponse(tx, client.clock, request.syncResponse);
-  await txDone(tx);
+  // Transaction auto-completes when all requests finish
 
   const operationsReceiveTimeMs = performance.now() - operationsReceiveStart;
 
   // Get updated CRDT operations (unsynced for state tracking)
   const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
   const crdtOperations = await client.repo.getUnsyncedOperations(opsTx);
-  await txDone(opsTx);
+  // Readonly transaction - no need to explicitly wait for completion
 
   // Get updated clock value
   const clockTx = client.repo.transaction([CLIENT_STATE_STORE], "readonly");
   const clockValue = await client.repo.getVersion(clockTx);
-  await txDone(clockTx);
+  // Readonly transaction - no need to explicitly wait for completion
 
   return {
     crdtOperations,

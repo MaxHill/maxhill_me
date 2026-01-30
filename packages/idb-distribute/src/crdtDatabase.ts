@@ -1,8 +1,13 @@
-import { CLIENT_STATE_STORE, IDBRepository, OPERATIONS_STORE, ROWS_STORE } from "./IDBRepository.ts";
+import {
+  CLIENT_STATE_STORE,
+  IDBRepository,
+  OPERATIONS_STORE,
+  ROWS_STORE,
+} from "./IDBRepository.ts";
 import { applyOperationToRow, CRDTOperation, Dot, LWWField, ValidKey } from "./crdt.ts";
 import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
 import { Sync } from "./sync/index.ts";
-import { promisifyIDBRequest, txDone } from "./utils.ts";
+import { promisifyIDBRequest } from "./utils.ts";
 
 export class CRDTDatabase {
   private clientId: string;
@@ -40,7 +45,6 @@ export class CRDTDatabase {
     } else {
       await this.idbRepository.saveClientId(tx, this.clientId);
     }
-    await txDone(tx);
   }
 
   private async nextDot(tx: IDBTransaction): Promise<Dot> {
@@ -74,7 +78,6 @@ export class CRDTDatabase {
       this.idbRepository.saveRow(tx, table, rowKey, row),
       this.idbRepository.saveOperation(tx, op),
     ]);
-    await txDone(tx);
   }
 
   /**
@@ -99,7 +102,6 @@ export class CRDTDatabase {
       this.idbRepository.saveRow(tx, table, rowKey, row),
       this.idbRepository.saveOperation(tx, op),
     ]);
-    await txDone(tx);
   }
 
   /**
@@ -149,7 +151,6 @@ export class CRDTDatabase {
       this.idbRepository.saveRow(tx, table, rowKey, row),
       this.idbRepository.saveOperation(tx, op),
     ]);
-    await txDone(tx);
   }
 
   /**
@@ -178,7 +179,6 @@ export class CRDTDatabase {
   async sync(): Promise<void> {
     const tx = this.idbRepository.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE]);
     const syncRequest = await this.syncManager.createSyncRequest(tx);
-    await txDone(tx);
 
     const response = await this.syncManager.sendSyncRequest(this.syncRemote, syncRequest);
 
@@ -188,7 +188,6 @@ export class CRDTDatabase {
       ROWS_STORE,
     ], "readwrite");
     await this.syncManager.handleSyncResponse(writeTx, this.logicalClock, response);
-    await txDone(writeTx);
   }
 
   async close(): Promise<void> {
