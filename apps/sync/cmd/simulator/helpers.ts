@@ -1,58 +1,45 @@
 // @deno-types="npm:@types/seedrandom@^3.0.8"
 import seedrandom from "seedrandom";
-import { type DBSchema, type IDBPDatabase } from "idb";
-import { InternalDbSchema, openAppDb, proxyIdb, Scheduler, WAL } from "@maxhill/idb-distribute";
+import { CRDTDatabase } from "../../../../packages/idb-distribute/src/crdtDatabase.ts";
+import { IDBRepository } from "../../../../packages/idb-distribute/src/IDBRepository.ts";
+import { Sync } from "../../../../packages/idb-distribute/src/sync/index.ts";
+import { PersistedLogicalClock } from "../../../../packages/idb-distribute/src/persistedLogicalClock.ts";
 
 export type User = { id: number; name: string };
 export type Post = { id: string; content: string };
-export interface ClientDbSchema extends DBSchema {
-  users: {
-    key: number;
-    value: User;
-  };
-  posts: {
-    key: string;
-    value: Post;
-  };
-}
 
 export interface SimClient {
-  db: IDBPDatabase<ClientDbSchema & InternalDbSchema>;
-  realDb: IDBPDatabase<ClientDbSchema & InternalDbSchema>; // Underlying non-proxied db
-  wal: WAL;
-  scheduler: Scheduler;
+  crdtDb: CRDTDatabase;           // High-level CRDT API for data operations
+  repo: IDBRepository;            // Low-level repository for inspecting state
+  sync: Sync;                     // Sync manager (reusable instance)
+  clock: PersistedLogicalClock;   // Logical clock
 }
 
 export const newClient = async (prng: seedrandom.PRNG): Promise<SimClient> => {
-  const unique_name_sufix = randomUUID(prng);
+  const dbName = "db_" + randomUUID(prng);
+  const generateId = () => randomUUID(prng);
 
-  const db = await openAppDb<ClientDbSchema>("db_" + unique_name_sufix, 1, {
-    upgrade(db: IDBPDatabase<ClientDbSchema>) {
-      if (!db.objectStoreNames.contains("users")) {
-        db.createObjectStore("users");
-      }
-      if (!db.objectStoreNames.contains("posts")) {
-        db.createObjectStore("posts", { keyPath: "id" });
-      }
-    },
-  }, () => randomUUID(prng)) as unknown as IDBPDatabase<InternalDbSchema>;
+  // Create shared repository
+  const repo = new IDBRepository();
+  await repo.open(dbName);
 
-  // TODO: implement sendSyncRequest
-  const wal = new WAL(() => randomUUID(prng));
+  // Create sync and clock using shared repo
+  const sync = new Sync(repo);
+  const clock = new PersistedLogicalClock(repo);
 
-  // No need to specify interval since we tick manually
-  const scheduler = new Scheduler(/* 300 or whatever interval */);
-  // NOTE: Sync is handled manually in client.ts, not via scheduler
+  // Create CRDTDatabase (pass dummy URL since we sync manually via Go)
+  const crdtDb = new CRDTDatabase(
+    dbName,
+    "http://manual-sync",  // Won't be used - simulator handles sync
+    sync,
+    repo,  // Share the same repository
+    generateId,
+  );
 
-  return {
-    db: proxyIdb<ClientDbSchema & InternalDbSchema>(
-      db as unknown as IDBPDatabase<InternalDbSchema & ClientDbSchema>,
-      wal,
-    ),
-    realDb: db as unknown as IDBPDatabase<InternalDbSchema & ClientDbSchema>,
-    wal,
-    scheduler,
-  };
+  // Open CRDTDatabase (initializes client state)
+  await crdtDb.open();
+
+  return { crdtDb, repo, sync, clock };
 };
 
 //  ------------------------------------------------------------------------

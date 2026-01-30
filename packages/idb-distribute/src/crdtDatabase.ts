@@ -2,7 +2,7 @@ import { CLIENT_STATE_STORE, IDBRepository, OPERATIONS_STORE, ROWS_STORE } from 
 import { applyOperationToRow, CRDTOperation, Dot, LWWField, ValidKey } from "./crdt.ts";
 import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
 import { Sync } from "./sync/index.ts";
-import { txDone } from "./utils.ts";
+import { promisifyIDBRequest, txDone } from "./utils.ts";
 
 export class CRDTDatabase {
   private clientId: string;
@@ -43,11 +43,10 @@ export class CRDTDatabase {
     await txDone(tx);
   }
 
-  private async nextDot(): Promise<Dot> {
+  private async nextDot(tx: IDBTransaction): Promise<Dot> {
     if (!this.idbRepository) {
       throw new Error("idbRepository is undefined in nextDot");
     }
-    const tx = this.idbRepository?.transaction("clientState", "readwrite");
     const version = await this.logicalClock.tick(tx);
     return { clientId: this.clientId, version };
   }
@@ -59,7 +58,7 @@ export class CRDTDatabase {
     const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
     const row = await this.idbRepository.getRow(tx, table, rowKey);
 
-    const dot = await this.nextDot();
+    const dot = await this.nextDot(tx);
     const op: CRDTOperation = {
       type: "set",
       table,
@@ -74,8 +73,8 @@ export class CRDTDatabase {
     await Promise.all([
       this.idbRepository.saveRow(tx, table, rowKey, row),
       this.idbRepository.saveOperation(tx, op),
-      txDone(tx),
     ]);
+    await txDone(tx);
   }
 
   /**
@@ -85,7 +84,7 @@ export class CRDTDatabase {
     const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
     const row = await this.idbRepository.getRow(tx, table, rowKey);
 
-    const dot = await this.nextDot();
+    const dot = await this.nextDot(tx);
     const op: CRDTOperation = {
       type: "setRow",
       table,
@@ -99,8 +98,8 @@ export class CRDTDatabase {
     await Promise.all([
       this.idbRepository.saveRow(tx, table, rowKey, row),
       this.idbRepository.saveOperation(tx, op),
-      txDone(tx),
     ]);
+    await txDone(tx);
   }
 
   /**
@@ -135,7 +134,7 @@ export class CRDTDatabase {
       context[clientId] = Math.max(context[clientId] ?? 0, fieldState.dot.version);
     }
 
-    const dot = await this.nextDot();
+    const dot = await this.nextDot(tx);
     const op: CRDTOperation = {
       type: "remove",
       table,
@@ -149,8 +148,8 @@ export class CRDTDatabase {
     await Promise.all([
       this.idbRepository.saveRow(tx, table, rowKey, row),
       this.idbRepository.saveOperation(tx, op),
-      txDone(tx),
     ]);
+    await txDone(tx);
   }
 
   /**
@@ -160,26 +159,20 @@ export class CRDTDatabase {
     const tx = this.idbRepository!.transaction(["rows"], "readonly");
     const store = tx.objectStore("rows");
     const index = store.index("by-table");
-    const request = index.getAll(table);
+    const records = await promisifyIDBRequest(index.getAll(table));
 
-    return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        const result = new Map<IDBValidKey, Record<string, any>>();
-
-        for (const record of request.result) {
-          if (Object.keys(record.row.fields).length > 0) {
-            const rowData: Record<string, any> = {};
-            for (const [field, fieldState] of Object.entries(record.row.fields)) {
-              rowData[field] = (fieldState as LWWField).value;
-            }
-            result.set(record.rowKey, rowData);
-          }
+    const result = new Map<IDBValidKey, Record<string, any>>();
+    for (const record of records) {
+      if (Object.keys(record.row.fields).length > 0) {
+        const rowData: Record<string, any> = {};
+        for (const [field, fieldState] of Object.entries(record.row.fields)) {
+          rowData[field] = (fieldState as LWWField).value;
         }
+        result.set(record.rowKey, rowData);
+      }
+    }
 
-        resolve(result);
-      };
-      request.onerror = () => reject(request.error);
-    });
+    return result;
   }
 
   async sync(): Promise<void> {
