@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"log"
 	"net/http"
-	"sync/internal/database"
+	"sync/internal/repository"
 	"sync/internal/server"
 	"sync/internal/sync_engine"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
@@ -15,15 +19,27 @@ const (
 )
 
 func main() {
-	log.Printf("Restarting...")
-	// Init database
-	db := database.New(database.DBConfig{
-		DBUrl:           ":memory:",
-		BusyTimeout:     5000,
-		MaxOpenConns:    20,
-		MaxIdleConns:    20,
-		ConnMaxLifetime: time.Duration(0), // Zero meand never timeout
-	})
+	log.Printf("Starting sync server...")
+
+	// Open database connection
+	db, err := sql.Open("sqlite3", ":memory:?_journal_mode=WAL&_busy_timeout=5000")
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	defer db.Close()
+
+	// Configure connection pool
+	db.SetMaxOpenConns(20)
+	db.SetMaxIdleConns(20)
+	db.SetConnMaxLifetime(time.Duration(0)) // Zero means never timeout
+
+	// Initialize schema
+	ctx := context.Background()
+	if err := repository.InitSchema(ctx, db); err != nil {
+		log.Fatalf("Error initializing database schema: %v", err)
+	}
+
+	// Create sync service
 	syncService := sync_engine.NewSyncService(db)
 
 	// Start server

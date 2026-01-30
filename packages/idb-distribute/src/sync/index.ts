@@ -91,8 +91,13 @@ export class Sync {
     // Extract operations
     let operations = await this.idbRepository.getUnsyncedOperations(tx);
     operations = operations.filter((e) => e.dot.clientId === clientId);
+    
     // create integrity hash
-    const requestHash = await this.createRequestHash(clientId, lastSeenServerVersion, operations);
+    const requestHash = await this.createRequestHash({
+      clientId,
+      lastSeenServerVersion,
+      operations,
+    });
 
     return {
       clientId,
@@ -148,10 +153,10 @@ export class Sync {
     await this.validateServerResponseOrder(tx, response);
 
     // Save operations and apply operations to materialized view
-    this.applyRemoteOperations(tx, response.operations);
+    await this.applyRemoteOperations(tx, response.operations);
 
     // update lastSeenServerVersion to latestServerVersion from response
-    this.idbRepository.saveServerVersion(tx, response.latestServerVersion);
+    await this.idbRepository.saveServerVersion(tx, response.latestServerVersion);
 
     // update synced field on the synced local entries
     const operationsPromises: Promise<void>[] = [];
@@ -251,7 +256,7 @@ export class Sync {
   //  has a hash that is validated both on the server and client, this
   //  is not done for security reasons (even if it might help). Rather it's
   //  done to ensure correctness.
-  private async createRequestHash(req: SyncRequest): Promise<string> {
+  private async createRequestHash(req: Omit<SyncRequest, "requestHash">): Promise<string> {
     const parts: string[] = [
       req.clientId,
       String(req.lastSeenServerVersion),
@@ -288,7 +293,7 @@ export class Sync {
   }
 
   private async createResponseHash(
-    response: SyncResponse,
+    response: Omit<SyncResponse, "responseHash">,
   ) {
     return this.sha256Array([
       String(response.baseServerVersion),

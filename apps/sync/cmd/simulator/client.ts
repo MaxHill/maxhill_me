@@ -4,12 +4,17 @@ import "./setup-indexeddb.ts";
 // @deno-types="npm:@types/seedrandom@^3.0.8"
 import seedrandom from "seedrandom";
 import { TextLineStream } from "@std/streams/text-line-stream";
-import { type IDBPTransaction } from "idb";
 import {
-  createSyncRequest,
-  applySyncResponse,
-  type InternalDbSchema,
-} from "@maxhill/idb-distribute";
+  CLIENT_STATE_STORE,
+  OPERATIONS_STORE,
+  ROWS_STORE,
+} from "../../../../packages/idb-distribute/src/IDBRepository.ts";
+import { txDone } from "../../../../packages/idb-distribute/src/utils.ts";
+import type {
+  SyncRequest,
+  SyncResponse,
+} from "../../../../packages/idb-distribute/src/sync/index.ts";
+import type { CRDTOperation } from "../../../../packages/idb-distribute/src/crdt.ts";
 import {
   newClient,
   Post,
@@ -81,6 +86,8 @@ for await (const line of lines) {
       result = await handleAction(payload as ActionRequest);
     } else if (type === "sync_delivery") {
       result = await handleSyncDelivery(payload as SyncDeliveryRequest);
+    } else if (type === "get_all_ops") {
+      result = await handleGetAllOps();
     } else {
       throw new Error(`Unknown message type: ${type}`);
     }
@@ -92,6 +99,26 @@ for await (const line of lines) {
 }
 
 //  ------------------------------------------------------------------------
+//  Handle get all operations (for verification)
+//  ------------------------------------------------------------------------
+async function handleGetAllOps(): Promise<StateResponse> {
+  // Get all CRDT operations (for convergence verification)
+  const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
+  const crdtOperations = await client.repo.getAllOperations(opsTx);
+  await txDone(opsTx);
+
+  // Get clock value
+  const clockTx = client.repo.transaction([CLIENT_STATE_STORE], "readonly");
+  const clockValue = await client.repo.getVersion(clockTx);
+  await txDone(clockTx);
+
+  return {
+    crdtOperations,
+    clockValue,
+  };
+}
+
+//  ------------------------------------------------------------------------
 //  Handle action request
 //  ------------------------------------------------------------------------
 async function handleAction(request: ActionRequest): Promise<StateResponse> {
@@ -100,44 +127,38 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
   // Perform actions based on booleans
   if (request.writeUser) await writeUser(prng);
   if (request.deleteUser) await deleteUser(prng);
-  if (request.clearUser) await clearUser();
   if (request.writePost) await writePost(prng);
   if (request.deletePost) await deletePost(prng);
-  if (request.clearPost) await clearPost();
 
   const actionTimeMs = performance.now() - actionStart;
 
-  // Get current CRDT operations
-  const tx = client.db.transaction("_wal") as unknown as IDBPTransaction<
-    InternalDbSchema,
-    ["_wal", ...[]],
-    "readwrite" | "readonly"
-  >;
-  const crdtOperations = await client.wal.getOperations(0, tx);
-  await tx.done;
+  // Get current CRDT operations (always use unsynced for action response)
+  const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
+  const crdtOperations = await client.repo.getUnsyncedOperations(opsTx);
+  await txDone(opsTx);
 
-  // Get clock value directly from IndexedDB
-  const clockTx = client.db.transaction(["_logicalClock"], "readonly");
-  const clockStore = clockTx.objectStore("_logicalClock");
-  const clockValue = (await clockStore.get("value")) ?? -1;
-  await clockTx.done;
+  // Get clock value
+  const clockTx = client.repo.transaction([CLIENT_STATE_STORE], "readonly");
+  const clockValue = await client.repo.getVersion(clockTx);
+  await txDone(clockTx);
 
   // Optionally compute sync request
-  let syncRequest = undefined;
+  let syncRequest: SyncRequest | undefined = undefined;
   let syncPrepTimeMs = undefined;
   if (request.requestSync) {
     const syncPrepStart = performance.now();
-    syncRequest = await createSyncRequest(client.realDb as any, client.wal);
+    const syncTx = client.repo.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE], "readonly");
+    syncRequest = await client.sync.createSyncRequest(syncTx);
+    await txDone(syncTx);
     syncPrepTimeMs = performance.now() - syncPrepStart;
-    lastSyncRequest = syncRequest; // Store for later delivery
   }
 
-  return { 
-    crdtOperations, 
-    clockValue, 
+  return {
+    crdtOperations,
+    clockValue,
     syncRequest,
     actionTimeMs,
-    syncPrepTimeMs
+    syncPrepTimeMs,
   };
 }
 
@@ -149,36 +170,30 @@ async function handleSyncDelivery(
 ): Promise<StateResponse> {
   const operationsReceiveStart = performance.now();
 
-  // Apply sync response to client using realDb (non-proxied)
-  await applySyncResponse(
-    client.realDb as any,
-    client.wal,
-    request.syncRequest,
-    request.syncResponse,
+  // Apply sync response to client
+  const tx = client.repo.transaction(
+    [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE],
+    "readwrite",
   );
+  await client.sync.handleSyncResponse(tx, client.clock, request.syncResponse);
+  await txDone(tx);
 
   const operationsReceiveTimeMs = performance.now() - operationsReceiveStart;
 
-  // Get updated CRDT operations
-  const crdtTx = client.db.transaction("_wal") as unknown as IDBPTransaction<
-    InternalDbSchema,
-    ["_wal", ...[]],
-    "readwrite" | "readonly"
-  >;
-  const crdtOperations = await client.wal.getOperations(0, crdtTx);
-  await crdtTx.done;
+  // Get updated CRDT operations (unsynced for state tracking)
+  const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
+  const crdtOperations = await client.repo.getUnsyncedOperations(opsTx);
+  await txDone(opsTx);
 
   // Get updated clock value
-  const clockTx = client.db.transaction(["_logicalClock"], "readonly");
-  const clockStore = clockTx.objectStore("_logicalClock");
-  const clockValue = (await clockStore.get("value")) ?? -1;
-  await clockTx.done;
+  const clockTx = client.repo.transaction([CLIENT_STATE_STORE], "readonly");
+  const clockValue = await client.repo.getVersion(clockTx);
+  await txDone(clockTx);
 
-  return { 
-    crdtOperations, 
-    clockValue, 
-    syncRequest: undefined,
-    operationsReceiveTimeMs
+  return {
+    crdtOperations,
+    clockValue,
+    operationsReceiveTimeMs,
   };
 }
 
@@ -187,49 +202,38 @@ async function handleSyncDelivery(
 //  ------------------------------------------------------------------------
 async function writePost(prng: seedrandom.PRNG) {
   const id = randomUUID(prng);
-  const tx = client.db.transaction(["posts"], "readwrite");
-  const store = tx.objectStore("posts");
-  const returnedId = await store.put({
+  await client.crdtDb.setRow("posts", id, {
     id,
     content: "This is a post",
   });
-  await tx.done;
-  if (id !== returnedId) {
-    throw new Error("put user id not returned to be the same");
-  }
 }
 
 async function deletePost(prng: seedrandom.PRNG) {
-  const posts: Post[] = await client.db.getAll("posts");
-  const [selected] = shuffleArray(prng, posts);
-  if (selected) {
-    await client.db.delete("posts", selected.id);
+  const posts = await client.crdtDb.getAllRows("posts");
+  const postKeys = Array.from(posts.keys()).filter(
+    (key): key is string => typeof key === "string",
+  );
+  const [selected] = shuffleArray(prng, postKeys);
+  if (selected !== undefined) {
+    await client.crdtDb.deleteRow("posts", selected);
   }
-}
-
-async function clearPost() {
-  await client.db.clear("posts");
 }
 
 async function writeUser(prng: seedrandom.PRNG) {
   const id = Math.floor(prng() * 100000000);
-  const returnedId = await client.db.put("users", {
+  await client.crdtDb.setRow("users", String(id), {
     id,
     name: "Test user",
-  }, id);
-  if (id !== returnedId) {
-    throw new Error("put user id not returned to be the same");
-  }
+  });
 }
 
 async function deleteUser(prng: seedrandom.PRNG) {
-  const users: User[] = await client.db.getAll("users");
-  const [selected] = shuffleArray(prng, users);
-  if (selected) {
-    await client.db.delete("users", selected.id);
+  const users = await client.crdtDb.getAllRows("users");
+  const userKeys = Array.from(users.keys()).filter(
+    (key): key is string => typeof key === "string",
+  );
+  const [selected] = shuffleArray(prng, userKeys);
+  if (selected !== undefined) {
+    await client.crdtDb.deleteRow("users", selected);
   }
-}
-
-async function clearUser() {
-  await client.db.clear("users");
 }

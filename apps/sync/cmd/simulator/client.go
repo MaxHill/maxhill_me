@@ -30,10 +30,6 @@ type Client struct {
 	ChanceDeletePost float64
 	ChanceClearPost  float64
 	ChanceSync       float64
-
-	// Current state snapshot (updated after each tick)
-	CRDTOperations []sync_engine.CRDTOperation `json:"crdtOperations"`
-	ClockValue     int64
 }
 
 type ActionRequest struct {
@@ -124,7 +120,6 @@ func (client *Client) PerformActions(actions ActionRequest, requestSync bool) (*
 		return nil, err
 	}
 
-	client.updateState(&response)
 	return &response, nil
 }
 
@@ -134,7 +129,16 @@ func (client *Client) DeliverSync(request SyncDeliveryRequest) (*StateResponse, 
 		return nil, err
 	}
 
-	client.updateState(&response)
+	return &response, nil
+}
+
+func (client *Client) GetAllOps() (*StateResponse, error) {
+	var response StateResponse
+	if err := client.call("get_all_ops", nil, &response); err != nil {
+		return nil, err
+	}
+
+	// Don't update client state, just return the response
 	return &response, nil
 }
 
@@ -191,11 +195,6 @@ func (client *Client) call(messageType string, payload any, response any) error 
 	}
 
 	return json.Unmarshal(resp.Result, response)
-}
-
-func (client *Client) updateState(response *StateResponse) {
-	client.CRDTOperations = response.CRDTOperations
-	client.ClockValue = response.ClockValue
 }
 
 // Close terminates the client process gracefully with a timeout

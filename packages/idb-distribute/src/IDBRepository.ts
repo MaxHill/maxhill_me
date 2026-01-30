@@ -191,6 +191,20 @@ export class IDBRepository {
     return result;
   }
 
+  async getAllOperations(tx: IDBTransaction): Promise<CRDTOperation[]> {
+    validateTransactionStores(tx, [OPERATIONS_STORE]);
+    const store = tx.objectStore(OPERATIONS_STORE);
+
+    const result: CRDTOperation[] = [];
+    const cursorRequest = store.openCursor();
+
+    for await (const record of asyncCursorIterator<{ op: CRDTOperation }>(cursorRequest)) {
+      result.push(record.op);
+    }
+
+    return result;
+  }
+
   async getClientState(
     tx: IDBTransaction,
   ): Promise<{ clientId: string; lastSeenServerVersion: number }> {

@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/binary"
 	"encoding/json"
 	"flag"
@@ -12,10 +14,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sort"
-	"sync/internal/database"
+	"sync/internal/repository"
 	"sync/internal/server"
 	"sync/internal/sync_engine"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type ActionResult struct {
@@ -239,7 +243,7 @@ func verifyCRDTsMatch(clients []*Client) error {
 	// Collect all final states
 	finalStates := make([]*StateResponse, len(clients))
 	for i, client := range clients {
-		state, err := client.PerformActions(ActionRequest{}, false) // No actions, no sync
+		state, err := client.GetAllOps() // Get all operations for verification
 		if err != nil {
 			return fmt.Errorf("failed to get final state from client %d: %w", i, err)
 		}
@@ -266,86 +270,76 @@ func verifyCRDTsMatch(clients []*Client) error {
 	}
 	log.Println("✓ Clock invariant satisfied for all clients")
 
-	// Property 2: Verify all CRDT entries are identical
+	// Property 2: Verify all CRDT entries are identical (as sets, order doesn't matter)
 	log.Println("Checking property: all CRDT entries match")
 	baseCRDT := finalStates[0].CRDTOperations
 
+	// Build a map of operations by their Dot (clientId, version) for the base client
+	baseOpsMap := make(map[string]*sync_engine.CRDTOperation)
+	for i := range baseCRDT {
+		dotKey := fmt.Sprintf("%s:%d", baseCRDT[i].Dot.ClientID, baseCRDT[i].Dot.Version)
+		baseOpsMap[dotKey] = &baseCRDT[i]
+	}
+
 	for i := 1; i < len(finalStates); i++ {
-		if len(finalStates[i].CRDTOperations) != len(baseCRDT) {
+		clientOps := finalStates[i].CRDTOperations
+
+		if len(clientOps) != len(baseCRDT) {
 			return fmt.Errorf("CRDT length mismatch: client 0 has %d entries, client %d has %d entries",
-				len(baseCRDT), i, len(finalStates[i].CRDTOperations))
+				len(baseCRDT), i, len(clientOps))
 		}
 
-		// Compare each CRDT entry
-		for j := range baseCRDT {
-			if !crdtOperationsEqual(&baseCRDT[j], &finalStates[i].CRDTOperations[j]) {
-				a := &baseCRDT[j]
-				b := &finalStates[i].CRDTOperations[j]
+		// Build map for this client's operations
+		clientOpsMap := make(map[string]*sync_engine.CRDTOperation)
+		for j := range clientOps {
+			dotKey := fmt.Sprintf("%s:%d", clientOps[j].Dot.ClientID, clientOps[j].Dot.Version)
+			clientOpsMap[dotKey] = &clientOps[j]
+		}
 
-				log.Printf("CRDT operation %d mismatch between client 0 and client %d:", j, i)
-				log.Printf("  Client 0: RowKey=%s, Table=%s, Type=%s, Dot=(ClientID=%s,Ver=%d)",
-					a.RowKey, a.Table, a.Type, a.Dot.ClientID, a.Dot.Version)
+		// Check that every operation in base exists in client with same content
+		for dotKey, baseOp := range baseOpsMap {
+			clientOp, exists := clientOpsMap[dotKey]
+			if !exists {
+				return fmt.Errorf("client %d is missing operation with Dot %s", i, dotKey)
+			}
 
-				// Show type-specific fields for client 0
-				switch a.Type {
-				case "set":
-					fieldStr := ""
-					if a.Field != nil {
-						fieldStr = *a.Field
-					}
-					log.Printf("    Field=%s, Value=%q", fieldStr, string(a.Value))
-				case "setRow":
-					log.Printf("    Value=%q", string(a.Value))
-				case "remove":
-					log.Printf("    Context=%v", a.Context)
-				}
-
-				log.Printf("  Client %d: RowKey=%s, Table=%s, Type=%s, Dot=(ClientID=%s,Ver=%d)",
-					i, b.RowKey, b.Table, b.Type, b.Dot.ClientID, b.Dot.Version)
-
-				// Show type-specific fields for client i
-				switch b.Type {
-				case "set":
-					fieldStr := ""
-					if b.Field != nil {
-						fieldStr = *b.Field
-					}
-					log.Printf("    Field=%s, Value=%q", fieldStr, string(b.Value))
-				case "setRow":
-					log.Printf("    Value=%q", string(b.Value))
-				case "remove":
-					log.Printf("    Context=%v", b.Context)
-				}
+			if !crdtOperationsEqual(baseOp, clientOp) {
+				log.Printf("CRDT operation mismatch for Dot %s between client 0 and client %d:", dotKey, i)
+				log.Printf("  Client 0: RowKey=%s, Table=%s, Type=%s",
+					baseOp.RowKey, baseOp.Table, baseOp.Type)
+				log.Printf("  Client %d: RowKey=%s, Table=%s, Type=%s",
+					i, clientOp.RowKey, clientOp.Table, clientOp.Type)
 
 				// Show which fields differ
 				diffs := []string{}
-				if a.RowKey != b.RowKey {
+				if baseOp.RowKey != clientOp.RowKey {
 					diffs = append(diffs, "RowKey")
 				}
-				if a.Table != b.Table {
+				if baseOp.Table != clientOp.Table {
 					diffs = append(diffs, "Table")
 				}
-				if a.Type != b.Type {
+				if baseOp.Type != clientOp.Type {
 					diffs = append(diffs, "Type")
 				}
-				if a.Dot.Version != b.Dot.Version {
-					diffs = append(diffs, "Dot.Version")
-				}
-				if a.Dot.ClientID != b.Dot.ClientID {
-					diffs = append(diffs, "Dot.ClientID")
-				}
-				if !stringPtrEqual(a.Field, b.Field) {
+				if !stringPtrEqual(baseOp.Field, clientOp.Field) {
 					diffs = append(diffs, "Field")
 				}
-				if string(a.Value) != string(b.Value) {
+				if string(baseOp.Value) != string(clientOp.Value) {
 					diffs = append(diffs, "Value")
 				}
-				if !contextEqual(a.Context, b.Context) {
+				if !contextEqual(baseOp.Context, clientOp.Context) {
 					diffs = append(diffs, "Context")
 				}
 				log.Printf("  Fields that differ: %v", diffs)
 
-				return fmt.Errorf("CRDT entry %d mismatch between client 0 and client %d", j, i)
+				return fmt.Errorf("CRDT operation with Dot %s differs between client 0 and client %d", dotKey, i)
+			}
+		}
+
+		// Check that client doesn't have extra operations
+		for dotKey := range clientOpsMap {
+			if _, exists := baseOpsMap[dotKey]; !exists {
+				return fmt.Errorf("client %d has extra operation with Dot %s that client 0 doesn't have", i, dotKey)
 			}
 		}
 	}
@@ -572,14 +566,19 @@ func createClients(random *rand.Rand, fileName string, numClients int) []*Client
 }
 
 func createServer() *server.Server {
-	db := database.New(
-		database.DBConfig{
-			DBUrl:           ":memory:",
-			BusyTimeout:     1000,
-			MaxOpenConns:    1,
-			MaxIdleConns:    1,
-			ConnMaxLifetime: time.Duration(0),
-		})
+	db, err := sql.Open("sqlite3", ":memory:?_journal_mode=WAL&_busy_timeout=1000")
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+	db.SetConnMaxLifetime(time.Duration(0))
+
+	if err := repository.InitSchema(context.Background(), db); err != nil {
+		log.Fatalf("Error initializing database schema: %v", err)
+	}
+
 	syncService := sync_engine.NewSyncService(db)
 	server := &server.Server{
 		SyncService: syncService,
