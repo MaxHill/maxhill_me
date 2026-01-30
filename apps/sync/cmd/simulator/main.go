@@ -59,11 +59,11 @@ func main() {
 	seed := flag.String("seed", "", "Random seed (generated if not provided)")
 
 	// Fault injection flags
-	faultDelayProb := flag.Float64("fault-delay-sync", 0.0, "Probability of delaying sync delivery (0.0-1.0)")
+	faultDelayProb := flag.Float64("fault-delay-sync", 0.1, "Probability of delaying sync delivery (0.0-1.0)")
 	faultDelayMin := flag.Int("fault-delay-ticks-min", 1, "Minimum ticks to delay")
 	faultDelayMax := flag.Int("fault-delay-ticks-max", 5, "Maximum ticks to delay")
-	faultCorruptReq := flag.Float64("fault-corrupt-request", 0.0, "Probability of corrupting sync request (0.0-1.0)")
-	faultCorruptResp := flag.Float64("fault-corrupt-response", 0.0, "Probability of corrupting sync response (0.0-1.0)")
+	faultCorruptReq := flag.Float64("fault-corrupt-request", 0.1, "Probability of corrupting sync request (0.0-1.0)")
+	faultCorruptResp := flag.Float64("fault-corrupt-response", 0.1, "Probability of corrupting sync response (0.0-1.0)")
 
 	flag.Parse()
 
