@@ -4,6 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "wgo -file=.go -xfile=_test.go go run ./cmd/server/",
-    "build": "go build -o sync ."
+    "build": "echo 'Skipping sync build (Go application)'"
   }
 }
