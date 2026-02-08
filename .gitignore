@@ -45,6 +45,11 @@ apps/account/main
 apps/lf-experiment/main
 apps/sync/main
 
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
 # Zig artifacts
 ssg/zine
 **/build_zcu.o

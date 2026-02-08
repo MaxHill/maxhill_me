@@ -90,20 +90,37 @@ func (server Server) HandleSync(writer http.ResponseWriter, request *http.Reques
 	syncResp, err := server.SyncService.Sync(request.Context(), syncReq)
 	if err != nil {
 		log.Printf("Sync request failed for client %s: %v", syncReq.ClientID, err)
+
+		// Check if this is a SyncError with a code
+		if syncErr, ok := err.(*sync_engine.SyncError); ok {
+			// Return structured error with code
+			errorBody, _ := json.Marshal(syncErr)
+			writer.WriteHeader(http.StatusInternalServerError)
+			writer.Write(errorBody)
+			return
+		}
+
+		// Fallback for non-SyncError errors
+		fallbackErr := sync_engine.NewSyncError(sync_engine.ErrDatabaseError, err.Error())
+		errorBody, _ := json.Marshal(fallbackErr)
 		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{"error": "Error when syncing request"}`))
+		writer.Write(errorBody)
 		return
 	}
 	if syncResp == nil {
+		syncErr := sync_engine.NewSyncError(sync_engine.ErrDatabaseError, "sync response is nil")
+		errorBody, _ := json.Marshal(syncErr)
 		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{"error": "Error when syncing request"}`))
+		writer.Write(errorBody)
 		return
 	}
 
 	respBody, err := json.Marshal(syncResp)
 	if err != nil {
+		syncErr := sync_engine.NewSyncError(sync_engine.ErrDatabaseError, "failed to encode response")
+		errorBody, _ := json.Marshal(syncErr)
 		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte(`{"error": "Failed to encode response"}`))
+		writer.Write(errorBody)
 		return
 	}
 

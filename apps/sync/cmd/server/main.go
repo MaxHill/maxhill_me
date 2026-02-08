@@ -22,7 +22,9 @@ func main() {
 	log.Printf("Starting sync server...")
 
 	// Open database connection
-	db, err := sql.Open("sqlite3", ":memory:?_journal_mode=WAL&_busy_timeout=5000")
+	// Using file-based SQLite for persistence across restarts
+	// To reset the database, delete ./sync.db
+	db, err := sql.Open("sqlite3", "./sync.db?_journal_mode=WAL&_busy_timeout=5000")
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}

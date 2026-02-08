@@ -3,7 +3,6 @@ package sync_engine
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"sync/internal/repository"
 )
 
@@ -21,12 +20,12 @@ func (sync_service *SyncService) Sync(ctx context.Context, req SyncRequest) (*Sy
 	// Hash and validate the request
 	err := ValidateSyncRequestIntegrity(req)
 	if err != nil {
-		return nil, fmt.Errorf("request integrity check failed for client %s: %w", req.ClientID, err)
+		return nil, NewSyncErrorf(ErrRequestIntegrity, "request integrity check failed for client %s: %v", req.ClientID, err)
 	}
 
 	tx, err := sync_service.db.Begin()
 	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+		return nil, NewSyncErrorf(ErrDatabaseError, "failed to begin transaction: %v", err)
 	}
 	defer tx.Rollback()
 
@@ -35,14 +34,30 @@ func (sync_service *SyncService) Sync(ctx context.Context, req SyncRequest) (*Sy
 	for i, operation := range req.Operations {
 		dbOperation, err := operation.toDatabaseOperation()
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert operation %d to database format: %w", i, err)
+			return nil, NewSyncErrorf(ErrInvalidOperation, "failed to convert operation %d to database format: %v", i, err)
 		}
 		dbOperations[i] = dbOperation
 	}
 
-	_, err = repository.InsertCRDTOperations(ctx, tx, dbOperations)
+	serverVersions, err := repository.InsertCRDTOperations(ctx, tx, dbOperations)
 	if err != nil {
-		return nil, fmt.Errorf("failed to insert the operations: %w", err)
+		return nil, NewSyncErrorf(ErrDatabaseError, "failed to insert the operations: %v", err)
+	}
+
+	// Check if client's lastSeenServerVersion is out of sync with the server
+	// This can happen if the server database was reset but clients still have old state
+	actualMaxServerVersion, err := repository.GetMaxServerVersion(ctx, tx)
+	if err != nil {
+		return nil, NewSyncErrorf(ErrDatabaseError, "failed to get max server version: %v", err)
+	}
+
+	// If client claims to have seen operations beyond what exists in the database,
+	// the client is out of sync and needs to reset its state.
+	// This typically happens when the server database is reset/cleared.
+	if req.LastSeenServerVersion > actualMaxServerVersion {
+		return nil, NewSyncErrorf(ErrClientStateOutOfSync,
+			"client lastSeenServerVersion=%d but server max is %d",
+			req.LastSeenServerVersion, actualMaxServerVersion)
 	}
 
 	// Build list of dots that were synced
@@ -54,7 +69,7 @@ func (sync_service *SyncService) Sync(ctx context.Context, req SyncRequest) (*Sy
 	// Get operations the client hasn't seen yet
 	unseenDBOperations, err := repository.GetCRDTOperationsSince(ctx, tx, req.LastSeenServerVersion, 1000, req.ClientID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get unseen operations: %w", err)
+		return nil, NewSyncErrorf(ErrDatabaseError, "failed to get unseen operations: %v", err)
 	}
 
 	// Convert database operations to API format
@@ -62,22 +77,24 @@ func (sync_service *SyncService) Sync(ctx context.Context, req SyncRequest) (*Sy
 	for i, dbOperation := range unseenDBOperations {
 		op, err := fromDatabaseOperation(dbOperation)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert database operation %d to API format: %w", i, err)
+			return nil, NewSyncErrorf(ErrInvalidOperation, "failed to convert database operation %d to API format: %v", i, err)
 		}
 		unseenOperations[i] = op
 	}
 
 	// Find the highest server version
+	// Start with the client's last seen version
 	maxServerVersion := req.LastSeenServerVersion
+
+	// Include newly inserted operations
+	for _, serverVersion := range serverVersions {
+		maxServerVersion = max(maxServerVersion, serverVersion)
+	}
+
+	// Include operations being returned to the client
 	for _, dbOperation := range unseenDBOperations {
 		maxServerVersion = max(maxServerVersion, dbOperation.ServerVersion)
 	}
-
-	// TODO: Implement the sync logic:
-	// 1. Insert incoming operations from req.Operations
-	// 2. Query operations since req.LastSeenServerVersion
-	// 3. Build and return SyncResponse
-	// 4. Commit transaction
 
 	response := SyncResponse{
 		BaseServerVersion:   req.LastSeenServerVersion,
@@ -88,16 +105,15 @@ func (sync_service *SyncService) Sync(ctx context.Context, req SyncRequest) (*Sy
 		ResponseHash:     "",
 	}
 
-	// TODO: Hash the response
 	responseHash, err := HashSyncResponse(response)
 	if err != nil {
-		return nil, fmt.Errorf("failed to hash response: %w", err)
+		return nil, NewSyncErrorf(ErrResponseIntegrity, "failed to hash response: %v", err)
 	}
 	response.ResponseHash = responseHash
 
 	// Commit the transaction
 	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, NewSyncErrorf(ErrDatabaseError, "failed to commit transaction: %v", err)
 	}
 
 	return &response, nil

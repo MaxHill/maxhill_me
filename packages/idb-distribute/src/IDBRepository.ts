@@ -283,4 +283,29 @@ export class IDBRepository {
 
     return version;
   }
+
+  /**
+   * Resets the client's sync state. This clears all operations and resets
+   * the lastSeenServerVersion to -1.
+   * 
+   * Use this when the client's state is out of sync with the server
+   * (e.g., after a server database reset).
+   * 
+   * Transaction requirements:
+   * - Stores: [CLIENT_STATE_STORE, OPERATIONS_STORE]
+   * - Mode: "readwrite"
+   */
+  async resetSyncState(tx: IDBTransaction): Promise<void> {
+    validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE], "readwrite");
+    
+    // Clear all operations
+    const operationsStore = tx.objectStore(OPERATIONS_STORE);
+    await promisifyIDBRequest(operationsStore.clear());
+    
+    // Reset lastSeenServerVersion to -1
+    const clientStateStore = tx.objectStore(CLIENT_STATE_STORE);
+    await promisifyIDBRequest(clientStateStore.put(-1, LAST_SEEN_SERVER_VERSION));
+    
+    console.warn("Client sync state has been reset. All local unsynced operations have been cleared.");
+  }
 }

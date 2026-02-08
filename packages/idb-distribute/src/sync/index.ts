@@ -7,6 +7,7 @@ import {
 } from "../IDBRepository.ts";
 import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
 import { validateTransactionStores } from "../utils.ts";
+import { SyncErrorCode, isSyncError } from "./errors.ts";
 
 export interface SyncRequest {
   clientId: string;
@@ -126,9 +127,32 @@ export class Sync {
       });
 
       if (!response.ok) {
-        const debugInfo = { request, response };
-        throw new Error(`Sync failed: ${JSON.stringify(debugInfo)}`);
+        // Try to parse structured error from response
+        try {
+          const errorData = await response.json();
+          
+          // Check if this is a structured SyncError
+          if (isSyncError(errorData)) {
+            // For CLIENT_STATE_OUT_OF_SYNC, throw a special error that the client can catch
+            if (errorData.code === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {
+              const error = new Error(errorData.message);
+              error.name = SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC;
+              throw error;
+            }
+            
+            // For other sync errors, include the code in the error message
+            throw new Error(`Sync error [${errorData.code}]: ${errorData.message}`);
+          }
+          
+          // Fallback for non-structured errors
+          const message = errorData.error || errorData.message || "Unknown error";
+          throw new Error(`Sync failed (${response.status}): ${message}`);
+        } catch (parseError) {
+          // If we can't parse the response, use status text
+          throw new Error(`Sync failed (${response.status}): ${response.statusText || "Unknown error"}`);
+        }
       }
+      
       let syncResponse: SyncResponse = await response.json();
 
       return syncResponse;
@@ -136,12 +160,18 @@ export class Sync {
       if (!error || !error.message) {
         throw new Error(`Unknown error occurred during sync: ${error}`);
       }
+      
+      // Re-throw CLIENT_STATE_OUT_OF_SYNC errors as-is so they can be handled by the caller
+      if (error.name === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {
+        throw error;
+      }
+      
       if (error instanceof TypeError || error.message.includes("fetch")) {
         // Network error - potentially retryable
         throw new Error(`Sync network failure: ${error.message}`, { cause: error });
       } else {
         // Other error - likely non-retryable
-        throw new Error(`Sync failed: ${error.message}`, { cause: error });
+        throw error;
       }
     }
   }
