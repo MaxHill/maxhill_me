@@ -1,25 +1,39 @@
 ---
-import BaseLayout from "../components/layouts/BaseLayout.astro"
+import BaseLayout from "../components/layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="Design System">
-    <main>
-    <m-fit-text font-display>Max Hill</m-fit-text>
-    </main>
+<BaseLayout title="Home">
+  <main class="exposed-grid background-pattern" data-pattern="diagonal">
+    <a class="home">Home</a>
+    <a class="design-system">Design System</a>
+    <m-fit-text font-display>Max <br/> Hill</m-fit-text>
+  </main>
 </BaseLayout>
 
-
-
 <style>
-    main {
-        height: 100dvh;
-        width: 100dvw;
-        display: flex;
-        place-items: center;
-    }
-    m-fit-text {
-        width: 100%;
-        place-items: center;
-    } 
-
+  main {
+    height: 100dvh;
+    width: 100dvw;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: 1fr);
+  }
+  a {
+      padding-inline: var(--body-margin);
+    writing-mode: vertical-rl;
+    background: var(--color-background);
+  }
+  .home {
+    grid-column:  span 1;
+    background: var(--color-background);
+  }
+  .design-system {
+    grid-column:  span 2;
+    background: var(--color-background);
+  }
+  m-fit-text {
+      grid-column: 7 / span 6;
+    background: var(--color-background);
+    text-align: right;
+  }
 </style>

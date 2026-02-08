@@ -1,5 +1,5 @@
 ---
-import BaseLayout from "../../components/layouts/BaseLayout.astro";
+import PageLayout from "../../components/layouts/PageLayout.astro";
 import { getCollection } from "astro:content";
 
 const title = "Components";
@@ -22,7 +22,7 @@ const components = docEntries
     .filter(Boolean);
 ---
 
-<BaseLayout title={title} bodyClass="component-index-page">
+<PageLayout title={title} bodyClass="component-index-page">
     <main>
         <m-fit-text class="title" font-display >
             <h1 data-margin="0">Search Components</h1>
@@ -61,7 +61,7 @@ const components = docEntries
             </div>
         </m-search-list>
     </main>
-</BaseLayout>
+</PageLayout>
 
 <style>
 

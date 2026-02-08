@@ -1,5 +1,5 @@
 ---
-import BaseLayout from "../components/layouts/BaseLayout.astro";
+import PageLayout from "../components/layouts/PageLayout.astro";
 import Document from "../components/sections/Document.astro";
 import { getCollection } from "astro:content";
 import { PanelLeftOpenIcon } from '@lucide/astro';
@@ -86,7 +86,7 @@ function buildNavHierarchy(docs: typeof sortedDocs): NavItem[] {
 const navHierarchy = buildNavHierarchy(sortedDocs);
 ---
 
-<BaseLayout title={title} bodyClass="design-system-page">
+<PageLayout title={title} bodyClass="design-system-page">
     <button id="toggle-menu-button" class="toggle-menu"><PanelLeftOpenIcon/></button>
     <div class="main exposed-grid">
         <div id="hero" class="hero">
@@ -130,7 +130,7 @@ const navHierarchy = buildNavHierarchy(sortedDocs);
             ))
         }
     </div>
-</BaseLayout>
+</PageLayout>
 
 <script>
     const parent = document.querySelector(".main");

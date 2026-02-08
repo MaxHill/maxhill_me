@@ -1,5 +1,5 @@
 ---
-import BaseLayout from "../../components/layouts/BaseLayout.astro";
+import PageLayout from "../../components/layouts/PageLayout.astro";
 import { getCollection, render } from "astro:content";
 import {
     getComponentByTagName,
@@ -44,7 +44,7 @@ const events = component
     : [];
 ---
 
-<BaseLayout title={title}>
+<PageLayout title={title}>
     <main
         class="content-grid typesetting"
         data-justify="start"
@@ -227,7 +227,7 @@ const events = component
             )
         }
     </main>
-</BaseLayout>
+</PageLayout>
 
 <style>
 
