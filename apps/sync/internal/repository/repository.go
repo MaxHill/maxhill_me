@@ -245,3 +245,22 @@ func GetCRDTOperationsSince(ctx context.Context, db Execer, serverVersion int64,
 
 	return ops, nil
 }
+
+// GetMaxServerVersion returns the highest server_version in the database.
+// Returns -1 if the table is empty (no operations yet).
+// This is useful for detecting when a client's lastSeenServerVersion is out of sync
+// with the server (e.g., after a server database reset).
+func GetMaxServerVersion(ctx context.Context, db Execer) (int64, error) {
+	const query = `
+		SELECT COALESCE(MAX(server_version), -1)
+		FROM crdt_operations
+	`
+
+	var maxVersion int64
+	err := db.QueryRowContext(ctx, query).Scan(&maxVersion)
+	if err != nil {
+		return -1, fmt.Errorf("failed to get max server version: %w", err)
+	}
+
+	return maxVersion, nil
+}

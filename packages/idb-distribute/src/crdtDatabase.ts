@@ -7,6 +7,7 @@ import {
 import { applyOperationToRow, CRDTOperation, Dot, LWWField, ValidKey } from "./crdt.ts";
 import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
 import { Sync } from "./sync/index.ts";
+import { SyncErrorCode } from "./sync/errors.ts";
 import { promisifyIDBRequest } from "./utils.ts";
 
 export class CRDTDatabase {
@@ -177,17 +178,36 @@ export class CRDTDatabase {
   }
 
   async sync(): Promise<void> {
-    const tx = this.idbRepository.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE]);
-    const syncRequest = await this.syncManager.createSyncRequest(tx);
+    try {
+      const tx = this.idbRepository.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE]);
+      const syncRequest = await this.syncManager.createSyncRequest(tx);
 
-    const response = await this.syncManager.sendSyncRequest(this.syncRemote, syncRequest);
+      const response = await this.syncManager.sendSyncRequest(this.syncRemote, syncRequest);
 
-    const writeTx = this.idbRepository.transaction([
-      CLIENT_STATE_STORE,
-      OPERATIONS_STORE,
-      ROWS_STORE,
-    ], "readwrite");
-    await this.syncManager.handleSyncResponse(writeTx, this.logicalClock, response);
+      const writeTx = this.idbRepository.transaction([
+        CLIENT_STATE_STORE,
+        OPERATIONS_STORE,
+        ROWS_STORE,
+      ], "readwrite");
+      await this.syncManager.handleSyncResponse(writeTx, this.logicalClock, response);
+    } catch (error: any) {
+      // Check if this is a "client state out of sync" error using the error name
+      if (error.name === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {
+        console.warn("Client state is out of sync with server. Resetting local state...", error.message);
+        
+        // Reset the client state
+        const resetTx = this.idbRepository.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE], "readwrite");
+        await this.idbRepository.resetSyncState(resetTx);
+        
+        console.log("Client state reset complete. Retrying sync...");
+        
+        // Retry sync after reset
+        return this.sync();
+      }
+      
+      // Re-throw other errors
+      throw error;
+    }
   }
 
   async close(): Promise<void> {
