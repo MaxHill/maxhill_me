@@ -4,8 +4,9 @@ import BaseLayout from "../components/layouts/BaseLayout.astro";
 
 <BaseLayout title="Home">
   <main class="exposed-grid background-pattern" data-pattern="diagonal">
-    <a class="home">Home</a>
-    <a class="design-system">Design System</a>
+    <a href="/" class="home">maxhill.me</a>
+    <a href="/design-system" class="design-system">Design System</a>
+    <a href="/components" class="components">Components</a>
     <m-fit-text font-display>Max <br/> Hill</m-fit-text>
   </main>
 </BaseLayout>
@@ -17,11 +18,20 @@ import BaseLayout from "../components/layouts/BaseLayout.astro";
     display: grid;
     grid-template-columns: repeat(12, 1fr);
     grid-template-rows: 1fr);
+    border-inline: var(--border);
+    direction: rtl;
+
+    @media (width > 900px) { direction: ltr; }
   }
   a {
       padding-inline: var(--body-margin);
     writing-mode: vertical-rl;
     background: var(--color-background);
+    text-decoration: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
   }
   .home {
     grid-column:  span 1;
@@ -31,8 +41,11 @@ import BaseLayout from "../components/layouts/BaseLayout.astro";
     grid-column:  span 2;
     background: var(--color-background);
   }
+  .components {
+    grid-column:  span 3;
+  }
   m-fit-text {
-      grid-column: 7 / span 6;
+      grid-column: 8 / span 5;
     background: var(--color-background);
     text-align: right;
   }
