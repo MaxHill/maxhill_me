@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "wgo -file=.go -xfile=_test.go go run ./cmd/server/",
-    "build": "echo 'Skipping sync build (Go application)'"
+    "dev": "wgo -file=.go -xfile=_test.go go run ./cmd/server/"
   }
 }
