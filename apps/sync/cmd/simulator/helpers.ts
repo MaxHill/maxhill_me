@@ -5,8 +5,26 @@ import { IDBRepository } from "../../../../packages/idb-distribute/src/IDBReposi
 import { Sync } from "../../../../packages/idb-distribute/src/sync/index.ts";
 import { PersistedLogicalClock } from "../../../../packages/idb-distribute/src/persistedLogicalClock.ts";
 
-export type User = { id: number; name: string };
-export type Post = { id: string; content: string };
+export type User = {
+  id: number;
+  name: string;
+  email?: string;
+  bio?: string;
+  joinDate?: number;
+  metadata?: Record<string, any>;
+};
+
+export type Post = {
+  id: string;
+  title?: string;
+  content: string;
+  authorId?: number;
+  createdAt?: number;
+  editedAt?: number;
+  viewCount?: number;
+  tags?: string[];
+  metadata?: Record<string, any>;
+};
 
 export interface SimClient {
   crdtDb: CRDTDatabase;           // High-level CRDT API for data operations
