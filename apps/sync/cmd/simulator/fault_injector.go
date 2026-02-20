@@ -19,14 +19,6 @@ type FaultConfig struct {
 	CorruptResponseProbability float64
 }
 
-type DelayedSync struct {
-	Client        *Client
-	Delivery      SyncDeliveryRequest
-	DeliverAtTick int
-	DelayedAtTick int  // for logging
-	WasCorrupted  bool // whether request or response was corrupted
-}
-
 type FaultInjector struct {
 	config FaultConfig
 	random *rand.Rand
@@ -44,8 +36,11 @@ func (f *FaultInjector) CalculateDelayTicks(currentTick, totalTicks int) int {
 	delay := f.random.Intn(f.config.DelayedSyncMaxTicks-f.config.DelayedSyncMinTicks+1) +
 		f.config.DelayedSyncMinTicks
 
-	// Use modulo to wrap around
-	deliverAt := (currentTick + delay) % totalTicks
+	// Clamp to prevent wraparound - ensures delays work properly near simulation end
+	deliverAt := currentTick + delay
+	if deliverAt >= totalTicks {
+		deliverAt = totalTicks - 1 // Deliver on last tick
+	}
 	return deliverAt
 }
 
@@ -128,5 +123,33 @@ func (f *FaultInjector) CorruptResponse(resp *sync_engine.SyncResponse) {
 		idx := f.random.Intn(len(resp.Operations))
 		resp.Operations[idx].Dot.ClientID = "CORRUPTED-CLIENT-ID"
 		log.Printf("    FAULT INJECTION: Corrupted response entry %d clientID", idx)
+	}
+}
+
+// CorruptJSON corrupts a JSON string in various ways
+func (f *FaultInjector) CorruptJSON(jsonStr *string) {
+	corruptionType := f.random.Intn(4)
+
+	switch corruptionType {
+	case 0: // Truncate JSON
+		if len(*jsonStr) > 10 {
+			truncateAt := len(*jsonStr) / 2
+			*jsonStr = (*jsonStr)[:truncateAt]
+			log.Printf("    FAULT INJECTION: Truncated JSON to %d chars", truncateAt)
+		}
+	case 1: // Add garbage at the end
+		*jsonStr = *jsonStr + "GARBAGE"
+		log.Printf("    FAULT INJECTION: Added garbage to end of JSON")
+	case 2: // Remove characters safely (avoid UTF-8 issues)
+		if len(*jsonStr) > 5 {
+			*jsonStr = (*jsonStr)[:len(*jsonStr)-5]
+			log.Printf("    FAULT INJECTION: Removed last 5 characters from JSON")
+		} else if len(*jsonStr) > 0 {
+			*jsonStr = "{"
+			log.Printf("    FAULT INJECTION: Replaced with minimal invalid JSON")
+		}
+	case 3: // Replace with completely invalid JSON
+		*jsonStr = "{invalid json}"
+		log.Printf("    FAULT INJECTION: Replaced with invalid JSON")
 	}
 }

@@ -22,6 +22,13 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+const (
+	// maxQueueDrainTicks is the safety limit for draining queues after simulation ends.
+	// This prevents infinite loops if there's a bug in queue processing.
+	// Should be larger than the maximum configured delay (DelayedSyncMaxTicks).
+	maxQueueDrainTicks = 100
+)
+
 type ActionResult struct {
 	ClientIndex int
 	State       *StateResponse
@@ -106,8 +113,9 @@ func main() {
 	// Initialize statistics
 	stats := &SimulationStats{}
 
-	// Queue for delayed syncs
-	delayedSyncs := []DelayedSync{}
+	// Initialize request/response queues
+	requestQueue := &RequestQueue{}
+	responseQueue := &ResponseQueue{}
 
 	log.Printf("=== Simulation Starting ===")
 	log.Printf("Seed: %s", *seed)
@@ -135,6 +143,7 @@ func main() {
 
 		actionResults := collectAndSortActionResults(tick, results, clients)
 
+		// 1. Log action results and collect stats
 		for i, state := range actionResults {
 			log.Printf("Client %d (%s;tick=%d)", i, clients[i].ClientID, tick)
 			log.Printf("  Clock: %d, CRDT operations: %d", state.ClockValue, len(state.CRDTOperations))
@@ -148,18 +157,37 @@ func main() {
 			if state.SyncPrepTimeMs > 0 {
 				stats.SyncPrepTimes = append(stats.SyncPrepTimes, state.SyncPrepTimeMs)
 			}
-
-			// If client wants to sync, send to server (sequential for determinism)
-			processAllSyncRequests(stats, server, clients[i], state, faultInjector, faultsEnabled, tick, *numTicks, &delayedSyncs)
 		}
 
-		// Deliver any pending delayed syncs for this tick
-		if faultsEnabled {
-			delayedSyncs = deliverPendingSyncs(delayedSyncs, tick, stats)
+		// 2. Enqueue sync requests with latency
+		for i, state := range actionResults {
+			enqueueSyncRequest(requestQueue, clients[i], i, state, faultInjector, faultsEnabled, tick, *numTicks, stats)
 		}
+
+		// 3. Process ready requests from queue (with deterministic shuffle)
+		processReadyRequests(requestQueue, responseQueue, server, random, faultInjector, faultsEnabled, tick, *numTicks, stats)
+
+		// 4. Deliver ready responses to clients
+		deliverReadyResponses(responseQueue, clients, tick, stats)
 	}
 
 	log.Println("Simulation complete")
+
+	// Drain queues before convergence
+	log.Println("Draining pending requests/responses...")
+	finalTick := *numTicks
+	for requestQueue.Len() > 0 || responseQueue.Len() > 0 {
+		log.Printf("  Queue status: %d requests, %d responses pending", requestQueue.Len(), responseQueue.Len())
+		processReadyRequests(requestQueue, responseQueue, server, random, faultInjector, faultsEnabled, finalTick, *numTicks, stats)
+		deliverReadyResponses(responseQueue, clients, finalTick, stats)
+		finalTick++
+
+		// Safety check: prevent infinite loop
+		if finalTick > *numTicks+maxQueueDrainTicks {
+			log.Fatalf("Failed to drain queues after %d extra ticks", maxQueueDrainTicks)
+		}
+	}
+	log.Println("All queues drained")
 
 	// Convergence check
 	stats.ConvergenceStart = time.Now()
@@ -193,21 +221,36 @@ func convergeAllClients(clients []*Client, server *server.Server) error {
 		}
 
 		if state.SyncRequest != nil {
-			syncResp, err := sendSyncToServer(server, state.SyncRequest)
+			// Directly send to server without fault injection
+			requestBody, err := json.Marshal(state.SyncRequest)
 			if err != nil {
-				return fmt.Errorf("client %d round 1 sync failed: %w", i, err)
+				return fmt.Errorf("client %d round 1 marshal failed: %w", i, err)
 			}
 
-			// Skip if server rejected the request (nil response)
-			if syncResp != nil {
-				delivery := SyncDeliveryRequest{
-					SyncRequest:  *state.SyncRequest,
-					SyncResponse: *syncResp,
-				}
-				_, err = client.DeliverSync(delivery)
-				if err != nil {
-					return fmt.Errorf("client %d round 1 delivery failed: %w", i, err)
-				}
+			httpReq := httptest.NewRequest(http.MethodPost, "/sync", bytes.NewBuffer(requestBody))
+			httpReq.Header.Set("Content-Type", "application/json")
+			recorder := httptest.NewRecorder()
+			server.HandleSync(recorder, httpReq)
+
+			// Skip if server rejected the request
+			if recorder.Code != http.StatusOK {
+				log.Printf("  Client %d round 1 sync rejected with status %d", i, recorder.Code)
+				continue
+			}
+
+			// Parse response
+			var syncResp sync_engine.SyncResponse
+			if err := json.Unmarshal(recorder.Body.Bytes(), &syncResp); err != nil {
+				return fmt.Errorf("client %d round 1 response parse failed: %w", i, err)
+			}
+
+			delivery := SyncDeliveryRequest{
+				SyncRequest:  *state.SyncRequest,
+				SyncResponse: syncResp,
+			}
+			_, err = client.DeliverSync(delivery)
+			if err != nil {
+				return fmt.Errorf("client %d round 1 delivery failed: %w", i, err)
 			}
 		}
 	}
@@ -221,21 +264,36 @@ func convergeAllClients(clients []*Client, server *server.Server) error {
 		}
 
 		if state.SyncRequest != nil {
-			syncResp, err := sendSyncToServer(server, state.SyncRequest)
+			// Directly send to server without fault injection
+			requestBody, err := json.Marshal(state.SyncRequest)
 			if err != nil {
-				return fmt.Errorf("client %d round 2 sync failed: %w", i, err)
+				return fmt.Errorf("client %d round 2 marshal failed: %w", i, err)
 			}
 
-			// Skip if server rejected the request (nil response)
-			if syncResp != nil {
-				delivery := SyncDeliveryRequest{
-					SyncRequest:  *state.SyncRequest,
-					SyncResponse: *syncResp,
-				}
-				_, err = client.DeliverSync(delivery)
-				if err != nil {
-					return fmt.Errorf("client %d round 2 delivery failed: %w", i, err)
-				}
+			httpReq := httptest.NewRequest(http.MethodPost, "/sync", bytes.NewBuffer(requestBody))
+			httpReq.Header.Set("Content-Type", "application/json")
+			recorder := httptest.NewRecorder()
+			server.HandleSync(recorder, httpReq)
+
+			// Skip if server rejected the request
+			if recorder.Code != http.StatusOK {
+				log.Printf("  Client %d round 2 sync rejected with status %d", i, recorder.Code)
+				continue
+			}
+
+			// Parse response
+			var syncResp sync_engine.SyncResponse
+			if err := json.Unmarshal(recorder.Body.Bytes(), &syncResp); err != nil {
+				return fmt.Errorf("client %d round 2 response parse failed: %w", i, err)
+			}
+
+			delivery := SyncDeliveryRequest{
+				SyncRequest:  *state.SyncRequest,
+				SyncResponse: syncResp,
+			}
+			_, err = client.DeliverSync(delivery)
+			if err != nil {
+				return fmt.Errorf("client %d round 2 delivery failed: %w", i, err)
 			}
 		}
 	}
@@ -446,31 +504,6 @@ func rowDataEqual(a, b map[string]any) bool {
 	return true
 }
 
-func sendSyncToServer(server *server.Server, req *sync_engine.SyncRequest) (*sync_engine.SyncResponse, error) {
-	requestBody, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	httpReq := httptest.NewRequest(http.MethodPost, "/sync", bytes.NewBuffer(requestBody))
-	httpReq.Header.Set("Content-Type", "application/json")
-	recorder := httptest.NewRecorder()
-
-	server.HandleSync(recorder, httpReq)
-
-	if recorder.Code != http.StatusOK {
-		log.Printf("    Sync request rejected with status %d: %s", recorder.Code, recorder.Body.String())
-		return nil, nil
-	}
-
-	var resp sync_engine.SyncResponse
-	if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {
-		return nil, err
-	}
-
-	return &resp, nil
-}
-
 func average(values []float64) float64 {
 	if len(values) == 0 {
 		return 0
@@ -636,16 +669,16 @@ func collectAndSortActionResults(tick int, results chan ActionResult, clients []
 	return actionResults
 }
 
-func processAllSyncRequests(
-	stats *SimulationStats,
-	server *server.Server,
+func enqueueSyncRequest(
+	requestQueue *RequestQueue,
 	client *Client,
+	clientIndex int,
 	state *StateResponse,
 	faultInjector *FaultInjector,
 	faultsEnabled bool,
 	currentTick int,
 	totalTicks int,
-	delayedSyncs *[]DelayedSync,
+	stats *SimulationStats,
 ) {
 	if state.SyncRequest == nil {
 		return
@@ -654,115 +687,201 @@ func processAllSyncRequests(
 	stats.TotalSyncs++
 	stats.TotalOperationsSent += len(state.SyncRequest.Operations)
 
-	log.Printf("  Syncing: sending %d entries, last seen version %d",
-		len(state.SyncRequest.Operations), state.SyncRequest.LastSeenServerVersion)
+	// Store original request before any corruption
+	originalRequest := state.SyncRequest
+
+	// Marshal sync request to JSON
+	requestBody, err := json.Marshal(state.SyncRequest)
+	if err != nil {
+		log.Fatalf("Failed to marshal sync request: %v", err)
+	}
+
+	bodyStr := string(requestBody)
+	wasCorrupted := false
 
 	// FAULT INJECTION: Corrupt request
-	requestToSend := state.SyncRequest
-	requestWasCorrupted := false
 	if faultsEnabled && faultInjector.ShouldCorruptRequest() {
 		stats.FaultCorruptedRequests++
-		corruptedReq := *state.SyncRequest // copy
-		faultInjector.CorruptRequest(&corruptedReq)
-		requestToSend = &corruptedReq
-		requestWasCorrupted = true
+		faultInjector.CorruptJSON(&bodyStr)
+		wasCorrupted = true
 	}
 
-	// Send to server
-	syncResp, err := sendSyncToServer(server, requestToSend)
-	if err != nil {
-		log.Fatalf("Client %s sync request failed: %v", client.ClientID, err)
-	}
-
-	// If syncResp is nil, the server rejected the request (e.g., 400 error)
-	// This is expected for corrupted requests, so just skip delivery
-	if syncResp == nil {
-		if requestWasCorrupted {
-			stats.FaultRejectedRequests++
-		}
-		return
-	}
-
-	stats.TotalOperationsRecv += len(syncResp.Operations)
-	log.Printf("  Received %d operations from server", len(syncResp.Operations))
-
-	// Prepare delivery
-	delivery := SyncDeliveryRequest{
-		SyncRequest:  *state.SyncRequest,
-		SyncResponse: *syncResp,
-	}
-
-	// FAULT INJECTION: Corrupt response
-	responseWasCorrupted := false
-	if faultsEnabled && faultInjector.ShouldCorruptResponse() {
-		stats.FaultCorruptedResponses++
-		faultInjector.CorruptResponse(&delivery.SyncResponse)
-		responseWasCorrupted = true
-	}
-
-	// FAULT INJECTION: Delay delivery
+	// Calculate delivery time (with optional delay)
+	deliverAt := currentTick
 	if faultsEnabled && faultInjector.ShouldDelaySync() {
-		stats.FaultDelayedSyncs++
-		deliverAtTick := faultInjector.CalculateDelayTicks(currentTick, totalTicks)
-		actualDelay := (deliverAtTick - currentTick + totalTicks) % totalTicks
-
-		*delayedSyncs = append(*delayedSyncs, DelayedSync{
-			Client:        client,
-			Delivery:      delivery,
-			DeliverAtTick: deliverAtTick,
-			DelayedAtTick: currentTick,
-			WasCorrupted:  requestWasCorrupted || responseWasCorrupted,
-		})
-		log.Printf("    FAULT INJECTION: Sync delivery delayed by %d ticks (deliver at tick %d)",
-			actualDelay, deliverAtTick)
-		return
+		deliverAt = faultInjector.CalculateDelayTicks(currentTick, totalTicks)
+		delayAmount := (deliverAt - currentTick + totalTicks) % totalTicks
+		log.Printf("  Client %d: Sync request delayed by %d ticks (deliver at tick %d)",
+			clientIndex, delayAmount, deliverAt)
 	}
 
-	// Normal immediate delivery
-	newState, err := client.DeliverSync(delivery)
-	if err != nil {
-		// If response was corrupted or request was corrupted (causing server to send wrong data),
-		// this is an expected failure - log and continue
-		if responseWasCorrupted || requestWasCorrupted {
-			log.Printf("    FAULT INJECTION: Corrupted sync delivery failed (expected): %v", err)
-			stats.FaultRejectedRequests++
-			return
-		}
-		log.Fatalf("Client %s sync delivery failed: %v", client.ClientID, err)
+	// Create and enqueue HTTP request
+	req := HTTPRequest{
+		ClientID:        client.ClientID,
+		ClientIndex:     clientIndex,
+		EnqueuedAt:      currentTick,
+		DeliverAt:       deliverAt,
+		Path:            "/sync",
+		Body:            bodyStr,
+		OriginalRequest: originalRequest,
+		WasCorrupted:    wasCorrupted,
 	}
 
-	// Collect operations receive timing
-	if newState.OperationsReceiveTimeMs > 0 {
-		stats.OperationsReceiveTimes = append(stats.OperationsReceiveTimes, newState.OperationsReceiveTimeMs)
-	}
+	requestQueue.Enqueue(req)
 
-	log.Printf("  After sync - Clock: %d, CRDT operations: %d", newState.ClockValue, len(newState.CRDTOperations))
+	log.Printf("  Client %d: Enqueued sync request with %d operations (deliver at tick %d)",
+		clientIndex, len(state.SyncRequest.Operations), deliverAt)
 }
 
-func deliverPendingSyncs(
-	delayed []DelayedSync,
+func processHTTPRequest(req HTTPRequest, server *server.Server) HTTPResponse {
+	// Create HTTP request
+	httpReq := httptest.NewRequest(http.MethodPost, req.Path, bytes.NewBuffer([]byte(req.Body)))
+	httpReq.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+
+	// Call server handler
+	server.HandleSync(recorder, httpReq)
+
+	// Create response
+	resp := HTTPResponse{
+		ClientID:        req.ClientID,
+		ClientIndex:     req.ClientIndex,
+		EnqueuedAt:      req.EnqueuedAt,
+		StatusCode:      recorder.Code,
+		Body:            recorder.Body.String(),
+		OriginalRequest: req.OriginalRequest, // Pass through original request
+	}
+
+	return resp
+}
+
+func processReadyRequests(
+	requestQueue *RequestQueue,
+	responseQueue *ResponseQueue,
+	server *server.Server,
+	random *rand.Rand,
+	faultInjector *FaultInjector,
+	faultsEnabled bool,
+	currentTick int,
+	totalTicks int,
+	stats *SimulationStats,
+) {
+	readyRequests := requestQueue.TakeReady(currentTick)
+
+	if len(readyRequests) == 0 {
+		return
+	}
+
+	// Shuffle deterministically using seeded RNG
+	random.Shuffle(len(readyRequests), func(i, j int) {
+		readyRequests[i], readyRequests[j] = readyRequests[j], readyRequests[i]
+	})
+
+	log.Printf("  Processing %d ready requests (shuffled)", len(readyRequests))
+
+	for _, req := range readyRequests {
+		latency := currentTick - req.EnqueuedAt
+		log.Printf("    Client %d request (latency: %d ticks, corrupted: %v)",
+			req.ClientIndex, latency, req.WasCorrupted)
+
+		// Process request → get response
+		resp := processHTTPRequest(req, server)
+		resp.DeliverAt = currentTick // Default: immediate delivery
+
+		// Check if server rejected the request (e.g., corrupted JSON)
+		if resp.StatusCode != http.StatusOK {
+			if req.WasCorrupted {
+				stats.FaultRejectedRequests++
+				log.Printf("    Server rejected corrupted request (expected)")
+			} else {
+				log.Printf("    Server rejected request with status %d: %s", resp.StatusCode, resp.Body)
+			}
+			// Still enqueue response so client can handle error if needed
+		} else {
+			// Parse successful response to count operations
+			var syncResp sync_engine.SyncResponse
+			if err := json.Unmarshal([]byte(resp.Body), &syncResp); err == nil {
+				stats.TotalOperationsRecv += len(syncResp.Operations)
+				log.Printf("    Response has %d operations", len(syncResp.Operations))
+			}
+		}
+
+		// FAULT INJECTION: Corrupt response
+		if faultsEnabled && resp.StatusCode == http.StatusOK && faultInjector.ShouldCorruptResponse() {
+			resp.WasCorrupted = true
+			faultInjector.CorruptJSON(&resp.Body)
+			stats.FaultCorruptedResponses++
+			log.Printf("    FAULT INJECTION: Response corrupted")
+		}
+
+		// FAULT INJECTION: Delay response
+		if faultsEnabled && faultInjector.ShouldDelaySync() {
+			resp.DeliverAt = faultInjector.CalculateDelayTicks(currentTick, totalTicks)
+			stats.FaultDelayedSyncs++
+			delayAmount := (resp.DeliverAt - currentTick + totalTicks) % totalTicks
+			log.Printf("    FAULT INJECTION: Response delayed by %d ticks (deliver at tick %d)",
+				delayAmount, resp.DeliverAt)
+		}
+
+		responseQueue.Enqueue(resp)
+	}
+}
+
+func deliverReadyResponses(
+	responseQueue *ResponseQueue,
+	clients []*Client,
 	currentTick int,
 	stats *SimulationStats,
-) []DelayedSync {
-	remaining := []DelayedSync{}
+) {
+	for i, client := range clients {
+		// Get responses in FIFO order (deterministic per client)
+		responses := responseQueue.TakeReadyForClient(i, currentTick)
 
-	for _, ds := range delayed {
-		if ds.DeliverAtTick == currentTick {
-			log.Printf("  Delivering delayed sync to %s (delayed from tick %d)",
-				ds.Client.ClientID, ds.DelayedAtTick)
+		for _, resp := range responses {
+			latency := currentTick - resp.EnqueuedAt
+			log.Printf("  Delivering response to Client %d (total latency: %d ticks, corrupted: %v)",
+				i, latency, resp.WasCorrupted)
 
-			newState, err := ds.Client.DeliverSync(ds.Delivery)
+			// Skip if server rejected the request
+			if resp.StatusCode != http.StatusOK {
+				log.Printf("    Skipping delivery due to non-OK status: %d", resp.StatusCode)
+				if resp.WasCorrupted {
+					stats.FaultRejectedRequests++
+				}
+				continue
+			}
+
+			// Parse sync response
+			var syncResp sync_engine.SyncResponse
+			if err := json.Unmarshal([]byte(resp.Body), &syncResp); err != nil {
+				log.Printf("    Failed to parse sync response: %v", err)
+				if resp.WasCorrupted {
+					log.Printf("    Response was corrupted (expected failure)")
+					stats.FaultRejectedRequests++
+				}
+				continue
+			}
+
+			// Create sync delivery request using original request and server response
+			if resp.OriginalRequest == nil {
+				log.Fatalf("INVARIANT VIOLATION: Response for client %d has nil OriginalRequest at tick %d",
+					i, currentTick)
+			}
+			delivery := SyncDeliveryRequest{
+				SyncRequest:  *resp.OriginalRequest,
+				SyncResponse: syncResp,
+			}
+
+			// Deliver to client
+			newState, err := client.DeliverSync(delivery)
 			if err != nil {
-				// If the delayed sync was corrupted, this is an expected failure
-				if ds.WasCorrupted {
-					log.Printf("    FAULT INJECTION: Corrupted delayed sync delivery failed (expected): %v", err)
+				// If response was corrupted, this is an expected failure
+				if resp.WasCorrupted {
+					log.Printf("    FAULT INJECTION: Corrupted sync delivery failed (expected): %v", err)
 					stats.FaultRejectedRequests++
 					continue
 				}
-				// Delayed syncs can also fail if they arrive out of order (client moved ahead)
-				// This is expected with network delays - client may have synced successfully via another path
-				log.Printf("    Delayed sync delivery failed (out of order or stale): %v", err)
-				continue
+				log.Fatalf("Client %s sync delivery failed: %v", client.ClientID, err)
 			}
 
 			// Collect operations receive timing
@@ -770,11 +889,7 @@ func deliverPendingSyncs(
 				stats.OperationsReceiveTimes = append(stats.OperationsReceiveTimes, newState.OperationsReceiveTimeMs)
 			}
 
-			log.Printf("    After delayed sync - Clock: %d, CRDT operations: %d", newState.ClockValue, len(newState.CRDTOperations))
-		} else {
-			remaining = append(remaining, ds)
+			log.Printf("    After sync - Clock: %d, CRDT operations: %d", newState.ClockValue, len(newState.CRDTOperations))
 		}
 	}
-
-	return remaining
 }
