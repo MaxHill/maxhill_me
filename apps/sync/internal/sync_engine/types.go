@@ -17,8 +17,8 @@ type CRDTOperation struct {
 	Table   string           `json:"table"`
 	RowKey  string           `json:"rowKey"`
 	Field   *string          `json:"field,omitempty"`
-	Value   json.RawMessage  `json:"value,omitempty"`   // Only for set and setRow operations
-	Context map[string]int64 `json:"context,omitempty"` // Only for remove operation
+	Value   json.RawMessage  `json:"value,omitempty"` // Only for set and setRow operations
+	Context map[string]int64 `json:"context"`         // Always present, empty map for non-remove operations
 	Dot     Dot              `json:"dot"`
 }
 
@@ -145,10 +145,10 @@ func mapToJSONString(m map[string]int64) (*string, error) {
 }
 
 // jsonStringToMap converts *string from database to map[string]int64.
-// Returns nil if input is nil.
+// Returns empty map if input is nil (to prevent omitempty from omitting the field in JSON).
 func jsonStringToMap(s *string) (map[string]int64, error) {
 	if s == nil {
-		return nil, nil
+		return make(map[string]int64), nil
 	}
 
 	var m map[string]int64

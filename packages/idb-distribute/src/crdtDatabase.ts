@@ -66,6 +66,11 @@ export class CRDTDatabase {
    * Set a single field in a row
    */
   async setCell(table: string, rowKey: ValidKey, field: string, value: any): Promise<void> {
+    // Validate value is not undefined or null
+    if (value === undefined || value === null) {
+      throw new Error(`Cannot set field "${field}" to ${value}. Use removeCell() to delete fields.`);
+    }
+
     const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
     const row = await this.idbRepository.getRow(tx, table, rowKey);
 
@@ -91,6 +96,17 @@ export class CRDTDatabase {
    * Set an entire row
    */
   async setRow(table: string, rowKey: ValidKey, value: Record<string, any>): Promise<void> {
+    // Validate value object doesn't contain undefined or null fields
+    if (value === undefined || value === null) {
+      throw new Error(`Cannot set row to ${value}. Use removeRow() to delete rows.`);
+    }
+    
+    for (const [key, val] of Object.entries(value)) {
+      if (val === undefined || val === null) {
+        throw new Error(`Cannot set field "${key}" to ${val} in setRow(). Use removeCell() to delete fields.`);
+      }
+    }
+
     const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
     const row = await this.idbRepository.getRow(tx, table, rowKey);
 
@@ -196,13 +212,16 @@ export class CRDTDatabase {
     const records = await promisifyIDBRequest(index.getAll(table));
 
     const result = new Map<IDBValidKey, Record<string, any>>();
+    const ROW_KEY = "_rowkey_idb_distribute"; // Must match constant in IDBRepository
+    
     for (const record of records) {
       if (Object.keys(record.row.fields).length > 0) {
         const rowData: Record<string, any> = {};
         for (const [field, fieldState] of Object.entries(record.row.fields)) {
           rowData[field] = (fieldState as LWWField).value;
         }
-        result.set(record.rowKey, rowData);
+        // Use the internal key name to access the row key from the record
+        result.set(record[ROW_KEY], rowData);
       }
     }
 

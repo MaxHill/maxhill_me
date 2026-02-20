@@ -80,7 +80,6 @@ export class IDBRepository {
   }
 
   async open(dbName: string, version?: number): Promise<IDBDatabase> {
-    console.log("open called with", dbName, version);
     const self = this;
 
     return new Promise((resolve, reject) => {
@@ -109,7 +108,6 @@ export class IDBRepository {
       };
 
       request.onupgradeneeded = async (event) => {
-        console.log("upgrade called!");
         const request = event.target as IDBOpenDBRequest;
         const db = request.result;
 
@@ -210,8 +208,6 @@ export class IDBRepository {
     if (!row.fields) throw new Error("Row must have fields when saving a row");
 
     const store = tx.objectStore(ROWS_STORE);
-
-    console.log({ [TABLE_NAME_KEY]: tableName, [ROW_KEY]: rowKey, row });
 
     // TODO: Move business logic to CRDTDatabase
     // Only save if the row has data or a tombstone

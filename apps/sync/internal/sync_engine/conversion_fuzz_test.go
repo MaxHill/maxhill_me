@@ -67,6 +67,14 @@ func FuzzCRDTOperationRoundtrip(f *testing.F) {
 			t.Fatalf("fromDatabaseOperation failed: %v", err)
 		}
 
+		// Special handling for Context field:
+		// When original Context is nil, fromDatabaseOperation returns an empty map
+		// to prevent JSON omitempty from omitting the field. This is intentional.
+		if original.Context == nil && roundtrip.Context != nil && len(roundtrip.Context) == 0 {
+			// Make them equal for comparison purposes
+			roundtrip.Context = nil
+		}
+
 		// Compare using reflect.DeepEqual
 		if !reflect.DeepEqual(original, roundtrip) {
 			t.Errorf("roundtrip mismatch:\noriginal:  %+v\nroundtrip: %+v", original, roundtrip)

@@ -30,7 +30,7 @@ export type CRDTOperation =
     table: string;
     rowKey: ValidKey;
     dot: Dot;
-    context: Record<string, number>;
+    context: Record<string, number>; // Always present (empty object for non-remove operations)
   };
 
 export type LWWField = {
