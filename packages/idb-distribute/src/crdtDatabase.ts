@@ -1,34 +1,40 @@
 import {
+  BY_TABLE_INDEX,
   CLIENT_STATE_STORE,
   IDBRepository,
   OPERATIONS_STORE,
   ROWS_STORE,
 } from "./IDBRepository.ts";
-import { applyOperationToRow, CRDTOperation, Dot, LWWField, ValidKey } from "./crdt.ts";
+import { IndexDefinition } from "./indexes.ts";
+import { applyOperationToRow, CRDTOperation, Dot, LWWField, ORMapRow, ValidKey } from "./crdt.ts";
 import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
 import { Sync } from "./sync/index.ts";
 import { SyncErrorCode } from "./sync/errors.ts";
-import { promisifyIDBRequest } from "./utils.ts";
+import { asyncCursorIterator, promisifyIDBRequest } from "./utils.ts";
 
 export class CRDTDatabase {
   private clientId: string;
   private idbRepository: IDBRepository;
   private logicalClock: PersistedLogicalClock;
   private syncManager: Sync;
-  private syncRemote: string;
+  private syncRemote?: string;
   private dbName: string;
 
   constructor(
     dbName: string = "crdt-db",
-    syncRemote: string,
+    indexes?: IndexDefinition[],
+    syncRemote?: string,
     sync?: Sync,
-    clientPersistance = new IDBRepository(),
+    clientPersistance?: IDBRepository,
     generateId: () => string = crypto.randomUUID.bind(crypto),
   ) {
     this.dbName = dbName;
-    this.syncRemote = syncRemote;
-    this.idbRepository = clientPersistance;
-    this.syncManager = sync || new Sync(clientPersistance);
+    this.syncRemote = syncRemote ?? "";
+
+    // Pass indexes to IDBRepository constructor
+    this.idbRepository = clientPersistance || new IDBRepository(indexes);
+
+    this.syncManager = sync || new Sync(this.idbRepository);
     this.logicalClock = new PersistedLogicalClock(this.idbRepository);
     this.clientId = generateId();
   }
@@ -109,7 +115,7 @@ export class CRDTDatabase {
    * Get a row's user-facing data
    */
   async get(table: string, rowKey: ValidKey): Promise<Record<string, any> | undefined> {
-    const tx = this.idbRepository.transaction(["rows"], "readonly");
+    const tx = this.idbRepository.transaction([ROWS_STORE], "readonly");
     const row = await this.idbRepository.getRow(tx, table, rowKey);
 
     if (Object.keys(row.fields).length === 0) {
@@ -120,6 +126,7 @@ export class CRDTDatabase {
     for (const [field, fieldState] of Object.entries(row.fields)) {
       result[field] = fieldState.value;
     }
+
     return result;
   }
 
@@ -127,7 +134,10 @@ export class CRDTDatabase {
    * Delete a row
    */
   async deleteRow(table: string, rowKey: ValidKey): Promise<void> {
-    const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
+    const tx = this.idbRepository.transaction(
+      [CLIENT_STATE_STORE, ROWS_STORE, OPERATIONS_STORE],
+      "readwrite",
+    );
     const row = await this.idbRepository.getRow(tx, table, rowKey);
 
     // Build context from current fields
@@ -154,13 +164,35 @@ export class CRDTDatabase {
     ]);
   }
 
+  async iterateRows(table: string) {
+    const tx = this.idbRepository!.transaction([ROWS_STORE], "readonly");
+    const store = tx.objectStore(ROWS_STORE);
+    const index = store.index(BY_TABLE_INDEX);
+
+    return async function* () {
+      const cursorRequest = index.openCursor(table);
+      for await (const row of asyncCursorIterator<ORMapRow>(cursorRequest)) {
+        if (Object.keys(row.fields).length === 0) {
+          return undefined;
+        }
+
+        const result: Record<string, any> = {};
+        for (const [field, fieldState] of Object.entries(row.fields)) {
+          result[field] = fieldState.value;
+        }
+
+        yield result;
+      }
+    };
+  }
+
   /**
    * Get all rows in a table (uses IndexedDB index)
    */
   async getAllRows(table: string): Promise<Map<IDBValidKey, Record<string, any>>> {
-    const tx = this.idbRepository!.transaction(["rows"], "readonly");
-    const store = tx.objectStore("rows");
-    const index = store.index("by-table");
+    const tx = this.idbRepository!.transaction([ROWS_STORE], "readonly");
+    const store = tx.objectStore(ROWS_STORE);
+    const index = store.index(BY_TABLE_INDEX);
     const records = await promisifyIDBRequest(index.getAll(table));
 
     const result = new Map<IDBValidKey, Record<string, any>>();
@@ -182,7 +214,7 @@ export class CRDTDatabase {
       const tx = this.idbRepository.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE]);
       const syncRequest = await this.syncManager.createSyncRequest(tx);
 
-      const response = await this.syncManager.sendSyncRequest(this.syncRemote, syncRequest);
+      const response = await this.syncManager.sendSyncRequest(this.syncRemote!, syncRequest);
 
       const writeTx = this.idbRepository.transaction([
         CLIENT_STATE_STORE,
@@ -193,18 +225,24 @@ export class CRDTDatabase {
     } catch (error: any) {
       // Check if this is a "client state out of sync" error using the error name
       if (error.name === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {
-        console.warn("Client state is out of sync with server. Resetting local state...", error.message);
-        
+        console.warn(
+          "Client state is out of sync with server. Resetting local state...",
+          error.message,
+        );
+
         // Reset the client state
-        const resetTx = this.idbRepository.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE], "readwrite");
+        const resetTx = this.idbRepository.transaction(
+          [CLIENT_STATE_STORE, OPERATIONS_STORE],
+          "readwrite",
+        );
         await this.idbRepository.resetSyncState(resetTx);
-        
+
         console.log("Client state reset complete. Retrying sync...");
-        
+
         // Retry sync after reset
         return this.sync();
       }
-      
+
       // Re-throw other errors
       throw error;
     }

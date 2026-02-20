@@ -1,5 +1,45 @@
 # CRDT Database — IndexedDB Storage Layout
 
+## Implementation Status
+
+### ✅ Completed
+- **CRDT Operations**: Full LWW (Last-Write-Wins) and OR-Map support with tombstones
+- **Sync Protocol**: Client-server synchronization with operation logs
+- **Index Creation**: Native IndexedDB indexes on CRDT fields
+  - Single-field indexes
+  - Compound indexes (multiple fields)
+  - Automatic index maintenance on writes
+  - Full validation of index definitions
+
+### 🚧 In Progress / Planned
+- **Query API**: Index-based querying (query filters, cursors, etc.)
+- **Materialized Views**: Separate queryable data store
+- **Custom Index Store**: Flexible index implementation beyond native IDB
+
+### Current Index Usage
+
+Indexes can be created at database initialization:
+
+```typescript
+import { CRDTDatabase } from "@maxhill/idb-distribute";
+
+const db = new CRDTDatabase(
+  "mydb",
+  {
+    usersByAge: { table: "users", keys: ["age"] },
+    usersByName: { table: "users", keys: ["firstName", "lastName"] }
+  },
+  "http://sync.example.com"
+);
+
+await db.open();
+await db.setRow("users", "u1", { age: 30, firstName: "Alice", lastName: "Smith" });
+```
+
+See [EXAMPLE_INDEXES.md](./EXAMPLE_INDEXES.md) for detailed usage examples.
+
+---
+
 ## API Overview
 
 The database uses schema-less tables with upfront index declarations:

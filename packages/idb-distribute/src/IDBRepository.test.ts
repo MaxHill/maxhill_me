@@ -257,4 +257,266 @@ describe("IDBRepository", () => {
       expect(version).toBe(5);
     });
   });
+
+  describe("Index management", () => {
+    afterEach(async () => {
+      if (idbRepository?.db) {
+        idbRepository.close();
+      }
+    });
+
+    it("should create single-field index", async () => {
+      const indexes = [
+        { name: "usersByAge", table: "users", keys: ["age"] }
+      ];
+      
+      await new Promise<void>((resolve, reject) => {
+        const deleteRequest = indexedDB.deleteDatabase("test-db-single-index");
+        deleteRequest.onsuccess = () => resolve();
+        deleteRequest.onerror = () => reject(deleteRequest.error);
+      });
+      
+      const repo = new IDBRepository(indexes);
+      await repo.open("test-db-single-index");
+      
+      const tx = repo.transaction(["rows"], "readonly");
+      const store = tx.objectStore("rows");
+      
+      // Verify index exists with correct internal name
+      expect(store.indexNames.contains("users_usersByAge")).toBe(true);
+      
+      repo.close();
+    });
+
+    it("should create compound index", async () => {
+      const indexes = [
+        { name: "usersByName", table: "users", keys: ["firstName", "lastName"] }
+      ];
+      
+      await new Promise<void>((resolve, reject) => {
+        const deleteRequest = indexedDB.deleteDatabase("test-db-compound-index");
+        deleteRequest.onsuccess = () => resolve();
+        deleteRequest.onerror = () => reject(deleteRequest.error);
+      });
+      
+      const repo = new IDBRepository(indexes);
+      await repo.open("test-db-compound-index");
+      
+      const tx = repo.transaction(["rows"], "readonly");
+      const store = tx.objectStore("rows");
+      
+      expect(store.indexNames.contains("users_usersByName")).toBe(true);
+      
+      repo.close();
+    });
+
+    it("should create multiple indexes for same table", async () => {
+      const indexes = [
+        { name: "usersByAge", table: "users", keys: ["age"] },
+        { name: "usersByName", table: "users", keys: ["firstName", "lastName"] }
+      ];
+      
+      await new Promise<void>((resolve, reject) => {
+        const deleteRequest = indexedDB.deleteDatabase("test-db-multiple-indexes");
+        deleteRequest.onsuccess = () => resolve();
+        deleteRequest.onerror = () => reject(deleteRequest.error);
+      });
+      
+      const repo = new IDBRepository(indexes);
+      await repo.open("test-db-multiple-indexes");
+      
+      const tx = repo.transaction(["rows"], "readonly");
+      const store = tx.objectStore("rows");
+      
+      expect(store.indexNames.contains("users_usersByAge")).toBe(true);
+      expect(store.indexNames.contains("users_usersByName")).toBe(true);
+      
+      repo.close();
+    });
+
+    it("should allow same index name for different tables", async () => {
+      const indexes = [
+        { name: "byAge", table: "users", keys: ["age"] },
+        { name: "byAge", table: "posts", keys: ["age"] }
+      ];
+      
+      await new Promise<void>((resolve, reject) => {
+        const deleteRequest = indexedDB.deleteDatabase("test-db-same-index-name");
+        deleteRequest.onsuccess = () => resolve();
+        deleteRequest.onerror = () => reject(deleteRequest.error);
+      });
+      
+      const repo = new IDBRepository(indexes);
+      await repo.open("test-db-same-index-name");
+      
+      const tx = repo.transaction(["rows"], "readonly");
+      const store = tx.objectStore("rows");
+      
+      // Both indexes exist with different internal names
+      expect(store.indexNames.contains("users_byAge")).toBe(true);
+      expect(store.indexNames.contains("posts_byAge")).toBe(true);
+      
+      repo.close();
+    });
+
+    it("should throw error for empty index name", async () => {
+      const indexes = [
+        { name: "", table: "users", keys: ["age"] }
+      ];
+      
+      await new Promise<void>((resolve, reject) => {
+        const deleteRequest = indexedDB.deleteDatabase("test-db-empty-index-name");
+        deleteRequest.onsuccess = () => resolve();
+        deleteRequest.onerror = () => reject(deleteRequest.error);
+      });
+      
+      const repo = new IDBRepository(indexes);
+      
+      await expect(repo.open("test-db-empty-index-name")).rejects.toThrow(
+        "Index name cannot be empty"
+      );
+    });
+
+    it("should throw error for empty table name", async () => {
+      const indexes = [
+        { name: "usersByAge", table: "", keys: ["age"] }
+      ];
+      
+      await new Promise<void>((resolve, reject) => {
+        const deleteRequest = indexedDB.deleteDatabase("test-db-empty-table-name");
+        deleteRequest.onsuccess = () => resolve();
+        deleteRequest.onerror = () => reject(deleteRequest.error);
+      });
+      
+      const repo = new IDBRepository(indexes);
+      
+      await expect(repo.open("test-db-empty-table-name")).rejects.toThrow(
+        'Index "usersByAge": table name cannot be empty'
+      );
+    });
+
+    it("should throw error for empty keys array", async () => {
+      const indexes = [
+        { name: "invalidIndex", table: "users", keys: [] }
+      ];
+      
+      await new Promise<void>((resolve, reject) => {
+        const deleteRequest = indexedDB.deleteDatabase("test-db-empty-keys");
+        deleteRequest.onsuccess = () => resolve();
+        deleteRequest.onerror = () => reject(deleteRequest.error);
+      });
+      
+      const repo = new IDBRepository(indexes);
+      
+      await expect(repo.open("test-db-empty-keys")).rejects.toThrow(
+        'Index "invalidIndex": keys array cannot be empty'
+      );
+    });
+
+    it("should throw error for empty key name in keys array", async () => {
+      const indexes = [
+        { name: "usersByAge", table: "users", keys: ["age", ""] }
+      ];
+      
+      await new Promise<void>((resolve, reject) => {
+        const deleteRequest = indexedDB.deleteDatabase("test-db-empty-key-name");
+        deleteRequest.onsuccess = () => resolve();
+        deleteRequest.onerror = () => reject(deleteRequest.error);
+      });
+      
+      const repo = new IDBRepository(indexes);
+      
+      await expect(repo.open("test-db-empty-key-name")).rejects.toThrow(
+        'Index "usersByAge": key name cannot be empty'
+      );
+    });
+
+    it("should throw error for duplicate index name on same table", async () => {
+      const indexes = [
+        { name: "usersByAge", table: "users", keys: ["age"] },
+        { name: "usersByAge", table: "users", keys: ["createdAge"] }
+      ];
+      
+      await new Promise<void>((resolve, reject) => {
+        const deleteRequest = indexedDB.deleteDatabase("test-db-duplicate-index");
+        deleteRequest.onsuccess = () => resolve();
+        deleteRequest.onerror = () => reject(deleteRequest.error);
+      });
+      
+      const repo = new IDBRepository(indexes);
+      
+      await expect(repo.open("test-db-duplicate-index")).rejects.toThrow(
+        "Index names must be unique per table"
+      );
+    });
+
+    it("should use version 2 when no indexes", async () => {
+      await new Promise<void>((resolve, reject) => {
+        const deleteRequest = indexedDB.deleteDatabase("test-db-no-indexes");
+        deleteRequest.onsuccess = () => resolve();
+        deleteRequest.onerror = () => reject(deleteRequest.error);
+      });
+      
+      const repo = new IDBRepository();
+      await repo.open("test-db-no-indexes");
+      
+      expect(repo.db?.version).toBe(2);
+      
+      repo.close();
+    });
+
+    it("should use version 3 when indexes exist", async () => {
+      const indexes = [
+        { name: "usersByAge", table: "users", keys: ["age"] }
+      ];
+      
+      await new Promise<void>((resolve, reject) => {
+        const deleteRequest = indexedDB.deleteDatabase("test-db-with-indexes");
+        deleteRequest.onsuccess = () => resolve();
+        deleteRequest.onerror = () => reject(deleteRequest.error);
+      });
+      
+      const repo = new IDBRepository(indexes);
+      await repo.open("test-db-with-indexes");
+      
+      expect(repo.db?.version).toBe(3);
+      
+      repo.close();
+    });
+  });
+
+  describe("Integration with CRDTDatabase", () => {
+    it("should work with CRDTDatabase", async () => {
+      const { CRDTDatabase } = await import("./crdtDatabase.ts");
+      
+      await new Promise<void>((resolve, reject) => {
+        const deleteRequest = indexedDB.deleteDatabase("test-crdt-db-with-indexes");
+        deleteRequest.onsuccess = () => resolve();
+        deleteRequest.onerror = () => reject(deleteRequest.error);
+      });
+      
+      const db = new CRDTDatabase(
+        "test-crdt-db-with-indexes",
+        [
+          { name: "usersByAge", table: "users", keys: ["age"] }
+        ],
+        "http://test.com"
+      );
+      
+      await db.open();
+      
+      // Verify index was created (using type assertion to access private property in test)
+      const tx = (db as any).idbRepository.transaction(["rows"], "readonly");
+      const store = tx.objectStore("rows");
+      expect(store.indexNames.contains("users_usersByAge")).toBe(true);
+      await txDone(tx);
+      
+      // Verify data can still be written (existing functionality)
+      await db.setRow("users", "u1", { age: 30, name: "Alice" });
+      const user = await db.get("users", "u1");
+      expect(user).toEqual({ age: 30, name: "Alice" });
+      
+      await db.close();
+    });
+  });
 });

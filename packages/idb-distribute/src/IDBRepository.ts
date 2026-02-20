@@ -1,4 +1,10 @@
 import { CRDTOperation, Dot, ORMapRow, ValidKey } from "./crdt.ts";
+import {
+  hashIndexDefinitions,
+  IndexDefinition,
+  indexDefinitionToIDBIndex,
+  needIndexUpdate,
+} from "./indexes.ts";
 import { asyncCursorIterator, promisifyIDBRequest, validateTransactionStores } from "./utils.ts";
 
 const SYNCED_STATUS = {
@@ -12,7 +18,7 @@ export const OPERATIONS_STORE = "operations";
 export const CLIENT_STATE_STORE = "clientState";
 
 // Indexes
-const BY_TABLE_INDEX = "by-table";
+export const BY_TABLE_INDEX = "by-table";
 const BY_SYNCED_INDEX = "by-synced";
 const BY_CLIENT_SYNCED_INDEX = "by-client-synced";
 
@@ -20,44 +26,146 @@ const BY_CLIENT_SYNCED_INDEX = "by-client-synced";
 const LAST_SEEN_SERVER_VERSION = "lastSeenServerVersion";
 const CLIENT_ID = "clientId";
 const LOGICAL_CLOCK = "logicalClock";
+export const INDEXES_HASH = "indexesHash";
+
+// Row keys
+export const TABLE_NAME_KEY = "_tablename_idb_distribute";
+const ROW_KEY = "_rowkey_idb_distribute";
 
 export class IDBRepository {
   db: IDBDatabase | undefined;
+  private indexes?: IndexDefinition[];
 
-  async open(dbName: string): Promise<void> {
+  constructor(indexes?: IndexDefinition[]) {
+    this.indexes = indexes;
+  }
+
+  private validateIndexDefinitions(): void {
+    if (!this.indexes) return;
+
+    const indexNames = this.indexes.map((index) =>
+      `table: ${index.table}, indexName: ${index.name}`
+    );
+    const duplicateIndexNames = indexNames.filter((tableAndName, index) =>
+      indexNames.indexOf(tableAndName) !== index
+    );
+
+    if (duplicateIndexNames.length > 0) {
+      throw new Error(
+        `Index names must be unique per table, found the following duplicates: \n   ${
+          duplicateIndexNames.join("\n  ")
+        }`,
+      );
+    }
+
+    for (const index of this.indexes) {
+      if (!index.name || index.name.trim() === "") {
+        throw new Error("Index name cannot be empty");
+      }
+
+      if (!index.table || index.table.trim() === "") {
+        throw new Error(`Index "${index.name}": table name cannot be empty`);
+      }
+
+      if (!index.keys || index.keys.length === 0) {
+        throw new Error(`Index "${index.name}": keys array cannot be empty`);
+      }
+
+      for (const key of index.keys) {
+        if (!key || key.trim() === "") {
+          throw new Error(`Index "${index.name}": key name cannot be empty`);
+        }
+      }
+    }
+  }
+
+  async open(dbName: string, version?: number): Promise<IDBDatabase> {
+    console.log("open called with", dbName, version);
+    const self = this;
+
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(dbName, 2);
+      // Validate index definitions before opening
+      this.validateIndexDefinitions();
+
+      const request = indexedDB.open(dbName, version);
 
       request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        this.db = request.result;
-        resolve();
-      };
+      request.onsuccess = async () => {
+        var db = request.result;
 
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-
-        // Store individual rows
-        if (!db.objectStoreNames.contains(ROWS_STORE)) {
-          const rowStore = db.createObjectStore(ROWS_STORE, { keyPath: ["tableName", "rowKey"] });
-          rowStore.createIndex(BY_TABLE_INDEX, "tableName", { unique: false });
+        const tx = db.transaction([CLIENT_STATE_STORE], "readonly");
+        const upgradeNeeded = await needIndexUpdate(tx, this.indexes);
+        if (upgradeNeeded && version) {
+          throw new Error(
+            "Database indexes where not successfully updated, got a new version and non-matching indexes",
+          );
+        } else if (upgradeNeeded) {
+          db.close();
+          db = await self.open(dbName, db.version + 1);
         }
 
-        // Store operations log
+        this.db = db;
+        resolve(this.db);
+      };
+
+      request.onupgradeneeded = async (event) => {
+        console.log("upgrade called!");
+        const request = event.target as IDBOpenDBRequest;
+        const db = request.result;
+
+        // ROWS_STORE will store the actual crdt representation of a piece of data
+        if (!db.objectStoreNames.contains(ROWS_STORE)) {
+          const rowStore = db.createObjectStore(ROWS_STORE, {
+            keyPath: [TABLE_NAME_KEY, ROW_KEY],
+          });
+          rowStore.createIndex(BY_TABLE_INDEX, TABLE_NAME_KEY, { unique: false });
+        }
+
+        // OPERATIONS_STORE is used to store the crdt operations that
+        // will be applied to the rows in ROWS_STORE
         if (!db.objectStoreNames.contains(OPERATIONS_STORE)) {
           const operationStore = db.createObjectStore(OPERATIONS_STORE, {
             keyPath: ["op.dot.clientId", "op.dot.version"],
           });
           operationStore.createIndex(BY_SYNCED_INDEX, "synced", { unique: false });
-          operationStore.createIndex(BY_CLIENT_SYNCED_INDEX, ["op.dot.clientId", "synced"], { unique: false });
+          operationStore.createIndex(BY_CLIENT_SYNCED_INDEX, ["op.dot.clientId", "synced"], {
+            unique: false,
+          });
         }
 
-        // Store client state
+        // Inititalizes the client state to default values
         if (!db.objectStoreNames.contains(CLIENT_STATE_STORE)) {
-          const s = db.createObjectStore(CLIENT_STATE_STORE);
-          // clientId
-          s.put(-1, LOGICAL_CLOCK);
-          s.put(-1, LAST_SEEN_SERVER_VERSION);
+          const store = db.createObjectStore(CLIENT_STATE_STORE);
+          // CLIENT_ID
+          store.put(hashIndexDefinitions(this.indexes), INDEXES_HASH);
+          store.put(-1, LOGICAL_CLOCK);
+          store.put(-1, LAST_SEEN_SERVER_VERSION);
+        }
+
+        if (this.indexes && this.indexes.length > 0) {
+          // This is how we get the onupgradeneeded transaction.
+          // It's also safe to use ! since inside onupgradeneeded the
+          // transaction cannot be null
+          const tx = request.transaction!;
+          validateTransactionStores(tx, [ROWS_STORE, CLIENT_STATE_STORE], "versionchange");
+
+          const clientStateStore = tx.objectStore(CLIENT_STATE_STORE);
+          const rowStore = tx.objectStore(ROWS_STORE);
+
+          // TODO: remove old indexes
+
+          // adds new user defined indexes
+          for (const index of this.indexes) {
+            const [internalIndexName, keyPath] = indexDefinitionToIDBIndex(index);
+
+            if (!rowStore.indexNames.contains(internalIndexName)) {
+              rowStore.createIndex(internalIndexName, keyPath, { unique: false });
+            }
+          }
+
+          await promisifyIDBRequest(
+            clientStateStore.put(hashIndexDefinitions(this.indexes), INDEXES_HASH),
+          );
         }
       };
     });
@@ -103,10 +211,12 @@ export class IDBRepository {
 
     const store = tx.objectStore(ROWS_STORE);
 
+    console.log({ [TABLE_NAME_KEY]: tableName, [ROW_KEY]: rowKey, row });
+
     // TODO: Move business logic to CRDTDatabase
     // Only save if the row has data or a tombstone
     if (Object.keys(row.fields).length > 0 || row.tombstone) {
-      await promisifyIDBRequest(store.put({ tableName, rowKey, row }));
+      await promisifyIDBRequest(store.put({ [TABLE_NAME_KEY]: tableName, [ROW_KEY]: rowKey, row }));
     } else {
       // Remove empty rows
       await promisifyIDBRequest(store.delete([
@@ -117,6 +227,8 @@ export class IDBRepository {
   }
 
   async deleteRow() {
+    // TODO: Implement this
+    throw new Error("Not implemented yet");
   }
 
   async getRow(tx: IDBTransaction, tableName: string, rowKey: ValidKey): Promise<ORMapRow> {
@@ -127,9 +239,10 @@ export class IDBRepository {
     if (!rowKey) throw new Error("RowKey must be set when getting Row");
 
     const store = tx.objectStore(ROWS_STORE);
+
     const result = await promisifyIDBRequest(store.get([
       tableName,
-      rowKey as IDBValidKey, /*Casting is fine here since ValidKey is a subset of IDBValidKey*/
+      rowKey as IDBValidKey, // Casting is safe here since ValidKey is a subset of IDBValidKey
     ]));
 
     return result?.row ?? { fields: {} };
@@ -142,7 +255,7 @@ export class IDBRepository {
     }
 
     const store = tx.objectStore(OPERATIONS_STORE);
-    
+
     await promisifyIDBRequest(store.add({
       op: operation,
       // Note: Using 0/1 instead of false/true due to fake-indexeddb
@@ -204,7 +317,10 @@ export class IDBRepository {
     return await promisifyIDBRequest(countRequest);
   }
 
-  async getUnsyncedOperationsByClient(tx: IDBTransaction, clientId: string): Promise<CRDTOperation[]> {
+  async getUnsyncedOperationsByClient(
+    tx: IDBTransaction,
+    clientId: string,
+  ): Promise<CRDTOperation[]> {
     validateTransactionStores(tx, [OPERATIONS_STORE]);
     const store = tx.objectStore(OPERATIONS_STORE);
     const index = store.index(BY_CLIENT_SYNCED_INDEX);
@@ -287,25 +403,27 @@ export class IDBRepository {
   /**
    * Resets the client's sync state. This clears all operations and resets
    * the lastSeenServerVersion to -1.
-   * 
+   *
    * Use this when the client's state is out of sync with the server
    * (e.g., after a server database reset).
-   * 
+   *
    * Transaction requirements:
    * - Stores: [CLIENT_STATE_STORE, OPERATIONS_STORE]
    * - Mode: "readwrite"
    */
   async resetSyncState(tx: IDBTransaction): Promise<void> {
     validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE], "readwrite");
-    
+
     // Clear all operations
     const operationsStore = tx.objectStore(OPERATIONS_STORE);
     await promisifyIDBRequest(operationsStore.clear());
-    
+
     // Reset lastSeenServerVersion to -1
     const clientStateStore = tx.objectStore(CLIENT_STATE_STORE);
     await promisifyIDBRequest(clientStateStore.put(-1, LAST_SEEN_SERVER_VERSION));
-    
-    console.warn("Client sync state has been reset. All local unsynced operations have been cleared.");
+
+    console.warn(
+      "Client sync state has been reset. All local unsynced operations have been cleared.",
+    );
   }
 }
