@@ -173,21 +173,11 @@ func main() {
 
 	log.Println("Simulation complete")
 
-	// Drain queues before convergence
-	log.Println("Draining pending requests/responses...")
-	finalTick := *numTicks
-	for requestQueue.Len() > 0 || responseQueue.Len() > 0 {
-		log.Printf("  Queue status: %d requests, %d responses pending", requestQueue.Len(), responseQueue.Len())
-		processReadyRequests(requestQueue, responseQueue, server, random, faultInjector, faultsEnabled, finalTick, *numTicks, stats)
-		deliverReadyResponses(responseQueue, clients, finalTick, stats)
-		finalTick++
-
-		// Safety check: prevent infinite loop
-		if finalTick > *numTicks+maxQueueDrainTicks {
-			log.Fatalf("Failed to drain queues after %d extra ticks", maxQueueDrainTicks)
-		}
+	// Don't drain queues - treat delayed messages as dropped (realistic network simulation)
+	if requestQueue.Len() > 0 || responseQueue.Len() > 0 {
+		log.Printf("Dropping %d pending requests and %d pending responses (simulated packet loss)",
+			requestQueue.Len(), responseQueue.Len())
 	}
-	log.Println("All queues drained")
 
 	// Convergence check
 	stats.ConvergenceStart = time.Now()
