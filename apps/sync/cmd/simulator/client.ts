@@ -21,18 +21,6 @@ import {
   shuffleArray,
   User,
 } from "./helpers.ts";
-import {
-  randomName,
-  randomEmail,
-  randomString,
-  randomContent,
-  randomTitle,
-  randomNat,
-  randomTimestamp,
-  randomStringArray,
-  randomObject,
-  randomBoolean,
-} from "./data-generators.ts";
 
 //  ------------------------------------------------------------------------
 //  Types
@@ -253,22 +241,22 @@ async function handleSyncDelivery(
 //  ------------------------------------------------------------------------
 async function writePost(prng: seedrandom.PRNG) {
   const id = randomUUID(prng);
-  const authorId = Math.floor(prng() * 100000000); // Simple random number
+  const authorId = Math.floor(prng() * 100000000);
   const viewCount = Math.floor(prng() * 10000);
-  const createdAt = Date.now() - Math.floor(prng() * 365 * 24 * 60 * 60 * 1000); // Random time in last year
+  const createdAt = Date.now() - Math.floor(prng() * 365 * 24 * 60 * 60 * 1000);
   
   const post: Post = {
     id,
-    title: `Post Title ${id.substring(0, 8)}`, // Simple template string
-    content: `This is post content for ${id}`, // Simple template string
+    title: `Post Title ${id.substring(0, 8)}`,
+    content: `This is post content for ${id}`,
     authorId,
     createdAt,
     viewCount,
   };
   
-  // Conditionally add editedAt (50% chance)
+  // Conditionally add editedAt (50% chance) - THIS IS THE BROKEN VERSION
   if (prng() > 0.5) {
-    post.editedAt = createdAt + Math.floor(prng() * 7 * 24 * 60 * 60 * 1000); // Edited within a week
+    post.editedAt = createdAt + Math.floor(prng() * 7 * 24 * 60 * 60 * 1000);
   }
   
   await client.crdtDb.setRow("posts", id, post);
@@ -286,17 +274,16 @@ async function deletePost(prng: seedrandom.PRNG) {
 }
 
 async function writeUser(prng: seedrandom.PRNG) {
-  const id = randomNat(prng, 100000000);
-  const joinDate = Date.now() - Math.floor(prng() * 365 * 24 * 60 * 60 * 1000); // Random time in last year
+  const id = Math.floor(prng() * 100000000);
+  const joinDate = Date.now() - Math.floor(prng() * 365 * 24 * 60 * 60 * 1000);
   
-  const user: User = {
+  await client.crdtDb.setRow("users", String(id), {
     id,
-    name: `User${id}`, // Simple template string
-    email: `user${id}@example.com`, // Simple email format
-    bio: `Bio for user ${id}`, // Simple template string
+    name: `User${id}`,
+    email: `user${id}@example.com`,
+    bio: `Bio for user ${id}`,
     joinDate,
-  };
-  await client.crdtDb.setRow("users", String(id), user);
+  });
 }
 
 async function deleteUser(prng: seedrandom.PRNG) {
