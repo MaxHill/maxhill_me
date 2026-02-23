@@ -25,7 +25,7 @@ import {
 //  ------------------------------------------------------------------------
 //  Types
 //  ------------------------------------------------------------------------
-type ActionRequest = {
+type TickRequest = {
   writeUser: boolean;
   deleteUser: boolean;
   clearUser: boolean;
@@ -33,17 +33,24 @@ type ActionRequest = {
   deletePost: boolean;
   clearPost: boolean;
   requestSync: boolean;
+  tick: number;
 };
 
 type SyncDeliveryRequest = {
   syncRequest: any;
   syncResponse: any;
+  tick: number;
 };
 
-type StateResponse = {
+// Simplified response for normal actions - only return sync request
+type TickResponse = {
+  syncRequest?: any;
+};
+
+// Keep full state response only for verification
+type VerificationResponse = {
   crdtOperations: any[];
   clockValue: number;
-  syncRequest?: any;
   rows?: {
     [table: string]: {
       [rowKey: string]: Record<string, any>;
@@ -72,6 +79,22 @@ const client = await newClient(prng);
 let lastSyncRequest: any = null;
 
 //  ------------------------------------------------------------------------
+//  Logging helper - uses stderr to not interfere with JSON responses
+//  ------------------------------------------------------------------------
+function logClientState(
+  tick: number | string,
+  clockValue: number,
+  operationCount: number,
+  message?: string,
+) {
+  const tickInfo = tick !== undefined ? `;tick=${tick}` : "";
+  const msgSuffix = message ? ` - ${message}` : "";
+  console.error(
+    `Client ${seed} (${tickInfo}): Clock: ${clockValue}, CRDT operations: ${operationCount}${msgSuffix}`,
+  );
+}
+
+//  ------------------------------------------------------------------------
 //  Communicate with go
 //  ------------------------------------------------------------------------
 const lines = Deno.stdin.readable
@@ -82,11 +105,12 @@ for await (const line of lines) {
   try {
     const { type, payload } = JSON.parse(line) as Message;
 
-    let result: StateResponse;
+    let result: TickResponse | VerificationResponse | undefined;
     if (type === "action") {
-      result = await handleAction(payload as ActionRequest);
+      result = await handleTick(payload as TickRequest);
     } else if (type === "sync_delivery") {
-      result = await handleSyncDelivery(payload as SyncDeliveryRequest);
+      await handleSyncDelivery(payload as SyncDeliveryRequest);
+      result = {}; // Empty response
     } else if (type === "get_all_ops") {
       result = await handleGetAllOps();
     } else {
@@ -102,7 +126,7 @@ for await (const line of lines) {
 //  ------------------------------------------------------------------------
 //  Handle get all operations (for verification)
 //  ------------------------------------------------------------------------
-async function handleGetAllOps(): Promise<StateResponse> {
+async function handleGetAllOps(): Promise<VerificationResponse> {
   // Get all CRDT operations (for convergence verification)
   const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
   const crdtOperations = await client.repo.getAllOperations(opsTx);
@@ -135,38 +159,39 @@ async function handleGetAllOps(): Promise<StateResponse> {
 }
 
 //  ------------------------------------------------------------------------
-//  Handle action request
+//  Handle tick request
 //  ------------------------------------------------------------------------
-async function handleAction(request: ActionRequest): Promise<StateResponse> {
+async function handleTick(request: TickRequest): Promise<TickResponse> {
   // Perform actions based on booleans
   if (request.writeUser) await writeUser(prng);
   if (request.deleteUser) await deleteUser(prng);
   if (request.writePost) await writePost(prng);
   if (request.deletePost) await deletePost(prng);
 
-  // Get count of unsynced operations (for logging only - don't fetch all operations)
+  // Get state for logging
   const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
   const unsyncedCount = await client.repo.countUnsyncedOperations(opsTx);
   // Readonly transaction - no need to explicitly wait for completion
 
-  // Get clock value
   const clockTx = client.repo.transaction([CLIENT_STATE_STORE], "readonly");
   const clockValue = await client.repo.getVersion(clockTx);
   // Readonly transaction - no need to explicitly wait for completion
 
+  // Log client state
+  logClientState(request.tick, clockValue, unsyncedCount);
+
   // Optionally compute sync request
   let syncRequest: SyncRequest | undefined = undefined;
   if (request.requestSync) {
-    const syncTx = client.repo.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE], "readonly");
+    const syncTx = client.repo.transaction(
+      [CLIENT_STATE_STORE, OPERATIONS_STORE],
+      "readonly",
+    );
     syncRequest = await client.sync.createSyncRequest(syncTx);
     // Readonly transaction - no need to explicitly wait for completion
   }
 
-  return {
-    crdtOperations: new Array(unsyncedCount), // Array with correct length but no actual data
-    clockValue,
-    syncRequest,
-  };
+  return { syncRequest };
 }
 
 //  ------------------------------------------------------------------------
@@ -174,7 +199,7 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
 //  ------------------------------------------------------------------------
 async function handleSyncDelivery(
   request: SyncDeliveryRequest,
-): Promise<StateResponse> {
+): Promise<void> {
   // Apply sync response to client
   const tx = client.repo.transaction(
     [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE],
@@ -183,20 +208,17 @@ async function handleSyncDelivery(
   await client.sync.handleSyncResponse(tx, client.clock, request.syncResponse);
   // Transaction auto-completes when all requests finish
 
-  // Get updated CRDT operations (unsynced for state tracking)
+  // Get updated state for logging
   const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
   const crdtOperations = await client.repo.getUnsyncedOperations(opsTx);
   // Readonly transaction - no need to explicitly wait for completion
 
-  // Get updated clock value
   const clockTx = client.repo.transaction([CLIENT_STATE_STORE], "readonly");
   const clockValue = await client.repo.getVersion(clockTx);
   // Readonly transaction - no need to explicitly wait for completion
 
-  return {
-    crdtOperations,
-    clockValue,
-  };
+  // Log after-sync state
+  logClientState(request.tick, clockValue, crdtOperations.length, "After sync");
 }
 
 //  ------------------------------------------------------------------------

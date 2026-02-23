@@ -21,15 +21,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type ActionResult struct {
+type ClientTickResponse struct {
 	ClientIndex int
-	State       *StateResponse
-	Error       error
-}
-
-type SyncDeliveryResult struct {
-	ClientIndex int
-	State       *StateResponse
+	SyncRequest *sync_engine.SyncRequest
 	Error       error
 }
 
@@ -108,27 +102,21 @@ func main() {
 	for tick := 0; tick < *numTicks; tick++ {
 		log.Printf("=== Tick %d ===", tick)
 
-		allActions, allShouldSync := generateAllRandomActions(random, clients)
+		allTicks, allShouldSync := generateAllRandomTicks(random, clients)
 
-		results := executeAllActions(allActions, allShouldSync, clients)
+		results := executeAllTicks(allTicks, allShouldSync, clients, tick)
 
-		actionResults := collectAndSortActionResults(tick, results, clients)
+		syncRequests := collectAndSortTickResponses(tick, results, clients)
 
-		// 1. Log action results
-		for i, state := range actionResults {
-			log.Printf("Client %d (%s;tick=%d)", i, clients[i].ClientID, tick)
-			log.Printf("  Clock: %d, CRDT operations: %d", state.ClockValue, len(state.CRDTOperations))
+		// Enqueue sync requests with latency
+		for i, syncRequest := range syncRequests {
+			enqueueSyncRequest(requestQueue, clients[i], i, syncRequest, faultInjector, faultsEnabled, tick, *numTicks)
 		}
 
-		// 2. Enqueue sync requests with latency
-		for i, state := range actionResults {
-			enqueueSyncRequest(requestQueue, clients[i], i, state, faultInjector, faultsEnabled, tick, *numTicks)
-		}
-
-		// 3. Process ready requests from queue (with deterministic shuffle)
+		// Process ready requests from queue (with deterministic shuffle)
 		processReadyRequests(requestQueue, responseQueue, server, random, faultInjector, faultsEnabled, tick, *numTicks)
 
-		// 4. Deliver ready responses to clients
+		// Deliver ready responses to clients
 		deliverReadyResponses(responseQueue, clients, tick)
 	}
 
@@ -160,14 +148,14 @@ func convergeAllClients(clients []*Client, server *server.Server) error {
 	// Round 1: All clients sync to push their local changes
 	log.Println("Round 1: All clients syncing...")
 	for i, client := range clients {
-		state, err := client.PerformActions(ActionRequest{}, true) // No actions, just sync
+		syncRequest, err := client.PerformTick(TickRequest{}, true, -1) // No actions, just sync (tick=-1 for convergence)
 		if err != nil {
 			return fmt.Errorf("client %d round 1 failed: %w", i, err)
 		}
 
-		if state.SyncRequest != nil {
+		if syncRequest != nil {
 			// Directly send to server without fault injection
-			requestBody, err := json.Marshal(state.SyncRequest)
+			requestBody, err := json.Marshal(syncRequest)
 			if err != nil {
 				return fmt.Errorf("client %d round 1 marshal failed: %w", i, err)
 			}
@@ -190,10 +178,10 @@ func convergeAllClients(clients []*Client, server *server.Server) error {
 			}
 
 			delivery := SyncDeliveryRequest{
-				SyncRequest:  *state.SyncRequest,
+				SyncRequest:  *syncRequest,
 				SyncResponse: syncResp,
 			}
-			_, err = client.DeliverSync(delivery)
+			err = client.DeliverSync(delivery, -1)
 			if err != nil {
 				return fmt.Errorf("client %d round 1 delivery failed: %w", i, err)
 			}
@@ -203,14 +191,14 @@ func convergeAllClients(clients []*Client, server *server.Server) error {
 	// Round 2: All clients sync again to receive Round 1's changes
 	log.Println("Round 2: All clients syncing...")
 	for i, client := range clients {
-		state, err := client.PerformActions(ActionRequest{}, true)
+		syncRequest, err := client.PerformTick(TickRequest{}, true, -1)
 		if err != nil {
 			return fmt.Errorf("client %d round 2 failed: %w", i, err)
 		}
 
-		if state.SyncRequest != nil {
+		if syncRequest != nil {
 			// Directly send to server without fault injection
-			requestBody, err := json.Marshal(state.SyncRequest)
+			requestBody, err := json.Marshal(syncRequest)
 			if err != nil {
 				return fmt.Errorf("client %d round 2 marshal failed: %w", i, err)
 			}
@@ -233,10 +221,10 @@ func convergeAllClients(clients []*Client, server *server.Server) error {
 			}
 
 			delivery := SyncDeliveryRequest{
-				SyncRequest:  *state.SyncRequest,
+				SyncRequest:  *syncRequest,
 				SyncResponse: syncResp,
 			}
-			_, err = client.DeliverSync(delivery)
+			err = client.DeliverSync(delivery, -1)
 			if err != nil {
 				return fmt.Errorf("client %d round 2 delivery failed: %w", i, err)
 			}
@@ -250,7 +238,7 @@ func verifyCRDTsMatch(clients []*Client) error {
 	log.Println("=== Verifying Convergence ===")
 
 	// Collect all final states
-	finalStates := make([]*StateResponse, len(clients))
+	finalStates := make([]*VerificationResponse, len(clients))
 	for i, client := range clients {
 		state, err := client.GetAllOps() // Get all operations for verification
 		if err != nil {
@@ -327,7 +315,7 @@ func contextEqual(a, b map[string]int64) bool {
 	return true
 }
 
-func verifyClocksConverged(finalStates []*StateResponse) error {
+func verifyClocksConverged(finalStates []*VerificationResponse) error {
 	if len(finalStates) == 0 {
 		return nil
 	}
@@ -344,7 +332,7 @@ func verifyClocksConverged(finalStates []*StateResponse) error {
 	return nil
 }
 
-func verifyRowsMatch(finalStates []*StateResponse) error {
+func verifyRowsMatch(finalStates []*VerificationResponse) error {
 	if len(finalStates) == 0 {
 		return nil
 	}
@@ -488,60 +476,60 @@ func createServer() *server.Server {
 	return server
 }
 
-func generateAllRandomActions(random *rand.Rand, clients []*Client) ([]ActionRequest, []bool) {
-	allActions := make([]ActionRequest, len(clients))
+func generateAllRandomTicks(random *rand.Rand, clients []*Client) ([]TickRequest, []bool) {
+	allTicks := make([]TickRequest, len(clients))
 	allShouldSync := make([]bool, len(clients))
 	for i, client := range clients {
-		allActions[i] = client.GenerateRandomActions(random)
+		allTicks[i] = client.GenerateRandomTick(random)
 		allShouldSync[i] = client.ShouldSync(random)
 	}
 
-	return allActions, allShouldSync
+	return allTicks, allShouldSync
 }
 
-func executeAllActions(allActions []ActionRequest, allShouldSync []bool, clients []*Client) chan ActionResult {
-	results := make(chan ActionResult, len(clients))
+func executeAllTicks(allTicks []TickRequest, allShouldSync []bool, clients []*Client, tick int) chan ClientTickResponse {
+	results := make(chan ClientTickResponse, len(clients))
 	for i, client := range clients {
-		go func(idx int, c *Client, actions ActionRequest, shouldSync bool) {
-			state, err := c.PerformActions(actions, shouldSync)
-			results <- ActionResult{ClientIndex: idx, State: state, Error: err}
-		}(i, client, allActions[i], allShouldSync[i])
+		go func(idx int, c *Client, tickReq TickRequest, shouldSync bool) {
+			syncRequest, err := c.PerformTick(tickReq, shouldSync, tick)
+			results <- ClientTickResponse{ClientIndex: idx, SyncRequest: syncRequest, Error: err}
+		}(i, client, allTicks[i], allShouldSync[i])
 	}
 
 	return results
 }
 
-func collectAndSortActionResults(tick int, results chan ActionResult, clients []*Client) []*StateResponse {
-	actionResults := make([]*StateResponse, len(clients))
+func collectAndSortTickResponses(tick int, results chan ClientTickResponse, clients []*Client) []*sync_engine.SyncRequest {
+	tickResults := make([]*sync_engine.SyncRequest, len(clients))
 	for range clients {
 		result := <-results
 		if result.Error != nil {
 			log.Fatalf("Tick %d: Client %d action failed: %v", tick, result.ClientIndex, result.Error)
 		}
-		actionResults[result.ClientIndex] = result.State
+		tickResults[result.ClientIndex] = result.SyncRequest
 	}
-	return actionResults
+	return tickResults
 }
 
 func enqueueSyncRequest(
 	requestQueue *RequestQueue,
 	client *Client,
 	clientIndex int,
-	state *StateResponse,
+	syncRequest *sync_engine.SyncRequest,
 	faultInjector *FaultInjector,
 	faultsEnabled bool,
 	currentTick int,
 	totalTicks int,
 ) {
-	if state.SyncRequest == nil {
+	if syncRequest == nil {
 		return
 	}
 
 	// Store original request before any corruption
-	originalRequest := state.SyncRequest
+	originalRequest := syncRequest
 
 	// Marshal sync request to JSON
-	requestBody, err := json.Marshal(state.SyncRequest)
+	requestBody, err := json.Marshal(syncRequest)
 	if err != nil {
 		log.Fatalf("Failed to marshal sync request: %v", err)
 	}
@@ -579,7 +567,7 @@ func enqueueSyncRequest(
 	requestQueue.Enqueue(req)
 
 	log.Printf("  Client %d: Enqueued sync request with %d operations (deliver at tick %d)",
-		clientIndex, len(state.SyncRequest.Operations), deliverAt)
+		clientIndex, len(syncRequest.Operations), deliverAt)
 }
 
 func processHTTPRequest(req HTTPRequest, server *server.Server) HTTPResponse {
@@ -712,7 +700,7 @@ func deliverReadyResponses(
 			}
 
 			// Deliver to client
-			newState, err := client.DeliverSync(delivery)
+			err := client.DeliverSync(delivery, currentTick)
 			if err != nil {
 				// If response was corrupted, this is an expected failure
 				if resp.WasCorrupted {
@@ -721,8 +709,6 @@ func deliverReadyResponses(
 				}
 				log.Fatalf("Client %s sync delivery failed: %v", client.ClientID, err)
 			}
-
-			log.Printf("    After sync - Clock: %d, CRDT operations: %d", newState.ClockValue, len(newState.CRDTOperations))
 		}
 	}
 }

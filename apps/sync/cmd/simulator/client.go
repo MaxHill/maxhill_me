@@ -26,7 +26,7 @@ type Client struct {
 	ChanceSync       float64
 }
 
-type ActionRequest struct {
+type TickRequest struct {
 	WriteUser   bool `json:"writeUser"`
 	DeleteUser  bool `json:"deleteUser"`
 	ClearUser   bool `json:"clearUser"`
@@ -34,17 +34,22 @@ type ActionRequest struct {
 	DeletePost  bool `json:"deletePost"`
 	ClearPost   bool `json:"clearPost"`
 	RequestSync bool `json:"requestSync"`
+	Tick        int  `json:"tick"`
 }
 
 type SyncDeliveryRequest struct {
 	SyncRequest  sync_engine.SyncRequest  `json:"syncRequest"`
 	SyncResponse sync_engine.SyncResponse `json:"syncResponse"`
+	Tick         int                      `json:"tick"`
 }
 
-type StateResponse struct {
+type TickResponse struct {
+	SyncRequest *sync_engine.SyncRequest `json:"syncRequest,omitempty"`
+}
+
+type VerificationResponse struct {
 	CRDTOperations []sync_engine.CRDTOperation          `json:"crdtOperations"`
 	ClockValue     int64                                `json:"clockValue"`
-	SyncRequest    *sync_engine.SyncRequest             `json:"syncRequest,omitempty"`
 	Rows           map[string]map[string]map[string]any `json:"rows,omitempty"`
 }
 
@@ -74,8 +79,8 @@ func StartClient(file string, clientID string, seed string) (*Client, error) {
 	}, nil
 }
 
-func (client *Client) GenerateRandomActions(random *rand.Rand) ActionRequest {
-	return ActionRequest{
+func (client *Client) GenerateRandomTick(random *rand.Rand) TickRequest {
+	return TickRequest{
 		WriteUser:  random.Float64() < client.ChanceWriteUser,
 		DeleteUser: random.Float64() < client.ChanceDeleteUser,
 		ClearUser:  random.Float64() < client.ChanceClearUser,
@@ -89,28 +94,28 @@ func (client *Client) ShouldSync(random *rand.Rand) bool {
 	return random.Float64() < client.ChanceSync
 }
 
-func (client *Client) PerformActions(actions ActionRequest, requestSync bool) (*StateResponse, error) {
-	actions.RequestSync = requestSync
+func (client *Client) PerformTick(tick TickRequest, requestSync bool, tickNumber int) (*sync_engine.SyncRequest, error) {
+	tick.RequestSync = requestSync
+	tick.Tick = tickNumber
 
-	var response StateResponse
-	if err := client.call("action", actions, &response); err != nil {
+	var response TickResponse
+	if err := client.call("action", tick, &response); err != nil {
 		return nil, err
 	}
 
-	return &response, nil
+	return response.SyncRequest, nil
 }
 
-func (client *Client) DeliverSync(request SyncDeliveryRequest) (*StateResponse, error) {
-	var response StateResponse
-	if err := client.call("sync_delivery", request, &response); err != nil {
-		return nil, err
-	}
+func (client *Client) DeliverSync(request SyncDeliveryRequest, tick int) error {
+	request.Tick = tick
 
-	return &response, nil
+	// Client logs internally, we just need to call it
+	var response struct{} // Empty response
+	return client.call("sync_delivery", request, &response)
 }
 
-func (client *Client) GetAllOps() (*StateResponse, error) {
-	var response StateResponse
+func (client *Client) GetAllOps() (*VerificationResponse, error) {
+	var response VerificationResponse
 	if err := client.call("get_all_ops", nil, &response); err != nil {
 		return nil, err
 	}
