@@ -44,9 +44,6 @@ type StateResponse = {
   crdtOperations: any[];
   clockValue: number;
   syncRequest?: any;
-  actionTimeMs?: number;
-  operationsReceiveTimeMs?: number;
-  syncPrepTimeMs?: number;
   rows?: {
     [table: string]: {
       [rowKey: string]: Record<string, any>;
@@ -141,63 +138,34 @@ async function handleGetAllOps(): Promise<StateResponse> {
 //  Handle action request
 //  ------------------------------------------------------------------------
 async function handleAction(request: ActionRequest): Promise<StateResponse> {
-  const actionStart = performance.now();
-  const timings: Record<string, number> = {};
-
   // Perform actions based on booleans
-  const writeStart = performance.now();
   if (request.writeUser) await writeUser(prng);
   if (request.deleteUser) await deleteUser(prng);
   if (request.writePost) await writePost(prng);
   if (request.deletePost) await deletePost(prng);
-  timings.writes = performance.now() - writeStart;
-
-  const actionTimeMs = performance.now() - actionStart;
 
   // Get count of unsynced operations (for logging only - don't fetch all operations)
-  const opsStart = performance.now();
   const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
   const unsyncedCount = await client.repo.countUnsyncedOperations(opsTx);
-  timings.getOps = performance.now() - opsStart;
   // Readonly transaction - no need to explicitly wait for completion
 
   // Get clock value
-  const clockStart = performance.now();
   const clockTx = client.repo.transaction([CLIENT_STATE_STORE], "readonly");
   const clockValue = await client.repo.getVersion(clockTx);
-  timings.getClock = performance.now() - clockStart;
   // Readonly transaction - no need to explicitly wait for completion
 
   // Optionally compute sync request
   let syncRequest: SyncRequest | undefined = undefined;
-  let syncPrepTimeMs = undefined;
   if (request.requestSync) {
-    const syncPrepStart = performance.now();
     const syncTx = client.repo.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE], "readonly");
     syncRequest = await client.sync.createSyncRequest(syncTx);
     // Readonly transaction - no need to explicitly wait for completion
-    syncPrepTimeMs = performance.now() - syncPrepStart;
-    timings.syncPrep = syncPrepTimeMs;
-  }
-
-  // Log if action took longer than 5 seconds
-  const totalTime = performance.now() - actionStart;
-  if (totalTime > 5000) {
-    console.error(`SLOW ACTION: ${totalTime.toFixed(0)}ms total`, {
-      writes: timings.writes?.toFixed(0) + "ms",
-      getOps: timings.getOps?.toFixed(0) + "ms",
-      getClock: timings.getClock?.toFixed(0) + "ms",
-      syncPrep: timings.syncPrep?.toFixed(0) + "ms",
-      unsyncedOps: unsyncedCount,
-    });
   }
 
   return {
     crdtOperations: new Array(unsyncedCount), // Array with correct length but no actual data
     clockValue,
     syncRequest,
-    actionTimeMs,
-    syncPrepTimeMs,
   };
 }
 
@@ -207,8 +175,6 @@ async function handleAction(request: ActionRequest): Promise<StateResponse> {
 async function handleSyncDelivery(
   request: SyncDeliveryRequest,
 ): Promise<StateResponse> {
-  const operationsReceiveStart = performance.now();
-
   // Apply sync response to client
   const tx = client.repo.transaction(
     [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE],
@@ -216,8 +182,6 @@ async function handleSyncDelivery(
   );
   await client.sync.handleSyncResponse(tx, client.clock, request.syncResponse);
   // Transaction auto-completes when all requests finish
-
-  const operationsReceiveTimeMs = performance.now() - operationsReceiveStart;
 
   // Get updated CRDT operations (unsynced for state tracking)
   const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
@@ -232,7 +196,6 @@ async function handleSyncDelivery(
   return {
     crdtOperations,
     clockValue,
-    operationsReceiveTimeMs,
   };
 }
 

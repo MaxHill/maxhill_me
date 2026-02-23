@@ -42,13 +42,10 @@ type SyncDeliveryRequest struct {
 }
 
 type StateResponse struct {
-	CRDTOperations          []sync_engine.CRDTOperation          `json:"crdtOperations"`
-	ClockValue              int64                                `json:"clockValue"`
-	SyncRequest             *sync_engine.SyncRequest             `json:"syncRequest,omitempty"`
-	ActionTimeMs            float64                              `json:"actionTimeMs,omitempty"`
-	OperationsReceiveTimeMs float64                              `json:"operationsReceiveTimeMs,omitempty"`
-	SyncPrepTimeMs          float64                              `json:"syncPrepTimeMs,omitempty"`
-	Rows                    map[string]map[string]map[string]any `json:"rows,omitempty"`
+	CRDTOperations []sync_engine.CRDTOperation          `json:"crdtOperations"`
+	ClockValue     int64                                `json:"clockValue"`
+	SyncRequest    *sync_engine.SyncRequest             `json:"syncRequest,omitempty"`
+	Rows           map[string]map[string]map[string]any `json:"rows,omitempty"`
 }
 
 type Message struct {

@@ -13,20 +13,12 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
-	"sort"
 	"sync/internal/repository"
 	"sync/internal/server"
 	"sync/internal/sync_engine"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
-)
-
-const (
-	// maxQueueDrainTicks is the safety limit for draining queues after simulation ends.
-	// This prevents infinite loops if there's a bug in queue processing.
-	// Should be larger than the maximum configured delay (DelayedSyncMaxTicks).
-	maxQueueDrainTicks = 100
 )
 
 type ActionResult struct {
@@ -39,24 +31,6 @@ type SyncDeliveryResult struct {
 	ClientIndex int
 	State       *StateResponse
 	Error       error
-}
-
-type SimulationStats struct {
-	ActionTimes            []float64
-	OperationsReceiveTimes []float64
-	SyncPrepTimes          []float64
-	TotalActions           int
-	TotalSyncs             int
-	TotalOperationsSent    int
-	TotalOperationsRecv    int
-	ConvergenceStart       time.Time
-	ConvergenceEnd         time.Time
-
-	// Fault injection stats
-	FaultDelayedSyncs       int
-	FaultCorruptedRequests  int
-	FaultCorruptedResponses int
-	FaultRejectedRequests   int // Corrupted requests rejected by server
 }
 
 func main() {
@@ -110,9 +84,6 @@ func main() {
 		}
 	}()
 
-	// Initialize statistics
-	stats := &SimulationStats{}
-
 	// Initialize request/response queues
 	requestQueue := &RequestQueue{}
 	responseQueue := &ResponseQueue{}
@@ -143,57 +114,41 @@ func main() {
 
 		actionResults := collectAndSortActionResults(tick, results, clients)
 
-		// 1. Log action results and collect stats
+		// 1. Log action results
 		for i, state := range actionResults {
 			log.Printf("Client %d (%s;tick=%d)", i, clients[i].ClientID, tick)
 			log.Printf("  Clock: %d, CRDT operations: %d", state.ClockValue, len(state.CRDTOperations))
-
-			// Collect action timing stats
-			if state.ActionTimeMs > 0 {
-				stats.ActionTimes = append(stats.ActionTimes, state.ActionTimeMs)
-				stats.TotalActions++
-			}
-
-			if state.SyncPrepTimeMs > 0 {
-				stats.SyncPrepTimes = append(stats.SyncPrepTimes, state.SyncPrepTimeMs)
-			}
 		}
 
 		// 2. Enqueue sync requests with latency
 		for i, state := range actionResults {
-			enqueueSyncRequest(requestQueue, clients[i], i, state, faultInjector, faultsEnabled, tick, *numTicks, stats)
+			enqueueSyncRequest(requestQueue, clients[i], i, state, faultInjector, faultsEnabled, tick, *numTicks)
 		}
 
 		// 3. Process ready requests from queue (with deterministic shuffle)
-		processReadyRequests(requestQueue, responseQueue, server, random, faultInjector, faultsEnabled, tick, *numTicks, stats)
+		processReadyRequests(requestQueue, responseQueue, server, random, faultInjector, faultsEnabled, tick, *numTicks)
 
 		// 4. Deliver ready responses to clients
-		deliverReadyResponses(responseQueue, clients, tick, stats)
+		deliverReadyResponses(responseQueue, clients, tick)
 	}
 
 	log.Println("Simulation complete")
 
-	// Don't drain queues - treat delayed messages as dropped (realistic network simulation)
 	if requestQueue.Len() > 0 || responseQueue.Len() > 0 {
 		log.Printf("Dropping %d pending requests and %d pending responses (simulated packet loss)",
 			requestQueue.Len(), responseQueue.Len())
 	}
 
 	// Convergence check
-	stats.ConvergenceStart = time.Now()
 	if err := convergeAllClients(clients, server); err != nil {
 		log.Fatalf("Convergence failed: %v", err)
 	}
-	stats.ConvergenceEnd = time.Now()
 
 	if err := verifyCRDTsMatch(clients); err != nil {
 		log.Fatalf("CRDT verification failed: %v", err)
 	}
 
 	log.Println("✓ Convergence verification passed!")
-
-	// Print statistics
-	printSimulationStats(stats)
 
 	log.Printf("=== Simulation Complete ===")
 	log.Printf("Seed: %s", *seed)
@@ -494,97 +449,6 @@ func rowDataEqual(a, b map[string]any) bool {
 	return true
 }
 
-func average(values []float64) float64 {
-	if len(values) == 0 {
-		return 0
-	}
-	sum := 0.0
-	for _, v := range values {
-		sum += v
-	}
-	return sum / float64(len(values))
-}
-
-func percentile(sorted []float64, p float64) float64 {
-	if len(sorted) == 0 {
-		return 0
-	}
-	index := int(float64(len(sorted)) * p)
-	if index >= len(sorted) {
-		index = len(sorted) - 1
-	}
-	return sorted[index]
-}
-
-func printSimulationStats(stats *SimulationStats) {
-	log.Println("=== Simulation Statistics ===")
-
-	// Action timing
-	if len(stats.ActionTimes) > 0 {
-		sort.Float64s(stats.ActionTimes)
-		log.Printf("Action Execution Time:")
-		log.Printf("  Count: %d", stats.TotalActions)
-		log.Printf("  Min: %.2fms, Max: %.2fms, Avg: %.2fms",
-			stats.ActionTimes[0],
-			stats.ActionTimes[len(stats.ActionTimes)-1],
-			average(stats.ActionTimes))
-		log.Printf("  P50: %.2fms, P95: %.2fms, P99: %.2fms",
-			percentile(stats.ActionTimes, 0.5),
-			percentile(stats.ActionTimes, 0.95),
-			percentile(stats.ActionTimes, 0.99))
-	}
-
-	// Operations receive timing
-	if len(stats.OperationsReceiveTimes) > 0 {
-		sort.Float64s(stats.OperationsReceiveTimes)
-		log.Printf("Operations Receive Time:")
-		log.Printf("  Count: %d", len(stats.OperationsReceiveTimes))
-		log.Printf("  Min: %.2fms, Max: %.2fms, Avg: %.2fms",
-			stats.OperationsReceiveTimes[0],
-			stats.OperationsReceiveTimes[len(stats.OperationsReceiveTimes)-1],
-			average(stats.OperationsReceiveTimes))
-		log.Printf("  P50: %.2fms, P95: %.2fms, P99: %.2fms",
-			percentile(stats.OperationsReceiveTimes, 0.5),
-			percentile(stats.OperationsReceiveTimes, 0.95),
-			percentile(stats.OperationsReceiveTimes, 0.99))
-	}
-
-	// Sync prep timing
-	if len(stats.SyncPrepTimes) > 0 {
-		sort.Float64s(stats.SyncPrepTimes)
-		log.Printf("Sync Preparation Time:")
-		log.Printf("  Count: %d", len(stats.SyncPrepTimes))
-		log.Printf("  Min: %.2fms, Max: %.2fms, Avg: %.2fms",
-			stats.SyncPrepTimes[0],
-			stats.SyncPrepTimes[len(stats.SyncPrepTimes)-1],
-			average(stats.SyncPrepTimes))
-		log.Printf("  P50: %.2fms, P95: %.2fms, P99: %.2fms",
-			percentile(stats.SyncPrepTimes, 0.5),
-			percentile(stats.SyncPrepTimes, 0.95),
-			percentile(stats.SyncPrepTimes, 0.99))
-	}
-
-	// Totals
-	log.Printf("Sync Operations:")
-	log.Printf("  Total syncs: %d", stats.TotalSyncs)
-	log.Printf("  Total operations sent: %d", stats.TotalOperationsSent)
-	log.Printf("  Total operations received: %d", stats.TotalOperationsRecv)
-
-	// Convergence
-	if !stats.ConvergenceEnd.IsZero() {
-		duration := stats.ConvergenceEnd.Sub(stats.ConvergenceStart)
-		log.Printf("Convergence Time: %.2fms", float64(duration.Microseconds())/1000.0)
-	}
-
-	// Fault injection stats
-	if stats.FaultDelayedSyncs > 0 || stats.FaultCorruptedRequests > 0 || stats.FaultCorruptedResponses > 0 {
-		log.Printf("Fault Injection:")
-		log.Printf("  Delayed syncs: %d", stats.FaultDelayedSyncs)
-		log.Printf("  Corrupted requests: %d (rejected: %d)", stats.FaultCorruptedRequests, stats.FaultRejectedRequests)
-		log.Printf("  Corrupted responses: %d", stats.FaultCorruptedResponses)
-	}
-}
-
 func createClients(random *rand.Rand, fileName string, numClients int) []*Client {
 	clients := make([]*Client, numClients)
 
@@ -668,14 +532,10 @@ func enqueueSyncRequest(
 	faultsEnabled bool,
 	currentTick int,
 	totalTicks int,
-	stats *SimulationStats,
 ) {
 	if state.SyncRequest == nil {
 		return
 	}
-
-	stats.TotalSyncs++
-	stats.TotalOperationsSent += len(state.SyncRequest.Operations)
 
 	// Store original request before any corruption
 	originalRequest := state.SyncRequest
@@ -691,7 +551,6 @@ func enqueueSyncRequest(
 
 	// FAULT INJECTION: Corrupt request
 	if faultsEnabled && faultInjector.ShouldCorruptRequest() {
-		stats.FaultCorruptedRequests++
 		faultInjector.CorruptJSON(&bodyStr)
 		wasCorrupted = true
 	}
@@ -754,7 +613,6 @@ func processReadyRequests(
 	faultsEnabled bool,
 	currentTick int,
 	totalTicks int,
-	stats *SimulationStats,
 ) {
 	readyRequests := requestQueue.TakeReady(currentTick)
 
@@ -781,7 +639,6 @@ func processReadyRequests(
 		// Check if server rejected the request (e.g., corrupted JSON)
 		if resp.StatusCode != http.StatusOK {
 			if req.WasCorrupted {
-				stats.FaultRejectedRequests++
 				log.Printf("    Server rejected corrupted request (expected)")
 			} else {
 				log.Printf("    Server rejected request with status %d: %s", resp.StatusCode, resp.Body)
@@ -791,7 +648,6 @@ func processReadyRequests(
 			// Parse successful response to count operations
 			var syncResp sync_engine.SyncResponse
 			if err := json.Unmarshal([]byte(resp.Body), &syncResp); err == nil {
-				stats.TotalOperationsRecv += len(syncResp.Operations)
 				log.Printf("    Response has %d operations", len(syncResp.Operations))
 			}
 		}
@@ -800,14 +656,12 @@ func processReadyRequests(
 		if faultsEnabled && resp.StatusCode == http.StatusOK && faultInjector.ShouldCorruptResponse() {
 			resp.WasCorrupted = true
 			faultInjector.CorruptJSON(&resp.Body)
-			stats.FaultCorruptedResponses++
 			log.Printf("    FAULT INJECTION: Response corrupted")
 		}
 
 		// FAULT INJECTION: Delay response
 		if faultsEnabled && faultInjector.ShouldDelaySync() {
 			resp.DeliverAt = faultInjector.CalculateDelayTicks(currentTick, totalTicks)
-			stats.FaultDelayedSyncs++
 			delayAmount := (resp.DeliverAt - currentTick + totalTicks) % totalTicks
 			log.Printf("    FAULT INJECTION: Response delayed by %d ticks (deliver at tick %d)",
 				delayAmount, resp.DeliverAt)
@@ -821,7 +675,6 @@ func deliverReadyResponses(
 	responseQueue *ResponseQueue,
 	clients []*Client,
 	currentTick int,
-	stats *SimulationStats,
 ) {
 	for i, client := range clients {
 		// Get responses in FIFO order (deterministic per client)
@@ -835,9 +688,6 @@ func deliverReadyResponses(
 			// Skip if server rejected the request
 			if resp.StatusCode != http.StatusOK {
 				log.Printf("    Skipping delivery due to non-OK status: %d", resp.StatusCode)
-				if resp.WasCorrupted {
-					stats.FaultRejectedRequests++
-				}
 				continue
 			}
 
@@ -847,7 +697,6 @@ func deliverReadyResponses(
 				log.Printf("    Failed to parse sync response: %v", err)
 				if resp.WasCorrupted {
 					log.Printf("    Response was corrupted (expected failure)")
-					stats.FaultRejectedRequests++
 				}
 				continue
 			}
@@ -868,15 +717,9 @@ func deliverReadyResponses(
 				// If response was corrupted, this is an expected failure
 				if resp.WasCorrupted {
 					log.Printf("    FAULT INJECTION: Corrupted sync delivery failed (expected): %v", err)
-					stats.FaultRejectedRequests++
 					continue
 				}
 				log.Fatalf("Client %s sync delivery failed: %v", client.ClientID, err)
-			}
-
-			// Collect operations receive timing
-			if newState.OperationsReceiveTimeMs > 0 {
-				stats.OperationsReceiveTimes = append(stats.OperationsReceiveTimes, newState.OperationsReceiveTimeMs)
 			}
 
 			log.Printf("    After sync - Clock: %d, CRDT operations: %d", newState.ClockValue, len(newState.CRDTOperations))
