@@ -18,20 +18,28 @@ async function main() {
   await db.open();
   const count = await db.get("count", "example");
 
-  render(count?.counted_value || -1);
+  render(count?.counted_value || 0);
   console.log("Count: ", count);
 
   const incrementButton = document.getElementById("increment");
   incrementButton?.addEventListener("click", async (_) => {
     const count = await db.get("count", "example");
-    await db.setRow("count", "example", { counted_value: count?.counted_value + 1 || 1 });
-    render(count?.counted_value + 1 || 1);
+    await db.setRow("count", "example", { value: count?.value ? count.counted_value + 1 : 1 });
+    render(count?.counted_value + 1 || 0);
   });
+
+  const decrementButton = document.getElementById("decrement");
+  decrementButton?.addEventListener("click", async (_) => {
+    const count = await db.get("count", "example");
+    await db.setRow("count", "example", { value: count?.value ? count.value - 1 : 0 });
+    render(count?.value + 1 || 0);
+  });
+
 
   setInterval(async () => {
     await db.sync();
     const count = await db.get("count", "example");
-    render(count?.counted_value || 1);
+    render(count?.counted_value || 0);
   }, 10_000);
 }
 
