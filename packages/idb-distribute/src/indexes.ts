@@ -1,4 +1,5 @@
-import { CLIENT_STATE_STORE, INDEXES_HASH, ROWS_STORE, TABLE_NAME_KEY } from "./IDBRepository.ts";
+import { CLIENT_STATE_STORE, INDEXES_HASH, ROWS_STORE } from "./IDBRepository.ts";
+import { TABLE_NAME } from "./crdt.ts";
 import { promisifyIDBRequest, validateTransactionStores } from "./utils.ts";
 
 export interface IndexDefinition {
@@ -12,8 +13,8 @@ export function indexDefinitionToIDBIndex(index: IndexDefinition): [string, stri
 
   // Build key path: [tableName, field1.value, field2.value, ...]
   const keyPath = [
-    TABLE_NAME_KEY, // "_tablename_idb_distribute"
-    ...index.keys.map((key) => `row.fields.${key}.value`),
+    TABLE_NAME, // "table_name"
+    ...index.keys.map((key) => `fields.${key}.value`),
   ];
 
   return [internalIndexName, keyPath];

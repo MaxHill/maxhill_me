@@ -7,6 +7,8 @@ import {
   type Dot,
   type LWWField,
   type ORMapRow,
+  TABLE_NAME,
+  ROW_KEY,
 } from "./crdt.ts";
 
 //  ------------------------------------------------------------------------
@@ -35,6 +37,8 @@ const generateSafeFieldName = (): fc.Arbitrary<string> =>
 
 const generateORMapRow = (): fc.Arbitrary<ORMapRow> =>
   fc.record({
+    [TABLE_NAME]: fc.constant("test_table"),
+    [ROW_KEY]: fc.string(),
     fields: fc.dictionary(generateSafeFieldName(), generateLWWField()),
     tombstone: fc.option(
       fc.record({
@@ -164,7 +168,7 @@ describe("compareDots", () => {
 describe("applyOpToRow", () => {
   describe("set operations", () => {
     it("should apply set to empty row", () => {
-      const row: ORMapRow = { fields: {} };
+      const row: ORMapRow = { [TABLE_NAME]: "test", [ROW_KEY]: "row1", fields: {} };
       const op: CRDTOperation = {
         type: "set",
         table: "test",
@@ -184,6 +188,8 @@ describe("applyOpToRow", () => {
 
     it("should replace field when new dot is higher (LWW)", () => {
       const row: ORMapRow = {
+        [TABLE_NAME]: "test",
+        [ROW_KEY]: "row1",
         fields: {
           name: { value: "Alice", dot: { clientId: "client1", version: 1 } },
         },
@@ -205,6 +211,8 @@ describe("applyOpToRow", () => {
 
     it("should ignore set when existing dot is higher", () => {
       const row: ORMapRow = {
+        [TABLE_NAME]: "test",
+        [ROW_KEY]: "row1",
         fields: {
           name: { value: "Bob", dot: { clientId: "client1", version: 5 } },
         },
@@ -226,6 +234,8 @@ describe("applyOpToRow", () => {
 
     it("should use clientId tiebreaker when versions are equal", () => {
       const row: ORMapRow = {
+        [TABLE_NAME]: "test",
+        [ROW_KEY]: "row1",
         fields: {
           name: { value: "Alice", dot: { clientId: "client1", version: 5 } },
         },
@@ -247,7 +257,7 @@ describe("applyOpToRow", () => {
     });
 
     it("should throw error when field is missing in set operation", () => {
-      const row: ORMapRow = { fields: {} };
+      const row: ORMapRow = { [TABLE_NAME]: "test", [ROW_KEY]: "row1", fields: {} };
       const op: CRDTOperation = {
         type: "set",
         table: "test",
@@ -262,6 +272,8 @@ describe("applyOpToRow", () => {
 
     it("should reject set dominated by tombstone", () => {
       const row: ORMapRow = {
+        [TABLE_NAME]: "test",
+        [ROW_KEY]: "row1",
         fields: {},
         tombstone: {
           dot: { clientId: "client1", version: 10 },
@@ -284,6 +296,8 @@ describe("applyOpToRow", () => {
 
     it("should allow set with higher version than tombstone context", () => {
       const row: ORMapRow = {
+        [TABLE_NAME]: "test",
+        [ROW_KEY]: "row1",
         fields: {},
         tombstone: {
           dot: { clientId: "client1", version: 10 },
@@ -309,6 +323,8 @@ describe("applyOpToRow", () => {
 
     it("should allow set from client not in tombstone context", () => {
       const row: ORMapRow = {
+        [TABLE_NAME]: "test",
+        [ROW_KEY]: "row1",
         fields: {},
         tombstone: {
           dot: { clientId: "client1", version: 10 },
@@ -362,7 +378,7 @@ describe("applyOpToRow", () => {
 
   describe("setRow operations", () => {
     it("should set multiple fields with same dot", () => {
-      const row: ORMapRow = { fields: {} };
+      const row: ORMapRow = { [TABLE_NAME]: "test", [ROW_KEY]: "row1", fields: {} };
       const operation: CRDTOperation = {
         type: "setRow",
         table: "test",
@@ -385,6 +401,8 @@ describe("applyOpToRow", () => {
 
     it("should only update fields where new dot wins", () => {
       const row: ORMapRow = {
+        [TABLE_NAME]: "test",
+        [ROW_KEY]: "row1",
         fields: {
           name: { value: "Bob", dot: { clientId: "client1", version: 5 } },
           age: { value: 25, dot: { clientId: "client1", version: 2 } },
@@ -408,6 +426,8 @@ describe("applyOpToRow", () => {
 
     it("should reject setRow dominated by tombstone", () => {
       const row: ORMapRow = {
+        [TABLE_NAME]: "test",
+        [ROW_KEY]: "row1",
         fields: {},
         tombstone: {
           dot: { clientId: "client1", version: 10 },
@@ -454,6 +474,8 @@ describe("applyOpToRow", () => {
   describe("remove operations", () => {
     it("should create tombstone and remove dominated fields", () => {
       const row: ORMapRow = {
+        [TABLE_NAME]: "test",
+        [ROW_KEY]: "row1",
         fields: {
           name: { value: "Alice", dot: { clientId: "client1", version: 3 } },
           age: { value: 30, dot: { clientId: "client2", version: 2 } },
@@ -480,6 +502,8 @@ describe("applyOpToRow", () => {
 
     it("should keep fields with versions higher than tombstone context", () => {
       const row: ORMapRow = {
+        [TABLE_NAME]: "test",
+        [ROW_KEY]: "row1",
         fields: {
           name: { value: "Alice", dot: { clientId: "client1", version: 6 } },
           age: { value: 30, dot: { clientId: "client2", version: 2 } },
@@ -505,6 +529,8 @@ describe("applyOpToRow", () => {
 
     it("should keep fields from clients not in tombstone context", () => {
       const row: ORMapRow = {
+        [TABLE_NAME]: "test",
+        [ROW_KEY]: "row1",
         fields: {
           name: { value: "Alice", dot: { clientId: "client1", version: 3 } },
           age: { value: 30, dot: { clientId: "client3", version: 1 } },
@@ -534,7 +560,7 @@ describe("applyOpToRow", () => {
           generateRemoveOperation(),
           fc.array(generateSetOperation(), { minLength: 1, maxLength: 5 }),
           (removeOp, setOps) => {
-            const row: ORMapRow = { fields: {} };
+            const row: ORMapRow = { [TABLE_NAME]: "test_table", [ROW_KEY]: "test_row", fields: {} };
 
             // Apply all sets with versions <= context
             const dominatedSets = setOps.map((op) => {

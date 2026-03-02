@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
 import { promisifyIDBRequest, txDone } from "./utils.ts";
 import { IDBRepository } from "./IDBRepository.ts";
@@ -9,16 +9,29 @@ describe("PersistedLogicalClock", () => {
   let logicalClock: PersistedLogicalClock;
 
   beforeEach(async () => {
+    // Close existing database if open
+    if (idbRepository?.db) {
+      idbRepository.close();
+    }
+
+    // Delete the database to start fresh
+    await new Promise<void>((resolve, reject) => {
+      const deleteRequest = indexedDB.deleteDatabase("logicalClockTest");
+      deleteRequest.onsuccess = () => resolve();
+      deleteRequest.onerror = () => reject(deleteRequest.error);
+    });
+
+    // Create new instance and open
     idbRepository = new IDBRepository();
     await idbRepository.open("logicalClockTest");
     logicalClock = new PersistedLogicalClock(idbRepository);
+  });
 
-    // Clear and reinitialize to -1 (matching the database schema)
-    const clearTx = idbRepository.transaction("clientState", "readwrite");
-    const store = clearTx.objectStore("clientState");
-    await promisifyIDBRequest(store.clear());
-    await promisifyIDBRequest(store.put(-1, "logicalClock"));
-    await txDone(clearTx);
+  afterEach(() => {
+    // Clean up after each test
+    if (idbRepository?.db) {
+      idbRepository.close();
+    }
   });
 
   it("should tick and increment version", async () => {
