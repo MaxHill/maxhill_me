@@ -129,8 +129,12 @@ describe("compareDots", () => {
         fc.property(generateDot(), generateDot(), (a, b) => {
           const ab = compareDots(a, b);
           const ba = compareDots(b, a);
-          // Use == instead of toBe to avoid +0/-0 distinction
-          expect(ab).toEqual(-ba);
+          // Handle the +0/-0 case: when ab is 0, ba should also be 0
+          if (ab === 0) {
+            expect(ba).toBe(0);
+          } else {
+            expect(ab).toEqual(-ba);
+          }
         }),
       );
     });
