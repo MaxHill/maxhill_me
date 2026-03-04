@@ -266,9 +266,11 @@ describe("IDBRepository", () => {
   });
 
   describe("Index management", () => {
+    let testRepo: IDBRepository;
+
     afterEach(async () => {
-      if (idbRepository?.db) {
-        idbRepository.close();
+      if (testRepo?.db) {
+        testRepo.close();
       }
     });
 
@@ -283,16 +285,14 @@ describe("IDBRepository", () => {
         deleteRequest.onerror = () => reject(deleteRequest.error);
       });
 
-      const repo = new IDBRepository(indexes);
-      await repo.open("test-db-single-index");
+      testRepo = new IDBRepository(indexes);
+      await testRepo.open("test-db-single-index");
 
-      const tx = repo.transaction(["rows"], "readonly");
+      const tx = testRepo.transaction(["rows"], "readonly");
       const store = tx.objectStore("rows");
 
       // Verify index exists with correct internal name
       expect(store.indexNames.contains("users_usersByAge")).toBe(true);
-
-      repo.close();
     });
 
     it("should create compound index", async () => {
@@ -306,15 +306,13 @@ describe("IDBRepository", () => {
         deleteRequest.onerror = () => reject(deleteRequest.error);
       });
 
-      const repo = new IDBRepository(indexes);
-      await repo.open("test-db-compound-index");
+      testRepo = new IDBRepository(indexes);
+      await testRepo.open("test-db-compound-index");
 
-      const tx = repo.transaction(["rows"], "readonly");
+      const tx = testRepo.transaction(["rows"], "readonly");
       const store = tx.objectStore("rows");
 
       expect(store.indexNames.contains("users_usersByName")).toBe(true);
-
-      repo.close();
     });
 
     it("should create multiple indexes for same table", async () => {
@@ -329,16 +327,14 @@ describe("IDBRepository", () => {
         deleteRequest.onerror = () => reject(deleteRequest.error);
       });
 
-      const repo = new IDBRepository(indexes);
-      await repo.open("test-db-multiple-indexes");
+      testRepo = new IDBRepository(indexes);
+      await testRepo.open("test-db-multiple-indexes");
 
-      const tx = repo.transaction(["rows"], "readonly");
+      const tx = testRepo.transaction(["rows"], "readonly");
       const store = tx.objectStore("rows");
 
       expect(store.indexNames.contains("users_usersByAge")).toBe(true);
       expect(store.indexNames.contains("users_usersByName")).toBe(true);
-
-      repo.close();
     });
 
     it("should allow same index name for different tables", async () => {
@@ -353,17 +349,15 @@ describe("IDBRepository", () => {
         deleteRequest.onerror = () => reject(deleteRequest.error);
       });
 
-      const repo = new IDBRepository(indexes);
-      await repo.open("test-db-same-index-name");
+      testRepo = new IDBRepository(indexes);
+      await testRepo.open("test-db-same-index-name");
 
-      const tx = repo.transaction(["rows"], "readonly");
+      const tx = testRepo.transaction(["rows"], "readonly");
       const store = tx.objectStore("rows");
 
       // Both indexes exist with different internal names
       expect(store.indexNames.contains("users_byAge")).toBe(true);
       expect(store.indexNames.contains("posts_byAge")).toBe(true);
-
-      repo.close();
     });
 
     it("should throw error for empty index name", async () => {
@@ -377,9 +371,9 @@ describe("IDBRepository", () => {
         deleteRequest.onerror = () => reject(deleteRequest.error);
       });
 
-      const repo = new IDBRepository(indexes);
+      testRepo = new IDBRepository(indexes);
 
-      await expect(repo.open("test-db-empty-index-name")).rejects.toThrow(
+      await expect(testRepo.open("test-db-empty-index-name")).rejects.toThrow(
         "Index name cannot be empty",
       );
     });
@@ -395,9 +389,9 @@ describe("IDBRepository", () => {
         deleteRequest.onerror = () => reject(deleteRequest.error);
       });
 
-      const repo = new IDBRepository(indexes);
+      testRepo = new IDBRepository(indexes);
 
-      await expect(repo.open("test-db-empty-table-name")).rejects.toThrow(
+      await expect(testRepo.open("test-db-empty-table-name")).rejects.toThrow(
         'Index "usersByAge": table name cannot be empty',
       );
     });
@@ -413,9 +407,9 @@ describe("IDBRepository", () => {
         deleteRequest.onerror = () => reject(deleteRequest.error);
       });
 
-      const repo = new IDBRepository(indexes);
+      testRepo = new IDBRepository(indexes);
 
-      await expect(repo.open("test-db-empty-keys")).rejects.toThrow(
+      await expect(testRepo.open("test-db-empty-keys")).rejects.toThrow(
         'Index "invalidIndex": keys array cannot be empty',
       );
     });
@@ -431,9 +425,9 @@ describe("IDBRepository", () => {
         deleteRequest.onerror = () => reject(deleteRequest.error);
       });
 
-      const repo = new IDBRepository(indexes);
+      testRepo = new IDBRepository(indexes);
 
-      await expect(repo.open("test-db-empty-key-name")).rejects.toThrow(
+      await expect(testRepo.open("test-db-empty-key-name")).rejects.toThrow(
         'Index "usersByAge": key name cannot be empty',
       );
     });
@@ -450,9 +444,9 @@ describe("IDBRepository", () => {
         deleteRequest.onerror = () => reject(deleteRequest.error);
       });
 
-      const repo = new IDBRepository(indexes);
+      testRepo = new IDBRepository(indexes);
 
-      await expect(repo.open("test-db-duplicate-index")).rejects.toThrow(
+      await expect(testRepo.open("test-db-duplicate-index")).rejects.toThrow(
         "Index names must be unique per table",
       );
     });
@@ -464,12 +458,10 @@ describe("IDBRepository", () => {
         deleteRequest.onerror = () => reject(deleteRequest.error);
       });
 
-      const repo = new IDBRepository();
-      await repo.open("test-db-no-indexes");
+      testRepo = new IDBRepository();
+      await testRepo.open("test-db-no-indexes");
 
-      expect(repo.db?.version).toBe(1);
-
-      repo.close();
+      expect(testRepo.db?.version).toBe(1);
     });
 
     it("should create database at version 1 when indexes exist", async () => {
@@ -483,24 +475,39 @@ describe("IDBRepository", () => {
         deleteRequest.onerror = () => reject(deleteRequest.error);
       });
 
-      const repo = new IDBRepository(indexes);
-      await repo.open("test-db-with-indexes");
+      testRepo = new IDBRepository(indexes);
+      await testRepo.open("test-db-with-indexes");
 
-      expect(repo.db?.version).toBe(1);
-
-      repo.close();
+      expect(testRepo.db?.version).toBe(1);
     });
   });
 
   describe("Integration with CRDTDatabase", () => {
-    it("should work with CRDTDatabase", async () => {
-      const { CRDTDatabase } = await import("./crdtDatabase.ts");
+    let db: any;
+    const dbName = "test-crdt-db-with-indexes";
 
+    beforeEach(async () => {
+      // Close existing database if open
+      if (db) {
+        await db.close();
+      }
+
+      // Delete the database to start fresh
       await new Promise<void>((resolve, reject) => {
-        const deleteRequest = indexedDB.deleteDatabase("test-crdt-db-with-indexes");
+        const deleteRequest = indexedDB.deleteDatabase(dbName);
         deleteRequest.onsuccess = () => resolve();
         deleteRequest.onerror = () => reject(deleteRequest.error);
       });
+    });
+
+    afterEach(async () => {
+      if (db) {
+        await db.close();
+      }
+    });
+
+    it("should work with CRDTDatabase", async () => {
+      const { CRDTDatabase } = await import("./crdtDatabase.ts");
 
       // Create IDBRepository with indexes first
       const indexes = [
@@ -508,8 +515,8 @@ describe("IDBRepository", () => {
       ];
       const idbRepo = new IDBRepository(indexes);
 
-      const db = new CRDTDatabase(
-        "test-crdt-db-with-indexes",
+      db = new CRDTDatabase(
+        dbName,
         indexes,
         "http://test.com",
         undefined,
@@ -519,7 +526,7 @@ describe("IDBRepository", () => {
       await db.open();
 
       // Verify index was created (using type assertion to access private property in test)
-      const tx = (db as any).idbRepository.transaction(["rows"], "readonly");
+      const tx = db.idbRepository.transaction(["rows"], "readonly");
       const store = tx.objectStore("rows");
       expect(store.indexNames.contains("users_usersByAge")).toBe(true);
       await txDone(tx);
@@ -528,25 +535,39 @@ describe("IDBRepository", () => {
       await db.setRow("users", "u1", { age: 30, name: "Alice" });
       const user = await db.get("users", "u1");
       expect(user).toEqual({ age: 30, name: "Alice" });
-
-      await db.close();
     });
   });
 
   describe("Query operations", () => {
-    it("should query rows using a single-field index with exact match", async () => {
-      // Setup: Create database with index
+    let repo: IDBRepository;
+    const dbName = "test-db-query";
+
+    beforeEach(async () => {
+      // Close existing database if open
+      if (repo?.db) {
+        repo.close();
+      }
+
+      // Delete the database to start fresh
       await new Promise<void>((resolve, reject) => {
-        const deleteRequest = indexedDB.deleteDatabase("test-db-query");
+        const deleteRequest = indexedDB.deleteDatabase(dbName);
         deleteRequest.onsuccess = () => resolve();
         deleteRequest.onerror = () => reject(deleteRequest.error);
       });
+    });
 
+    afterEach(async () => {
+      if (repo?.db) {
+        repo.close();
+      }
+    });
+
+    it("should query rows using a single-field index with exact match", async () => {
       const indexes = [
         { name: "usersByAge", table: "users", keys: ["age"] },
       ];
-      const repo = new IDBRepository(indexes);
-      await repo.open("test-db-query");
+      repo = new IDBRepository(indexes);
+      await repo.open(dbName);
 
       // Insert test data
       const users = [
@@ -573,7 +594,7 @@ describe("IDBRepository", () => {
 
       // Query for age <= 27 (should match Alice and Charlie with age 25)
       const queryTx = repo.transaction("rows", "readonly");
-      const query = below(27, true); // below or equal to 27
+      const query = below(27, { inclusive: true });
 
       const results: ORMapRow[] = [];
       for await (const row of repo.query(queryTx, "users", "usersByAge", query)) {
@@ -584,8 +605,6 @@ describe("IDBRepository", () => {
       expect(results).toHaveLength(2);
       expect(results[0].fields.name.value).toBe("Alice");
       expect(results[1].fields.name.value).toBe("Charlie");
-
-      repo.close();
     });
   });
 });
