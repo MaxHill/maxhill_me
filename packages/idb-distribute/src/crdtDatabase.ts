@@ -10,6 +10,10 @@ import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
 import { Sync } from "./sync/index.ts";
 import { SyncErrorCode } from "./sync/errors.ts";
 import { promisifyIDBRequest } from "./utils.ts";
+import { TableSchema } from "./table.ts";
+
+export type DatabaseSchema = Record<string, TableSchema>;
+// TODO: Implement toTableNames: string[]
 
 export class CRDTDatabase {
   private clientId: string;
@@ -63,6 +67,13 @@ export class CRDTDatabase {
    * Set a single field in a row
    */
   async setCell(table: string, rowKey: ValidKey, field: string, value: any): Promise<void> {
+    if (field === "_key") {
+      throw new Error(
+        `Cannot set _key field directly. ` +
+          `The _key field is reserved and managed automatically.`,
+      );
+    }
+
     const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
     const row = await this.idbRepository.getRow(tx, table, rowKey);
 
@@ -88,6 +99,19 @@ export class CRDTDatabase {
    * Set an entire row
    */
   async setRow(table: string, rowKey: ValidKey, value: Record<string, any>): Promise<void> {
+    if (value._key) {
+      if (value._key !== rowKey) {
+        throw new Error(
+          `Cannot set _key to a different value than the row key. ` +
+            `Expected '_key' to be '${rowKey}' but got '${value._key}'. ` +
+            `The _key field is reserved and managed automatically.`,
+        );
+      }
+      // Strip _key before storing
+      const { _key, ...cleanData } = value;
+      value = cleanData;
+    }
+
     const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
     const row = await this.idbRepository.getRow(tx, table, rowKey);
 
@@ -119,11 +143,12 @@ export class CRDTDatabase {
       return undefined;
     }
 
-    const result: Record<string, any> = {};
+    const data: Record<string, any> = {};
     for (const [field, fieldState] of Object.entries(row.fields)) {
-      result[field] = fieldState.value;
+      data[field] = fieldState.value;
     }
-    return result;
+
+    return Object.assign({ _key: rowKey }, data);
   }
 
   /**
@@ -177,10 +202,12 @@ export class CRDTDatabase {
         continue;
       }
 
-      const result: Record<string, any> = {};
+      let result: Record<string, any> = {};
       for (const [field, fieldState] of Object.entries(row.fields)) {
         result[field] = fieldState.value;
       }
+
+      result = Object.assign({ _key: row[ROW_KEY] }, result);
       yield result;
     }
   }
@@ -198,10 +225,12 @@ export class CRDTDatabase {
     const result = new Map<IDBValidKey, Record<string, any>>();
     for (const record of records) {
       if (Object.keys(record.fields).length > 0) {
-        const rowData: Record<string, any> = {};
+        let rowData: Record<string, any> = {};
         for (const [field, fieldState] of Object.entries(record.fields)) {
           rowData[field] = (fieldState as LWWField).value;
         }
+
+        rowData = Object.assign({ _key: record[ROW_KEY] }, rowData);
         result.set(record[ROW_KEY], rowData);
       }
     }

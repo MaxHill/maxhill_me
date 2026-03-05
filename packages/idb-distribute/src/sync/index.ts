@@ -1,456 +1,469 @@
 import { applyOperationToRow, CRDTOperation, Dot } from "../crdt.ts";
 import {
-    CLIENT_STATE_STORE,
-    IDBRepository,
-    OPERATIONS_STORE,
-    ROWS_STORE,
+  CLIENT_STATE_STORE,
+  IDBRepository,
+  OPERATIONS_STORE,
+  ROWS_STORE,
 } from "../IDBRepository.ts";
 import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
 import { validateTransactionStores } from "../utils.ts";
-import { SyncErrorCode, isSyncError } from "./errors.ts";
+import { isSyncError, SyncErrorCode } from "./errors.ts";
 
 export interface SyncRequest {
-    clientId: string;
+  clientId: string;
 
-    /**
-     * Local changes that need to be persisted on the server. These operations
-     * will be assigned server versions and become part of the global operation log.
-     */
-    operations: CRDTOperation[];
+  /**
+   * Local changes that need to be persisted on the server. These operations
+   * will be assigned server versions and become part of the global operation log.
+   */
+  operations: CRDTOperation[];
 
-    /**
-     * Establishes the baseline for determining which remote operations to return.
-     * Operations with higher server versions represent changes this client hasn't
-     * seen yet.
-     */
-    lastSeenServerVersion: number;
+  /**
+   * Establishes the baseline for determining which remote operations to return.
+   * Operations with higher server versions represent changes this client hasn't
+   * seen yet.
+   */
+  lastSeenServerVersion: number;
 
-    /**
-     * Detects corruption during transmission. Network issues or middleware could
-     * silently modify the request, leading to data inconsistency.
-     */
-    requestHash: string;
+  /**
+   * Detects corruption during transmission. Network issues or middleware could
+   * silently modify the request, leading to data inconsistency.
+   */
+  requestHash: string;
 }
 
 export interface SyncResponse {
-    /**
-     * Detects race conditions where multiple syncs are in flight but returned out
-     * of order. This ensures responses are applied in the correct sequence.
-     */
-    baseServerVersion: number;
+  /**
+   * Detects race conditions where multiple syncs are in flight but returned out
+   * of order. This ensures responses are applied in the correct sequence.
+   */
+  baseServerVersion: number;
 
-    /**
-     * Represents the new synchronization checkpoint. This value becomes the baseline
-     * for the next sync, ensuring continuity in the operation stream.
-     */
-    latestServerVersion: number;
+  /**
+   * Represents the new synchronization checkpoint. This value becomes the baseline
+   * for the next sync, ensuring continuity in the operation stream.
+   */
+  latestServerVersion: number;
 
-    /**
-     * Detects corruption during transmission. Applying corrupted operations would
-     * permanently diverge the client's state from other replicas.
-     */
-    responseHash: string;
+  /**
+   * Detects corruption during transmission. Applying corrupted operations would
+   * permanently diverge the client's state from other replicas.
+   */
+  responseHash: string;
 
-    /**
-     * Contains changes from other clients that need to be merged locally. These
-     * operations bring this client's view of the data up to date with the global state.
-     */
-    operations: CRDTOperation[];
+  /**
+   * Contains changes from other clients that need to be merged locally. These
+   * operations bring this client's view of the data up to date with the global state.
+   */
+  operations: CRDTOperation[];
 
-    /**
-     * Confirms which local operations were successfully persisted. This prevents
-     * re-sending operations that have already been committed to the server.
-     */
-    syncedOperations: Dot[];
+  /**
+   * Confirms which local operations were successfully persisted. This prevents
+   * re-sending operations that have already been committed to the server.
+   */
+  syncedOperations: Dot[];
 }
 
 export class Sync {
-    private idbRepository: IDBRepository;
+  private idbRepository: IDBRepository;
 
-    constructor(idbRepository: IDBRepository) {
-        this.idbRepository = idbRepository;
-    }
+  constructor(idbRepository: IDBRepository) {
+    this.idbRepository = idbRepository;
+  }
 
-    /**
-     * Creates a sync request containing local changes to send to the server.
-     *
-     * Transaction requirements:
-     * - Stores: [CLIENT_STATE_STORE, OPERATIONS_STORE]
-     * - Mode: "readonly" (queries client state and unsynced operations)
-     *
-     * Example:
-     * ```typescript
-     * const tx = repo.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE], "readonly");
-     * const request = await sync.createSyncRequest(tx);
-     * // Transaction auto-completes when all requests finish - no need to wait explicitly
-     * ```
-     * @param tx - Transaction with required stores (see above)
-     * @returns Sync request ready to send to server
-     * @throws {Error} If transaction is missing required stores
-     */
-    async createSyncRequest(tx: IDBTransaction): Promise<SyncRequest> {
-        validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE]);
+  /**
+   * Creates a sync request containing local changes to send to the server.
+   *
+   * Transaction requirements:
+   * - Stores: [CLIENT_STATE_STORE, OPERATIONS_STORE]
+   * - Mode: "readonly" (queries client state and unsynced operations)
+   *
+   * Example:
+   * ```typescript
+   * const tx = repo.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE], "readonly");
+   * const request = await sync.createSyncRequest(tx);
+   * // Transaction auto-completes when all requests finish - no need to wait explicitly
+   * ```
+   * @param tx - Transaction with required stores (see above)
+   * @returns Sync request ready to send to server
+   * @throws {Error} If transaction is missing required stores
+   */
+  async createSyncRequest(tx: IDBTransaction): Promise<SyncRequest> {
+    validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE]);
 
-        const { clientId, lastSeenServerVersion } = await this.idbRepository
-            .getClientState(tx);
+    const { clientId, lastSeenServerVersion } = await this.idbRepository
+      .getClientState(tx);
 
-        // Extract operations using optimized compound index query
-        const operations = await this.idbRepository.getUnsyncedOperationsByClient(tx, clientId);
+    // Extract operations using optimized compound index query
+    const operations = await this.idbRepository.getUnsyncedOperationsByClient(tx, clientId);
 
-        // create integrity hash
-        const requestHash = await this.createRequestHash({
-            clientId,
-            lastSeenServerVersion,
-            operations,
-        });
+    // create integrity hash
+    const requestHash = await this.createRequestHash({
+      clientId,
+      lastSeenServerVersion,
+      operations,
+    });
 
-        return {
-            clientId,
-            lastSeenServerVersion,
-            operations,
-            requestHash,
-        };
-    }
+    return {
+      clientId,
+      lastSeenServerVersion,
+      operations,
+      requestHash,
+    };
+  }
 
-    async sendSyncRequest(endpointUrl: string, request: SyncRequest): Promise<SyncResponse> {
-        const body = JSON.stringify(request);
+  async sendSyncRequest(endpointUrl: string, request: SyncRequest): Promise<SyncResponse> {
+    const body = JSON.stringify(request);
 
+    try {
+      const response = await fetch(endpointUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body,
+      });
+
+      if (!response.ok) {
+        // Try to parse structured error from response
         try {
-            const response = await fetch(endpointUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body,
-            });
+          const errorData = await response.json();
 
-            if (!response.ok) {
-                // Try to parse structured error from response
-                try {
-                    const errorData = await response.json();
-
-                    // Check if this is a structured SyncError
-                    if (isSyncError(errorData)) {
-                        // For CLIENT_STATE_OUT_OF_SYNC, throw a special error that the client can catch
-                        if (errorData.code === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {
-                            const error = new Error(errorData.message);
-                            error.name = SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC;
-                            throw error;
-                        }
-
-                        // For other sync errors, include the code in the error message
-                        throw new Error(`Sync error [${errorData.code}]: ${errorData.message}`);
-                    }
-
-                    // Fallback for non-structured errors
-                    const message = errorData.error || errorData.message || "Unknown error";
-                    throw new Error(`Sync failed (${response.status}): ${message}`);
-                } catch (parseError) {
-                    // If we can't parse the response, use status text
-                    throw new Error(`Sync failed (${response.status}): ${response.statusText || "Unknown error"}`);
-                }
+          // Check if this is a structured SyncError
+          if (isSyncError(errorData)) {
+            // For CLIENT_STATE_OUT_OF_SYNC, throw a special error that the client can catch
+            if (errorData.code === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {
+              const error = new Error(errorData.message);
+              error.name = SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC;
+              throw error;
             }
 
-            let syncResponse: SyncResponse = await response.json();
+            // For other sync errors, include the code in the error message
+            throw new Error(`Sync error [${errorData.code}]: ${errorData.message}`);
+          }
 
-            return syncResponse;
-        } catch (error: any) {
-            if (!error || !error.message) {
-                throw new Error(`Unknown error occurred during sync: ${error}`);
-            }
-
-            // Re-throw CLIENT_STATE_OUT_OF_SYNC errors as-is so they can be handled by the caller
-            if (error.name === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {
-                throw error;
-            }
-
-            if (error instanceof TypeError || error.message.includes("fetch")) {
-                // Network error - potentially retryable
-                throw new Error(`Sync network failure: ${error.message}`, { cause: error });
-            } else {
-                // Other error - likely non-retryable
-                throw error;
-            }
+          // Fallback for non-structured errors
+          const message = errorData.error || errorData.message || "Unknown error";
+          throw new Error(`Sync failed (${response.status}): ${message}`);
+        } catch (parseError) {
+          // If we can't parse the response, use status text
+          throw new Error(
+            `Sync failed (${response.status}): ${response.statusText || "Unknown error"}`,
+          );
         }
+      }
+
+      let syncResponse: SyncResponse = await response.json();
+
+      return syncResponse;
+    } catch (error: any) {
+      if (!error || !error.message) {
+        throw new Error(`Unknown error occurred during sync: ${error}`);
+      }
+
+      // Re-throw CLIENT_STATE_OUT_OF_SYNC errors as-is so they can be handled by the caller
+      if (error.name === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {
+        throw error;
+      }
+
+      if (error instanceof TypeError || error.message.includes("fetch")) {
+        // Network error - potentially retryable
+        throw new Error(`Sync network failure: ${error.message}`, { cause: error });
+      } else {
+        // Other error - likely non-retryable
+        throw error;
+      }
+    }
+  }
+
+  async handleSyncResponse(
+    tx: IDBTransaction,
+    logicalClock: PersistedLogicalClock,
+    response: SyncResponse,
+  ): Promise<void> {
+    validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE], "readwrite");
+
+    // Start IDB requests FIRST to keep transaction alive
+    // Get client state synchronously
+    const clientStatePromise = this.idbRepository.getClientState(tx);
+
+    // Now we can safely await non-IDB operations (hash validation)
+    await this.validateResponseHash(response);
+
+    // Now await the client state
+    const { clientId, lastSeenServerVersion } = await clientStatePromise;
+
+    // TODO: Check that clientId is the same as our client id
+
+    // Check if response is stale/out-of-order - if so, drop it
+    if (lastSeenServerVersion !== response.baseServerVersion) {
+      console.warn(
+        `Dropping stale sync response: expected base ${lastSeenServerVersion}, got ${response.baseServerVersion}. ` +
+          `This can happen with delayed syncs arriving after newer syncs have completed.`,
+      );
+      return;
     }
 
-    async handleSyncResponse(
-        tx: IDBTransaction,
-        logicalClock: PersistedLogicalClock,
-        response: SyncResponse,
-    ): Promise<void> {
-        validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE], "readwrite");
+    try {
+      // Save operations and apply operations to materialized view
+      await this.applyRemoteOperations(tx, response.operations);
 
-        // Start IDB requests FIRST to keep transaction alive
-        // Get client state synchronously
-        const clientStatePromise = this.idbRepository.getClientState(tx);
+      // update lastSeenServerVersion to latestServerVersion from response
+      await this.idbRepository.saveServerVersion(tx, response.latestServerVersion);
 
-        // Now we can safely await non-IDB operations (hash validation)
-        await this.validateResponseHash(response);
+      // update synced field on the synced local entries
+      const operationsPromises: Promise<void>[] = [];
+      for (const operationId of response.syncedOperations) {
+        operationsPromises.push(this.idbRepository.saveOperationAsSynced(tx, operationId));
+      }
+      await Promise.all(operationsPromises);
 
-        // Now await the client state
-        const { clientId, lastSeenServerVersion } = await clientStatePromise;
+      // We only sync the clocks if we get any new operations from the server
+      // otherwise it would be unnesesary work where we'd sync the clock with -1
+      // and keep the current value
+      if (response.operations.length) {
+        const highestVersion = response.operations.reduce((prev, curr) => {
+          return Math.max(prev, curr.dot.version);
+        }, -1);
+        await logicalClock.sync(tx, highestVersion);
+      }
 
-        // TODO: Check that clientId is the same as our client id
+      return;
+    } catch (err: any) {
+      // Explicitly abort the transaction to ensure all writes are rolled back
+      // JavaScript errors don't automatically abort transactions, so we must do it explicitly
+      try {
+        tx.abort();
+      } catch (abortErr) {
+        // Ignore abort errors - transaction may already be aborted
+      }
 
-        // Check if response is stale/out-of-order - if so, drop it
-        if (lastSeenServerVersion !== response.baseServerVersion) {
-            console.warn(
-                `Dropping stale sync response: expected base ${lastSeenServerVersion}, got ${response.baseServerVersion}. ` +
-                `This can happen with delayed syncs arriving after newer syncs have completed.`
-            );
-            return;
+      // Don't re-throw - transaction has been aborted, let it complete
+      // The caller should handle sync failures gracefully and retry
+      console.error("Sync failed, transaction aborted:", err);
+      return;
+    }
+  }
+
+  /**
+   * Apply remote operations (from sync)
+   */
+  private async applyRemoteOperations(
+    tx: IDBTransaction,
+    operations: CRDTOperation[],
+  ): Promise<void> {
+    // Validate operations before processing to fail fast on corrupted data
+    for (const op of operations) {
+      if (op.type === "set") {
+        if (typeof op.field !== "string" || op.field === "") {
+          throw new Error(
+            `Invalid set operation: field must be a non-empty string, got ${typeof op.field}`,
+          );
         }
-
-        try {
-            // Save operations and apply operations to materialized view
-            await this.applyRemoteOperations(tx, response.operations);
-
-            // update lastSeenServerVersion to latestServerVersion from response
-            await this.idbRepository.saveServerVersion(tx, response.latestServerVersion);
-
-            // update synced field on the synced local entries
-            const operationsPromises: Promise<void>[] = [];
-            for (const operationId of response.syncedOperations) {
-                operationsPromises.push(this.idbRepository.saveOperationAsSynced(tx, operationId));
-            }
-            await Promise.all(operationsPromises);
-
-            // We only sync the clocks if we get any new operations from the server
-            // otherwise it would be unnesesary work where we'd sync the clock with -1
-            // and keep the current value
-            if (response.operations.length) {
-                const highestVersion = response.operations.reduce((prev, curr) => {
-                    return Math.max(prev, curr.dot.version);
-                }, -1);
-                await logicalClock.sync(tx, highestVersion);
-            }
-
-            return;
-        } catch (err: any) {
-            // Explicitly abort the transaction to ensure all writes are rolled back
-            // JavaScript errors don't automatically abort transactions, so we must do it explicitly
-            try {
-                tx.abort();
-            } catch (abortErr) {
-                // Ignore abort errors - transaction may already be aborted
-            }
-
-            // Don't re-throw - transaction has been aborted, let it complete
-            // The caller should handle sync failures gracefully and retry
-            console.error("Sync failed, transaction aborted:", err);
-            return;
+        if (op.value === undefined || op.value === null) {
+          throw new Error(`Invalid set operation: value must be defined, got ${op.value}`);
         }
+        if (op.value["_key"]) {
+          throw new Error(
+            `Operation: ${op.dot} contained illegal _key property. _key should always be stripped out`,
+          );
+        }
+      } else if (op.type === "setRow") {
+        if (typeof op.value !== "object" || op.value === null || Array.isArray(op.value)) {
+          throw new Error(
+            `Invalid setRow operation: value must be a plain object, got ${typeof op.value}`,
+          );
+        }
+      } else if (op.type === "remove") {
+        if (typeof op.context !== "object" || op.context === null || Array.isArray(op.context)) {
+          throw new Error(
+            `Invalid remove operation: context must be a plain object, got ${typeof op.context}`,
+          );
+        }
+      }
     }
 
-    /**
-     * Apply remote operations (from sync)
-     */
-    private async applyRemoteOperations(
-        tx: IDBTransaction,
-        operations: CRDTOperation[],
-    ): Promise<void> {
-        // Validate operations before processing to fail fast on corrupted data
-        for (const op of operations) {
-            if (op.type === "set") {
-                if (typeof op.field !== "string" || op.field === "") {
-                    throw new Error(`Invalid set operation: field must be a non-empty string, got ${typeof op.field}`);
-                }
-                if (op.value === undefined || op.value === null) {
-                    throw new Error(`Invalid set operation: value must be defined, got ${op.value}`);
-                }
-            } else if (op.type === "setRow") {
-                if (typeof op.value !== "object" || op.value === null || Array.isArray(op.value)) {
-                    throw new Error(`Invalid setRow operation: value must be a plain object, got ${typeof op.value}`);
-                }
-            } else if (op.type === "remove") {
-                if (typeof op.context !== "object" || op.context === null || Array.isArray(op.context)) {
-                    throw new Error(`Invalid remove operation: context must be a plain object, got ${typeof op.context}`);
-                }
-            }
-        }
+    // Group operations by row for batch processing
+    const operationsByRow = new Map<string, CRDTOperation[]>();
 
-        // Group operations by row for batch processing
-        const operationsByRow = new Map<string, CRDTOperation[]>();
-
-        for (const operation of operations) {
-            const key = `${operation.table}:${String(operation.rowKey)}`;
-            if (!operationsByRow.has(key)) {
-                operationsByRow.set(key, []);
-            }
-            operationsByRow.get(key)!.push(operation);
-        }
-
-        const saveOperationsPromise = this.idbRepository.batchSaveOperations(tx, operations);
-        const savePromises = this.batchUpdateRows(tx, Array.from(operationsByRow.values()));
-
-        await saveOperationsPromise;
-        await savePromises;
+    for (const operation of operations) {
+      const key = `${operation.table}:${String(operation.rowKey)}`;
+      if (!operationsByRow.has(key)) {
+        operationsByRow.set(key, []);
+      }
+      operationsByRow.get(key)!.push(operation);
     }
 
-    /**
-     * Batch apply operations to rows
-     * @param {IDBTransaction} tx - IDBTransaction
-     * @param {Map} operationGroups - Map of operations grouped by row
-     * @returns {Promise<void>}
-     */
-    private async batchUpdateRows(
-        tx: IDBTransaction,
-        operationGroups: CRDTOperation[][],
-    ): Promise<void> {
-        // Fetch all rows in parallel
-        const rowsData = await Promise.all(
-            operationGroups.map(async (rowOperations) => {
-                const firstOp = rowOperations[0];
-                const row = await this.idbRepository.getRow(
-                    tx,
-                    firstOp.table,
-                    firstOp.rowKey,
-                );
-                return { row, rowOperations };
-            })
+    const saveOperationsPromise = this.idbRepository.batchSaveOperations(tx, operations);
+    const savePromises = this.batchUpdateRows(tx, Array.from(operationsByRow.values()));
+
+    await saveOperationsPromise;
+    await savePromises;
+  }
+
+  /**
+   * Batch apply operations to rows
+   * @param {IDBTransaction} tx - IDBTransaction
+   * @param {Map} operationGroups - Map of operations grouped by row
+   * @returns {Promise<void>}
+   */
+  private async batchUpdateRows(
+    tx: IDBTransaction,
+    operationGroups: CRDTOperation[][],
+  ): Promise<void> {
+    // Fetch all rows in parallel
+    const rowsData = await Promise.all(
+      operationGroups.map(async (rowOperations) => {
+        const firstOp = rowOperations[0];
+        const row = await this.idbRepository.getRow(
+          tx,
+          firstOp.table,
+          firstOp.rowKey,
         );
-        //  IndexedDB automatically aborts transactions that don't 
-        //  yield to the event loop for too long, causing the 
-        //  InvalidStateError. Therefore we chunk the operations into CHUNK_SIZE
-        //  batches and periodically yield to the event loop
-        const CHUNK_SIZE = 50;
-        let operationCount = 0;
+        return { row, rowOperations };
+      }),
+    );
+    //  IndexedDB automatically aborts transactions that don't
+    //  yield to the event loop for too long, causing the
+    //  InvalidStateError. Therefore we chunk the operations into CHUNK_SIZE
+    //  batches and periodically yield to the event loop
+    const CHUNK_SIZE = 50;
+    let operationCount = 0;
 
-        for (const { row, rowOperations } of rowsData) {
-            for (const operation of rowOperations) {
-                applyOperationToRow(row, operation);
-                operationCount++;
+    for (const { row, rowOperations } of rowsData) {
+      for (const operation of rowOperations) {
+        applyOperationToRow(row, operation);
+        operationCount++;
 
-                //  This is how we yield to the event loop and keep the 
-                //  transaction alive
-                if (operationCount % CHUNK_SIZE === 0) {
-                    await new Promise(resolve => setTimeout(resolve, 0));
-                }
-            }
+        //  This is how we yield to the event loop and keep the
+        //  transaction alive
+        if (operationCount % CHUNK_SIZE === 0) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
         }
-        // Save all rows in parallel
-        await Promise.all(rowsData.map(({ row }) => this.idbRepository.saveRow(tx, row)));
+      }
+    }
+    // Save all rows in parallel
+    await Promise.all(rowsData.map(({ row }) => this.idbRepository.saveRow(tx, row)));
+  }
+
+  //  ------------------------------------------------------------------------
+  //  Integrity hashing
+  //  ------------------------------------------------------------------------
+  //  As a way to handle broken requests and responses each sync request
+  //  has a hash that is validated both on the server and client, this
+  //  is not done for security reasons (even if it might help). Rather it's
+  //  done to ensure correctness.
+  private async createRequestHash(req: Omit<SyncRequest, "requestHash">): Promise<string> {
+    const parts: string[] = [
+      req.clientId,
+      String(req.lastSeenServerVersion),
+    ];
+
+    for (const op of req.operations) {
+      let value = "null";
+      let valueKey = "null";
+
+      if (op.type === "set") {
+        value = JSON.stringify(op.value);
+        valueKey = op.field ?? "null";
+      }
+
+      if (op.type === "setRow") {
+        value = JSON.stringify(op.value);
+      }
+
+      // op.type === "remove"
+      // value & valueKey stay "null" (matches Go)
+
+      parts.push(
+        String(op.rowKey),
+        op.table,
+        op.type,
+        value,
+        valueKey,
+        String(op.dot.version),
+        op.dot.clientId,
+      );
     }
 
-    //  ------------------------------------------------------------------------
-    //  Integrity hashing
-    //  ------------------------------------------------------------------------
-    //  As a way to handle broken requests and responses each sync request
-    //  has a hash that is validated both on the server and client, this
-    //  is not done for security reasons (even if it might help). Rather it's
-    //  done to ensure correctness.
-    private async createRequestHash(req: Omit<SyncRequest, "requestHash">): Promise<string> {
-        const parts: string[] = [
-            req.clientId,
-            String(req.lastSeenServerVersion),
-        ];
+    const result = await this.sha256Array(parts);
+    return result;
+  }
 
-        for (const op of req.operations) {
-            let value = "null";
-            let valueKey = "null";
+  private async createResponseHash(
+    response: Omit<SyncResponse, "responseHash">,
+  ) {
+    const parts: string[] = [
+      String(response.baseServerVersion),
+      String(response.latestServerVersion),
+    ];
 
-            if (op.type === "set") {
-                value = JSON.stringify(op.value);
-                valueKey = op.field ?? "null";
-            }
+    // Add operation fields - must match server hash logic exactly
+    for (const operation of response.operations) {
+      parts.push(operation.type);
+      parts.push(operation.table);
+      parts.push(String(operation.rowKey));
+      parts.push(operation.dot.clientId);
+      parts.push(String(operation.dot.version));
 
-            if (op.type === "setRow") {
-                value = JSON.stringify(op.value);
-            }
-
-            // op.type === "remove"
-            // value & valueKey stay "null" (matches Go)
-
-            parts.push(
-                String(op.rowKey),
-                op.table,
-                op.type,
-                value,
-                valueKey,
-                String(op.dot.version),
-                op.dot.clientId,
-            );
+      // Include operation-specific fields
+      if (operation.type === "set") {
+        parts.push(operation.field ?? "null");
+        parts.push(JSON.stringify(operation.value));
+      } else if (operation.type === "setRow") {
+        parts.push("null"); // field placeholder for consistency
+        parts.push(JSON.stringify(operation.value));
+      } else if (operation.type === "remove") {
+        parts.push("null"); // field placeholder
+        parts.push("null"); // value placeholder
+        // Add context for remove operations
+        const contextKeys = Object.keys(operation.context).sort();
+        for (const key of contextKeys) {
+          parts.push(key);
+          parts.push(String(operation.context[key]));
         }
-
-        const result = await this.sha256Array(parts);
-        return result;
+      }
     }
 
-    private async createResponseHash(
-        response: Omit<SyncResponse, "responseHash">,
-    ) {
-        const parts: string[] = [
-            String(response.baseServerVersion),
-            String(response.latestServerVersion),
-        ];
-
-        // Add operation fields - must match server hash logic exactly
-        for (const operation of response.operations) {
-            parts.push(operation.type);
-            parts.push(operation.table);
-            parts.push(String(operation.rowKey));
-            parts.push(operation.dot.clientId);
-            parts.push(String(operation.dot.version));
-
-            // Include operation-specific fields
-            if (operation.type === "set") {
-                parts.push(operation.field ?? "null");
-                parts.push(JSON.stringify(operation.value));
-            } else if (operation.type === "setRow") {
-                parts.push("null"); // field placeholder for consistency
-                parts.push(JSON.stringify(operation.value));
-            } else if (operation.type === "remove") {
-                parts.push("null"); // field placeholder
-                parts.push("null"); // value placeholder
-                // Add context for remove operations
-                const contextKeys = Object.keys(operation.context).sort();
-                for (const key of contextKeys) {
-                    parts.push(key);
-                    parts.push(String(operation.context[key]));
-                }
-            }
-        }
-
-        // Add synced operations
-        for (const dot of response.syncedOperations) {
-            parts.push(dot.clientId);
-            parts.push(String(dot.version));
-        }
-
-        return this.sha256Array(parts);
+    // Add synced operations
+    for (const dot of response.syncedOperations) {
+      parts.push(dot.clientId);
+      parts.push(String(dot.version));
     }
 
-    private async validateResponseHash(response: SyncResponse): Promise<SyncResponse> {
-        const localHash = await this.createResponseHash(response);
-        if (localHash !== response.responseHash) {
-            const debugInfo = {
-                expected: response.responseHash,
-                actual: localHash,
-                baseServerVersion: response.baseServerVersion,
-                latestServerVersion: response.latestServerVersion,
-                operationCount: response.operations.length,
-                syncedOperationCount: response.syncedOperations.length,
-            };
-            console.error("Sync response failed integrity check", debugInfo);
-            return Promise.reject(
-                new Error(`Sync response failed integrity check: ${JSON.stringify(debugInfo)}`),
-            );
-        }
-        return response;
-    }
+    return this.sha256Array(parts);
+  }
 
-    /**
-     * Compute SHA-256 hash from an array of strings.
-     * Used for integrity verification of sync requests and responses.
-     */
-    private async sha256Array(parts: string[]): Promise<string> {
-        const combined = parts.join("|");
-        const buffer = await crypto.subtle.digest(
-            "SHA-256",
-            new TextEncoder().encode(combined),
-        );
-        const hashArray = Array.from(new Uint8Array(buffer));
-        return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  private async validateResponseHash(response: SyncResponse): Promise<SyncResponse> {
+    const localHash = await this.createResponseHash(response);
+    if (localHash !== response.responseHash) {
+      const debugInfo = {
+        expected: response.responseHash,
+        actual: localHash,
+        baseServerVersion: response.baseServerVersion,
+        latestServerVersion: response.latestServerVersion,
+        operationCount: response.operations.length,
+        syncedOperationCount: response.syncedOperations.length,
+      };
+      console.error("Sync response failed integrity check", debugInfo);
+      return Promise.reject(
+        new Error(`Sync response failed integrity check: ${JSON.stringify(debugInfo)}`),
+      );
     }
+    return response;
+  }
+
+  /**
+   * Compute SHA-256 hash from an array of strings.
+   * Used for integrity verification of sync requests and responses.
+   */
+  private async sha256Array(parts: string[]): Promise<string> {
+    const combined = parts.join("|");
+    const buffer = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(combined),
+    );
+    const hashArray = Array.from(new Uint8Array(buffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
 }

@@ -534,7 +534,7 @@ describe("IDBRepository", () => {
       // Verify data can still be written (existing functionality)
       await db.setRow("users", "u1", { age: 30, name: "Alice" });
       const user = await db.get("users", "u1");
-      expect(user).toEqual({ age: 30, name: "Alice" });
+      expect(user).toEqual({ _key: "u1", age: 30, name: "Alice" });
     });
   });
 
