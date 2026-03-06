@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import {
-  exact,
   above,
   below,
   between,
-  queryToIDBRange,
   calculateBounds,
-  type QueryPayload,
+  exact,
+  type QueryCondition,
+  queryToIDBRange,
 } from "./indexes.ts";
 
 //  ------------------------------------------------------------------------
@@ -26,33 +26,31 @@ const generateIDBValidKey = (): fc.Arbitrary<IDBValidKey> =>
   );
 
 // Generate number keys specifically
-const generateNumberKey = (): fc.Arbitrary<number> =>
-  fc.integer({ min: -1000000, max: 1000000 });
+const generateNumberKey = (): fc.Arbitrary<number> => fc.integer({ min: -1000000, max: 1000000 });
 
 // Generate string keys specifically
-const generateStringKey = (): fc.Arbitrary<string> =>
-  fc.string({ minLength: 0, maxLength: 100 });
+const generateStringKey = (): fc.Arbitrary<string> => fc.string({ minLength: 0, maxLength: 100 });
 
 // Generate date keys specifically
 const generateDateKey = (): fc.Arbitrary<Date> =>
   fc.date({ min: new Date(0), max: new Date(2100, 0, 1) }).filter((d) => !isNaN(d.getTime()));
 
 // Generate QueryExact
-const generateQueryExact = (): fc.Arbitrary<QueryPayload> =>
+const generateQueryExact = (): fc.Arbitrary<QueryCondition> =>
   generateIDBValidKey().map((value) => exact(value));
 
 // Generate QueryAbove
-const generateQueryAbove = (): fc.Arbitrary<QueryPayload> =>
+const generateQueryAbove = (): fc.Arbitrary<QueryCondition> =>
   generateIDBValidKey().map((value) => above(value, { inclusive: true }));
 
 // Generate QueryBelow
-const generateQueryBelow = (): fc.Arbitrary<QueryPayload> =>
+const generateQueryBelow = (): fc.Arbitrary<QueryCondition> =>
   fc
     .tuple(generateIDBValidKey(), fc.boolean())
     .map(([value, inclusive]) => below(value, { inclusive }));
 
 // Generate QueryBetween with properly ordered values
-const generateQueryBetween = (): fc.Arbitrary<QueryPayload> =>
+const generateQueryBetween = (): fc.Arbitrary<QueryCondition> =>
   fc
     .oneof(
       // Number range
@@ -88,7 +86,7 @@ const generateQueryBetween = (): fc.Arbitrary<QueryPayload> =>
     );
 
 // Generate any query payload
-const generateQueryPayload = (): fc.Arbitrary<QueryPayload> =>
+const generateQueryPayload = (): fc.Arbitrary<QueryCondition> =>
   fc.oneof(
     generateQueryExact(),
     generateQueryAbove(),
@@ -101,7 +99,7 @@ const generateQueryPayload = (): fc.Arbitrary<QueryPayload> =>
 //  ------------------------------------------------------------------------
 
 // Extract the value from a query for bounds calculation
-function getQueryValue(query: QueryPayload): IDBValidKey {
+function getQueryValue(query: QueryCondition): IDBValidKey {
   if (query.type === "exact" || query.type === "above" || query.type === "below") {
     return query.value;
   } else {
@@ -112,25 +110,35 @@ function getQueryValue(query: QueryPayload): IDBValidKey {
 
 // Check if a query would create a valid IDBKeyRange
 // Returns true if valid, false if it would throw
-function isValidQuery(query: QueryPayload): boolean {
+function isValidQuery(query: QueryCondition): boolean {
   try {
     // Check for invalid dates
     const value = getQueryValue(query);
     if (value instanceof Date && isNaN(value.getTime())) {
       return false;
     }
-    
+
     if (query.type === "between") {
       if (query.upperValue instanceof Date && isNaN((query.upperValue as Date).getTime())) {
         return false;
       }
       // IDBKeyRange throws if lower === upper and either bound is open (exclusive)
-      if (query.lowerValue === query.upperValue && 
-          (!query.options.inclusiveLower || !query.options.inclusiveUpper)) {
+      // For Date objects, compare the time values
+      const lowerValue = query.lowerValue instanceof Date
+        ? query.lowerValue.getTime()
+        : query.lowerValue;
+      const upperValue = query.upperValue instanceof Date
+        ? query.upperValue.getTime()
+        : query.upperValue;
+
+      if (
+        lowerValue === upperValue &&
+        (!query.options.inclusiveLower || !query.options.inclusiveUpper)
+      ) {
         return false;
       }
     }
-    
+
     if (query.type === "below") {
       const bounds = calculateBounds(query.value);
       // IDBKeyRange throws if bounds.min === value and upper is open (exclusive)
@@ -138,7 +146,7 @@ function isValidQuery(query: QueryPayload): boolean {
         return false;
       }
     }
-    
+
     return true;
   } catch {
     return false;
@@ -207,7 +215,7 @@ describe("queryToIDBRange property tests", () => {
         (table, value, inclusive) => {
           const query = below(value, { inclusive });
           fc.pre(isValidQuery(query)); // Skip invalid queries
-          
+
           const range = queryToIDBRange(table, query);
 
           expect(range.upper).toEqual([table, value]);
@@ -291,14 +299,14 @@ describe("queryToIDBRange property tests", () => {
         generateIDBValidKey(),
         (table, value) => {
           fc.pre(isValidQuery(exact(value))); // Skip invalid values like NaN dates
-          
+
           const query = between(value, value, {
             inclusiveLower: false,
             inclusiveUpper: false,
           });
-          
+
           expect(() => queryToIDBRange(table, query)).toThrow(
-            /Cannot create a range where lower and upper bounds are equal.*with any bound exclusive/
+            /Cannot create a range where lower and upper bounds are equal.*with any bound exclusive/,
           );
         },
       ),
@@ -313,14 +321,14 @@ describe("queryToIDBRange property tests", () => {
         fc.boolean(),
         (table, value, exclusiveIsLower) => {
           fc.pre(isValidQuery(exact(value))); // Skip invalid values like NaN dates
-          
+
           const query = between(value, value, {
             inclusiveLower: !exclusiveIsLower,
             inclusiveUpper: exclusiveIsLower,
           });
-          
+
           expect(() => queryToIDBRange(table, query)).toThrow(
-            /Cannot create a range where lower and upper bounds are equal.*with any bound exclusive/
+            /Cannot create a range where lower and upper bounds are equal.*with any bound exclusive/,
           );
         },
       ),
@@ -332,14 +340,14 @@ describe("queryToIDBRange property tests", () => {
       fc.property(
         generateTableName(),
         fc.oneof(
-          fc.constant(""),  // min for strings
-          fc.constant(Number.MIN_SAFE_INTEGER),  // min for numbers
+          fc.constant(""), // min for strings
+          fc.constant(Number.MIN_SAFE_INTEGER), // min for numbers
         ),
         (table, minValue) => {
           const query = below(minValue, { inclusive: false });
-          
+
           expect(() => queryToIDBRange(table, query)).toThrow(
-            /Cannot create a range where lower and upper bounds are equal.*with any bound exclusive/
+            /Cannot create a range where lower and upper bounds are equal.*with any bound exclusive/,
           );
         },
       ),
@@ -395,7 +403,7 @@ describe("queryToIDBRange edge cases", () => {
       inclusiveUpper: false,
     });
     expect(() => queryToIDBRange("users", query)).toThrow(
-      /Cannot create a range where lower and upper bounds are equal.*with any bound exclusive/
+      /Cannot create a range where lower and upper bounds are equal.*with any bound exclusive/,
     );
   });
 
@@ -403,7 +411,7 @@ describe("queryToIDBRange edge cases", () => {
     const query = below("", { inclusive: false });
     // This creates a range from "" to "" which is invalid when exclusive
     expect(() => queryToIDBRange("users", query)).toThrow(
-      /Cannot create a range where lower and upper bounds are equal.*with any bound exclusive/
+      /Cannot create a range where lower and upper bounds are equal.*with any bound exclusive/,
     );
   });
 
@@ -414,17 +422,17 @@ describe("queryToIDBRange edge cases", () => {
       inclusiveUpper: false,
     });
     expect(() => queryToIDBRange("users", query)).toThrow(
-      /Cannot create a range where lower and upper bounds are equal.*with any bound exclusive/
+      /Cannot create a range where lower and upper bounds are equal.*with any bound exclusive/,
     );
   });
 
   it("should throw for invalid range: same bounds with one exclusive (between)", () => {
     const query = between(50, 50, {
-      inclusiveLower: true,  // one inclusive
+      inclusiveLower: true, // one inclusive
       inclusiveUpper: false, // one exclusive
     });
     expect(() => queryToIDBRange("users", query)).toThrow(
-      /Cannot create a range where lower and upper bounds are equal.*with any bound exclusive/
+      /Cannot create a range where lower and upper bounds are equal.*with any bound exclusive/,
     );
   });
 });
@@ -453,7 +461,7 @@ describe("calculateBounds", () => {
         expect(typeof bounds.min).toBe("string");
         expect(typeof bounds.max).toBe("string");
         expect(bounds.min).toBe("");
-        expect(bounds.max.length).toBeGreaterThan(0);
+        expect((bounds.max as string).length).toBeGreaterThan(0);
       }),
     );
   });

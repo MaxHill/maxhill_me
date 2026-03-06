@@ -509,18 +509,18 @@ describe("IDBRepository", () => {
     it("should work with CRDTDatabase", async () => {
       const { CRDTDatabase } = await import("./crdtDatabase.ts");
 
-      // Create IDBRepository with indexes first
-      const indexes = [
-        { name: "usersByAge", table: "users", keys: ["age"] },
-      ];
-      const idbRepo = new IDBRepository(indexes);
+      // Create table schema
+      const tableSchema = {
+        tableName: "users",
+        indexes: {
+          usersByAge: ["age"]
+        }
+      };
 
       db = new CRDTDatabase(
         dbName,
-        indexes,
+        tableSchema,
         "http://test.com",
-        undefined,
-        idbRepo,
       );
 
       await db.open();

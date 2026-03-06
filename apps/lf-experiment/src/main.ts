@@ -40,18 +40,13 @@ export class Counter {
 }
 
 async function main() {
-    const db = new CRDTDatabase("user::testdb", [
-        {
-            table: "count",
-            name: "byCount",
-            keys: ["example"],
-        },
-        {
-            table: "count",
-            name: "byUser2",
-            keys: ["user"],
-        },
-    ], "http://localhost:3001/sync");
+    const db = new CRDTDatabase("user::testdb", {
+        tableName: "count",
+        indexes: {
+            byCount: ["example"],
+            byUser2: ["user"]
+        }
+    }, "http://localhost:3001/sync");
     await db.open();
     const counter = new Counter(db);
 

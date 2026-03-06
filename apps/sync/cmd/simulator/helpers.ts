@@ -48,7 +48,10 @@ export const newClient = async (prng: seedrandom.PRNG): Promise<SimClient> => {
   // Create CRDTDatabase (pass dummy URL since we sync manually via Go)
   const crdtDb = new CRDTDatabase(
     dbName,
-    undefined,             // indexes (not needed for simulator)
+    {
+      tableName: "simulator",  // Placeholder table name
+      indexes: {}              // No indexes needed for simulator
+    },
     "http://manual-sync",  // syncRemote - won't be used - simulator handles sync
     sync,
     repo,                  // Share the same repository

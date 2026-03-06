@@ -5,7 +5,7 @@ import {
   IndexDefinition,
   indexDefinitionToIDBIndex,
   needIndexUpdate,
-  QueryPayload,
+  QueryCondition,
   queryToIDBRange,
 } from "./indexes.ts";
 import { asyncCursorIterator, promisifyIDBRequest, validateTransactionStores } from "./utils.ts";
@@ -227,7 +227,7 @@ export class IDBRepository {
     tx: IDBTransaction,
     table: string,
     indexName: string,
-    query: QueryPayload,
+    query: QueryCondition,
   ): AsyncIterableIterator<ORMapRow> {
     validateTransactionStores(tx, [ROWS_STORE]);
     const indexNames = (this.indexes || []).map((index) => index.name);

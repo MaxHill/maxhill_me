@@ -1,6 +1,54 @@
-import { CLIENT_STATE_STORE, INDEXES_HASH } from "./IDBRepository.ts";
-import { TABLE_NAME } from "./crdt.ts";
+import { CLIENT_STATE_STORE, IDBRepository, INDEXES_HASH, ROWS_STORE } from "./IDBRepository.ts";
+import { ROW_KEY, TABLE_NAME } from "./crdt.ts";
+import { TableSchema } from "./table.ts";
 import { promisifyIDBRequest, validateTransactionStores } from "./utils.ts";
+
+export class Index {
+  constructor(
+    private tableName: string,
+    private indexName: string,
+    private idbRepository: IDBRepository,
+  ) {
+    const indexNames = (this.idbRepository.indexes || []).map((index) => index.name);
+    if (!indexNames.includes(this.indexName)) {
+      throw new Error(
+        `Specified index ${indexName} does not exist in indexes:/n${
+          indexNames.map((index) => `   ${index} /n`)
+        }`,
+      );
+    }
+  }
+
+  async *query(condition: QueryCondition) {
+    const indexNames = (this.idbRepository.indexes || []).map((index) => index.name);
+    if (!indexNames.includes(this.indexName)) {
+      throw new Error(
+        `Invalid index ${this.indexName} does not exist in indexes:/n${
+          indexNames.map((index) => `   ${index} /n`)
+        }`,
+      );
+    }
+
+    const tx = this.idbRepository!.transaction([ROWS_STORE], "readonly");
+    const queryIterator = this.idbRepository.query(tx, this.tableName, this.indexName, condition);
+
+    for await (const row of queryIterator) {
+      // Skip rows with no fields (deleted rows) - consistent with get()
+      // TODO: this should be fixed when writing the row
+      if (Object.keys(row.fields).length === 0) {
+        continue;
+      }
+
+      let result: Record<string, any> = {};
+      for (const [field, fieldState] of Object.entries(row.fields)) {
+        result[field] = fieldState.value;
+      }
+
+      result = Object.assign({ _key: row[ROW_KEY] }, result);
+      yield result;
+    }
+  }
+}
 
 //  ------------------------------------------------------------------------
 //  Index Query
@@ -191,7 +239,7 @@ export function between(
  * Use the query builder functions (exact, above, below, between) to create queries
  * rather than constructing these objects directly.
  */
-export type QueryPayload = QueryAbove | QueryBelow | QueryBetween | QueryExact;
+export type QueryCondition = QueryAbove | QueryBelow | QueryBetween | QueryExact;
 
 //  ------------------------------------------------------------------------
 //  Conversion
@@ -274,7 +322,7 @@ export function calculateBounds(sampleValue: IDBValidKey): RangeBounds {
  *
  * @internal This function is primarily for internal use by the query execution system.
  */
-export function queryToIDBRange(table: string, query: QueryPayload) {
+export function queryToIDBRange(table: string, query: QueryCondition) {
   if (query.type === "exact") {
     return IDBKeyRange.only([table, query.value]);
   }
@@ -361,6 +409,18 @@ export interface IndexDefinition {
   table: string;
   /** Field names to index, e.g., ["age"] for single field or ["lastName", "firstName"] for compound */
   keys: string[];
+}
+
+export function indexDefinitionsFromTableSchema(
+  tableSchema: TableSchema,
+): IndexDefinition[] {
+  return Object.entries(tableSchema.indexes).map(([indexName, keys]) => {
+    return {
+      name: indexName, // Don't prefix here - indexDefinitionToIDBIndex will do it
+      table: tableSchema.tableName,
+      keys,
+    };
+  });
 }
 
 /**

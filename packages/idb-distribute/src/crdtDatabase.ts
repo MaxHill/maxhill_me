@@ -5,7 +5,7 @@ import {
   ROWS_STORE,
 } from "./IDBRepository.ts";
 import { applyOperationToRow, CRDTOperation, Dot, LWWField, ROW_KEY, ValidKey } from "./crdt.ts";
-import { IndexDefinition, QueryPayload } from "./indexes.ts";
+import { indexDefinitionsFromTableSchema, QueryCondition } from "./indexes.ts";
 import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
 import { Sync } from "./sync/index.ts";
 import { SyncErrorCode } from "./sync/errors.ts";
@@ -16,7 +16,7 @@ export type DatabaseSchema = Record<string, TableSchema>;
 // TODO: Implement toTableNames: string[]
 
 export class CRDTDatabase {
-  private clientId: string;
+  clientId: string;
   private idbRepository: IDBRepository;
   private logicalClock: PersistedLogicalClock;
   private syncManager: Sync;
@@ -25,12 +25,16 @@ export class CRDTDatabase {
 
   constructor(
     dbName: string = "crdt-db",
-    indexes: IndexDefinition[] = [],
+    tableSchema: TableSchema, // TODO: take DatabaseSchema instead
     syncRemote: string,
     sync?: Sync,
     clientPersistance?: IDBRepository,
     generateId: () => string = crypto.randomUUID.bind(crypto),
   ) {
+    const indexes = indexDefinitionsFromTableSchema(tableSchema);
+    // TODO: validate that the tableSchema is valid,
+    //  No duplicate indexes
+
     this.dbName = dbName;
     this.syncRemote = syncRemote;
     // If clientPersistance is not provided, create one with indexes
@@ -55,161 +59,9 @@ export class CRDTDatabase {
     }
   }
 
-  private async nextDot(tx: IDBTransaction): Promise<Dot> {
-    if (!this.idbRepository) {
-      throw new Error("idbRepository is undefined in nextDot");
-    }
-    const version = await this.logicalClock.tick(tx);
-    return { clientId: this.clientId, version };
-  }
-
-  /**
-   * Set a single field in a row
-   */
-  async setCell(table: string, rowKey: ValidKey, field: string, value: any): Promise<void> {
-    if (field === "_key") {
-      throw new Error(
-        `Cannot set _key field directly. ` +
-          `The _key field is reserved and managed automatically.`,
-      );
-    }
-
-    const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
-    const row = await this.idbRepository.getRow(tx, table, rowKey);
-
-    const dot = await this.nextDot(tx);
-    const op: CRDTOperation = {
-      type: "set",
-      table,
-      rowKey,
-      field,
-      value,
-      dot,
-    };
-
-    applyOperationToRow(row, op);
-
-    await Promise.all([
-      this.idbRepository.saveRow(tx, row),
-      this.idbRepository.saveOperation(tx, op),
-    ]);
-  }
-
-  /**
-   * Set an entire row
-   */
-  async setRow(table: string, rowKey: ValidKey, value: Record<string, any>): Promise<void> {
-    if (value._key) {
-      if (value._key !== rowKey) {
-        throw new Error(
-          `Cannot set _key to a different value than the row key. ` +
-            `Expected '_key' to be '${rowKey}' but got '${value._key}'. ` +
-            `The _key field is reserved and managed automatically.`,
-        );
-      }
-      // Strip _key before storing
-      const { _key, ...cleanData } = value;
-      value = cleanData;
-    }
-
-    const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
-    const row = await this.idbRepository.getRow(tx, table, rowKey);
-
-    const dot = await this.nextDot(tx);
-    const op: CRDTOperation = {
-      type: "setRow",
-      table,
-      rowKey,
-      value,
-      dot,
-    };
-
-    applyOperationToRow(row, op);
-
-    await Promise.all([
-      this.idbRepository.saveRow(tx, row),
-      this.idbRepository.saveOperation(tx, op),
-    ]);
-  }
-
-  /**
-   * Get a row's user-facing data
-   */
-  async get(table: string, rowKey: ValidKey): Promise<Record<string, any> | undefined> {
-    const tx = this.idbRepository.transaction(["rows"], "readonly");
-    const row = await this.idbRepository.getRow(tx, table, rowKey);
-
-    if (Object.keys(row.fields).length === 0) {
-      return undefined;
-    }
-
-    const data: Record<string, any> = {};
-    for (const [field, fieldState] of Object.entries(row.fields)) {
-      data[field] = fieldState.value;
-    }
-
-    return Object.assign({ _key: rowKey }, data);
-  }
-
-  /**
-   * Delete a row
-   */
-  async deleteRow(table: string, rowKey: ValidKey): Promise<void> {
-    const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
-    const row = await this.idbRepository.getRow(tx, table, rowKey);
-
-    // Build context from current fields
-    const context: Record<string, number> = {};
-    for (const fieldState of Object.values(row.fields)) {
-      const clientId = fieldState.dot.clientId;
-      context[clientId] = Math.max(context[clientId] ?? 0, fieldState.dot.version);
-    }
-
-    const dot = await this.nextDot(tx);
-    const op: CRDTOperation = {
-      type: "remove",
-      table,
-      rowKey,
-      dot,
-      context,
-    };
-
-    applyOperationToRow(row, op);
-
-    await Promise.all([
-      this.idbRepository.saveRow(tx, row),
-      this.idbRepository.saveOperation(tx, op),
-    ]);
-  }
-
-  async *query(table: string, indexName: string, condition: QueryPayload) {
-    const indexNames = (this.idbRepository.indexes || []).map((index) => index.name);
-    if (!indexNames.includes(indexName)) {
-      throw new Error(
-        `Specified index ${indexName} does not exist in indexes:/n${
-          indexNames.map((index) => `   ${index} /n`)
-        }`,
-      );
-    }
-
-    const tx = this.idbRepository!.transaction([ROWS_STORE], "readonly");
-    const queryIterator = this.idbRepository.query(tx, table, indexName, condition);
-
-    for await (const row of queryIterator) {
-      // Skip rows with no fields (deleted rows) - consistent with get()
-      // TODO: this should be fixed when writing the row
-      if (Object.keys(row.fields).length === 0) {
-        continue;
-      }
-
-      let result: Record<string, any> = {};
-      for (const [field, fieldState] of Object.entries(row.fields)) {
-        result[field] = fieldState.value;
-      }
-
-      result = Object.assign({ _key: row[ROW_KEY] }, result);
-      yield result;
-    }
+  table(tableName: string) {
+    // TODO:
+    return new Table();
   }
 
   /**

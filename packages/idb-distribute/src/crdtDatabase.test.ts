@@ -31,10 +31,13 @@ describe("CRDTDatabase", () => {
   describe("query", () => {
     it("should query rows using an index and return simplified results", async () => {
       // Create database with index
-      const indexes = [
-        { name: "usersByAge", table: "users", keys: ["age"] },
-      ];
-      db = new CRDTDatabase(dbName, indexes, "http://test.com");
+      const tableSchema = {
+        tableName: "users",
+        indexes: {
+          usersByAge: ["age"]
+        }
+      };
+      db = new CRDTDatabase(dbName, tableSchema, "http://test.com");
       await db.open();
 
       // Insert test data
@@ -64,10 +67,13 @@ describe("CRDTDatabase", () => {
 
   describe("_key validation", () => {
     beforeEach(async () => {
-      const indexes = [
-        { name: "usersByAge", table: "users", keys: ["age"] },
-      ];
-      db = new CRDTDatabase(dbName, indexes, "http://test.com");
+      const tableSchema = {
+        tableName: "users",
+        indexes: {
+          usersByAge: ["age"]
+        }
+      };
+      db = new CRDTDatabase(dbName, tableSchema, "http://test.com");
       await db.open();
     });
 
