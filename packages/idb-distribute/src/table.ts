@@ -4,17 +4,9 @@ import { CLIENT_STATE_STORE, IDBRepository, OPERATIONS_STORE, ROWS_STORE } from 
 import { Index } from "./indexes";
 import { PersistedLogicalClock } from "./persistedLogicalClock";
 
-export type TableDefinition = {
-    tableName: string;
-    indexes: Record<string, string[]>;
-};
-
-// DONE: indexDefinitionFromTableSchema
-// TODO: implement getIndexNames: string[]
-//
-
 export class Table {
-    tableDefinition: TableDefinition;
+    private tableName: string;
+    private indexes: Map<string, string[]>;
 
     // TODO: Not a nice approach to pass all of this from CrdtDatabase
     // we should refactor this somehow
@@ -23,12 +15,14 @@ export class Table {
     private logicalClock: PersistedLogicalClock;
 
     constructor(
-        tableDefinition: TableDefinition,
+        tableName: string,
+        indexes: Map<string, string[]>,
         idbRepository: IDBRepository,
         crdtDatabase: CRDTDatabase,
         logicalClock: PersistedLogicalClock,
     ) {
-        this.tableDefinition = tableDefinition;
+        this.tableName = tableName;
+        this.indexes = indexes;
         this.idbRepository = idbRepository;
         this.crdtDatabase = crdtDatabase;
         this.logicalClock = logicalClock;
@@ -52,12 +46,12 @@ export class Table {
             [CLIENT_STATE_STORE, ROWS_STORE, OPERATIONS_STORE],
             "readwrite",
         );
-        const row = await this.idbRepository.getRow(tx, this.tableDefinition.tableName, rowKey);
+        const row = await this.idbRepository.getRow(tx, this.tableName, rowKey);
 
         const dot = await this.nextDot(tx);
         const op: CRDTOperation = {
             type: "setRow",
-            table: this.tableDefinition.tableName,
+            table: this.tableName,
             rowKey,
             value,
             dot,
@@ -80,12 +74,12 @@ export class Table {
         }
 
         const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
-        const row = await this.idbRepository.getRow(tx, this.tableDefinition.tableName, rowKey);
+        const row = await this.idbRepository.getRow(tx, this.tableName, rowKey);
 
         const dot = await this.nextDot(tx);
         const op: CRDTOperation = {
             type: "set",
-            table: this.tableDefinition.tableName,
+            table: this.tableName,
             rowKey,
             field,
             value,
@@ -101,7 +95,7 @@ export class Table {
     }
     async deleteRow(rowKey: ValidKey) {
         const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
-        const row = await this.idbRepository.getRow(tx, this.tableDefinition.tableName, rowKey);
+        const row = await this.idbRepository.getRow(tx, this.tableName, rowKey);
 
         // Build context from current fields
         const context: Record<string, number> = {};
@@ -113,7 +107,7 @@ export class Table {
         const dot = await this.nextDot(tx);
         const op: CRDTOperation = {
             type: "remove",
-            table: this.tableDefinition.tableName,
+            table: this.tableName,
             rowKey,
             dot,
             context,
@@ -132,7 +126,7 @@ export class Table {
     //  ------------------------------------------------------------------------
     async get(rowKey: ValidKey): Promise<Record<string, any> | undefined> {
         const tx = this.idbRepository.transaction(["rows"], "readonly");
-        const row = await this.idbRepository.getRow(tx, this.tableDefinition.tableName, rowKey);
+        const row = await this.idbRepository.getRow(tx, this.tableName, rowKey);
 
         if (Object.keys(row.fields).length === 0) {
             return undefined;
@@ -150,10 +144,10 @@ export class Table {
 
     // TODO: typesafety of index name
     index(indexName: any): Index {
-        if (!this.tableDefinition.indexes[indexName]) {
-            throw new Error(`Table ${this.tableDefinition.tableName} does not have an index called ${indexName}`);
+        if (!this.indexes.has(indexName)) {
+            throw new Error(`Table ${this.tableName} does not have an index called ${indexName}`);
         }
-        return new Index(this.tableDefinition.tableName, indexName, this.idbRepository);
+        return new Index(this.tableName, indexName, this.idbRepository);
     }
 
     //  ------------------------------------------------------------------------

@@ -1,6 +1,5 @@
 import { CLIENT_STATE_STORE, IDBRepository, INDEXES_HASH, ROWS_STORE } from "./IDBRepository.ts";
 import { ROW_KEY, TABLE_NAME } from "./crdt.ts";
-import { TableDefinition } from "./table.ts";
 import { promisifyIDBRequest, validateTransactionStores } from "./utils.ts";
 
 export class Index {
@@ -410,16 +409,20 @@ export interface IndexDefinition {
     keys: string[];
 }
 
-export function indexDefinitionsFromTableDefinition(
-    tableSchema: TableDefinition,
+/**
+ * Converts a Map-based table structure to IndexDefinition array.
+ * Used internally by CRDTDatabaseBuilder.
+ */
+export function createIndexDefinitionsFromTables(
+    tables: Map<string, Map<string, string[]>>
 ): IndexDefinition[] {
-    return Object.entries(tableSchema.indexes).map(([indexName, keys]) => {
-        return {
-            name: indexName, // Don't prefix here - indexDefinitionToIDBIndex will do it
-            table: tableSchema.tableName,
-            keys,
-        };
-    });
+    const definitions: IndexDefinition[] = [];
+    for (const [tableName, indexes] of tables) {
+        for (const [indexName, keys] of indexes) {
+            definitions.push({ name: indexName, table: tableName, keys });
+        }
+    }
+    return definitions;
 }
 
 /**

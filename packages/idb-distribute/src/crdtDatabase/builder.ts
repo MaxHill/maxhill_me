@@ -1,14 +1,13 @@
 import { CRDTDatabase } from ".";
 import { IDBRepository } from "../IDBRepository";
-import { IndexDefinition, indexDefinitionsFromTableDefinition } from "../indexes";
+import { IndexDefinition } from "../indexes";
 import { PersistedLogicalClock } from "../persistedLogicalClock";
 import { Sync } from "../sync";
-import { TableDefinition } from "../table";
 
 export class CRDTDatabaseBuilder {
     dbName: string;
     syncRemote?: string;
-    tables: TableDefinition[] = [];
+    private tables: Map<string, Map<string, string[]>> = new Map();
 
     // Should these be part of the config?
     idbRepository?: IDBRepository;
@@ -28,10 +27,10 @@ export class CRDTDatabaseBuilder {
     addTable(table: string, indexes: {
         [key: string]: string[]
     }): CRDTDatabaseBuilder {
-        if (this.tables.find((tableDefinition) => tableDefinition.tableName === table)) {
+        if (this.tables.has(table)) {
             console.warn(`Overriding table ${table}, that already existed.`)
         }
-        this.tables.push({ tableName: table, indexes });
+        this.tables.set(table, new Map(Object.entries(indexes)));
         return this;
     }
 
@@ -51,7 +50,13 @@ export class CRDTDatabaseBuilder {
     }
 
     build(): CRDTDatabase {
-        const indexDefinitions = this.tables.flatMap(table => indexDefinitionsFromTableDefinition(table));
+        // Convert Map to IndexDefinition[] for IDBRepository
+        const indexDefinitions: IndexDefinition[] = [];
+        for (const [tableName, indexes] of this.tables) {
+            for (const [indexName, keys] of indexes) {
+                indexDefinitions.push({ name: indexName, table: tableName, keys });
+            }
+        }
 
         const idbRepository = this.idbRepository || new IDBRepository(indexDefinitions);
         const syncManager = this.syncManager || new Sync(idbRepository);
