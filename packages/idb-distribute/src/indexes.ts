@@ -1,53 +1,51 @@
 import { CLIENT_STATE_STORE, IDBRepository, INDEXES_HASH, ROWS_STORE } from "./IDBRepository.ts";
 import { ROW_KEY, TABLE_NAME } from "./crdt.ts";
-import { TableSchema } from "./table.ts";
+import { TableDefinition } from "./table.ts";
 import { promisifyIDBRequest, validateTransactionStores } from "./utils.ts";
 
 export class Index {
-  constructor(
-    private tableName: string,
-    private indexName: string,
-    private idbRepository: IDBRepository,
-  ) {
-    const indexNames = (this.idbRepository.indexes || []).map((index) => index.name);
-    if (!indexNames.includes(this.indexName)) {
-      throw new Error(
-        `Specified index ${indexName} does not exist in indexes:/n${
-          indexNames.map((index) => `   ${index} /n`)
-        }`,
-      );
-    }
-  }
-
-  async *query(condition: QueryCondition) {
-    const indexNames = (this.idbRepository.indexes || []).map((index) => index.name);
-    if (!indexNames.includes(this.indexName)) {
-      throw new Error(
-        `Invalid index ${this.indexName} does not exist in indexes:/n${
-          indexNames.map((index) => `   ${index} /n`)
-        }`,
-      );
+    constructor(
+        private tableName: string,
+        private indexName: string,
+        private idbRepository: IDBRepository,
+    ) {
+        const indexNames = (this.idbRepository.indexes || []).map((index) => index.name);
+        if (!indexNames.includes(this.indexName)) {
+            throw new Error(
+                `Specified index ${indexName} does not exist in indexes:\n${indexNames.map((index) => `   ${index} /n`)
+                }`,
+            );
+        }
     }
 
-    const tx = this.idbRepository!.transaction([ROWS_STORE], "readonly");
-    const queryIterator = this.idbRepository.query(tx, this.tableName, this.indexName, condition);
+    async *query(condition: QueryCondition) {
+        const indexNames = (this.idbRepository.indexes || []).map((index) => index.name);
+        if (!indexNames.includes(this.indexName)) {
+            throw new Error(
+                `Invalid index ${this.indexName} does not exist in indexes:/n${indexNames.map((index) => `   ${index} /n`)
+                }`,
+            );
+        }
 
-    for await (const row of queryIterator) {
-      // Skip rows with no fields (deleted rows) - consistent with get()
-      // TODO: this should be fixed when writing the row
-      if (Object.keys(row.fields).length === 0) {
-        continue;
-      }
+        const tx = this.idbRepository!.transaction([ROWS_STORE], "readonly");
+        const queryIterator = this.idbRepository.query(tx, this.tableName, this.indexName, condition);
 
-      let result: Record<string, any> = {};
-      for (const [field, fieldState] of Object.entries(row.fields)) {
-        result[field] = fieldState.value;
-      }
+        for await (const row of queryIterator) {
+            // Skip rows with no fields (deleted rows) - consistent with get()
+            // TODO: this should be fixed when writing the row
+            if (Object.keys(row.fields).length === 0) {
+                continue;
+            }
 
-      result = Object.assign({ _key: row[ROW_KEY] }, result);
-      yield result;
+            let result: Record<string, any> = {};
+            for (const [field, fieldState] of Object.entries(row.fields)) {
+                result[field] = fieldState.value;
+            }
+
+            result = Object.assign({ _key: row[ROW_KEY] }, result);
+            yield result;
+        }
     }
-  }
 }
 
 //  ------------------------------------------------------------------------
@@ -58,8 +56,8 @@ export class Index {
  * Query type for exact value matches.
  */
 type QueryExact = {
-  type: "exact";
-  value: IDBValidKey;
+    type: "exact";
+    value: IDBValidKey;
 };
 
 /**
@@ -83,18 +81,18 @@ type QueryExact = {
  * ```
  */
 export function exact(
-  value: IDBValidKey,
+    value: IDBValidKey,
 ): QueryExact {
-  return { type: "exact", value };
+    return { type: "exact", value };
 }
 
 /**
  * Query type for values above a threshold.
  */
 type QueryAbove = {
-  type: "above";
-  value: IDBValidKey;
-  options: { inclusive: boolean };
+    type: "above";
+    value: IDBValidKey;
+    options: { inclusive: boolean };
 };
 
 /**
@@ -120,16 +118,16 @@ type QueryAbove = {
  * ```
  */
 export function above(value: IDBValidKey, options = { inclusive: true }): QueryAbove {
-  return { type: "above", options, value };
+    return { type: "above", options, value };
 }
 
 /**
  * Query type for values below a threshold.
  */
 type QueryBelow = {
-  type: "below";
-  value: IDBValidKey;
-  options: { inclusive: boolean };
+    type: "below";
+    value: IDBValidKey;
+    options: { inclusive: boolean };
 };
 
 /**
@@ -155,20 +153,20 @@ type QueryBelow = {
  * ```
  */
 export function below(value: IDBValidKey, options = { inclusive: true }): QueryBelow {
-  return { type: "below", options, value };
+    return { type: "below", options, value };
 }
 
 /**
  * Query type for values within a range between two bounds.
  */
 type QueryBetween = {
-  type: "between";
-  lowerValue: IDBValidKey;
-  upperValue: IDBValidKey;
-  options: {
-    inclusiveLower: boolean;
-    inclusiveUpper: boolean;
-  };
+    type: "between";
+    lowerValue: IDBValidKey;
+    upperValue: IDBValidKey;
+    options: {
+        inclusiveLower: boolean;
+        inclusiveUpper: boolean;
+    };
 };
 
 /**
@@ -207,30 +205,30 @@ type QueryBetween = {
  * ```
  */
 export function between(
-  lowerValue: IDBValidKey,
-  upperValue: IDBValidKey,
-  options = {
-    inclusiveLower: true,
-    inclusiveUpper: true,
-  },
+    lowerValue: IDBValidKey,
+    upperValue: IDBValidKey,
+    options = {
+        inclusiveLower: true,
+        inclusiveUpper: true,
+    },
 ): QueryBetween {
-  const lowerType = lowerValue instanceof Date ? "date" : typeof lowerValue;
-  const upperType = upperValue instanceof Date ? "date" : typeof upperValue;
+    const lowerType = lowerValue instanceof Date ? "date" : typeof lowerValue;
+    const upperType = upperValue instanceof Date ? "date" : typeof upperValue;
 
-  if (lowerType !== upperType) {
-    throw new Error(
-      `Type mismatch: lower bound is ${lowerType} but upper bound is ${upperType}. ` +
-        `Both bounds must be the same type.`,
-    );
-  }
+    if (lowerType !== upperType) {
+        throw new Error(
+            `Type mismatch: lower bound is ${lowerType} but upper bound is ${upperType}. ` +
+            `Both bounds must be the same type.`,
+        );
+    }
 
-  // Also validate ordering
-  if (typeof lowerValue === "number" && typeof upperValue === "number" && lowerValue > upperValue) {
-    throw new Error(
-      `Invalid range: lowerValue (${lowerValue}) must be ≤ upperValue (${upperValue}).`,
-    );
-  }
-  return { type: "between", lowerValue, upperValue, options };
+    // Also validate ordering
+    if (typeof lowerValue === "number" && typeof upperValue === "number" && lowerValue > upperValue) {
+        throw new Error(
+            `Invalid range: lowerValue (${lowerValue}) must be ≤ upperValue (${upperValue}).`,
+        );
+    }
+    return { type: "between", lowerValue, upperValue, options };
 }
 
 /**
@@ -250,8 +248,8 @@ const DATE_MIN_BOUND = new Date(-8640000000000000);
 const DATE_MAX_BOUND = new Date(8640000000000000);
 
 interface RangeBounds {
-  min: IDBValidKey;
-  max: IDBValidKey;
+    min: IDBValidKey;
+    max: IDBValidKey;
 }
 
 /**
@@ -262,44 +260,44 @@ interface RangeBounds {
  * @throws Error if the value type is not supported by IndexedDB keys
  */
 export function calculateBounds(sampleValue: IDBValidKey): RangeBounds {
-  if (typeof sampleValue === "number") {
-    if (!Number.isFinite(sampleValue)) {
-      throw new Error(
-        `Invalid number for IndexedDB key: ${sampleValue}. ` +
-          `IndexedDB keys must be finite numbers.`,
-      );
+    if (typeof sampleValue === "number") {
+        if (!Number.isFinite(sampleValue)) {
+            throw new Error(
+                `Invalid number for IndexedDB key: ${sampleValue}. ` +
+                `IndexedDB keys must be finite numbers.`,
+            );
+        }
+        return { min: Number.MIN_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER };
     }
-    return { min: Number.MIN_SAFE_INTEGER, max: Number.MAX_SAFE_INTEGER };
-  }
 
-  if (typeof sampleValue === "string") {
-    return { min: STRING_MIN_BOUND, max: STRING_MAX_BOUND };
-  }
-
-  if (sampleValue instanceof Date) {
-    if (isNaN(sampleValue.getTime())) {
-      throw new Error(
-        `Invalid Date object: Date has NaN timestamp. ` +
-          `Ensure Date is constructed with valid input.`,
-      );
+    if (typeof sampleValue === "string") {
+        return { min: STRING_MIN_BOUND, max: STRING_MAX_BOUND };
     }
-    return { min: DATE_MIN_BOUND, max: DATE_MAX_BOUND };
-  }
 
-  // ArrayBuffer, TypedArrays, or Arrays would go here if needed
-  if (Array.isArray(sampleValue)) {
-    // TODO: this should be done somewhere else so we don't get to this point.
-    // Either find a way to calculate this or disallow these types of values
+    if (sampleValue instanceof Date) {
+        if (isNaN(sampleValue.getTime())) {
+            throw new Error(
+                `Invalid Date object: Date has NaN timestamp. ` +
+                `Ensure Date is constructed with valid input.`,
+            );
+        }
+        return { min: DATE_MIN_BOUND, max: DATE_MAX_BOUND };
+    }
+
+    // ArrayBuffer, TypedArrays, or Arrays would go here if needed
+    if (Array.isArray(sampleValue)) {
+        // TODO: this should be done somewhere else so we don't get to this point.
+        // Either find a way to calculate this or disallow these types of values
+        throw new Error(
+            "Cannot calculate bounds for Array values. " +
+            "Array-typed indexes require explicit min/max values.",
+        );
+    }
+
     throw new Error(
-      "Cannot calculate bounds for Array values. " +
-        "Array-typed indexes require explicit min/max values.",
+        `Unsupported value type for IndexedDB key: ${typeof sampleValue}. ` +
+        `Supported types: number, string, Date`,
     );
-  }
-
-  throw new Error(
-    `Unsupported value type for IndexedDB key: ${typeof sampleValue}. ` +
-      `Supported types: number, string, Date`,
-  );
 }
 
 /**
@@ -323,73 +321,70 @@ export function calculateBounds(sampleValue: IDBValidKey): RangeBounds {
  * @internal This function is primarily for internal use by the query execution system.
  */
 export function queryToIDBRange(table: string, query: QueryCondition) {
-  if (query.type === "exact") {
-    return IDBKeyRange.only([table, query.value]);
-  }
+    if (query.type === "exact") {
+        return IDBKeyRange.only([table, query.value]);
+    }
 
-  // Get a sample value from the query to determine bounds
-  const sampleValue = query.type === "between"
-    ? query.lowerValue
-    : query.type === "above" || query.type === "below"
-    ? query.value
-    : undefined;
+    // Get a sample value from the query to determine bounds
+    const sampleValue = query.type === "between"
+        ? query.lowerValue
+        : query.type === "above" || query.type === "below"
+            ? query.value
+            : undefined;
 
-  if (sampleValue === undefined) {
-    throw new Error("Unable to determine value from query");
-  }
+    if (sampleValue === undefined) {
+        throw new Error("Unable to determine value from query");
+    }
 
-  const bounds = calculateBounds(sampleValue);
+    const bounds = calculateBounds(sampleValue);
 
-  if (query.type === "above") {
-    return IDBKeyRange.bound(
-      [table, query.value],
-      [table, bounds.max],
-      !query.options.inclusive, // lowerOpen - invert because inclusive means closed
-      false,
+    if (query.type === "above") {
+        return IDBKeyRange.bound(
+            [table, query.value],
+            [table, bounds.max],
+            !query.options.inclusive, // lowerOpen - invert because inclusive means closed
+            false,
+        );
+    } else if (query.type === "below") {
+        const lower = [table, bounds.min];
+        const upper = [table, query.value];
+        const lowerOpen = false;
+        const upperOpen = !query.options.inclusive;
+
+        // Validate: can't have same bounds with any open
+        // IDBKeyRange.bound throws if lower === upper and either bound is open
+        if (keysEqual(bounds.min, query.value) && (lowerOpen || upperOpen)) {
+            throw new Error(
+                `Invalid range: Cannot create a range where lower and upper bounds are equal (${JSON.stringify(query.value)
+                }) ` +
+                `with any bound exclusive. Both bounds must be inclusive.`,
+            );
+        }
+
+        return IDBKeyRange.bound(lower, upper, lowerOpen, upperOpen);
+    } else if (query.type === "between") {
+        const lower = [table, query.lowerValue];
+        const upper = [table, query.upperValue];
+        const lowerOpen = !query.options.inclusiveLower;
+        const upperOpen = !query.options.inclusiveUpper;
+
+        // Validate: can't have same bounds with any open
+        // IDBKeyRange.bound throws if lower === upper and either bound is open
+        if (keysEqual(query.lowerValue, query.upperValue) && (lowerOpen || upperOpen)) {
+            throw new Error(
+                `Invalid range: Cannot create a range where lower and upper bounds are equal (${JSON.stringify(query.lowerValue)
+                }) ` +
+                `with any bound exclusive. Both bounds must be inclusive.`,
+            );
+        }
+
+        return IDBKeyRange.bound(lower, upper, lowerOpen, upperOpen);
+    }
+
+    throw new Error(
+        `Query type not supported: ${query["type"] || '""'
+        }. \n  Supported types: exact, above, below, between`,
     );
-  } else if (query.type === "below") {
-    const lower = [table, bounds.min];
-    const upper = [table, query.value];
-    const lowerOpen = false;
-    const upperOpen = !query.options.inclusive;
-
-    // Validate: can't have same bounds with any open
-    // IDBKeyRange.bound throws if lower === upper and either bound is open
-    if (keysEqual(bounds.min, query.value) && (lowerOpen || upperOpen)) {
-      throw new Error(
-        `Invalid range: Cannot create a range where lower and upper bounds are equal (${
-          JSON.stringify(query.value)
-        }) ` +
-          `with any bound exclusive. Both bounds must be inclusive.`,
-      );
-    }
-
-    return IDBKeyRange.bound(lower, upper, lowerOpen, upperOpen);
-  } else if (query.type === "between") {
-    const lower = [table, query.lowerValue];
-    const upper = [table, query.upperValue];
-    const lowerOpen = !query.options.inclusiveLower;
-    const upperOpen = !query.options.inclusiveUpper;
-
-    // Validate: can't have same bounds with any open
-    // IDBKeyRange.bound throws if lower === upper and either bound is open
-    if (keysEqual(query.lowerValue, query.upperValue) && (lowerOpen || upperOpen)) {
-      throw new Error(
-        `Invalid range: Cannot create a range where lower and upper bounds are equal (${
-          JSON.stringify(query.lowerValue)
-        }) ` +
-          `with any bound exclusive. Both bounds must be inclusive.`,
-      );
-    }
-
-    return IDBKeyRange.bound(lower, upper, lowerOpen, upperOpen);
-  }
-
-  throw new Error(
-    `Query type not supported: ${
-      query["type"] || '""'
-    }. \n  Supported types: exact, above, below, between`,
-  );
 }
 
 //  ------------------------------------------------------------------------
@@ -402,25 +397,29 @@ export function queryToIDBRange(table: string, query: QueryCondition) {
  * Indexes enable efficient querying of records by specific field values.
  * Multi-field indexes (compound indexes) can be created by specifying multiple keys.
  */
+export type IndexDefinition2 = Record<string, string[]>;
+export type Table = Record<string, IndexDefinition2>;
+
+
 export interface IndexDefinition {
-  /** The name of the index (must be unique within the table) */
-  name: string;
-  /** The table this index belongs to */
-  table: string;
-  /** Field names to index, e.g., ["age"] for single field or ["lastName", "firstName"] for compound */
-  keys: string[];
+    /** The name of the index (must be unique within the table) */
+    name: string;
+    /** The table this index belongs to */
+    table: string;
+    /** Field names to index, e.g., ["age"] for single field or ["lastName", "firstName"] for compound */
+    keys: string[];
 }
 
-export function indexDefinitionsFromTableSchema(
-  tableSchema: TableSchema,
+export function indexDefinitionsFromTableDefinition(
+    tableSchema: TableDefinition,
 ): IndexDefinition[] {
-  return Object.entries(tableSchema.indexes).map(([indexName, keys]) => {
-    return {
-      name: indexName, // Don't prefix here - indexDefinitionToIDBIndex will do it
-      table: tableSchema.tableName,
-      keys,
-    };
-  });
+    return Object.entries(tableSchema.indexes).map(([indexName, keys]) => {
+        return {
+            name: indexName, // Don't prefix here - indexDefinitionToIDBIndex will do it
+            table: tableSchema.tableName,
+            keys,
+        };
+    });
 }
 
 /**
@@ -444,15 +443,15 @@ export function indexDefinitionsFromTableSchema(
  * ```
  */
 export function indexDefinitionToIDBIndex(index: IndexDefinition): [string, string[]] {
-  const internalIndexName = createIndexName(index.table, index.name);
+    const internalIndexName = createIndexName(index.table, index.name);
 
-  // Build key path: [tableName, field1.value, field2.value, ...]
-  const keyPath = [
-    TABLE_NAME, // "table_name"
-    ...index.keys.map((key) => `fields.${key}.value`),
-  ];
+    // Build key path: [tableName, field1.value, field2.value, ...]
+    const keyPath = [
+        TABLE_NAME, // "table_name"
+        ...index.keys.map((key) => `fields.${key}.value`),
+    ];
 
-  return [internalIndexName, keyPath];
+    return [internalIndexName, keyPath];
 }
 
 /**
@@ -475,19 +474,19 @@ export function indexDefinitionToIDBIndex(index: IndexDefinition): [string, stri
  * ```
  */
 export function hashIndexDefinitions(indexes: IndexDefinition[] = []) {
-  return indexes
-    .slice()
-    .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
-    .reduce((acc, index) => {
-      const curr = Object.entries(index)
-        .sort(([k1], [k2]) => k1.localeCompare(k2))
-        .reduce((s, [key, value]) => {
-          const v = Array.isArray(value) ? value.join(",") : value;
-          return s + `${key}:${v}|`;
-        }, "");
+    return indexes
+        .slice()
+        .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+        .reduce((acc, index) => {
+            const curr = Object.entries(index)
+                .sort(([k1], [k2]) => k1.localeCompare(k2))
+                .reduce((s, [key, value]) => {
+                    const v = Array.isArray(value) ? value.join(",") : value;
+                    return s + `${key}:${v}|`;
+                }, "");
 
-      return acc + curr + ";";
-    }, "");
+            return acc + curr + ";";
+        }, "");
 }
 
 /**
@@ -515,16 +514,16 @@ export function hashIndexDefinitions(indexes: IndexDefinition[] = []) {
  * ```
  */
 export async function needIndexUpdate(
-  tx: IDBTransaction,
-  indexes: IndexDefinition[] = [],
+    tx: IDBTransaction,
+    indexes: IndexDefinition[] = [],
 ): Promise<boolean> {
-  validateTransactionStores(tx, [CLIENT_STATE_STORE]);
+    validateTransactionStores(tx, [CLIENT_STATE_STORE]);
 
-  const store = tx.objectStore(CLIENT_STATE_STORE);
-  const currentHash = await promisifyIDBRequest(store.get(INDEXES_HASH));
-  const nextHash = hashIndexDefinitions(indexes);
+    const store = tx.objectStore(CLIENT_STATE_STORE);
+    const currentHash = await promisifyIDBRequest(store.get(INDEXES_HASH));
+    const nextHash = hashIndexDefinitions(indexes);
 
-  return currentHash !== nextHash;
+    return currentHash !== nextHash;
 }
 
 //  ------------------------------------------------------------------------
@@ -544,7 +543,7 @@ export async function needIndexUpdate(
  * ```
  */
 export function createIndexName(table: string, name: string) {
-  return `${table}_${name}`;
+    return `${table}_${name}`;
 }
 
 /**
@@ -569,9 +568,9 @@ export function createIndexName(table: string, name: string) {
  * @internal
  */
 function keysEqual(a: IDBValidKey, b: IDBValidKey): boolean {
-  if (a === b) return true;
-  if (a instanceof Date && b instanceof Date) {
-    return a.getTime() === b.getTime();
-  }
-  return false;
+    if (a === b) return true;
+    if (a instanceof Date && b instanceof Date) {
+        return a.getTime() === b.getTime();
+    }
+    return false;
 }
