@@ -226,12 +226,12 @@ export class IDBRepository {
   query(
     tx: IDBTransaction,
     table: string,
-    indexName: string,
     query: QueryCondition,
+    indexName?: string,
   ): AsyncIterableIterator<ORMapRow> {
     validateTransactionStores(tx, [ROWS_STORE]);
     const indexNames = (this.indexes || []).map((index) => index.name);
-    if (!indexNames.includes(indexName)) {
+    if (indexName && !indexNames.includes(indexName)) {
       throw new Error(
         `Specified index ${indexName} does not exist in indexes:/n${
           indexNames.map((index) => `   ${index} /n`)
@@ -239,11 +239,13 @@ export class IDBRepository {
       );
     }
 
-    const store = tx.objectStore(ROWS_STORE);
-    const index = store.index(createIndexName(table, indexName));
+    let source: IDBObjectStore | IDBIndex = tx.objectStore(ROWS_STORE);
+    if (indexName) {
+      source = source.index(createIndexName(table, indexName));
+    }
 
     const range = queryToIDBRange(table, query);
-    const cursorRequest = index.openCursor(range);
+    const cursorRequest = source.openCursor(range);
     return asyncCursorIterator<ORMapRow>(cursorRequest);
   }
 

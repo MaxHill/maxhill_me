@@ -1,7 +1,7 @@
 import { applyOperationToRow, CRDTOperation, Dot, toUserRow, ValidKey } from "./crdt";
 import { CRDTDatabase } from "./crdtDatabase";
 import { CLIENT_STATE_STORE, IDBRepository, OPERATIONS_STORE, ROWS_STORE } from "./IDBRepository";
-import { Index } from "./indexes";
+import { Index, QueryCondition } from "./indexes";
 import { PersistedLogicalClock } from "./persistedLogicalClock";
 
 export class Table<TIndexes extends Record<string, string[]> = Record<string, string[]>> {
@@ -126,6 +126,21 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
     const row = await this.idbRepository.getRow(tx, this.tableName, rowKey);
 
     return toUserRow(row);
+  }
+
+  async *query(
+    condition: QueryCondition = { type: "all" },
+  ): AsyncGenerator<Record<string, any>, void, unknown> {
+    const tx = this.idbRepository!.transaction([ROWS_STORE], "readonly");
+    const queryIterator = this.idbRepository.query(tx, this.tableName, condition);
+
+    for await (const row of queryIterator) {
+      const result = toUserRow(row);
+      if (!result) {
+        continue;
+      }
+      yield result;
+    }
   }
 
   index<TIndexName extends keyof TIndexes & string>(indexName: TIndexName): Index {

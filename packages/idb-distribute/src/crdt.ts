@@ -50,6 +50,12 @@ export type ORMapRow = {
   };
 };
 
+/**
+ * Converts an internal row to a user
+ * facing row by constructing a
+ * object of the fields stored
+ * in the CRDT.
+ */
 export function toUserRow(row: ORMapRow) {
   // Skip rows with no fields (deleted rows)
   if (Object.keys(row.fields).length === 0) {

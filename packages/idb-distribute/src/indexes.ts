@@ -18,7 +18,9 @@ export class Index {
     }
   }
 
-  async *query(condition: QueryCondition): AsyncGenerator<Record<string, any>, void, unknown> {
+  async *query(
+    condition: QueryCondition = { type: "all" },
+  ): AsyncGenerator<Record<string, any>, void, unknown> {
     const indexNames = (this.idbRepository.indexes || []).map((index) => index.name);
     if (!indexNames.includes(this.indexName)) {
       throw new Error(
@@ -29,7 +31,7 @@ export class Index {
     }
 
     const tx = this.idbRepository!.transaction([ROWS_STORE], "readonly");
-    const queryIterator = this.idbRepository.query(tx, this.tableName, this.indexName, condition);
+    const queryIterator = this.idbRepository.query(tx, this.tableName, condition, this.indexName);
 
     for await (const row of queryIterator) {
       const result = toUserRow(row);
@@ -44,6 +46,13 @@ export class Index {
 //  ------------------------------------------------------------------------
 //  Index Query
 //  ------------------------------------------------------------------------
+//
+/**
+ * Query type for all values.
+ */
+type QueryAll = {
+  type: "all";
+};
 
 /**
  * Query type for exact value matches.
@@ -230,7 +239,7 @@ export function between(
  * Use the query builder functions (exact, above, below, between) to create queries
  * rather than constructing these objects directly.
  */
-export type QueryCondition = QueryAbove | QueryBelow | QueryBetween | QueryExact;
+export type QueryCondition = QueryAll | QueryAbove | QueryBelow | QueryBetween | QueryExact;
 
 //  ------------------------------------------------------------------------
 //  Conversion
@@ -313,7 +322,15 @@ export function calculateBounds(sampleValue: IDBValidKey): RangeBounds {
  *
  * @internal This function is primarily for internal use by the query execution system.
  */
-export function queryToIDBRange(table: string, query: QueryCondition) {
+export function queryToIDBRange(table: string, query: QueryCondition): IDBKeyRange {
+  if (query.type === "all") {
+    return IDBKeyRange.bound(
+      [table],
+      [table, []],
+      false,
+      true,
+    );
+  }
   if (query.type === "exact") {
     return IDBKeyRange.only([table, query.value]);
   }

@@ -81,15 +81,15 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
     const records = await promisifyIDBRequest(index.getAll(table));
 
     const result = new Map<IDBValidKey, Record<string, any>>();
-    for (const record of records) {
-      if (Object.keys(record.fields).length > 0) {
+    for (const row of records) {
+      if (Object.keys(row.fields).length > 0) {
         let rowData: Record<string, any> = {};
-        for (const [field, fieldState] of Object.entries(record.fields)) {
+        for (const [field, fieldState] of Object.entries(row.fields)) {
           rowData[field] = (fieldState as LWWField).value;
         }
 
-        rowData = Object.assign({ _key: record[ROW_KEY] }, rowData);
-        result.set(record[ROW_KEY], rowData);
+        rowData = Object.assign({ _key: row[ROW_KEY] }, rowData);
+        result.set(row[ROW_KEY], rowData);
       }
     }
 
