@@ -3,6 +3,8 @@ import { promisifyIDBRequest, txDone } from "./utils.ts";
 import { CRDTOperation, ORMapRow, ROW_KEY, TABLE_NAME } from "./crdt.ts";
 import { below } from "./indexes.ts";
 import "fake-indexeddb/auto";
+import { CRDTDatabase } from "./crdtDatabase";
+import { newDatabase } from "./crdtDatabase/builder.ts";
 
 describe("IDBRepository", () => {
   let idbRepository: IDBRepository;
@@ -483,7 +485,7 @@ describe("IDBRepository", () => {
   });
 
   describe("Integration with CRDTDatabase", () => {
-    let db: any;
+    let db: CRDTDatabase;
     const dbName = "test-crdt-db-with-indexes";
 
     beforeEach(async () => {
@@ -507,33 +509,30 @@ describe("IDBRepository", () => {
     });
 
     it("should work with CRDTDatabase", async () => {
-      const { CRDTDatabase } = await import("./crdtDatabase.ts");
-
       // Create table schema
-      const tableSchema = {
-        tableName: "users",
-        indexes: {
-          usersByAge: ["age"]
-        }
-      };
 
-      db = new CRDTDatabase(
-        dbName,
-        tableSchema,
-        "http://test.com",
-      );
+      const idbRepository = new IDBRepository([{
+        name: "usersByAge",
+        table: "users",
+        keys: ["age"],
+      }]);
+      db = newDatabase(dbName).addTable("users", {
+        usersByAge: ["age"],
+      })
+        .withCustomStorageRepository(idbRepository)
+        .build();
 
       await db.open();
 
       // Verify index was created (using type assertion to access private property in test)
-      const tx = db.idbRepository.transaction(["rows"], "readonly");
+      const tx = idbRepository.transaction(["rows"], "readonly");
       const store = tx.objectStore("rows");
       expect(store.indexNames.contains("users_usersByAge")).toBe(true);
       await txDone(tx);
 
       // Verify data can still be written (existing functionality)
-      await db.setRow("users", "u1", { age: 30, name: "Alice" });
-      const user = await db.get("users", "u1");
+      await db.table("users").setRow("u1", { age: 30, name: "Alice" });
+      const user = await db.table("users").get("u1");
       expect(user).toEqual({ _key: "u1", age: 30, name: "Alice" });
     });
   });

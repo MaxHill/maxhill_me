@@ -1,27 +1,38 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { CRDTDatabase } from "./crdtDatabase.ts";
-import { below } from "./indexes.ts";
+import { CRDTDatabase } from ".";
+import { below } from "../indexes";
 import "fake-indexeddb/auto";
+import { newDatabase } from "./builder.ts";
+import { IDBRepository } from "../IDBRepository.ts";
 
 describe("CRDTDatabase", () => {
-  let db: CRDTDatabase;
   const dbName = "test-crdt-query";
+  let db: CRDTDatabase<{ users: { usersByAge: string[] } }>;
+  let idbRepository: IDBRepository;
 
   beforeEach(async () => {
-    // Close existing database if open
-    if (db) {
-      await db.close();
-    }
+    idbRepository = new IDBRepository([{
+      table: "users",
+      name: "usersByAge",
+      keys: ["age"],
+    }]);
 
+    db = await newDatabase("test").addTable("users", {
+      usersByAge: ["age"],
+    })
+      .withCustomStorageRepository(idbRepository)
+      .build()
+      .open();
+  });
+
+  afterEach(async () => {
     // Delete the database to start fresh
     await new Promise<void>((resolve, reject) => {
       const deleteRequest = indexedDB.deleteDatabase(dbName);
       deleteRequest.onsuccess = () => resolve();
       deleteRequest.onerror = () => reject(deleteRequest.error);
     });
-  });
 
-  afterEach(async () => {
     // Clean up: close database
     if (db) {
       await db.close();
@@ -30,25 +41,17 @@ describe("CRDTDatabase", () => {
 
   describe("query", () => {
     it("should query rows using an index and return simplified results", async () => {
-      // Create database with index
-      const tableSchema = {
-        tableName: "users",
-        indexes: {
-          usersByAge: ["age"]
-        }
-      };
-      db = new CRDTDatabase(dbName, tableSchema, "http://test.com");
-      await db.open();
+      const users = db.table("users");
 
       // Insert test data
-      await db.setRow("users", "u1", { age: 25, name: "Alice" });
-      await db.setRow("users", "u2", { age: 30, name: "Bob" });
-      await db.setRow("users", "u3", { age: 25, name: "Charlie" });
-      await db.setRow("users", "u4", { age: 35, name: "David" });
+      await users.setRow("u1", { age: 25, name: "Alice" });
+      await users.setRow("u2", { age: 30, name: "Bob" });
+      await users.setRow("u3", { age: 25, name: "Charlie" });
+      await users.setRow("u4", { age: 35, name: "David" });
 
       // Query for users with age <= 27
       const results: any[] = [];
-      for await (const row of db.query("users", "usersByAge", below(27, { inclusive: true }))) {
+      for await (const row of users.index("usersByAge").query(below(27, { inclusive: true }))) {
         results.push(row);
       }
 
@@ -66,45 +69,34 @@ describe("CRDTDatabase", () => {
   });
 
   describe("_key validation", () => {
-    beforeEach(async () => {
-      const tableSchema = {
-        tableName: "users",
-        indexes: {
-          usersByAge: ["age"]
-        }
-      };
-      db = new CRDTDatabase(dbName, tableSchema, "http://test.com");
-      await db.open();
-    });
-
     it("should throw error when setRow _key differs from rowKey", async () => {
       await expect(
-        db.setRow("users", "u1", { _key: "u2", name: "Alice" })
+        db.table("users").setRow("u1", { _key: "u2", name: "Alice" }),
       ).rejects.toThrow("Cannot set _key to a different value");
     });
 
     it("should throw error when setCell targets _key field", async () => {
-      await db.setRow("users", "u1", { name: "Alice" });
+      await db.table("users").setRow("u1", { name: "Alice" });
       await expect(
-        db.setCell("users", "u1", "_key", "different")
+        db.table("users").setField("u1", "_key", "different"),
       ).rejects.toThrow("Cannot set _key field directly");
     });
 
     it("should strip matching _key when setting row", async () => {
       // Should succeed and strip the _key
-      await db.setRow("users", "u1", { _key: "u1", name: "Alice", age: 30 });
-      
+      await db.table("users").setRow("u1", { _key: "u1", name: "Alice", age: 30 });
+
       // Access raw storage to verify _key was stripped
-      const tx = db["idbRepository"].transaction(["rows"], "readonly");
-      const row = await db["idbRepository"].getRow(tx, "users", "u1");
-      
+      const tx = idbRepository.transaction(["rows"], "readonly");
+      const row = await idbRepository.getRow(tx, "users", "u1");
+
       // Verify _key is NOT in the stored fields
       expect(row.fields).not.toHaveProperty("_key");
       expect(row.fields).toHaveProperty("name");
       expect(row.fields).toHaveProperty("age");
-      
+
       // Verify get() still returns _key (injected, not stored)
-      const result = await db.get("users", "u1");
+      const result = await db.table("users").get("u1");
       expect(result).toEqual({ _key: "u1", name: "Alice", age: 30 });
     });
   });
