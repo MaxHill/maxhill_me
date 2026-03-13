@@ -1,5 +1,5 @@
 import { CLIENT_STATE_STORE, IDBRepository, INDEXES_HASH, ROWS_STORE } from "./IDBRepository.ts";
-import { ROW_KEY, TABLE_NAME, toUserRow } from "./crdt.ts";
+import { TABLE_NAME, toUserRow } from "./crdt.ts";
 import { promisifyIDBRequest, validateTransactionStores } from "./utils.ts";
 
 export class Index {
