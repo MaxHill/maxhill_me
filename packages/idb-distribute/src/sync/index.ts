@@ -193,7 +193,13 @@ export class Sync {
     // Now await the client state
     const { clientId, lastSeenServerVersion } = await clientStatePromise;
 
-    // TODO: Check that clientId is the same as our client id
+    const firstSyncedOperation = response.syncedOperations[0];
+    if (firstSyncedOperation && firstSyncedOperation.clientId !== clientId) {
+      console.warn(
+        `Dropping sync response: expected clientId ${clientId}, got ${firstSyncedOperation.clientId}`,
+      );
+      return;
+    }
 
     // Check if response is stale/out-of-order - if so, drop it
     if (lastSeenServerVersion !== response.baseServerVersion) {
