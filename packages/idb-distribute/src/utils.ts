@@ -16,26 +16,6 @@ export function promisifyIDBRequest<T>(req: IDBRequest<T>): Promise<T> {
 }
 
 /**
- * Wait for a transaction to complete
- * @param tx - Transaction to use.
- * @returns Promise that can be awaited
- */
-export function txDone(tx: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () =>
-      reject(
-        new Error(
-          `Transaction aborted. ` +
-            `Error: ${tx.error?.message || "unknown"}. ` +
-            `This usually indicates a constraint violation or concurrent modification.`,
-        ),
-      );
-  });
-}
-
-/**
  * Wrap a IDBRequest<IDBCursorWithValue> in a async Iterator for convenience
  * @param request - IDBRequest to iterate over
  * @returns AsyncIterableIterator over the result

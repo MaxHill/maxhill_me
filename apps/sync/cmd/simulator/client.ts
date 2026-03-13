@@ -200,7 +200,8 @@ async function handleSyncDelivery(
     "readwrite",
   );
   await client.sync.handleSyncResponse(tx, client.clock, request.syncResponse);
-  // Transaction auto-completes when all requests finish
+  // Transaction will auto-commit after handleSyncResponse completes
+  // DON'T call commit() explicitly - it causes race conditions!
 
   // Get updated state for logging
   const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");

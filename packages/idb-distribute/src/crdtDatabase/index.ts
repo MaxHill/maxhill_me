@@ -55,6 +55,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
     } else {
       await this.idbRepository.saveClientId(tx, this.clientId);
     }
+    await this.idbRepository.commit(tx);
   }
 
   table<TTableName extends keyof TSchema & string>(
@@ -109,6 +110,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
         ROWS_STORE,
       ], "readwrite");
       await this.syncManager.handleSyncResponse(writeTx, this.logicalClock, response);
+      await this.idbRepository.commit(writeTx);
     } catch (error: any) {
       // Check if this is a "client state out of sync" error using the error name
       if (error.name === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {
@@ -123,6 +125,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
           "readwrite",
         );
         await this.idbRepository.resetSyncState(resetTx);
+        await this.idbRepository.commit(resetTx);
 
         console.log("Client state reset complete. Retrying sync...");
 

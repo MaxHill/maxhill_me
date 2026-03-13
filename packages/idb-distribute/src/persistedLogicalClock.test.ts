@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
-import { promisifyIDBRequest, txDone } from "./utils.ts";
+import { promisifyIDBRequest } from "./utils.ts";
 import { IDBRepository } from "./IDBRepository.ts";
 
 describe("PersistedLogicalClock", () => {
@@ -38,17 +38,17 @@ describe("PersistedLogicalClock", () => {
     let tx = idbRepository.transaction(["clientState"], "readwrite");
     const result1 = await logicalClock.tick(tx);
     expect(result1).toEqual(0);
-    await txDone(tx);
+    await idbRepository.commit(tx);
 
     tx = idbRepository.transaction(["clientState"], "readwrite");
     const result2 = await logicalClock.tick(tx);
     expect(result2).toBe(1);
-    await txDone(tx);
+    await idbRepository.commit(tx);
 
     tx = idbRepository.transaction(["clientState"], "readwrite");
     const result3 = await logicalClock.tick(tx);
     expect(result3).toBe(2);
-    await txDone(tx);
+    await idbRepository.commit(tx);
   });
 
   it("should sync with a greater clock value", async () => {
@@ -58,13 +58,13 @@ describe("PersistedLogicalClock", () => {
 
     const newValue = await logicalClock.sync(tx, 10); // max(5,10) = 10
     expect(newValue).toBe(10);
-    await txDone(tx);
+    await idbRepository.commit(tx);
 
     const txRead = idbRepository.transaction(["clientState"], "readonly");
     const stored = await idbRepository.getVersion(txRead);
     expect(stored).toBe(10);
 
-    await txDone(txRead);
+    await idbRepository.commit(txRead);
   });
 
   it("should sync with a smaller clock value", async () => {
@@ -74,13 +74,13 @@ describe("PersistedLogicalClock", () => {
     const newValue = await logicalClock.sync(tx, 5); // max(10,5) = 10
     expect(newValue).toBe(10);
 
-    await txDone(tx);
+    await idbRepository.commit(tx);
 
     const txRead = idbRepository.transaction(["clientState"], "readonly");
     const stored = await idbRepository.getVersion(txRead);
     expect(stored).toBe(10);
 
-    await txDone(txRead);
+    await idbRepository.commit(txRead);
   });
 
   it("should increment by exactly N after N ticks", async () => {
@@ -90,13 +90,13 @@ describe("PersistedLogicalClock", () => {
     for (let i = 0; i < 5; i++) {
       await logicalClock.tick(tx);
     }
-    await txDone(tx);
+    await idbRepository.commit(tx);
 
     const txRead = idbRepository.transaction(["clientState"], "readonly");
     const final = await idbRepository.getVersion(txRead);
     expect(final).toBe(15);
 
-    await txDone(txRead);
+    await idbRepository.commit(txRead);
   });
 
   it("should not change when syncing with self", async () => {
@@ -106,14 +106,14 @@ describe("PersistedLogicalClock", () => {
     const current = await idbRepository.getVersion(tx);
     const newValue = await logicalClock.sync(tx, current);
     expect(newValue).toBe(current);
-    await txDone(tx);
+    await idbRepository.commit(tx);
   });
 
   it("should never decrease through any operation", async () => {
     const tx = idbRepository.transaction("clientState", "readwrite");
     await idbRepository.setVersion(tx, 10);
     let prev = await idbRepository.getVersion(tx);
-    await txDone(tx);
+    await idbRepository.commit(tx);
 
     for (let i = 0; i < 10; i++) {
       const tx = idbRepository.transaction(["clientState"], "readwrite");
@@ -122,7 +122,7 @@ describe("PersistedLogicalClock", () => {
       } else {
         await logicalClock.sync(tx, Math.floor(Math.random() * 20));
       }
-      await txDone(tx);
+      await idbRepository.commit(tx);
 
       const txRead = idbRepository.transaction(["clientState"], "readonly");
       const current = await idbRepository.getVersion(txRead);
@@ -141,7 +141,7 @@ describe("PersistedLogicalClock", () => {
     // Any other should throw
     await expect(logicalClock.sync(tx, -2)).rejects.toThrow();
 
-    await txDone(tx);
+    await idbRepository.commit(tx);
   });
 
   it("should enforce version >= 0 after any tick operation", async () => {
@@ -149,19 +149,19 @@ describe("PersistedLogicalClock", () => {
     let tx = idbRepository.transaction("clientState", "readwrite");
     const initial = await idbRepository.getVersion(tx);
     expect(initial).toBe(-1);
-    await txDone(tx);
+    await idbRepository.commit(tx);
 
     // First tick should bring us to 0
     tx = idbRepository.transaction("clientState", "readwrite");
     const result = await logicalClock.tick(tx);
     expect(result).toBe(0);
     expect(result).toBeGreaterThanOrEqual(0);
-    await txDone(tx);
+    await idbRepository.commit(tx);
 
     // Subsequent ticks should always be >= 0
     tx = idbRepository.transaction("clientState", "readwrite");
     const result2 = await logicalClock.tick(tx);
     expect(result2).toBeGreaterThanOrEqual(0);
-    await txDone(tx);
+    await idbRepository.commit(tx);
   });
 });

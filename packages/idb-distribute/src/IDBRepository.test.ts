@@ -1,5 +1,5 @@
 import { IDBRepository } from "./IDBRepository.ts";
-import { promisifyIDBRequest, txDone } from "./utils.ts";
+import { promisifyIDBRequest } from "./utils.ts";
 import { CRDTOperation, ORMapRow, ROW_KEY, TABLE_NAME } from "./crdt.ts";
 import { below } from "./indexes.ts";
 import "fake-indexeddb/auto";
@@ -30,7 +30,7 @@ describe("IDBRepository", () => {
   it("should initialize with -1 version", async () => {
     const tx = idbRepository.transaction(["clientState"], "readonly");
     const version = await idbRepository.getVersion(tx);
-    await txDone(tx);
+    await idbRepository.commit(tx);
 
     expect(version).toEqual(-1);
   });
@@ -39,13 +39,13 @@ describe("IDBRepository", () => {
     // Clear the version to make it undefined
     const clearTx = idbRepository.transaction("clientState", "readwrite");
     await promisifyIDBRequest(clearTx.objectStore("clientState").delete("logicalClock"));
-    await txDone(clearTx);
+    await idbRepository.commit(clearTx);
 
     const tx = idbRepository.transaction("clientState", "readonly");
     await expect(idbRepository.getVersion(tx)).rejects.toThrow(
       "Version should never be undefined since it's initialized to -1",
     );
-    await txDone(tx);
+    await idbRepository.commit(tx);
   });
 
   it("should throw when version goes below -1", async () => {
@@ -55,7 +55,7 @@ describe("IDBRepository", () => {
     await expect(idbRepository.getVersion(tx)).rejects.toThrow(
       "Version could never be less than initialized value -1",
     );
-    await txDone(tx);
+    await idbRepository.commit(tx);
   });
 
   describe("Database lifecycle", () => {
@@ -80,11 +80,11 @@ describe("IDBRepository", () => {
 
       const saveTx = idbRepository.transaction("rows", "readwrite");
       await idbRepository.saveRow(saveTx, row);
-      await txDone(saveTx);
+      await idbRepository.commit(saveTx);
 
       const getTx = idbRepository.transaction("rows", "readonly");
       const retrieved = await idbRepository.getRow(getTx, "users", "user1");
-      await txDone(getTx);
+      await idbRepository.commit(getTx);
 
       expect(retrieved).toEqual(row);
       expect(retrieved.fields.name.value).toBe("John");
@@ -106,11 +106,11 @@ describe("IDBRepository", () => {
 
       const saveTx = idbRepository.transaction("rows", "readwrite");
       await idbRepository.saveRow(saveTx, row);
-      await txDone(saveTx);
+      await idbRepository.commit(saveTx);
 
       const getTx = idbRepository.transaction("rows", "readonly");
       const retrieved = await idbRepository.getRow(getTx, "users", "user2");
-      await txDone(getTx);
+      await idbRepository.commit(getTx);
 
       expect(retrieved.tombstone).toBeDefined();
       expect(retrieved.tombstone?.dot.version).toBe(3);
@@ -120,7 +120,7 @@ describe("IDBRepository", () => {
     it("should return empty row for non-existent key", async () => {
       const tx = idbRepository.transaction("rows", "readonly");
       const retrieved = await idbRepository.getRow(tx, "users", "nonexistent");
-      await txDone(tx);
+      await idbRepository.commit(tx);
 
       expect(retrieved).toEqual({ [TABLE_NAME]: "users", [ROW_KEY]: "nonexistent", fields: {} });
     });
@@ -137,18 +137,18 @@ describe("IDBRepository", () => {
 
       const saveTx = idbRepository.transaction("rows", "readwrite");
       await idbRepository.saveRow(saveTx, row);
-      await txDone(saveTx);
+      await idbRepository.commit(saveTx);
 
       // Now save an empty row (should delete it)
       const emptyRow: ORMapRow = { [TABLE_NAME]: "users", [ROW_KEY]: "user3", fields: {} };
       const deleteTx = idbRepository.transaction("rows", "readwrite");
       await idbRepository.saveRow(deleteTx, emptyRow);
-      await txDone(deleteTx);
+      await idbRepository.commit(deleteTx);
 
       // Try to retrieve it
       const getTx = idbRepository.transaction("rows", "readonly");
       const retrieved = await idbRepository.getRow(getTx, "users", "user3");
-      await txDone(getTx);
+      await idbRepository.commit(getTx);
 
       expect(retrieved).toEqual({ [TABLE_NAME]: "users", [ROW_KEY]: "user3", fields: {} });
     });
@@ -167,11 +167,11 @@ describe("IDBRepository", () => {
 
       const logTx = idbRepository.transaction("operations", "readwrite");
       await idbRepository.saveOperation(logTx, op);
-      await txDone(logTx);
+      await idbRepository.commit(logTx);
 
       const getTx = idbRepository.transaction("operations", "readonly");
       const operations = await idbRepository.getUnsyncedOperations(getTx);
-      await txDone(getTx);
+      await idbRepository.commit(getTx);
 
       expect(operations).toHaveLength(1);
       expect(operations[0]).toEqual(op);
@@ -188,11 +188,11 @@ describe("IDBRepository", () => {
 
       const logTx = idbRepository.transaction("operations", "readwrite");
       await idbRepository.saveOperation(logTx, op);
-      await txDone(logTx);
+      await idbRepository.commit(logTx);
 
       const getTx = idbRepository.transaction("operations", "readonly");
       const operations = await idbRepository.getUnsyncedOperations(getTx);
-      await txDone(getTx);
+      await idbRepository.commit(getTx);
 
       expect(operations).toHaveLength(1);
       expect(operations[0]).toEqual(op);
@@ -209,11 +209,11 @@ describe("IDBRepository", () => {
 
       const logTx = idbRepository.transaction("operations", "readwrite");
       await idbRepository.saveOperation(logTx, op);
-      await txDone(logTx);
+      await idbRepository.commit(logTx);
 
       const getTx = idbRepository.transaction("operations", "readonly");
       const operations = await idbRepository.getUnsyncedOperations(getTx);
-      await txDone(getTx);
+      await idbRepository.commit(getTx);
 
       expect(operations).toHaveLength(1);
       expect(operations[0]).toEqual(op);
@@ -222,7 +222,7 @@ describe("IDBRepository", () => {
     it("should return empty array when no unsynced operations exist", async () => {
       const tx = idbRepository.transaction("operations", "readonly");
       const operations = await idbRepository.getUnsyncedOperations(tx);
-      await txDone(tx);
+      await idbRepository.commit(tx);
 
       expect(operations).toEqual([]);
     });
@@ -232,7 +232,7 @@ describe("IDBRepository", () => {
     it("should initialize client state with undefined clientId", async () => {
       const tx = idbRepository.transaction("clientState", "readonly");
       const clientState = await idbRepository.getClientState(tx);
-      await txDone(tx);
+      await idbRepository.commit(tx);
 
       expect(clientState.clientId).toBeUndefined();
       expect(clientState.lastSeenServerVersion).toBe(-1);
@@ -243,11 +243,11 @@ describe("IDBRepository", () => {
 
       const saveTx = idbRepository.transaction("clientState", "readwrite");
       await idbRepository.saveClientId(saveTx, clientId);
-      await txDone(saveTx);
+      await idbRepository.commit(saveTx);
 
       const getTx = idbRepository.transaction("clientState", "readonly");
       const clientState = await idbRepository.getClientState(getTx);
-      await txDone(getTx);
+      await idbRepository.commit(getTx);
 
       expect(clientState.clientId).toBe(clientId);
     });
@@ -257,11 +257,11 @@ describe("IDBRepository", () => {
     it("should set and retrieve version", async () => {
       const setTx = idbRepository.transaction("clientState", "readwrite");
       await idbRepository.setVersion(setTx, 5);
-      await txDone(setTx);
+      await idbRepository.commit(setTx);
 
       const getTx = idbRepository.transaction("clientState", "readonly");
       const version = await idbRepository.getVersion(getTx);
-      await txDone(getTx);
+      await idbRepository.commit(getTx);
 
       expect(version).toBe(5);
     });
@@ -528,7 +528,7 @@ describe("IDBRepository", () => {
       const tx = idbRepository.transaction(["rows"], "readonly");
       const store = tx.objectStore("rows");
       expect(store.indexNames.contains("users_usersByAge")).toBe(true);
-      await txDone(tx);
+      await idbRepository.commit(tx);
 
       // Verify data can still be written (existing functionality)
       await db.table("users").setRow("u1", { age: 30, name: "Alice" });
@@ -589,7 +589,7 @@ describe("IDBRepository", () => {
         };
         await repo.saveRow(saveTx, row);
       }
-      await txDone(saveTx);
+      await idbRepository.commit(saveTx);
 
       // Query for age <= 27 (should match Alice and Charlie with age 25)
       const queryTx = repo.transaction("rows", "readonly");

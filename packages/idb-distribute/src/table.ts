@@ -60,6 +60,7 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
       this.idbRepository.saveRow(tx, row),
       this.idbRepository.saveOperation(tx, op),
     ]);
+    await this.idbRepository.commit(tx);
   }
 
   async setField(rowKey: ValidKey, field: any, value: any): Promise<void> {
@@ -89,6 +90,7 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
       this.idbRepository.saveRow(tx, row),
       this.idbRepository.saveOperation(tx, op),
     ]);
+    await this.idbRepository.commit(tx);
   }
   async deleteRow(rowKey: ValidKey) {
     const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
@@ -116,6 +118,7 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
       this.idbRepository.saveRow(tx, row),
       this.idbRepository.saveOperation(tx, op),
     ]);
+    await this.idbRepository.commit(tx);
   }
 
   //  ------------------------------------------------------------------------

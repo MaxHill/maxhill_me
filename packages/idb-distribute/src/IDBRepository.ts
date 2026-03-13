@@ -192,6 +192,27 @@ export class IDBRepository {
     return this.db?.transaction(storeNames, mode, options);
   }
 
+  /**
+   * Commit a transaction and wait for it to complete
+   * @param tx - Transaction to commit
+   * @returns Promise that resolves when transaction completes
+   */
+  commit(tx: IDBTransaction): Promise<void> {
+    return new Promise((resolve, reject) => {
+      tx.commit();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () =>
+        reject(
+          new Error(
+            `Transaction aborted. ` +
+              `Error: ${tx.error?.message || "unknown"}. ` +
+              `This usually indicates a constraint violation or concurrent modification.`,
+          ),
+        );
+    });
+  }
+
   async saveRow(
     tx: IDBTransaction,
     row: ORMapRow,

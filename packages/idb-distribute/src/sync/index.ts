@@ -323,23 +323,10 @@ export class Sync {
         return { row, rowOperations };
       }),
     );
-    //  IndexedDB automatically aborts transactions that don't
-    //  yield to the event loop for too long, causing the
-    //  InvalidStateError. Therefore we chunk the operations into CHUNK_SIZE
-    //  batches and periodically yield to the event loop
-    const CHUNK_SIZE = 50;
-    let operationCount = 0;
-
+    // Apply operations to each row in memory (synchronous)
     for (const { row, rowOperations } of rowsData) {
       for (const operation of rowOperations) {
         applyOperationToRow(row, operation);
-        operationCount++;
-
-        //  This is how we yield to the event loop and keep the
-        //  transaction alive
-        if (operationCount % CHUNK_SIZE === 0) {
-          await new Promise((resolve) => setTimeout(resolve, 0));
-        }
       }
     }
     // Save all rows in parallel
