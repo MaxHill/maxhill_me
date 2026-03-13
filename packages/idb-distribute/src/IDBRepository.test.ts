@@ -3,7 +3,7 @@ import { promisifyIDBRequest, txDone } from "./utils.ts";
 import { CRDTOperation, ORMapRow, ROW_KEY, TABLE_NAME } from "./crdt.ts";
 import { below } from "./indexes.ts";
 import "fake-indexeddb/auto";
-import { CRDTDatabase } from "./crdtDatabase";
+import { CRDTDatabase } from "./crdtDatabase/index.ts";
 import { newDatabase } from "./crdtDatabase/builder.ts";
 
 describe("IDBRepository", () => {
@@ -596,7 +596,7 @@ describe("IDBRepository", () => {
       const query = below(27, { inclusive: true });
 
       const results: ORMapRow[] = [];
-      for await (const row of repo.query(queryTx, "users", "usersByAge", query)) {
+      for await (const row of repo.query(queryTx, "users", query, "usersByAge")) {
         results.push(row);
       }
       queryTx.commit();

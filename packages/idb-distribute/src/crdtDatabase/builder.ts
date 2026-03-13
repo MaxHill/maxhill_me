@@ -1,9 +1,9 @@
-import { CRDTDatabase } from ".";
-import { IDBRepository } from "../IDBRepository";
-import { IndexDefinition } from "../indexes";
-import { PersistedLogicalClock } from "../persistedLogicalClock";
-import { Sync } from "../sync";
-import { DatabaseSchema, EmptySchema, MergeSchema } from "../types";
+import { CRDTDatabase } from "./index.ts";
+import { IDBRepository } from "../IDBRepository.ts";
+import { IndexDefinition } from "../indexes.ts";
+import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
+import { Sync } from "../sync/index.ts";
+import { DatabaseSchema, EmptySchema, MergeSchema } from "../types.ts";
 
 export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
   dbName: string;

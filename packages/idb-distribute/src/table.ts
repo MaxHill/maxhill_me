@@ -1,8 +1,8 @@
-import { applyOperationToRow, CRDTOperation, Dot, toUserRow, ValidKey } from "./crdt";
-import { CRDTDatabase } from "./crdtDatabase";
-import { CLIENT_STATE_STORE, IDBRepository, OPERATIONS_STORE, ROWS_STORE } from "./IDBRepository";
-import { Index, QueryCondition } from "./indexes";
-import { PersistedLogicalClock } from "./persistedLogicalClock";
+import { applyOperationToRow, CRDTOperation, Dot, toUserRow, ValidKey } from "./crdt.ts";
+import { CRDTDatabase } from "./crdtDatabase/index.ts";
+import { CLIENT_STATE_STORE, IDBRepository, OPERATIONS_STORE, ROWS_STORE } from "./IDBRepository.ts";
+import { Index, QueryCondition } from "./indexes.ts";
+import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
 
 export class Table<TIndexes extends Record<string, string[]> = Record<string, string[]>> {
   private tableName: string;

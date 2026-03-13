@@ -1,6 +1,7 @@
 // @deno-types="npm:@types/seedrandom@^3.0.8"
 import seedrandom from "seedrandom";
-import { CRDTDatabase } from "../../../../packages/idb-distribute/src/crdtDatabase.ts";
+import { newDatabase } from "../../../../packages/idb-distribute/src/crdtDatabase/builder.ts";
+import { CRDTDatabase } from "../../../../packages/idb-distribute/src/crdtDatabase/index.ts";
 import { IDBRepository } from "../../../../packages/idb-distribute/src/IDBRepository.ts";
 import { Sync } from "../../../../packages/idb-distribute/src/sync/index.ts";
 import { PersistedLogicalClock } from "../../../../packages/idb-distribute/src/persistedLogicalClock.ts";
@@ -27,10 +28,13 @@ export type Post = {
 };
 
 export interface SimClient {
-  crdtDb: CRDTDatabase;           // High-level CRDT API for data operations
-  repo: IDBRepository;            // Low-level repository for inspecting state
-  sync: Sync;                     // Sync manager (reusable instance)
-  clock: PersistedLogicalClock;   // Logical clock
+  crdtDb: CRDTDatabase<{
+    posts: Record<PropertyKey, never>;
+    users: Record<PropertyKey, never>;
+  }>; // High-level CRDT API for data operations
+  repo: IDBRepository; // Low-level repository for inspecting state
+  sync: Sync; // Sync manager (reusable instance)
+  clock: PersistedLogicalClock; // Logical clock
 }
 
 export const newClient = async (prng: seedrandom.PRNG): Promise<SimClient> => {
@@ -45,21 +49,14 @@ export const newClient = async (prng: seedrandom.PRNG): Promise<SimClient> => {
   const sync = new Sync(repo);
   const clock = new PersistedLogicalClock(repo);
 
-  // Create CRDTDatabase (pass dummy URL since we sync manually via Go)
-  const crdtDb = new CRDTDatabase(
-    dbName,
-    {
-      tableName: "simulator",  // Placeholder table name
-      indexes: {}              // No indexes needed for simulator
-    },
-    "http://manual-sync",  // syncRemote - won't be used - simulator handles sync
-    sync,
-    repo,                  // Share the same repository
-    generateId,
-  );
-
-  // Open CRDTDatabase (initializes client state)
-  await crdtDb.open();
+  const crdtDb = await newDatabase(dbName)
+    .addTable("posts", {})
+    .addTable("users", {})
+    .withCustomStorageRepository(repo)
+    .withCustomSync(sync)
+    .withCustomIdGenerator(generateId)
+    .build()
+    .open();
 
   return { crdtDb, repo, sync, clock };
 };

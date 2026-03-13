@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { CRDTDatabase } from ".";
-import { below } from "../indexes";
+import { CRDTDatabase } from "./index.ts";
+import { below } from "../indexes.ts";
 import "fake-indexeddb/auto";
 import { newDatabase } from "./builder.ts";
 import { IDBRepository } from "../IDBRepository.ts";

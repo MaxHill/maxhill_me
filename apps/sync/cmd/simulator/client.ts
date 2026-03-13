@@ -14,13 +14,7 @@ import type {
   SyncResponse,
 } from "../../../../packages/idb-distribute/src/sync/index.ts";
 import type { CRDTOperation } from "../../../../packages/idb-distribute/src/crdt.ts";
-import {
-  newClient,
-  Post,
-  randomUUID,
-  shuffleArray,
-  User,
-} from "./helpers.ts";
+import { newClient, Post, randomUUID, shuffleArray, User } from "./helpers.ts";
 
 //  ------------------------------------------------------------------------
 //  Types
@@ -144,10 +138,10 @@ async function handleGetAllOps(): Promise<VerificationResponse> {
   // Convert Map to plain object for JSON serialization
   const rows = {
     users: Object.fromEntries(
-      Array.from(users.entries()).map(([key, value]) => [String(key), value])
+      Array.from(users.entries()).map(([key, value]) => [String(key), value]),
     ),
     posts: Object.fromEntries(
-      Array.from(posts.entries()).map(([key, value]) => [String(key), value])
+      Array.from(posts.entries()).map(([key, value]) => [String(key), value]),
     ),
   };
 
@@ -229,7 +223,7 @@ async function writePost(prng: seedrandom.PRNG) {
   const authorId = Math.floor(prng() * 100000000);
   const viewCount = Math.floor(prng() * 10000);
   const createdAt = Date.now() - Math.floor(prng() * 365 * 24 * 60 * 60 * 1000);
-  
+
   const post: Post = {
     id,
     title: `Post Title ${id.substring(0, 8)}`,
@@ -238,13 +232,13 @@ async function writePost(prng: seedrandom.PRNG) {
     createdAt,
     viewCount,
   };
-  
+
   // Conditionally add editedAt (50% chance) - THIS IS THE BROKEN VERSION
   if (prng() > 0.5) {
     post.editedAt = createdAt + Math.floor(prng() * 7 * 24 * 60 * 60 * 1000);
   }
-  
-  await client.crdtDb.setRow("posts", id, post);
+
+  await client.crdtDb.table("posts").setRow(id, post);
 }
 
 async function deletePost(prng: seedrandom.PRNG) {
@@ -254,15 +248,15 @@ async function deletePost(prng: seedrandom.PRNG) {
   );
   const [selected] = shuffleArray(prng, postKeys);
   if (selected !== undefined) {
-    await client.crdtDb.deleteRow("posts", selected);
+    await client.crdtDb.table("posts").deleteRow(selected);
   }
 }
 
 async function writeUser(prng: seedrandom.PRNG) {
   const id = Math.floor(prng() * 100000000);
   const joinDate = Date.now() - Math.floor(prng() * 365 * 24 * 60 * 60 * 1000);
-  
-  await client.crdtDb.setRow("users", String(id), {
+
+  await client.crdtDb.table("users").setRow(String(id), {
     id,
     name: `User${id}`,
     email: `user${id}@example.com`,
@@ -278,6 +272,6 @@ async function deleteUser(prng: seedrandom.PRNG) {
   );
   const [selected] = shuffleArray(prng, userKeys);
   if (selected !== undefined) {
-    await client.crdtDb.deleteRow("users", selected);
+    await client.crdtDb.table("users").deleteRow(selected);
   }
 }
