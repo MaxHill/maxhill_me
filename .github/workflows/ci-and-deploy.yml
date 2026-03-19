@@ -36,7 +36,7 @@ jobs:
         run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Build all packages and apps
-        run: pnpm build
+        run: pnpm build --filter=!sync
         env:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
           TURBO_TEAM: ${{ vars.TURBO_TEAM }}
