@@ -1,10 +1,43 @@
 ---
 import PageLayout from "../../components/layouts/PageLayout.astro";
 import { getCollection } from "astro:content";
+import { getComponentByTagName } from "@wc-toolkit/cem-utilities";
+import customElements from "@maxhill/components/custom-elements.json";
 
 const title = "Components";
 
 const docEntries = await getCollection("componentDocs");
+
+// Helper function to check if a component is form-associated
+function isFormAssociated(component: any): boolean {
+  return component?.members?.some(
+    (m: any) => m.name === "formAssociated" && 
+                m.static === true && 
+                m.default === "true"
+  ) ?? false;
+}
+
+// Helper function to extract first line or sentence from description
+function formatDescription(description: string | undefined): string {
+  if (!description) return "";
+  
+  // Split by newline and get first non-empty line
+  const firstLine = description.split("\n")[0].trim();
+  
+  // If it's a complete sentence (ends with period), return it
+  if (firstLine.endsWith(".")) {
+    return firstLine;
+  }
+  
+  // Otherwise, find first sentence
+  const firstSentence = description.match(/^[^.!?]+[.!?]/);
+  if (firstSentence) {
+    return firstSentence[0].trim();
+  }
+  
+  // Fall back to first line
+  return firstLine;
+}
 
 const components = docEntries
   .map((docsEntry) => {
@@ -14,10 +47,14 @@ const components = docEntries
       return null;
     }
 
-    console.log(docsEntry);
+    // Get component metadata from custom elements manifest
+    const manifestComponent = getComponentByTagName(customElements, tagName);
+    
     return {
       tagName,
       componentPath: tagName.substring(2),
+      description: formatDescription(manifestComponent?.description),
+      formAssociated: isFormAssociated(manifestComponent),
     };
   })
   .filter(Boolean);
@@ -54,10 +91,9 @@ const components = docEntries
               <div class="name">{component?.tagName}</div>
               <div class="tag">&lt;{component?.tagName}&gt;</div>
               <div class="description">
-                Some description we need to figure out /
-                {component?.componentPath}
+                {component?.description || "No description available"}
               </div>
-              <div class="form-associated">No</div>
+              <div class="form-associated">{component?.formAssociated ? "Yes" : "No"}</div>
             </m-option>
           ))
         }
