@@ -1,5 +1,6 @@
 import MCard from './m-card';
 import MInput from './m-input';
+import MTextarea from './m-textarea';
 import MCombobox from './m-combobox';
 import MCommandPalette from './m-command-palette';
 import MCommand from './m-command';
@@ -28,6 +29,7 @@ export function registerAll() {
 
   // Form
   MInput.define();
+  MTextarea.define();
   MListbox.define();
   MOption.define();
   MCombobox.define();

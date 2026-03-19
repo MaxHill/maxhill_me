@@ -1,0 +1,455 @@
+import CodeExample from '../../../../apps/site/src/components/CodeExample.astro';
+
+---
+
+## Basic Usage
+
+A simple `m-textarea` demonstration including disabled, default value, readonly, placeholder, clearable, and rows.
+
+<CodeExample 
+  html={`
+  <form class="form" id="example-form">
+    <m-textarea 
+        label="Normal textarea" 
+        name="normal-textarea" 
+    ></m-textarea>
+
+    <m-textarea 
+        label="Textarea disabled" 
+        name="textarea-disabled" 
+        disabled
+    ></m-textarea>
+
+    <m-textarea 
+        label="Textarea with default value" 
+        name="textarea-default-value" 
+        value="Default value"
+    ></m-textarea>
+
+    <m-textarea 
+        label="Textarea readonly" 
+        name="textarea-readonly" 
+        value="Readonly value" 
+        readonly
+    ></m-textarea>
+
+    <m-textarea 
+        label="Textarea placeholder" 
+        name="textarea-placeholder" 
+        placeholder="Enter your text here..."
+    ></m-textarea>
+
+    <m-textarea 
+        label="Textarea clearable" 
+        name="textarea-clearable" 
+        clearable
+    ></m-textarea>
+
+    <m-textarea 
+        label="Textarea with 5 rows" 
+        name="textarea-rows" 
+        rows="5"
+    ></m-textarea>
+
+    <button type="submit">Submit</button>
+    <button type="reset">Reset</button>
+  </form>
+  <pre id="example-form-output"></pre>
+  `}
+  js={`document.querySelector('#example-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const outputEl = document.querySelector("#example-form-output");
+    const formData = new FormData(e.target);
+    if(outputEl){
+      outputEl.textContent = JSON.stringify(Object.fromEntries(formData), null, 2);
+    }
+  });`}
+/>
+
+---
+
+## Form Participation
+
+`m-textarea` is a form-associated custom element, meaning it behaves just like a native `<textarea>` inside a form:
+- Included in FormData
+- Participates in form submission
+- Responds to `form.reset()` and reset buttons
+- Supports constraint validation
+- Works with `:valid` / `:invalid` states internally
+- Preserves standard events (`input`, `change`, `focus`, `blur`)
+
+--- 
+<section class="example-section" data-width="feature">
+<div class="typesetting">
+
+## Validation
+
+`m-textarea` supports validation through standard HTML attributes:
+
+<CodeExample 
+  html={`
+  <form class="form" id="validation-form">
+    <m-textarea 
+        label="Required textarea" 
+        name="required-textarea" 
+        required
+        placeholder="This field is required"
+    ></m-textarea>
+
+    <m-textarea 
+        label="Minimum length (10 characters)" 
+        name="minlength-textarea" 
+        minlength="10"
+        placeholder="Enter at least 10 characters"
+    ></m-textarea>
+
+    <m-textarea 
+        label="Maximum length (100 characters)" 
+        name="maxlength-textarea" 
+        maxlength="100"
+        placeholder="Max 100 characters"
+    ></m-textarea>
+
+    <m-textarea 
+        label="Description (required, min 20 chars)" 
+        name="description" 
+        required
+        minlength="20"
+        rows="4"
+        placeholder="Enter a description (at least 20 characters)"
+    ></m-textarea>
+
+    <button type="submit">Submit</button>
+  </form>
+  <pre id="validation-form-output"></pre>
+  `}
+  js={`
+  const form = document.querySelector('#validation-form');
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const outputEl = document.querySelector("#validation-form-output");
+    const formData = new FormData(e.target);
+    if(outputEl){
+      outputEl.textContent = JSON.stringify(Object.fromEntries(formData), null, 2);
+    }
+  });
+  `}
+/>
+
+### Validation States
+
+Validation errors are shown after the user has interacted with the textarea (on blur). The component uses the `:state(user-invalid)` custom state to control error display.
+
+</div>
+</section>
+
+---
+
+## Clearable
+
+Add the `clearable` attribute to show a clear button when the textarea has content. The button automatically hides when the textarea is empty, disabled, or readonly.
+
+<CodeExample 
+  html={`
+  <form class="form">
+    <m-textarea 
+        label="Notes" 
+        name="notes" 
+        clearable
+        rows="4"
+        placeholder="Enter your notes..."
+    ></m-textarea>
+  </form>
+  `}
+/>
+
+The clear button dispatches a cancelable `m-textarea-clear` event before clearing:
+
+<CodeExample 
+  html={`
+  <form class="form">
+    <m-textarea 
+        id="clear-event-demo"
+        label="Textarea with clear event" 
+        name="demo" 
+        clearable
+        value="Try to clear me!"
+    ></m-textarea>
+  </form>
+  <p id="clear-output"></p>
+  `}
+  js={`
+  const textarea = document.querySelector('#clear-event-demo');
+  const output = document.querySelector('#clear-output');
+  
+  textarea.addEventListener('m-textarea-clear', (e) => {
+    output.textContent = 'Clear button clicked! Event can be prevented with e.preventDefault()';
+    // Uncomment to prevent clearing:
+    // e.preventDefault();
+  });
+  `}
+/>
+
+---
+
+## Rows and Columns
+
+Control the visible size of the textarea with `rows` and `cols` attributes. The default is 3 rows.
+
+<CodeExample 
+  html={`
+  <form class="form">
+    <m-textarea 
+        label="Small (3 rows - default)" 
+        name="small" 
+        placeholder="Default size"
+    ></m-textarea>
+
+    <m-textarea 
+        label="Medium (5 rows)" 
+        name="medium" 
+        rows="5"
+        placeholder="5 rows"
+    ></m-textarea>
+
+    <m-textarea 
+        label="Large (10 rows)" 
+        name="large" 
+        rows="10"
+        placeholder="10 rows"
+    ></m-textarea>
+
+    <m-textarea 
+        label="Custom columns (30 cols)" 
+        name="cols" 
+        cols="30"
+        placeholder="30 character columns"
+    ></m-textarea>
+  </form>
+  `}
+/>
+
+---
+
+## Slots
+
+`m-textarea` provides slots for additional content:
+
+- `before` - Content before the textarea (e.g., icons)
+- `after` - Content after the textarea (e.g., status indicators)
+- `clear` - Override the default clear button
+
+<CodeExample 
+  html={`
+  <form class="form">
+    <m-textarea 
+        label="With before/after slots" 
+        name="slotted" 
+        rows="4"
+    >
+        <span slot="before" style="color: var(--color-text-softer);">📝</span>
+        <span slot="after" style="color: var(--color-accent);">✓</span>
+    </m-textarea>
+
+    <m-textarea 
+        label="Custom clear button" 
+        name="custom-clear" 
+        clearable
+        value="Custom clear icon"
+    >
+        <button slot="clear" type="button" style="color: var(--color-destructive);">🗑️</button>
+    </m-textarea>
+  </form>
+  `}
+/>
+
+---
+
+## Wrap Mode
+
+Control text wrapping behavior with the `wrap` attribute:
+
+- `soft` (default) - Text wraps visually but line breaks are not submitted
+- `hard` - Line breaks are inserted and submitted (requires `cols` attribute)
+- `off` - No wrapping, horizontal scrollbar appears
+
+<CodeExample 
+  html={`
+  <form class="form" id="wrap-form">
+    <m-textarea 
+        label="Soft wrap (default)" 
+        name="soft" 
+        wrap="soft"
+        rows="3"
+        placeholder="Text wraps but no line breaks in value"
+    ></m-textarea>
+
+    <m-textarea 
+        label="Hard wrap" 
+        name="hard" 
+        wrap="hard"
+        cols="40"
+        rows="3"
+        placeholder="Line breaks are inserted at wrap point"
+    ></m-textarea>
+
+    <m-textarea 
+        label="No wrap" 
+        name="off" 
+        wrap="off"
+        rows="3"
+        placeholder="No wrapping, scroll horizontally"
+    ></m-textarea>
+
+    <button type="submit">Submit</button>
+  </form>
+  <pre id="wrap-output"></pre>
+  `}
+  js={`
+  document.querySelector('#wrap-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const output = document.querySelector('#wrap-output');
+    output.textContent = JSON.stringify(Object.fromEntries(formData), null, 2);
+  });
+  `}
+/>
+
+---
+
+## API Reference
+
+### Attributes
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `label` | string | - | Visible label text and accessible name |
+| `name` | string | - | Name for form submission |
+| `value` | string | - | Current value of the textarea |
+| `placeholder` | string | - | Placeholder text |
+| `rows` | number | 3 | Number of visible text lines |
+| `cols` | number | - | Number of visible character columns |
+| `wrap` | "soft" \| "hard" \| "off" | "soft" | Text wrapping mode |
+| `minlength` | number | - | Minimum character length |
+| `maxlength` | number | - | Maximum character length |
+| `required` | boolean | false | Whether the field is required |
+| `disabled` | boolean | false | Disables the textarea |
+| `readonly` | boolean | false | Makes the textarea read-only |
+| `clearable` | boolean | false | Shows clear button when has content |
+| `autofocus` | boolean | false | Automatically focuses on page load |
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `value` | string \| null | Current value (synced with form) |
+| `form` | HTMLFormElement \| null | Associated form element |
+| `selectionStart` | number \| null | Start position of text selection |
+| `selectionEnd` | number \| null | End position of text selection |
+| `selectionDirection` | "forward" \| "backward" \| "none" \| null | Direction of selection |
+
+### Methods
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `focus()` | `(options?: FocusOptions) => void` | Focuses the textarea |
+| `blur()` | `() => void` | Removes focus from the textarea |
+| `select()` | `() => void` | Selects all text |
+| `setSelectionRange()` | `(start: number, end: number, direction?: string) => void` | Sets text selection range |
+| `setRangeText()` | `(replacement: string, start?: number, end?: number, mode?: string) => void` | Replaces text in range |
+
+### Events
+
+| Event | Type | Description |
+|-------|------|-------------|
+| `input` | Event | Fires when value changes (native) |
+| `change` | Event | Fires on blur after value changed (native) |
+| `m-textarea-clear` | MTextareaClearEvent | Fires when clear button clicked (cancelable) |
+| `m-invalid` | MInvalidEvent | Fires when validation fails |
+
+### CSS Parts
+
+| Part | Description |
+|------|-------------|
+| `label` | The label element |
+| `textarea-wrapper` | The wrapper containing textarea and slots |
+| `textarea` | The native textarea element |
+| `clear-button` | The clear button |
+| `clear-icon` | The icon inside clear button |
+| `error` | The error message container |
+
+---
+
+## Examples
+
+### Comment Form
+
+<CodeExample 
+  html={`
+  <form class="form" id="comment-form">
+    <m-textarea 
+        label="Your comment" 
+        name="comment" 
+        required
+        minlength="10"
+        maxlength="500"
+        rows="5"
+        placeholder="Share your thoughts... (10-500 characters)"
+        clearable
+    ></m-textarea>
+
+    <button type="submit">Post Comment</button>
+  </form>
+  <pre id="comment-output"></pre>
+  `}
+  js={`
+  document.querySelector('#comment-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const output = document.querySelector('#comment-output');
+    output.textContent = 'Comment submitted: ' + JSON.stringify(Object.fromEntries(formData), null, 2);
+  });
+  `}
+/>
+
+### Feedback Form
+
+<CodeExample 
+  html={`
+  <form class="form" id="feedback-form">
+    <m-input 
+        label="Name" 
+        name="name" 
+        required
+    ></m-input>
+
+    <m-input 
+        label="Email" 
+        name="email" 
+        type="email"
+        required
+    ></m-input>
+
+    <m-textarea 
+        label="Message" 
+        name="message" 
+        required
+        minlength="20"
+        rows="6"
+        placeholder="Tell us what you think..."
+        clearable
+    ></m-textarea>
+
+    <button type="submit">Send Feedback</button>
+  </form>
+  <pre id="feedback-output"></pre>
+  `}
+  js={`
+  document.querySelector('#feedback-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const output = document.querySelector('#feedback-output');
+    output.textContent = 'Feedback submitted: ' + JSON.stringify(Object.fromEntries(formData), null, 2);
+  });
+  `}
+/>

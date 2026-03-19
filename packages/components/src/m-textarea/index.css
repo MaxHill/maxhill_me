@@ -1,0 +1,132 @@
+:host {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-column: span 1;
+    row-gap: var(--size-1);
+    align-items: start;
+}
+
+* {
+box-sizing: border-box;
+}
+
+
+.textarea-description {
+    font: var(--p2);
+    color: var(--color-text-softer);
+}
+
+label {
+    color: var(--color-text-mid);
+    font-family: var(--ff-display);
+}
+
+.error {
+    display: none;
+    corner-shape: squircle;
+    border-radius: var(--radius-input);
+    color: var(--color-destructive-text-on-soft);
+    background-color: var(--color-destructive-fill-soft);
+    border: var(--border-width) solid var(--color-destructive-stroke-soft);
+    padding-inline: var(--size-2);
+}
+
+
+.textarea-wrapper {
+    /* Shape */
+    corner-shape: squircle;
+    border-radius: var(--radius-input);
+
+    /* Color */
+    background: var(--color-input-fill);
+    border: var(--border-width) solid var(--color-input-stroke);
+    color: var(--color-input-text);
+    outline: var(--outline-size) var(--outline-style) var(--outline-color);
+    outline-width: var(--outline-size);
+    outline-style: var(--outline-style);
+    outline-color: transparent;
+
+    /* Layout */
+    display: flex;
+    align-items: flex-start;
+    overflow: clip;
+    max-width: 100%;
+    min-width: 0;
+    padding-inline: var(--size-2);
+    flex-wrap: wrap;
+    gap: var(--size-1);
+
+    &:has(textarea:focus) {
+        outline: var(--outline);
+        outline-offset: var(--outline-offset);
+    }
+
+    /* Slots take content size only */
+    slot[name="before"],
+    slot[name="after"],
+    slot[name="clear"] {
+        flex-shrink: 0;
+        align-items: center;
+        display: contents;
+    }
+
+
+    slot[name="clear"] {
+        button {
+            display: contents;
+            cursor: pointer;
+            color: var(--color-text-softer);
+            align-self: flex-start;
+            margin-top: var(--size-2);
+
+            &:hover {
+                color: var(--color-text-mid);
+            }
+        }
+
+        &[hidden] {
+            display: none;
+        }
+
+    }
+
+    textarea {
+        font-size: max(var(--font-size-1), 16px);
+        font-family: inherit;
+        display: block;
+        flex: 1;
+        min-width: 0;
+        width: 100%;
+        background: none;
+        border: none;
+        padding-block: var(--size-2);
+        color: hsl(var(--color-text));
+        resize: vertical;
+
+        &:focus {
+            outline: none;
+        }
+
+        &::placeholder {
+            color: var(--color-text-softer);
+        }
+    }
+}
+
+:host([disabled]) {
+    opacity: .5;
+}
+
+:host([readonly]) {
+    opacity: .7;
+
+    textarea {
+        color: var(--color-neutral-);
+    }
+}
+
+:host(:state(user-invalid)) {
+    .error {
+        display: inline-block;
+    }
+}
