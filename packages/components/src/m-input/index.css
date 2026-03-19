@@ -1,9 +1,9 @@
 :host {
     display: grid;
-    grid-template-columns: subgrid;
-    grid-column: span 2;
+    grid-template-columns: 1fr;
+    grid-column: span 1;
     row-gap: var(--size-1);
-    align-items: center;
+    align-items: start;
 }
 
 * {
@@ -23,7 +23,6 @@ label {
 
 .error {
     display: none;
-    grid-column: 2/2;
     corner-shape: squircle;
     border-radius: var(--radius-input);
     color: var(--color-destructive-text-on-soft);

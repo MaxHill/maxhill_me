@@ -1,9 +1,24 @@
 <h1>Hello</h1>
 
-<m-card>
-	<p slot="title">Count</p>
-	<div id="value">-1</div>
-</m-card>
+<template id="shot-list-item-template">
+    <li>
+        <div class="name"></div>
+        <div class="club"></div>
+        <div class="description"></div>
+    </li>
+</template>
 
-<button id="increment">+1</button>
-<button id="decrement">-1</button>
+<ul id="shots"> </ul>
+
+
+<form id="add-shot-type-form" class="form box">
+    <h2>Add a new shot type</h2>
+    
+    <m-input required min="2" name="name" label="Name"></m-input>
+    <m-input required min="2" name="club" label="Club"></m-input>
+    <m-input required min="2" name="description" label="Description"></m-input>
+
+    <button>Add</button>
+</form>
+
+
