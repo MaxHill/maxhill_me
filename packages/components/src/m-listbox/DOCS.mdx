@@ -7,9 +7,9 @@ import CodeExample from '../../../../apps/site/src/components/CodeExample.astro'
 <section class="example-section" data-width="feature">
 <div class="typesetting">
 
-`m-listbox` provides single or multiple selection from a list of options. It supports full keyboard navigation, form integration, and follows the ARIA listbox pattern for accessibility.
+`m-listbox` provides single or multiple selection from a list of options with three distinct selection modes. It supports full keyboard navigation, form integration, and follows the ARIA listbox pattern for accessibility.
 
-By default, users can navigate with arrow keys and select with Space or Enter.
+The component supports three modes: `single-select` (default - arrow keys move selection), `single-focus` (arrow keys move focus, Space/Enter selects), and `multiple` (multi-selection with toggle).
 
 </div>
 <CodeExample html={`<m-listbox name="fruit">
@@ -35,7 +35,7 @@ By default, users can navigate with arrow keys and select with Space or Enter.
 - Works with the `required` attribute
 - Preserves standard events (`change`, `focus`, `blur`)
 
-In single-select mode, the value is a string (or `null`). In multiple-select mode, the value is an array of strings.
+In single-select mode, the value is a string (or `null`). In multiple mode, the value is an array of strings.
 
 </div>
 <CodeExample html={`<form id="fruit-form" class="form">
@@ -71,28 +71,54 @@ form.addEventListener('submit', (e) => {
 <section class="example-section" data-width="feature">
 <div class="typesetting">
 
-### Single Selection
+`m-listbox` supports three distinct selection modes via the `mode` attribute:
 
-By default, `m-listbox` allows only one option to be selected at a time. Selecting a new option automatically deselects the previous one.
+### Single Select (default)
 
-### Multiple Selection
+The default mode where arrow keys directly change the selection. This provides the quickest way to change selections with minimal keypresses.
 
-Adding the `multiple` attribute enables multi-selection:
-- Click or press Space/Enter to toggle individual items
-- Hold Shift while using arrow keys for extended selection
-- The value becomes an array of selected option values
+**Keyboard behavior:**
+- Arrow keys move selection directly
+- Space/Enter also select the focused option
+- Value is a string or null
+
+### Single Focus
+
+Arrow keys move focus only (visual highlight), and Space/Enter keys select the focused item. This mode gives users more control and is ideal for scenarios where accidental selection changes should be avoided.
+
+**Keyboard behavior:**
+- Arrow keys move focus (visual highlight) only
+- Space/Enter select the focused option
+- Value is a string or null
+
+### Multiple
+
+Enables multi-selection where users can select multiple options. Arrow keys move focus, and Space/Enter toggle selection state.
+
+**Keyboard behavior:**
+- Arrow keys move focus only
+- Space/Enter toggle individual items
+- Shift + Arrow keys for extended selection
+- Value is an array of selected option values
 
 </div>
 <CodeExample html={`<div class="form">
-  <label for="single-select">Single select</label>
+  <label for="single-select">Single select (default)</label>
   <m-listbox id="single-select" name="single">
     <m-option value="red">Red</m-option>
     <m-option value="green">Green</m-option>
     <m-option value="blue">Blue</m-option>
   </m-listbox>
   
+  <label for="single-focus">Single focus</label>
+  <m-listbox id="single-focus" name="single-focus" mode="single-focus">
+    <m-option value="red">Red</m-option>
+    <m-option value="green">Green</m-option>
+    <m-option value="blue">Blue</m-option>
+  </m-listbox>
+  
   <label for="multi-select">Multiple select</label>
-  <m-listbox id="multi-select" name="multiple" multiple>
+  <m-listbox id="multi-select" name="multiple" mode="multiple">
     <m-option value="red">Red</m-option>
     <m-option value="green">Green</m-option>
     <m-option value="blue">Blue</m-option>
@@ -253,7 +279,7 @@ Fires when keyboard focus moves to a different option. This tracks the "active d
 
 </div>
 <CodeExample html={`<div class="stack" data-gap="2">
-  <m-listbox id="event-listbox" name="event-example" multiple>
+  <m-listbox id="event-listbox" name="event-example" mode="multiple">
     <m-option value="apple">Apple</m-option>
     <m-option value="pear">Pear</m-option>
     <m-option value="orange">Orange</m-option>
@@ -347,22 +373,37 @@ focusDemo.addEventListener('m-listbox-change', (e) => {
 <section class="example-section" data-width="feature">
 <div class="typesetting">
 
-`m-listbox` supports full keyboard navigation following the ARIA listbox pattern:
+`m-listbox` supports full keyboard navigation following the ARIA listbox pattern. The behavior differs based on the selection mode:
 
-- **Arrow Up/Down**: Navigate between options
+**Single-Select Mode (default):**
+- **Arrow Up/Down**: Move selection directly
+- **Ctrl+P / Ctrl+N**: Navigate to previous/next option (Emacs-style)
+- **Home**: Jump to first option and select it
+- **End**: Jump to last option and select it
+- **Space/Enter**: Select focused option
+
+**Single-Focus Mode:**
+- **Arrow Up/Down**: Move focus (visual highlight) only
+- **Ctrl+P / Ctrl+N**: Navigate to previous/next option (Emacs-style)
+- **Home**: Jump to first option (focus only)
+- **End**: Jump to last option (focus only)
+- **Space/Enter**: Select the focused option
+
+**Multiple Mode:**
+- **Arrow Up/Down**: Navigate between options (focus only)
 - **Ctrl+P / Ctrl+N**: Navigate to previous/next option (Emacs-style)
 - **Home**: Jump to first option
 - **End**: Jump to last option
 - **Space/Enter**: Toggle selection of focused option
-- **Shift + Arrow Keys**: Extended selection (multiple mode only)
-- **Shift + Home/End**: Select from current to first/last (multiple mode only)
+- **Shift + Arrow Keys**: Extended selection
+- **Shift + Home/End**: Select from current to first/last
 
 All keyboard interactions wrap around (moving past the last option goes to the first, and vice versa).
 
 </div>
 <CodeExample html={`<div class="form">
   <label for="keyboard-demo">Try keyboard navigation</label>
-  <m-listbox id="keyboard-demo" name="keyboard-demo" multiple>
+  <m-listbox id="keyboard-demo" name="keyboard-demo" mode="multiple">
     <m-option value="option-1">Option 1</m-option>
     <m-option value="option-2">Option 2</m-option>
     <m-option value="option-3">Option 3</m-option>

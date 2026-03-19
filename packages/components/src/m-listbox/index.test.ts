@@ -329,12 +329,199 @@ describe('m-listbox', () => {
 
       expect(changeEventFired).to.equal(true);
     });
+
+    it('should have correct element.value when change event fires', async () => {
+      const el = await fixture<MListbox>(html`
+        <m-listbox name="fruit">
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
+        </m-listbox>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      const options = el.querySelectorAll('m-option');
+      const appleOption = options[0] as MOption;
+      const bananaOption = options[1] as MOption;
+
+      let capturedValue: string | string[] | null = undefined;
+      el.addEventListener('change', () => {
+        capturedValue = el.value;
+      });
+
+      // Click first option
+      appleOption.click();
+      expect(capturedValue).to.equal('apple');
+
+      // Click second option
+      bananaOption.click();
+      expect(capturedValue).to.equal('banana');
+    });
+
+    it('should have correct element.value in multiple mode when change event fires', async () => {
+      const el = await fixture<MListbox>(html`
+        <m-listbox mode="multiple" name="fruit">
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
+        </m-listbox>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      const options = el.querySelectorAll('m-option');
+      const appleOption = options[0] as MOption;
+      const bananaOption = options[1] as MOption;
+
+      let capturedValue: string | string[] | null = undefined;
+      el.addEventListener('change', () => {
+        capturedValue = el.value;
+      });
+
+      // Click first option
+      appleOption.click();
+      expect(capturedValue).to.deep.equal(['apple']);
+
+      // Click second option
+      bananaOption.click();
+      expect(capturedValue).to.deep.equal(['apple', 'banana']);
+    });
+  });
+
+  describe('keyboard navigation - single-focus mode', () => {
+    it('should move focus with ArrowDown without changing selection', async () => {
+      const el = await fixture<MListbox>(html`
+        <m-listbox mode="single-focus">
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
+          <m-option value="orange">Orange</m-option>
+        </m-listbox>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-option').length === 3);
+      const options = el.querySelectorAll('m-option');
+      const firstOption = options[0] as MOption;
+      const secondOption = options[1] as MOption;
+
+      el.focus();
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
+      
+      // Arrow down should only move focus, not selection
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === secondOption.id);
+      
+      expect(el.getAttribute('aria-activedescendant')).to.equal(secondOption.id);
+      expect(el.value).to.equal(null); // No selection yet
+      expect(firstOption.getAttribute('aria-selected')).to.equal('false');
+      expect(secondOption.getAttribute('aria-selected')).to.equal('false');
+    });
+
+    it('should select focused option with Space key', async () => {
+      const el = await fixture<MListbox>(html`
+        <m-listbox mode="single-focus">
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
+          <m-option value="orange">Orange</m-option>
+        </m-listbox>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-option').length === 3);
+      const options = el.querySelectorAll('m-option');
+      const firstOption = options[0] as MOption;
+      const secondOption = options[1] as MOption;
+
+      el.focus();
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
+      
+      // Move focus to second option
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === secondOption.id);
+      
+      // Space should select the focused option
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+      
+      expect(el.value).to.equal('banana');
+      expect(secondOption.getAttribute('aria-selected')).to.equal('true');
+    });
+
+    it('should select focused option with Enter key', async () => {
+      const el = await fixture<MListbox>(html`
+        <m-listbox mode="single-focus">
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
+          <m-option value="orange">Orange</m-option>
+        </m-listbox>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-option').length === 3);
+      const options = el.querySelectorAll('m-option');
+      const firstOption = options[0] as MOption;
+      const thirdOption = options[2] as MOption;
+
+      el.focus();
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
+      
+      // Move focus to third option
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === thirdOption.id);
+      
+      // Enter should select the focused option
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      
+      expect(el.value).to.equal('orange');
+      expect(thirdOption.getAttribute('aria-selected')).to.equal('true');
+    });
+
+    it('should return string value in single-focus mode, not array', async () => {
+      const el = await fixture<MListbox>(html`
+        <m-listbox mode="single-focus">
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
+        </m-listbox>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      const options = el.querySelectorAll('m-option');
+      const firstOption = options[0] as MOption;
+
+      firstOption.click();
+      
+      expect(el.value).to.equal('apple');
+      expect(typeof el.value).to.equal('string');
+      expect(Array.isArray(el.value)).to.equal(false);
+    });
+
+    it('should move focus with Home/End keys without selecting', async () => {
+      const el = await fixture<MListbox>(html`
+        <m-listbox mode="single-focus">
+          <m-option value="apple">Apple</m-option>
+          <m-option value="banana">Banana</m-option>
+          <m-option value="orange">Orange</m-option>
+        </m-listbox>
+      `);
+
+      await waitUntil(() => el.querySelectorAll('m-option').length === 3);
+      const options = el.querySelectorAll('m-option');
+      const firstOption = options[0] as MOption;
+      const lastOption = options[2] as MOption;
+
+      el.focus();
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
+      
+      // End should move focus to last option without selecting
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === lastOption.id);
+      expect(el.value).to.equal(null);
+      
+      // Home should move focus to first option without selecting
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
+      expect(el.value).to.equal(null);
+    });
   });
 
   describe('multiple selection behavior', () => {
     it('should allow multiple selections', async () => {
       const el = await fixture<MListbox>(html`
-        <m-listbox name="fruits" multiple>
+        <m-listbox name="fruits" mode="multiple">
           <m-option value="apple">Apple</m-option>
           <m-option value="banana">Banana</m-option>
           <m-option value="orange">Orange</m-option>
@@ -357,7 +544,7 @@ describe('m-listbox', () => {
 
     it('should toggle selection on click in multiple mode', async () => {
       const el = await fixture<MListbox>(html`
-        <m-listbox name="fruits" multiple>
+        <m-listbox name="fruits" mode="multiple">
           <m-option value="apple">Apple</m-option>
         </m-listbox>
       `);
@@ -376,7 +563,7 @@ describe('m-listbox', () => {
 
     it('should toggle selection with Space in multiple mode', async () => {
       const el = await fixture<MListbox>(html`
-        <m-listbox name="fruits" multiple>
+        <m-listbox name="fruits" mode="multiple">
           <m-option value="apple">Apple</m-option>
           <m-option value="banana">Banana</m-option>
         </m-listbox>
@@ -456,7 +643,7 @@ describe('m-listbox', () => {
     it('should initialize value from multiple pre-selected options', async () => {
       const form = await fixture<HTMLFormElement>(html`
         <form>
-          <m-listbox name="fruits" multiple>
+          <m-listbox name="fruits" mode="multiple">
             <m-option value="apple" selected>Apple</m-option>
             <m-option value="banana">Banana</m-option>
             <m-option value="cherry" selected>Cherry</m-option>

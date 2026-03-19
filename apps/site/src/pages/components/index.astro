@@ -7,104 +7,139 @@ const title = "Components";
 const docEntries = await getCollection("componentDocs");
 
 const components = docEntries
-    .map((docsEntry) => {
-        const tagName = docsEntry.id.split("/").slice(-2, -1)[0];
+  .map((docsEntry) => {
+    const tagName = docsEntry.id.split("/").slice(-2, -1)[0];
 
-        if (!tagName) {
-            return null;
-        }
+    if (!tagName) {
+      return null;
+    }
 
-        return {
-            tagName,
-            componentPath: tagName.substring(2),
-        };
-    })
-    .filter(Boolean);
+    console.log(docsEntry);
+    return {
+      tagName,
+      componentPath: tagName.substring(2),
+    };
+  })
+  .filter(Boolean);
 ---
 
 <PageLayout title={title} bodyClass="component-index-page">
-    <main>
-        <m-fit-text class="title" font-display >
-            <h1 data-margin="0">Search Components</h1>
-        </m-fit-text>
+  <main>
+    <m-fit-text class="title" font-display>
+      <h1 data-margin="0">Search Components</h1>
+    </m-fit-text>
 
-        <m-search-list
-            target=".collection"
-            data-padding="i-body"
-            data-gap="3"
-        >
-            <m-input
-                slot="controller"
-                id="search-components"
-                placeholder="Find components"
-                type="search"
-                autofocus></m-input>
-
-            <div
-                class="collection"
-                data-gap="2"
-                data-size="8"
-                data-align="content-start"
+    <m-search-list target="#component-selector">
+      <m-input placeholder="Filter components.."></m-input>
+      <m-listbox
+        id="component-selector"
+        class="grid exposed-grid"
+        mode="single-focus"
+        skip="[data-match='false']"
+      >
+        <div class="title-row component-row exposed-grid">
+          <div class="name">Name</div>
+          <div class="tag">Tag</div>
+          <div class="description">Description</div>
+          <div class="form-associated">Form</div>
+        </div>
+        {
+          components.map((component) => (
+            <m-option
+              value={component?.componentPath}
+              class="component-row exposed-grid"
+              data-keywords={component?.tagName}
+              data-subgrid
             >
-                {
-                    components.map((component) => (
-                        <m-card
-                            href={`/components/${component?.componentPath}`}
-                            data-keywords={component?.tagName}
-                            data-subgrid
-                        >
-                            <div slot="title">&lt;{component?.tagName}&gt;</div>
-                            {component?.componentPath}
-                        </m-card>
-                    ))
-                }
-            </div>
-        </m-search-list>
-    </main>
-</PageLayout>
-
-<style>
-
-
-    :global(.component-index-page){
-        height: 100dvh;
-        overflow: hidden;
-        padding-top: var(--menu-height);
-        display: grid;
-
-        main {
-            width: 100%;
-            display: grid;
-            grid-template-rows: auto 1fr;
+              <div class="name">{component?.tagName}</div>
+              <div class="tag">&lt;{component?.tagName}&gt;</div>
+              <div class="description">
+                Some description we need to figure out /
+                {component?.componentPath}
+              </div>
+              <div class="form-associated">No</div>
+            </m-option>
+          ))
         }
+      </m-listbox>
+    </m-search-list>
+  </main>
+
+  <script>
+    import type { MListbox } from "@maxhill/components/m-listbox/index";
+
+    const list_box = document.getElementById(
+      "component-selector",
+    ) as MListbox;
+    list_box?.addEventListener("m-listbox-change", () => {
+      window.location.href = `/components/${list_box.value}`;
+    });
+  </script>
+
+  <style>
+    :global(.component-index-page) {
+      padding-top: var(--menu-height);
+      display: grid;
+
+      main {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+        align-content: start;
+        --outline-offset: calc(var(--outline-size) * -1);
+      }
     }
 
     m-search-list {
-        margin-top: var(--size-fluid-5);
-        display: grid;
-        grid-template-columns: 1fr;
-        align-content: start;
-        justify-items: center;
+      display: grid;
+      gap: 0;
+      padding: 0;
+      margin: var(--body-margin) auto;
+      grid-template-rows: auto auto;
+      grid-template-columns: 1fr;
+      align-content: start;
+      width: 100%;
+      max-width: 1000px;
+    }
+    .grid {
+      gap: 0;
+      padding: 0;
+      grid-auto-rows: auto;
+    }
+    .search-row {
+      gap: 0;
+      padding: 0;
+    }
+    .component-row {
+      gap: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: 20% 20% 45% 15%;
 
-        /* Override m-input's subgrid behavior */
-        m-input {
-            grid-template-columns: 1fr;
-            grid-column: span 1;
-            max-width: var(--size-content-2);
+      @media (width < 700px) {
+        grid-template-columns: 40% 40% 20%;
+        .description {
+          display: none;
         }
+      }
 
-        .collection {
-            width: 100%;
-            max-width: min(1200px, calc(100vw - var(--body-margin) * 2));
-        }
+      &.title-row {
+        font-weight: var(--font-weight-bold);
+        background: var(--color-surface);
+      }
+
+      div {
+        padding: var(--size-1);
+      }
     }
 
     .title {
-        margin-top: var(--size-fluid-3);
-        width: 100%;
+      margin-top: var(--size-fluid-3);
     }
 
-    :global([data-match="false"]) {
-        display: none;
+    m-option[data-match="false"] {
+      display: none;
     }
-</style>
+  </style>
+</PageLayout>
