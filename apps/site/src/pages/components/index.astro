@@ -70,11 +70,11 @@ const components = docEntries
       <m-input placeholder="Filter components.."></m-input>
       <m-listbox
         id="component-selector"
-        class="grid exposed-grid"
+        class="grid"
         mode="single-focus"
         skip="[data-match='false']"
       >
-        <div class="title-row component-row exposed-grid">
+        <div class="title-row component-row">
           <div class="name">Name</div>
           <div class="tag">Tag</div>
           <div class="description">Description</div>
@@ -84,7 +84,7 @@ const components = docEntries
           components.map((component) => (
             <m-option
               value={component?.componentPath}
-              class="component-row exposed-grid"
+              class="component-row"
               data-keywords={component?.tagName}
               data-subgrid
             >
@@ -136,25 +136,39 @@ const components = docEntries
       grid-template-columns: 1fr;
       align-content: start;
       width: 100%;
-      max-width: 1000px;
+      max-width: calc(100% - 2 * var(--body-margin));
+      border: var(--border-width) solid var(--color-stroke);
+
+      m-input {
+        --border-width: 0;
+      }
     }
+    
     .grid {
       gap: 0;
       padding: 0;
       grid-auto-rows: auto;
+      grid-template-columns: 20% 20% 45% 15%;
+      border: none;
+
+      @media (width < 700px) {
+        grid-template-columns: 40% 40% 20%;
+      }
     }
+    
     .search-row {
       gap: 0;
       padding: 0;
     }
+    
     .component-row {
-      gap: 0;
-      padding: 0;
       display: grid;
-      grid-template-columns: 20% 20% 45% 15%;
+      grid-column: 1 / -1;
+      grid-template-columns: subgrid;
+      padding: 0;
+      margin: 0;
 
       @media (width < 700px) {
-        grid-template-columns: 40% 40% 20%;
         .description {
           display: none;
         }
@@ -163,11 +177,33 @@ const components = docEntries
       &.title-row {
         font-weight: var(--font-weight-bold);
         background: var(--color-surface);
+
+        div {
+          border-top: var(--border-width) solid var(--color-stroke);
+        }
       }
 
       div {
         padding: var(--size-1);
+        border-right: var(--border-width) solid var(--color-stroke);
+        border-bottom: var(--border-width) solid var(--color-stroke);
       }
+      
+      div:last-child {
+        border-right: none;
+      }
+    }
+    
+    /* Remove default m-option padding/margin */
+    m-option.component-row {
+      padding: 0;
+      margin: 0;
+    }
+    
+    /* Remove bottom border from all cells in the last row */
+    .component-row:last-child div {
+      border-bottom: none;
+    }
     }
 
     .title {
