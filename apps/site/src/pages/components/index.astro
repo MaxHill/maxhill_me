@@ -3,6 +3,7 @@ import PageLayout from "../../components/layouts/PageLayout.astro";
 import { getCollection } from "astro:content";
 import { getComponentByTagName } from "@wc-toolkit/cem-utilities";
 import customElements from "@maxhill/components/custom-elements.json";
+import { Check, X } from "@lucide/astro";
 
 const title = "Components";
 
@@ -93,7 +94,7 @@ const components = docEntries
               <div class="description">
                 {component?.description || "No description available"}
               </div>
-              <div class="form-associated">{component?.formAssociated ? "Yes" : "No"}</div>
+              <div class="form-associated">{component?.formAssociated ? <Check size={16} /> : <X size={16} />}</div>
             </m-option>
           ))
         }
