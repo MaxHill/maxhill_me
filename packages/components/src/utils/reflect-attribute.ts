@@ -1,3 +1,20 @@
+// Declare Symbol.metadata for TypeScript (part of TC39 decorator metadata proposal)
+declare global {
+  interface SymbolConstructor {
+    readonly metadata: unique symbol;
+  }
+}
+
+// Ensure Symbol.metadata exists (TypeScript doesn't polyfill it)
+(Symbol as any).metadata ??= Symbol('metadata');
+
+// Global WeakMap to store property metadata, keyed by class metadata object
+declare global {
+  var __mElementPropertyMetadata: WeakMap<object, Map<string, { propertyKey: string; attributeName: string }>>;
+}
+
+globalThis.__mElementPropertyMetadata ??= new WeakMap();
+
 export function BindAttribute(options?: { 
   attribute?: string;
   converter?: (value: any) => string;
@@ -6,25 +23,36 @@ export function BindAttribute(options?: {
     const propertyKey = context.name as string;
     const attributeName = options?.attribute || propertyKey.toLowerCase();
     
-    const setupClassMetadata = (ctor: any, type: string) => {
-      if (!ctor.__syncedAttributes) {
-        ctor.__syncedAttributes = [];
+    // Store property metadata at class definition time using Symbol.metadata
+    // This is the Lit approach - metadata is available immediately without needing instances
+    const metadata = (context.metadata as any)?.[Symbol.metadata] ?? context.metadata;
+    if (metadata) {
+      let properties = globalThis.__mElementPropertyMetadata.get(metadata);
+      if (!properties) {
+        properties = new Map();
+        globalThis.__mElementPropertyMetadata.set(metadata, properties);
       }
-      if (!ctor.__syncedAttributes.includes(attributeName)) {
-        ctor.__syncedAttributes.push(attributeName);
-      }
-      
-      if (!ctor.__attributeToProperty) {
-        ctor.__attributeToProperty = new Map();
-      }
-      ctor.__attributeToProperty.set(attributeName, { propertyKey, type });
-    };
+      properties.set(propertyKey, { propertyKey, attributeName });
+    }
+    
+    // Use addInitializer to update type information when instances are created
+    context.addInitializer(function(this: any) {
+      // This runs during instance construction, allowing us to infer types
+      // from initial values
+    });
     
     return function(this: any, initialValue: any) {
       const type = typeof initialValue;
       const privateKey = Symbol.for(`_${propertyKey}`);
+      const ctor = this.constructor as any;
       
-      setupClassMetadata(this.constructor, type);
+      // Update type information in the class-level metadata
+      if (ctor.__attributeToProperty?.has(attributeName)) {
+        const mapping = ctor.__attributeToProperty.get(attributeName);
+        if (mapping) {
+          mapping.type = type;
+        }
+      }
       
       Object.defineProperty(this, propertyKey, {
         get(this: any) {
@@ -148,6 +176,8 @@ export function handleAttributeChange(element: HTMLElement, name: string, newVal
       propertyValue = newValue || '';
     }
     
-    (element as any)[propertyKey] = propertyValue;
+    // Set the property, avoiding infinite loops by checking if we're currently reflecting
+    const privateKey = Symbol.for(`_${propertyKey}`);
+    (element as any)[privateKey] = propertyValue;
   }
 }

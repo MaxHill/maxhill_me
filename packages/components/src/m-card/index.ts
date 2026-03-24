@@ -29,7 +29,6 @@ baseStyleSheet.replaceSync(styles);
  */
 class MCard extends MElement {
   static tagName = "m-card";
-  static observedAttributes = ["data-subgrid", "href", "target"];
 
   @BindAttribute({ attribute: "data-subgrid" })
   subgrid: boolean = false;

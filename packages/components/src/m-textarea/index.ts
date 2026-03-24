@@ -47,20 +47,6 @@ baseStyleSheet.replaceSync(styles);
 export class MTextarea extends MFormAssociatedElement {
   static tagName = "m-textarea";
 
-  static get observedAttributes() {
-    return [
-      ...super.observedAttributes,
-      "rows",
-      "cols",
-      "wrap",
-      "minlength",
-      "maxlength",
-      "placeholder",
-      "clearable",
-      "autofocus",
-    ];
-  }
-
   private _shadowRoot: ShadowRoot;
 
   @query("textarea")

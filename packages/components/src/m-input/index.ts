@@ -48,21 +48,6 @@ baseStyleSheet.replaceSync(styles);
 export class MInput extends MFormAssociatedElement {
   static tagName = "m-input";
 
-  static get observedAttributes() {
-    return [
-      ...super.observedAttributes,
-      "type",
-      "minlength",
-      "maxlength",
-      "pattern",
-      "placeholder",
-      "clearable",
-      "autocomplete",
-      "size",
-      "autofocus",
-    ];
-  }
-
   private _shadowRoot: ShadowRoot;
 
   @query("input")

@@ -22,7 +22,6 @@ baseStyleSheet.replaceSync(styles);
  */
 export class MTab extends MElement {
     static tagName = 'm-tab';
-    static observedAttributes = ["active", "panel", "disabled"]
 
     @BindAttribute()
     panel?: string;

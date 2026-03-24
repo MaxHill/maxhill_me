@@ -71,7 +71,6 @@ export function registerCommand(createCommandDefinition: CreateCommandDefinition
  */
 export class MCommand extends MElement {
     static tagName = 'm-command';
-    static observedAttributes = ['command', 'commandfor', 'keys'];
 
     private _shadowRoot: ShadowRoot;
     private unregister?: UnregisterCommandFn;

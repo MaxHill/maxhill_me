@@ -36,7 +36,6 @@ baseStyleSheet.replaceSync(styles);
  */
 export class MSearchList extends MElement {
     static tagName = 'm-search-list';
-    static observedAttributes = ['target', 'debounce'];
 
     private state: "initial" | "searching" | "empty" = "initial"
     private resultsMessage: string = '';

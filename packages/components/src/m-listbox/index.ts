@@ -95,7 +95,6 @@ baseStyleSheet.replaceSync(styles);
 export class MListbox extends MFormAssociatedElement {
   static tagName = "m-listbox";
   static formAssociated = true;
-  static observedAttributes = [...MFormAssociatedElement.observedAttributes, "mode", "skip"];
 
   @BindAttribute()
   mode: "single-select" | "single-focus" | "multiple" = "single-select";

@@ -13,8 +13,6 @@ import { MInvalidEvent } from "../events";
  */
 export abstract class MFormAssociatedElement extends MElement {
 
-    static observedAttributes = ['required', 'value', 'disabled', 'readonly', 'label', 'name'];
-
     /**
      * Enables constraint validation, default aria attributes, and fully 
      * participate in HTMLForms

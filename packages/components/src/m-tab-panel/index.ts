@@ -21,7 +21,6 @@ baseStyleSheet.replaceSync(styles);
  */
 export class MTabPanel extends MElement {
     static tagName = 'm-tab-panel';
-    static observedAttributes = ["visible", "name"]
 
     @BindAttribute()
     name: string = "";

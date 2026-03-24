@@ -41,7 +41,6 @@ baseStyleSheet.replaceSync(styles);
 export class MCombobox extends MFormAssociatedElement {
     static tagName = 'm-combobox';
     static formAssociated = true;
-    static observedAttributes = [...MFormAssociatedElement.observedAttributes, 'multiple', 'debounce', 'placeholder', 'clearable', 'autocomplete', 'size', 'autofocus'];
 
     @BindAttribute()
     multiple: boolean = false;

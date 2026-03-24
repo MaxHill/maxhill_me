@@ -34,7 +34,6 @@ baseStyleSheet.replaceSync(styles);
  */
 export class MTabList extends MElement {
     static tagName = 'm-tab-list';
-    static observedAttributes = ['tab', 'label', "position"];
 
     @BindAttribute({ attribute: "aria-label" })
     label: string = '';

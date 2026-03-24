@@ -1,24 +1,39 @@
-<h1>Hello</h1>
+<h1>Shot types</h1>
 
 <template id="shot-list-item-template">
-    <li>
-        <div class="name"></div>
-        <div class="club"></div>
-        <div class="description"></div>
-    </li>
+	<li>
+		<div class="name"></div>
+		<div class="description"></div>
+		<button class="delete-shot-type">Delete</button>
+	</li>
 </template>
 
-<ul id="shots"> </ul>
+<ul id="shots">
+</ul>
 
+<h2>Clubs</h2>
+<template id="club-template">
+	<li>
+		<div class="name"></div>
+		<button class="delete-club">Delete</button>
+	</li>
+</template>
+<ul id="clubs">
+</ul>
 
 <form id="add-shot-type-form" class="form box">
-    <h2>Add a new shot type</h2>
-    
-    <m-input required min="2" name="name" label="Name"></m-input>
-    <m-input required min="2" name="club" label="Club"></m-input>
-    <m-textarea required minlength="10" name="description" label="Description" rows="4" placeholder="Enter a detailed description..." clearable></m-textarea>
+	<h2>Add a new shot type</h2>
 
-    <button>Add</button>
+	<m-input required min="2" name="name" label="Name"></m-input>
+	<m-textarea required minlength="10" name="description" label="Description" rows="4" placeholder="Enter a detailed description..." clearable></m-textarea>
+
+	<button>Add</button>
 </form>
 
+<form id="add-club-form" class="form box">
+	<h2>Add a new club</h2>
 
+	<m-input required min="2" name="name" label="Name"></m-input>
+
+	<button>Add</button>
+</form>

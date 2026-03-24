@@ -23,7 +23,6 @@ baseStyleSheet.replaceSync(styles);
  */
 export class MCommandPalette extends MElement {
     static tagName = 'm-command-palette';
-    static observedAttributes = [];
 
     private _shadowRoot: ShadowRoot;
 

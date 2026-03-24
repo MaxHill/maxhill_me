@@ -17,7 +17,6 @@ baseStyleSheet.replaceSync(styles);
  */
 export class MOption extends MElement {
     static tagName = 'm-option';
-    static observedAttributes = ['value', 'selected', 'focused', 'disabled'];
 
     /**
      * The value associated with this item.
