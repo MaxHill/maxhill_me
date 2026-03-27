@@ -100,4 +100,62 @@ describe("CRDTDatabase", () => {
       expect(result).toEqual({ _key: "u1", name: "Alice", age: 30 });
     });
   });
+
+  describe("subscriptions", () => {
+    it("should notify subscribers when setRow is called", async () => {
+      const users = db.table("users");
+      const handler = vi.fn();
+      
+      users.subscribe(handler);
+
+      await users.setRow("u1", { name: "Alice", age: 25 });
+      await Promise.resolve();
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith({ table: "users" });
+    });
+
+    it("should notify subscribers when setField is called", async () => {
+      const users = db.table("users");
+      const handler = vi.fn();
+      
+      await users.setRow("u1", { name: "Alice", age: 25 });
+      users.subscribe(handler);
+
+      await users.setField("u1", "age", 26);
+      await Promise.resolve();
+
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("should notify subscribers when deleteRow is called", async () => {
+      const users = db.table("users");
+      const handler = vi.fn();
+      
+      await users.setRow("u1", { name: "Alice", age: 25 });
+      users.subscribe(handler);
+
+      await users.deleteRow("u1");
+      await Promise.resolve();
+
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("should not notify after unsubscribe", async () => {
+      const users = db.table("users");
+      const handler = vi.fn();
+      
+      const unsubscribe = users.subscribe(handler);
+
+      await users.setRow("u1", { name: "Alice", age: 25 });
+      await Promise.resolve();
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      unsubscribe();
+
+      await users.setRow("u2", { name: "Bob", age: 30 });
+      await Promise.resolve();
+      expect(handler).toHaveBeenCalledTimes(1); // Not called again
+    });
+  });
 });

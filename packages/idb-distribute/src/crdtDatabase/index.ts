@@ -11,6 +11,7 @@ import { SyncErrorCode } from "../sync/errors.ts";
 import { promisifyIDBRequest } from "../utils.ts";
 import { Table } from "../table.ts";
 import { DatabaseSchema, EmptySchema } from "../types.ts";
+import { TableSubscriptions } from "../tableSubscriptions.ts";
 
 export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
   clientId: string;
@@ -19,6 +20,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
   private syncManager: Sync;
   private syncRemote: string;
   private dbName: string;
+  private tableSubscriptions: TableSubscriptions;
 
   private tables: Map<string, Map<string, string[]>>;
 
@@ -33,6 +35,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
     this.tables = tables;
     this.dbName = dbName;
     this.syncRemote = syncRemote;
+    this.tableSubscriptions = new TableSubscriptions();
 
     // If clientPersistance is not provided, create one with indexes
     this.idbRepository = storageRepository;
@@ -68,7 +71,14 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
         `Database is not setup to have the table ${tableName}. Available tables: ${available}`,
       );
     }
-    return new Table(tableName, indexes, this.idbRepository, this, this.logicalClock);
+    return new Table(
+      tableName,
+      indexes,
+      this.idbRepository,
+      this,
+      this.logicalClock,
+      this.tableSubscriptions,
+    );
   }
 
   /**
@@ -111,6 +121,13 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
       ], "readwrite");
       await this.syncManager.handleSyncResponse(writeTx, this.logicalClock, response);
       await this.idbRepository.commit(writeTx);
+
+      const changedTables = new Set(
+        response.operations.map((operation) => operation.table),
+      );
+      for (const table of changedTables) {
+        this.tableSubscriptions.notify(table);
+      }
     } catch (error: any) {
       // Check if this is a "client state out of sync" error using the error name
       if (error.name === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {

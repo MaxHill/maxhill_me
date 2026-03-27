@@ -7,6 +7,7 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
+    "dev:all": "mprocs --names 'idb-distribute,css,web-component-utils,components,auth,lf-experiment,site,sync' 'pnpm --filter @maxhill/idb-distribute dev' 'pnpm --filter @maxhill/css dev' 'pnpm --filter @maxhill/web-component-utils dev' 'pnpm --filter @maxhill/components dev' 'pnpm --filter auth dev' 'pnpm --filter lf-experiment dev' 'pnpm --filter maxhill-me dev' 'pnpm --filter sync dev'",
     "check": "turbo check",
     "lint": "turbo lint",
     "test": "turbo test",

@@ -1,8 +1,14 @@
 import { applyOperationToRow, CRDTOperation, Dot, toUserRow, ValidKey } from "./crdt.ts";
 import { CRDTDatabase } from "./crdtDatabase/index.ts";
-import { CLIENT_STATE_STORE, IDBRepository, OPERATIONS_STORE, ROWS_STORE } from "./IDBRepository.ts";
+import {
+  CLIENT_STATE_STORE,
+  IDBRepository,
+  OPERATIONS_STORE,
+  ROWS_STORE,
+} from "./IDBRepository.ts";
 import { Index, QueryCondition } from "./indexes.ts";
 import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
+import { SubscriptionCallbackHandler, TableSubscriptions } from "./tableSubscriptions.ts";
 
 export class Table<TIndexes extends Record<string, string[]> = Record<string, string[]>> {
   private tableName: string;
@@ -10,6 +16,7 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
   private idbRepository: IDBRepository;
   private crdtDatabase: CRDTDatabase;
   private logicalClock: PersistedLogicalClock;
+  private tableSubscriptions: TableSubscriptions;
 
   constructor(
     tableName: string,
@@ -17,12 +24,18 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
     idbRepository: IDBRepository,
     crdtDatabase: CRDTDatabase,
     logicalClock: PersistedLogicalClock,
+    tableSubscriptions: TableSubscriptions,
   ) {
     this.tableName = tableName;
     this.indexes = indexes;
     this.idbRepository = idbRepository;
     this.crdtDatabase = crdtDatabase;
     this.logicalClock = logicalClock;
+    this.tableSubscriptions = tableSubscriptions;
+  }
+
+  subscribe(handler: SubscriptionCallbackHandler): () => void {
+    return this.tableSubscriptions.subscribe(this.tableName, handler);
   }
 
   async setRow(rowKey: ValidKey, value: any): Promise<void> {
@@ -61,6 +74,7 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
       this.idbRepository.saveOperation(tx, op),
     ]);
     await this.idbRepository.commit(tx);
+    this.tableSubscriptions.notify(this.tableName);
   }
 
   async setField(rowKey: ValidKey, field: any, value: any): Promise<void> {
@@ -91,7 +105,9 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
       this.idbRepository.saveOperation(tx, op),
     ]);
     await this.idbRepository.commit(tx);
+    this.tableSubscriptions.notify(this.tableName);
   }
+
   async deleteRow(rowKey: ValidKey) {
     const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
     const row = await this.idbRepository.getRow(tx, this.tableName, rowKey);
@@ -119,6 +135,7 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
       this.idbRepository.saveOperation(tx, op),
     ]);
     await this.idbRepository.commit(tx);
+    this.tableSubscriptions.notify(this.tableName);
   }
 
   //  ------------------------------------------------------------------------
