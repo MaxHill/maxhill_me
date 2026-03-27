@@ -53,3 +53,6 @@ apps/sync/main
 # Zig artifacts
 ssg/zine
 **/build_zcu.o
+
+# Mise
+mise.local.toml
