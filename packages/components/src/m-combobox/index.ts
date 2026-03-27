@@ -1,7 +1,7 @@
 import { MFormAssociatedElement } from "../utils/m-form-associated-element";
-import { BindAttribute } from "../utils/reflect-attribute";
-import { query } from "../utils/query";
-import { OutsideClickController } from "../utils/outside-click-controller";
+import { BindAttribute } from "@maxhill/web-component-utils";
+import { query } from "@maxhill/web-component-utils";
+import { OutsideClickController } from "@maxhill/web-component-utils";
 import { OptionListManager, type OptionLike, type SelectionResult, type SelectionMode } from "../utils/option-list-manager";
 import styles from "./index.css?inline";
 import MOption from "../m-option";

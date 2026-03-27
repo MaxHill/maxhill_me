@@ -1,8 +1,8 @@
 import { MTab } from "../m-tab";
 import { MTabPanel } from "../m-tab-panel";
-import { BindAttribute } from "../utils/reflect-attribute";
-import { MElement } from "../utils/m-element";
-import { query } from "../utils/query";
+import { BindAttribute } from "@maxhill/web-component-utils";
+import { MElement } from "@maxhill/web-component-utils";
+import { query } from "@maxhill/web-component-utils";
 import { MTabShowEvent, MTabHideEvent } from "./events";
 import styles from "./index.css?inline";
 const baseStyleSheet = new CSSStyleSheet();

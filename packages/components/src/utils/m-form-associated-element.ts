@@ -1,5 +1,4 @@
-import { MElement } from "./m-element";
-import { BindAttribute } from "./reflect-attribute";
+import { MElement, BindAttribute } from "@maxhill/web-component-utils";
 import { MInvalidEvent } from "../events";
 
 

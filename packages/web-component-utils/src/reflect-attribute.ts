@@ -20,7 +20,7 @@ export function BindAttribute(options?: {
   converter?: (value: any) => string;
 }) {
   return function(_target: any, context: ClassFieldDecoratorContext) {
-    const propertyKey = context.name as string;
+    const propertyKey = String(context.name);
     const attributeName = options?.attribute || propertyKey.toLowerCase();
     
     // Store property metadata at class definition time using Symbol.metadata
@@ -96,7 +96,7 @@ export function UpdatesAttribute(options?: {
   converter?: (value: any) => string | null;
 }) {
   return function(_target: any, context: ClassFieldDecoratorContext) {
-    const propertyKey = context.name as string;
+    const propertyKey = String(context.name);
     const attributeName = options?.attribute || propertyKey.toLowerCase();
     
     return function(this: any, initialValue: any) {

@@ -1,6 +1,6 @@
 import { MFormAssociatedElement } from "../utils/m-form-associated-element";
-import { query } from "../utils/query";
-import { BindAttribute } from "../utils/reflect-attribute";
+import { query } from "@maxhill/web-component-utils";
+import { BindAttribute } from "@maxhill/web-component-utils";
 import { MTextareaClearEvent } from "./events";
 import styles from "./index.css?inline";
 

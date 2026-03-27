@@ -1,4 +1,4 @@
-import { MElement } from "./utils/m-element";
+import { MElement } from "@maxhill/web-component-utils";
 
 /**
  * A test component to verify JSDoc parsing.

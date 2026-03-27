@@ -5,8 +5,6 @@ import { MElement } from './m-element';
 describe('UpdatesAttribute', () => {
   it('should sync property to attribute (one-way)', async () => {
     class TestElement extends MElement {
-      static observedAttributes = [];
-
       @UpdatesAttribute()
       testProp: boolean = false;
     }
@@ -25,8 +23,6 @@ describe('UpdatesAttribute', () => {
 
   it('should use custom attribute name', async () => {
     class TestElement extends MElement {
-      static observedAttributes = [];
-
       @UpdatesAttribute({ attribute: 'aria-selected' })
       selected: boolean = false;
     }
@@ -43,8 +39,6 @@ describe('UpdatesAttribute', () => {
 
   it('should support converter option', async () => {
     class TestElement extends MElement {
-      static observedAttributes = [];
-
       @UpdatesAttribute({ 
         attribute: 'aria-selected',
         converter: (v) => v ? 'true' : 'false'
@@ -64,8 +58,6 @@ describe('UpdatesAttribute', () => {
 
   it('should support converter returning null', async () => {
     class TestElement extends MElement {
-      static observedAttributes = [];
-
       @UpdatesAttribute({ 
         attribute: 'aria-activedescendant',
         converter: (el: any) => el?.id ?? null
@@ -87,8 +79,6 @@ describe('UpdatesAttribute', () => {
 
   it('should stack with BindAttribute on same property', async () => {
     class TestElement extends MElement {
-      static observedAttributes = ['selected'];
-
       @BindAttribute()
       @UpdatesAttribute({ 
         attribute: 'aria-selected',
@@ -111,8 +101,6 @@ describe('UpdatesAttribute', () => {
 
   it('should stack multiple UpdatesAttribute decorators', async () => {
     class TestElement extends MElement {
-      static observedAttributes = ['active'];
-
       @BindAttribute()
       @UpdatesAttribute({ 
         attribute: 'aria-selected',
@@ -141,8 +129,6 @@ describe('UpdatesAttribute', () => {
 
   it('should handle string properties', async () => {
     class TestElement extends MElement {
-      static observedAttributes = [];
-
       @UpdatesAttribute({ attribute: 'data-value' })
       value: string = '';
     }
@@ -161,8 +147,6 @@ describe('UpdatesAttribute', () => {
 
   it('should handle number properties', async () => {
     class TestElement extends MElement {
-      static observedAttributes = [];
-
       @UpdatesAttribute({ attribute: 'data-count' })
       count: number = 0;
     }

@@ -1,4 +1,4 @@
-import { QueryOptions } from "./query";
+import { QueryOptions } from "@maxhill/web-component-utils";
 
 export interface OptionLike extends HTMLElement {
     selected?: boolean;

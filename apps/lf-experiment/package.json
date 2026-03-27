@@ -12,6 +12,7 @@
   "dependencies": {
     "@maxhill/components": "workspace:*",
     "@maxhill/css": "workspace:*",
+    "@maxhill/web-component-utils": "workspace:*",
     "@maxhill/idb-distribute": "workspace:*"
   },
   "devDependencies": {

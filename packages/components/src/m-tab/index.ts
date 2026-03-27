@@ -1,5 +1,5 @@
-import { BindAttribute } from "../utils/reflect-attribute";
-import { MElement, generateUUID } from "../utils/m-element";
+import { BindAttribute } from "@maxhill/web-component-utils";
+import { MElement, generateUUID } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);

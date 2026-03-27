@@ -25,7 +25,8 @@
     "test:watch": "web-test-runner --watch"
   },
   "dependencies": {
-    "@maxhill/css": "workspace:*"
+    "@maxhill/css": "workspace:*",
+    "@maxhill/web-component-utils": "workspace:*"
   },
   "devDependencies": {
     "@custom-elements-manifest/analyzer": "^0.10.10",

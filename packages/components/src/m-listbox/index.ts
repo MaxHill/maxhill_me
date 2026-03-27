@@ -1,6 +1,6 @@
 import { MFormAssociatedElement } from "../utils/m-form-associated-element";
-import { BindAttribute } from "../utils/reflect-attribute";
-import { OutsideClickController } from "../utils/outside-click-controller";
+import { BindAttribute } from "@maxhill/web-component-utils";
+import { OutsideClickController } from "@maxhill/web-component-utils";
 import type { MOption } from "../m-option";
 import {
   MListboxChangeEvent,

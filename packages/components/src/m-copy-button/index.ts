@@ -1,4 +1,4 @@
-import { query } from "../utils/query";
+import { query } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { CopySuccessEvent, CopyErrorEvent } from "./events";
 

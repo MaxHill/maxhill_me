@@ -1,5 +1,5 @@
-import { MElement } from "../utils/m-element";
-import { query, queryAll } from "../utils/query";
+import { MElement } from "@maxhill/web-component-utils";
+import { query, queryAll } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import MCommand from "../m-command";
 import MListbox from "../m-listbox";
