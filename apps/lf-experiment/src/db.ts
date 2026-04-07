@@ -1,14 +1,30 @@
 import { CRDTDatabase, newDatabase } from "@maxhill/idb-distribute";
 
-let db: CRDTDatabase<any>;
+export type DBInterface = CRDTDatabase<{
+    shot_types: {},
+    clubs: {},
+    shot_log: {},
+}>
 
-export async function get_DB(): Promise<CRDTDatabase> {
-    if (db) return db;
+// Store the DB instance and promise on window to ensure it's truly a singleton
+declare global {
+    interface Window {
+        __appDB?: DBInterface;
+        __appDBPromise?: Promise<DBInterface>;
+    }
+}
 
-    db = await newDatabase("user::testdb")
+export async function get_DB(): Promise<DBInterface> {
+    if (window.__appDB) return window.__appDB;
+    if (window.__appDBPromise) return window.__appDBPromise;
+
+    window.__appDBPromise = newDatabase("user::testdb")
         .addTable("shot_types", {})
         .build()
-        .open()
+        .open();
+
+    const db = await window.__appDBPromise;
+    window.__appDB = db;
 
     return db;
 }

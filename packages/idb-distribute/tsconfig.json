@@ -14,5 +14,5 @@
     "types": ["vitest/globals"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/simulator/**/*"]
+  "exclude": ["node_modules", "dist", "src/simulator/**/*", "**/*.test.ts"]
 }

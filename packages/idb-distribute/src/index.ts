@@ -5,3 +5,4 @@ export { Index, exact, above, below, between, type QueryCondition } from "./inde
 export type { IndexDefinition } from "./indexes.ts";
 export type { DatabaseSchema, EmptySchema } from "./types.ts";
 export { isSyncError, type SyncError, SyncErrorCode } from "./sync/errors.ts";
+export type { SubscriptionCallbackHandler, TableChangeEvent } from "./tableSubscriptions.ts";
