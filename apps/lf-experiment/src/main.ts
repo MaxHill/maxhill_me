@@ -1,7 +1,9 @@
 import { registerAll } from "@maxhill/components/register-all";
-import { ShotList } from "./shot_list";
-import { AddShotTypeForm } from "./add_shot_type_form";
+import { MShotTypeList } from "./features/bag/components/shot-type-list";
+import { MAddShotTypeForm } from "./features/bag/components/add-shot-type-form";
+import { MAddClubForm } from "./features/bag/components/m-add-club-form";
 registerAll();
 
-ShotList.define();
-AddShotTypeForm.define();
+MShotTypeList.define();
+MAddShotTypeForm.define();
+MAddClubForm.define();

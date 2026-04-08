@@ -1,5 +1,5 @@
 import { SubscriptionCallbackHandler, Table } from "@maxhill/idb-distribute";
-import { DBInterface } from "./db";
+import { DBInterface } from "../../db";
 
 export type ShotLog = {
     id: string;
@@ -21,15 +21,15 @@ export type ShotLog = {
 
 };
 
-export class ShotLogRepository {
+export class ShotLogService {
     table: Table;
 
     constructor(private db: DBInterface) {
-        this.table = this.db.table("clubs");
+        this.table = this.db.table("shot_log");
     }
 
-    async addShotLog(shot_type: ShotLog): Promise<void> {
-        await this.table.setRow(crypto.randomUUID(), shot_type);
+    async addShotLog(shot_log_entry: ShotLog): Promise<void> {
+        await this.table.setRow(crypto.randomUUID(), shot_log_entry);
     }
 
     subscribe(handler: SubscriptionCallbackHandler): () => void {

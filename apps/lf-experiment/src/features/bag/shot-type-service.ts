@@ -1,5 +1,5 @@
 import { Table, type SubscriptionCallbackHandler } from "@maxhill/idb-distribute";
-import { DBInterface } from "./db";
+import { DBInterface } from "../../db";
 
 export type ShotType = {
     name: string,

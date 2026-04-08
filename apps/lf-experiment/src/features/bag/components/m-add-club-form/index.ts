@@ -1,14 +1,15 @@
 import { MElement, BindAttribute, query, queryAll } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
+import template from "./index.html?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
 /**
- * {{description}}
+ * Form for adding a new club
  * 
  * @customElement
- * @tagname {{componentName}}
+ * @tagname m-add-club-form
  * 
  * @slot - Default slot for component content
  * 
@@ -16,8 +17,8 @@ baseStyleSheet.replaceSync(styles);
  * 
  * @prop {string} example - An example property
  */
-export class {{componentNamePascal}} extends MElement {
-    static tagName = '{{componentName}}';
+export class MAddClubForm extends MElement {
+    static tagName = 'm-add-club-form';
 
     @BindAttribute()
     example: string = '';
@@ -36,11 +37,8 @@ export class {{componentNamePascal}} extends MElement {
     }
 
     private render() {
-        this.shadowRoot!.innerHTML = `
-            <p>{{componentName}}</p>
-            <slot></slot>
-        `;
+        this.shadowRoot!.innerHTML = template;
     }
 }
 
-export default {{componentNamePascal}};
+export default MAddClubForm;

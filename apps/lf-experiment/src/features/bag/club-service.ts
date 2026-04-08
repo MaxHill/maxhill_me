@@ -1,11 +1,10 @@
 import { SubscriptionCallbackHandler, Table } from "@maxhill/idb-distribute";
-import { DBInterface } from "./db";
-import { ShotType } from "./shot_type_repository";
+import { DBInterface } from "../../db";
+import { ShotType } from "./shot-type-service";
 
 export type Club = {
     name: string;
     type: "wedge" | "iron" | "hybrid" | "wood" | "driver";
-
     shotTypes: ShotType[];  // embedded allowed shot types
 };
 

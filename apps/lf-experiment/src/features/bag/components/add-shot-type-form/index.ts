@@ -1,12 +1,12 @@
 import { MElement, query } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
-import { get_DB } from "../db";
-import { ShotTypeRepository } from "../shot_type_repository";
+import { get_DB } from "../../../../db";
+import { ShotTypeRepository } from "../../shot-type-service";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
-export class AddShotTypeForm extends MElement {
+export class MAddShotTypeForm extends MElement {
     static tagName = 'm-add-shot-type-form';
 
     private shot_type_repository!: ShotTypeRepository;
@@ -14,12 +14,10 @@ export class AddShotTypeForm extends MElement {
     @query("#add-shot-type-form")
     private add_shot_type_form!: HTMLFormElement;
 
-    #shadowRoot: ShadowRoot;
-
     constructor() {
         super();
-        this.#shadowRoot = this.attachShadow({ mode: 'open' });
-        this.#shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
     }
 
     async connectedCallback() {
@@ -54,7 +52,7 @@ export class AddShotTypeForm extends MElement {
     }
 
     render() {
-        this.#shadowRoot.innerHTML = `
+        this.shadowRoot!.innerHTML = `
             <form id="add-shot-type-form" class="form box">
                 <h2>Add a new shot type</h2>
                 

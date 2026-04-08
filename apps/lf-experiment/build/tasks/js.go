@@ -9,9 +9,9 @@ import (
 
 const (
 	jsEntryPointMain          = "src/main.ts"
-	jsEntryPointServiceWorker = "src/serviceworker.ts"
+	jsEntryPointServiceWorker = "src/service-worker.ts"
 	jsOutputPathMain          = "js/main"
-	jsOutputPathServiceWorker = "serviceworker"
+	jsOutputPathServiceWorker = "service-worker"
 	jsOutdir                  = "dist"
 )
 
@@ -81,11 +81,12 @@ func NewJsBuildStep(workDir string, isDev bool) (BuildTask, error) {
 		Color:    api.ColorAlways,
 
 		// Loader configuration
-		// Note: ALL .css imports become text strings, not just those with ?inline
+		// Note: ALL .css/.html imports become text strings, not just those with ?inline
 		// esbuild strips query parameters during resolution, so "./index.css?inline"
 		// resolves to "./index.css" and uses this loader.
 		Loader: map[string]api.Loader{
-			".css": api.LoaderText, // For Shadow DOM: import styles from "./index.css"
+			".css":  api.LoaderText, // For Shadow DOM: import styles from "./index.css"
+			".html": api.LoaderText, // For Shadow DOM: import template from "./index.html"
 		},
 	}
 

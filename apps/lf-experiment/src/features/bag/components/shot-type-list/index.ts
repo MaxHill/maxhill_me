@@ -1,32 +1,29 @@
 import { MElement, query } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
-import template from "./index.html?inline";
-import { get_DB } from "../db";
-import { ShotTypeRepository } from "../shot_type_repository";
+import { get_DB } from "../../../../db";
+import { ShotTypeRepository } from "../../shot-type-service";
 import { TableChangeEvent } from "@maxhill/idb-distribute";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
-export class ShotList extends MElement {
-    static tagName = 'm-shot-list';
+export class MShotTypeList extends MElement {
+    static tagName = 'm-shot-type-list';
 
     private shot_type_repository!: ShotTypeRepository;
 
-    @query("#shot-list-item-template")
+    @query("#shot-type-list-item-template")
     private template!: HTMLTemplateElement;
 
     @query("#shots")
     private shots_container!: HTMLUListElement;
 
-    #shadowRoot: ShadowRoot;
-
     unsubscribe!: () => void;
 
     constructor() {
         super();
-        this.#shadowRoot = this.attachShadow({ mode: 'open' });
-        this.#shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
     }
 
     async connectedCallback() {
@@ -46,7 +43,20 @@ export class ShotList extends MElement {
     }
 
     async render() {
-        this.#shadowRoot.innerHTML = template;
+        this.shadowRoot!.innerHTML = `
+            <template id="shot-type-list-item-template">
+                <li>
+                    <div class="name"></div>
+                    <div class="club"></div>
+                    <div class="description"></div>
+                </li>
+            </template>
+
+            <div>
+                <h2>Shot types</h2>
+                <ul id="shots"> </ul>
+            </div>
+            `;
 
         for await (const shot_type of this.shot_type_repository.table.query()) {
             const clone = document.importNode(this.template.content, true);

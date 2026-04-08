@@ -50,9 +50,9 @@ func (options BuildServiceWorkerOptions) Build() BuildResult {
 		// Convert to web path (with forward slashes, starting with /)
 		webPath := "/" + filepath.ToSlash(relPath)
 
-		// Exclude source maps and the serviceworker itself
+		// Exclude source maps and the service worker itself
 		if !strings.HasSuffix(webPath, ".map") &&
-			webPath != "/serviceworker.js" {
+			webPath != "/service-worker.js" {
 			filesToCache = append(filesToCache, webPath)
 		}
 		return nil
@@ -105,11 +105,11 @@ func buildCache(absWorkDir string, files []string) (string, error) {
 }
 
 func injectAssetsIntoServiceWorker(absWorkDir string, files []string, hash string) error {
-	swPath := filepath.Join(absWorkDir, distDir, "serviceworker.js")
+	swPath := filepath.Join(absWorkDir, distDir, "service-worker.js")
 
 	content, err := os.ReadFile(swPath)
 	if err != nil {
-		return fmt.Errorf("failed to read serviceworker.js: %w", err)
+		return fmt.Errorf("failed to read service-worker.js: %w", err)
 	}
 
 	assetsJSON, err := json.Marshal(files)
@@ -127,7 +127,7 @@ func injectAssetsIntoServiceWorker(absWorkDir string, files []string, hash strin
 
 	// Write back to file
 	if err := os.WriteFile(swPath, []byte(newContent), 0644); err != nil {
-		return fmt.Errorf("failed to write serviceworker.js: %w", err)
+		return fmt.Errorf("failed to write service-worker.js: %w", err)
 	}
 
 	return nil
