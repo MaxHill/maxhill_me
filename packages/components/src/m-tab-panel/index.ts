@@ -28,12 +28,10 @@ export class MTabPanel extends MElement {
     @BindAttribute()
     visible: boolean = false;
 
-    #shadowRoot: ShadowRoot;
-
     constructor() {
         super();
-        this.#shadowRoot = this.attachShadow({ mode: 'open' });
-        this.#shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
     }
 
     connectedCallback() {
@@ -49,7 +47,7 @@ export class MTabPanel extends MElement {
     }
 
     render() {
-        this.#shadowRoot.innerHTML = `
+        this.shadowRoot!.innerHTML = `
             <slot></slot>
         `;
     }

@@ -44,8 +44,6 @@ export class MTabList extends MElement {
     @BindAttribute()
     position: "start"|"end"|"top"|"bottom" = 'top';
 
-    #shadowRoot: ShadowRoot;
-    
     @query("slot[name='tab']")
     private tabSlot!: HTMLSlotElement;
 
@@ -54,8 +52,8 @@ export class MTabList extends MElement {
 
     constructor() {
         super();
-        this.#shadowRoot = this.attachShadow({ mode: 'open' });
-        this.#shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
     }
 
     connectedCallback() {
@@ -193,7 +191,7 @@ export class MTabList extends MElement {
     }
 
     render() {
-        this.#shadowRoot.innerHTML = `
+        this.shadowRoot!.innerHTML = `
             <div part="tab">
                 <slot name="tab"></slot>
             </div>

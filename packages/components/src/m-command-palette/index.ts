@@ -24,8 +24,6 @@ baseStyleSheet.replaceSync(styles);
 export class MCommandPalette extends MElement {
     static tagName = 'm-command-palette';
 
-    private _shadowRoot: ShadowRoot;
-
     @queryAll('m-command', { dom: "document" })
     private commandElements!: MCommand[];
 
@@ -34,8 +32,8 @@ export class MCommandPalette extends MElement {
 
     constructor() {
         super();
-        this._shadowRoot = this.attachShadow({ mode: 'open' });
-        this._shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
     }
 
     connectedCallback() {
@@ -59,14 +57,14 @@ export class MCommandPalette extends MElement {
 
         // Access as object
         const data = Object.fromEntries(formData);
-        const listbox = this._shadowRoot.querySelector('m-listbox') as MListbox;
+        const listbox = this.shadowRoot!.querySelector('m-listbox') as MListbox;
     const selectedCommand = listbox?.value;
         console.log(data, selectedCommand)
     }
 
 
     private render() {
-        this._shadowRoot.innerHTML = `
+        this.shadowRoot!.innerHTML = `
             <form>
                 <m-search-list target="m-listbox">
                     <label>

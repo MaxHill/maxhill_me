@@ -63,7 +63,6 @@ export class MCombobox extends MFormAssociatedElement {
     @BindAttribute()
     autofocus: boolean = false;
 
-    private _shadowRoot: ShadowRoot;
     private popoverCleanup?: () => void;
     private outsideClickController?: OutsideClickController;
     private optionListManager!: OptionListManager;
@@ -162,8 +161,8 @@ export class MCombobox extends MFormAssociatedElement {
 
     constructor() {
         super();
-        this._shadowRoot = this.attachShadow({ mode: 'open', delegatesFocus: true });
-        this._shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+        this.attachShadow({ mode: 'open', delegatesFocus: true });
+        this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
     }
 
     connectedCallback() {
@@ -573,7 +572,7 @@ export class MCombobox extends MFormAssociatedElement {
     }
 
     private render() {
-        this._shadowRoot.innerHTML = `
+        this.shadowRoot!.innerHTML = `
             <m-search-list debounce="${this.debounce}" target="#popover slot">
                 <m-input 
                     type="text" 

@@ -72,7 +72,6 @@ export function registerCommand(createCommandDefinition: CreateCommandDefinition
 export class MCommand extends MElement {
     static tagName = 'm-command';
 
-    private _shadowRoot: ShadowRoot;
     private unregister?: UnregisterCommandFn;
 
     private _customCommand?: (e: KeyboardEvent) => void;
@@ -108,8 +107,8 @@ export class MCommand extends MElement {
             this.commandfor = commandDefinition.commandfor;
         }
 
-        this._shadowRoot = this.attachShadow({ mode: 'open' });
-        this._shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
     }
 
     connectedCallback() {
@@ -237,7 +236,7 @@ export class MCommand extends MElement {
     }
 
     private render() {
-        this._shadowRoot.innerHTML = ``;
+        this.shadowRoot!.innerHTML = ``;
     }
 }
 

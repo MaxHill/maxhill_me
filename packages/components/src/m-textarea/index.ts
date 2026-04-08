@@ -47,8 +47,6 @@ baseStyleSheet.replaceSync(styles);
 export class MTextarea extends MFormAssociatedElement {
   static tagName = "m-textarea";
 
-  private _shadowRoot: ShadowRoot;
-
   @query("textarea")
   private textareaElement!: HTMLTextAreaElement;
 
@@ -132,11 +130,11 @@ export class MTextarea extends MFormAssociatedElement {
 
   constructor() {
     super();
-    this._shadowRoot = this.attachShadow({
+    this.attachShadow({
       mode: "open",
       delegatesFocus: true,
     });
-    this._shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+    this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
 
     // Set default value to empty string for textareas (not null like listbox)
     if (this.value === null) {
@@ -355,7 +353,7 @@ export class MTextarea extends MFormAssociatedElement {
   }
 
   private render() {
-    this._shadowRoot.innerHTML = `
+    this.shadowRoot!.innerHTML = `
             ${this.label ? ` <label part="label" for="textarea">${this.label}</label>` : ""}
             <div part="textarea-wrapper" class="textarea-wrapper">
                 <slot name="before"></slot>

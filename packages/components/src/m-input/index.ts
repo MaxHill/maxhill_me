@@ -48,8 +48,6 @@ baseStyleSheet.replaceSync(styles);
 export class MInput extends MFormAssociatedElement {
   static tagName = "m-input";
 
-  private _shadowRoot: ShadowRoot;
-
   @query("input")
   private inputElement!: HTMLInputElement;
 
@@ -135,11 +133,11 @@ export class MInput extends MFormAssociatedElement {
 
   constructor() {
     super();
-    this._shadowRoot = this.attachShadow({
+    this.attachShadow({
       mode: "open",
       delegatesFocus: true,
     });
-    this._shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+    this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
 
     // Set default value to empty string for text inputs (not null like listbox)
     if (this.value === null) {
@@ -394,7 +392,7 @@ export class MInput extends MFormAssociatedElement {
   }
 
   private render() {
-    this._shadowRoot.innerHTML = `
+    this.shadowRoot!.innerHTML = `
             ${this.label ? ` <label part="label" for="input">${this.label}</label>` : ""}
             <div part="input-wrapper" class="input-wrapper">
                 <slot name="before"></slot>

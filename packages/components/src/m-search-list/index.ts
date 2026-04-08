@@ -65,9 +65,6 @@ export class MSearchList extends MElement {
         return this.initialSlot && this.initialSlot.assignedElements().length > 0
     }
 
-
-    #shadowRoot: ShadowRoot;
-
     @query('#results')
     #ariaLiveRegion!: HTMLDivElement;
 
@@ -98,8 +95,8 @@ export class MSearchList extends MElement {
     constructor() {
         super();
         this._internals = this.attachInternals();
-        this.#shadowRoot = this.attachShadow({ mode: 'open' });
-        this.#shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
     }
 
     connectedCallback() {
@@ -237,7 +234,7 @@ export class MSearchList extends MElement {
 
 
     render() {
-        this.#shadowRoot.innerHTML = `
+        this.shadowRoot!.innerHTML = `
             <div id="results" class="visually-hidden" role="region" aria-live="polite"></div>
             <slot name="controller"></slot>
             <slot></slot>

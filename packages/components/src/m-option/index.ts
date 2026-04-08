@@ -52,13 +52,12 @@ export class MOption extends MElement {
     @BindAttribute()
     disabled: boolean = false;
 
-    #shadowRoot: ShadowRoot;
     _internals: ElementInternals;
 
     constructor() {
         super();
-        this.#shadowRoot = this.attachShadow({ mode: 'open' });
-        this.#shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
         this._internals = this.attachInternals();
     }
 
@@ -113,7 +112,7 @@ export class MOption extends MElement {
     }
 
     render() {
-        this.#shadowRoot.innerHTML = `
+        this.shadowRoot!.innerHTML = `
             <slot></slot>
         `;
     }

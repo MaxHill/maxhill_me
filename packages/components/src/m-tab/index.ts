@@ -32,12 +32,10 @@ export class MTab extends MElement {
     @BindAttribute()
     disabled: boolean = false;
 
-    #shadowRoot: ShadowRoot;
-
     constructor() {
         super();
-        this.#shadowRoot = this.attachShadow({ mode: 'open' });
-        this.#shadowRoot.adoptedStyleSheets = [baseStyleSheet];
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
     }
 
     connectedCallback() {
@@ -70,7 +68,7 @@ export class MTab extends MElement {
     }
 
     render() {
-        this.#shadowRoot.innerHTML = `
+        this.shadowRoot!.innerHTML = `
           <slot></slot>
         `;
     }
