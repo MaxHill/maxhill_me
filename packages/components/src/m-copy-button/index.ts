@@ -1,4 +1,4 @@
-import { query } from "@maxhill/web-component-utils";
+import { query, BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { CopySuccessEvent, CopyErrorEvent } from "./events";
 
@@ -41,8 +41,10 @@ const DEFAULT_COPY_ICON = `
  * @csspart icon - Icon wrapper
  * @csspart feedback - Feedback tooltip
  */
-class MCopyButton extends HTMLElement {
-    static observedAttributes = ["value", "show-icon", "feedback"];
+class MCopyButton extends MElement {
+    @BindAttribute() value: string = "";
+    @BindAttribute({ attribute: "show-icon" }) showIcon: boolean = true;
+    @BindAttribute() feedback: string = "Copied!";
 
     @query("button")
     private button!: HTMLButtonElement;
@@ -55,23 +57,6 @@ class MCopyButton extends HTMLElement {
     connectedCallback() {
         this.render();
         this.attachEventListeners();
-    }
-
-    attributeChangedCallback() {
-        this.render();
-    }
-
-    get value() {
-        return this.getAttribute("value") || "";
-    }
-
-    get showIcon() {
-        const attr = this.getAttribute("show-icon");
-        return attr === null || attr === "true";
-    }
-
-    get feedback() {
-        return this.getAttribute("feedback") || "Copied!";
     }
 
     render() {

@@ -47,6 +47,9 @@ class MCard extends MElement {
   @query('[slot="footer"]', { dom: "light" })
   private footerSlot!: HTMLSlotElement;
 
+  @query("a")
+  private linkElement!: HTMLAnchorElement | null;
+
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -102,9 +105,8 @@ class MCard extends MElement {
     }
 
     e.preventDefault();
-    const link = this.shadowRoot?.querySelector("a");
-    if (link) {
-      link.click();
+    if (this.linkElement) {
+      this.linkElement.click();
     }
   };
 
@@ -113,9 +115,8 @@ class MCard extends MElement {
 
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      const link = this.shadowRoot?.querySelector("a");
-      if (link) {
-        link.click();
+      if (this.linkElement) {
+        this.linkElement.click();
       }
     }
   };

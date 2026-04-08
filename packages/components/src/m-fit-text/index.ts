@@ -1,3 +1,4 @@
+import { MElement, BindAttribute } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -32,11 +33,12 @@ try {
  * @slot - Default slot for text content to be scaled
  *
  * @attr {boolean} font-display - Whether to use the display font family
+ * @prop {boolean} fontDisplay - Whether to use the display font family
  * 
  * @cssprop --max-font-size - Maximum font size constraint (default: infinity)
  */
-class MFitText extends HTMLElement {
-    static observedAttributes = ['font-display'];
+class MFitText extends MElement {
+    @BindAttribute({ attribute: "font-display" }) fontDisplay: boolean = false;
 
     constructor() {
         super();
@@ -50,8 +52,7 @@ class MFitText extends HTMLElement {
         this.shadowRoot.adoptedStyleSheets = [baseStyleSheet];
 
         const content = this.innerHTML || "";
-        const fontDisplay = this.hasAttribute('font-display');
-        const className = fontDisplay ? 'text-fit font-display' : 'text-fit';
+        const className = this.fontDisplay ? 'text-fit font-display' : 'text-fit';
 
         this.shadowRoot.innerHTML = `
             <span class="${className}">
