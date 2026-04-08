@@ -1,10 +1,5 @@
-import { MElement } from "../utils/m-element";
-import { BindAttribute } from "../utils/reflect-attribute";
-import { query, queryAll } from "../utils/query";
+import { MElement, BindAttribute, query, queryAll } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
-{{#if hasEvents}}
-import { {{componentNamePascal}}ChangeEvent } from "./events";
-{{/if}}
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -20,14 +15,9 @@ baseStyleSheet.replaceSync(styles);
  * @attr {string} example - An example property
  * 
  * @prop {string} example - An example property
-{{#if hasEvents}}
- * 
- * @fires {{componentName}}-change - Fired when the example changes (detail: { example: string })
-{{/if}}
  */
 export class {{componentNamePascal}} extends MElement {
     static tagName = '{{componentName}}';
-    static observedAttributes = ['example'];
 
     private _shadowRoot: ShadowRoot;
 
@@ -45,7 +35,6 @@ export class {{componentNamePascal}} extends MElement {
 
     connectedCallback() {
         this.render();
-        this.dispatchEvent(new {{componentNamePascal}}ChangeEvent({ example: this.example }));
     }
 
     private render() {

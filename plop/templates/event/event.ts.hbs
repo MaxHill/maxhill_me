@@ -1,0 +1,33 @@
+/*
+Usage:
+
+1. Add detail properties to {{eventNamePascal}}EventDetail interface below
+
+2. Import in your component:
+   import { {{eventNamePascal}}Event } from "./path/to/events";
+
+3. Dispatch the event:
+   this.dispatchEvent(new {{eventNamePascal}}Event({ /* your detail *\/ }));
+{{#if cancelable}}
+
+4. Handle cancelation (optional):
+   const event = new {{eventNamePascal}}Event({ /* detail *\/ });
+   const shouldContinue = this.dispatchEvent(event);
+   if (!shouldContinue) return; // Event was prevented
+{{/if}}
+*/
+
+export interface {{eventNamePascal}}EventDetail {
+    // TODO: Add your event detail properties here
+}
+
+export class {{eventNamePascal}}Event extends CustomEvent<{{eventNamePascal}}EventDetail> {
+    constructor(detail: {{eventNamePascal}}EventDetail) {
+        super('{{eventName}}', {
+            detail,
+            bubbles: true,
+            composed: true,{{#if cancelable}}
+            cancelable: true,{{/if}}
+        });
+    }
+}
