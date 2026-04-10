@@ -2,14 +2,16 @@ import { SubscriptionCallbackHandler, Table } from "@maxhill/idb-distribute";
 import { DBInterface } from "../../db";
 import { ShotType } from "./shot-type-service";
 
+export type ClubTypes = "putter" | "wedge" | "iron" | "hybrid" | "wood" | "driver";
 export type Club = {
+    _key?: string; // This will be automatically managed by idb-distribute
     name: string;
-    type: "wedge" | "iron" | "hybrid" | "wood" | "driver";
+    clubType: ClubTypes,
     shotTypes: ShotType[];  // embedded allowed shot types
 };
 
 
-export class ClubRepository {
+export class ClubService {
     table: Table;
 
     constructor(private db: DBInterface) {

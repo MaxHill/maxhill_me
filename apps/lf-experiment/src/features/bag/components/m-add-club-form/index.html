@@ -1,2 +1,28 @@
-<p>m-add-club-form</p>
-<slot></slot>
+<template id="shot-type-option-template">
+    <m-option></m-option>
+</template>
+
+<form id="add-club-form" class="form box">
+    <h2>Add a new club</h2>
+    
+    <m-input required min="2" name="name" label="Name" placeholder="Ex. 60deg, 7, spoon"></m-input>
+    <m-combobox required name="clubType" label="Club type" placeholder="Select what type of club">
+      <m-option value="putter">Putter</m-option>
+      <m-option value="wedge">Wedge</m-option>
+      <m-option value="iron">Iron</m-option>
+      <m-option value="hybrid">Hybrid</m-option>
+      <m-option value="wood">Wood</m-option>
+      <m-option value="driver">Driver</m-option>
+    </m-combobox>
+
+    <m-combobox 
+        id="shot-type-combobox" 
+        required 
+        name="shotTypes" 
+        label="Shot types" 
+        multiple 
+        placeholder="Select available shot types">
+    </m-combobox>
+
+    <button type="submit">Add</button>
+</form>

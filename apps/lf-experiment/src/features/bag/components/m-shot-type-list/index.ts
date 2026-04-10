@@ -1,7 +1,7 @@
 import { MElement, query } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { get_DB } from "../../../../db";
-import { ShotTypeRepository } from "../../shot-type-service";
+import { ShotTypeService } from "../../shot-type-service";
 import { TableChangeEvent } from "@maxhill/idb-distribute";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -10,7 +10,7 @@ baseStyleSheet.replaceSync(styles);
 export class MShotTypeList extends MElement {
     static tagName = 'm-shot-type-list';
 
-    private shot_type_repository!: ShotTypeRepository;
+    private shot_type_repository!: ShotTypeService;
 
     @query("#shot-type-list-item-template")
     private template!: HTMLTemplateElement;
@@ -28,7 +28,7 @@ export class MShotTypeList extends MElement {
 
     async connectedCallback() {
         const db = await get_DB();
-        this.shot_type_repository = new ShotTypeRepository(db);
+        this.shot_type_repository = new ShotTypeService(db);
 
 
         this.unsubscribe = this.shot_type_repository.subscribe(async (_: TableChangeEvent) => {

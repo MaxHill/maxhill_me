@@ -107,15 +107,15 @@ export class MCombobox extends MFormAssociatedElement {
      * ----------------------------- */
     // Delegate to OptionListManager
     get options(): MOption[] {
-        return this.optionListManager.options as MOption[];
+        return this.optionListManager?.options as MOption[] ?? [];
     }
 
     get selectedOptions(): MOption[] {
-        return this.optionListManager.selectedOptions as MOption[];
+        return this.optionListManager?.selectedOptions as MOption[] ?? [];
     }
 
     get selectedValues(): string[] {
-        return this.optionListManager.selectedValues;
+        return this.optionListManager?.selectedValues ?? [];
     }
 
     /*** ----------------------------

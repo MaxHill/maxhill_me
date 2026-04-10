@@ -1,7 +1,7 @@
 import { MElement, query } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { get_DB } from "../../../../db";
-import { ShotTypeRepository } from "../../shot-type-service";
+import { ShotTypeService } from "../../shot-type-service";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -9,7 +9,7 @@ baseStyleSheet.replaceSync(styles);
 export class MAddShotTypeForm extends MElement {
     static tagName = 'm-add-shot-type-form';
 
-    private shot_type_repository!: ShotTypeRepository;
+    private shot_type_repository!: ShotTypeService;
 
     @query("#add-shot-type-form")
     private add_shot_type_form!: HTMLFormElement;
@@ -22,7 +22,7 @@ export class MAddShotTypeForm extends MElement {
 
     async connectedCallback() {
         const db = await get_DB();
-        this.shot_type_repository = new ShotTypeRepository(db);
+        this.shot_type_repository = new ShotTypeService(db);
 
         this.render();
         this.add_shot_type_form.addEventListener("submit", this.handleFormSubmit.bind(this));

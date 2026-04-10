@@ -2,11 +2,12 @@ import { Table, type SubscriptionCallbackHandler } from "@maxhill/idb-distribute
 import { DBInterface } from "../../db";
 
 export type ShotType = {
+    _key?: string; // This will be automatically managed by idb-distribute
     name: string,
     description: string,
 }
 
-export class ShotTypeRepository {
+export class ShotTypeService {
     table: Table;
 
     constructor(private db: DBInterface) {

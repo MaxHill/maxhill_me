@@ -20,6 +20,8 @@ export async function get_DB(): Promise<DBInterface> {
 
     window.__appDBPromise = newDatabase("user::testdb")
         .addTable("shot_types", {})
+        .addTable("clubs", {})
+        .addTable("shot_log", {})
         .build()
         .open();
 
