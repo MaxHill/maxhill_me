@@ -1,0 +1,75 @@
+import CodeExample from "../../../../apps/site/src/components/CodeExample.astro";
+
+## Examples
+
+### Basic Usage
+
+A simple popover menu with a trigger button.
+
+<CodeExample
+  html={`<button id="basic-trigger" popovertarget="basic-menu">Open Menu</button>
+<m-popover-menu id="basic-menu" popover anchor="basic-trigger">
+  <a href="#profile">Profile</a>
+  <a href="#settings">Settings</a>
+  <a href="#logout">Logout</a>
+</m-popover-menu>`}
+/>
+
+### Context Menu
+
+Create context menus for actions.
+
+<CodeExample
+  html={`<button id="ctx-trigger" popovertarget="ctx-menu">Actions ⋮</button>
+<m-popover-menu id="ctx-menu" popover anchor="ctx-trigger">
+  <button type="button">Edit</button>
+  <button type="button">Delete</button>
+  <button type="button">Share</button>
+</m-popover-menu>`}
+/>
+
+### With Custom Role
+
+Override the default role for different use cases.
+
+<CodeExample
+  html={`<button id="help-trigger" popovertarget="help-menu">
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+  Help
+</button>
+<m-popover-menu id="help-menu" popover anchor="help-trigger" role="dialog">
+  <p>This is a help dialog, not a menu.</p>
+</m-popover-menu>`}
+/>
+
+## Attributes
+
+- **`id`** (string, required): Unique ID for popovertarget reference
+- **`popover`** ("auto" | "manual", required): Native popover mode
+- **`anchor`** (string, required): ID of the anchor/trigger element
+
+## Slots
+
+- **default**: Content for the popover menu (links, buttons, etc.)
+
+## Positioning
+
+The component uses fixed positioning settings:
+
+- **Placement**: `bottom-end` (bottom-right relative to anchor)
+- **Offset**: `8px` from anchor
+- **Middleware**: Automatic `flip` and `shift` for viewport constraints
+
+Width is constrained between `--size-content-1` (20ch) and
+`--size-content-2` (45ch).
+
+## Accessibility
+
+The component automatically sets `role="menu"` via `attachInternals()`,
+which can be overridden:
+
+```html
+<m-popover-menu id="my-menu" popover anchor="trigger" role="dialog">
+  <!-- Custom role -->
+</m-popover-menu>
+```

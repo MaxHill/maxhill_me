@@ -12,6 +12,7 @@ import MTab from './m-tab';
 import MTabPanel from './m-tab-panel';
 import MListbox from './m-listbox';
 import MOption from './m-option';
+import MPopoverMenu from './m-popover-menu';
 
 export function registerAll() {
   MCard.define();
@@ -26,6 +27,8 @@ export function registerAll() {
 
   MCommand.define();
   MCommandPalette.define();
+
+  MPopoverMenu.define();
 
   // Form
   MInput.define();

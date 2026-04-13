@@ -1,0 +1,33 @@
+:host {
+  /* Positioning - updated by JS */
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+
+  /* Layout - using size-content variables */
+  width: max-content;
+  min-width: var(--size-content-1);
+  max-width: var(--size-content-2);
+  height: fit-content;
+  box-sizing: border-box;
+
+  /* Visual styling */
+  background-color: var(--color-background);
+  border: var(--border);
+  border-color: var(--color-stroke);
+  border-radius: var(--radius-box);
+  box-shadow: var(--shadow);
+  padding: var(--size-2);
+
+  /* Reset popover default positioning */
+  inset: unset;
+
+  /* This is set for inheritance */
+  color: var(--color-text);
+}
+
+:host(:popover-open) {
+  display: grid;
+  gap: var(--size-1);
+}

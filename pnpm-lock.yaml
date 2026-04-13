@@ -122,6 +122,9 @@ importers:
 
   packages/components:
     dependencies:
+      '@floating-ui/dom':
+        specifier: ^1.7.4
+        version: 1.7.4
       '@maxhill/css':
         specifier: workspace:*
         version: link:../css

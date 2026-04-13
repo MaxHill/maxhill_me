@@ -26,7 +26,8 @@
   },
   "dependencies": {
     "@maxhill/css": "workspace:*",
-    "@maxhill/web-component-utils": "workspace:*"
+    "@maxhill/web-component-utils": "workspace:*",
+    "@floating-ui/dom": "^1.7.4"
   },
   "devDependencies": {
     "@custom-elements-manifest/analyzer": "^0.10.10",
