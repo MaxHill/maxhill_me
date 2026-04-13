@@ -90,6 +90,14 @@
         --color-input-stroke-focus: var(--color-primary-stroke-softer);
         --color-input-text-focus: var(--color-primary-text-on-soft);
 
+        /* --color-input-fill-hover: var(--color-primary-fill-mid); */
+        --color-input-stroke-hover: var(--color-primary-stroke-mid);
+        --color-input-text-hover: var(--color-primary-text-on-soft);
+
+        --color-input-fill-active: var(--color-primary-stroke-mid);
+        --color-input-stroke-active: var(--color-primary-stroke-soft);
+        --color-input-text-active: var(--color-primary-text-on-soft);
+
         --color-input-fill-error: var(--color-surface);
         --color-input-stroke-focus-error: var(--color-destructive-stroke-mid);
         --color-input-text-focus-error: var(--color-destructive-text-on-soft);

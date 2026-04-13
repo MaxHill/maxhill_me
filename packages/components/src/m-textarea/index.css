@@ -58,7 +58,7 @@ label {
 
     &:has(textarea:focus) {
         outline: var(--outline);
-        outline-offset: var(--outline-offset);
+        outline-offset: calc(var(--outline-size) * -1);
     }
 
     /* Slots take content size only */

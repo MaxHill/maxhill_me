@@ -19,6 +19,8 @@
     input[type="text"],
     input[type="search"],
     input[type="number"],
+    input[type="submit"],
+    .button,
     textarea {
         font: inherit;
 
@@ -34,10 +36,12 @@
         color: var(--color-input-text);
         outline-offset: calc(var(--outline-size) * -1);
 
-        &:focus {
+        &:focus,
+        &:focus-visible {
             background: var(--color-input-fill-focus);
             border-color: var(--color-input-stroke-focus);
             color: var(--color-input-text-focus);
+            outline-offset: calc(var(--outline-size) * -1);
         }
 
         &[aria-invalid="true"]{
@@ -46,5 +50,23 @@
             outline-color: var(--color-input-stroke-focus-error);
             color: var(--color-input-text-focus-error);
         }
+    }
+
+
+    input[type="submit"],
+    .button {
+        text-align: center;
+        &:hover {
+            background: var(--color-input-fill-hover);
+            border-color: var(--color-input-stroke-hover);
+            color: var(--color-input-text-hover);
+        }
+
+        &:active {
+            background: var(--color-input-stroke-active);
+            border-color: var(--color-input-stroke-active);
+            color: var(--color-input-text-active);
+        }
+
     }
 }
