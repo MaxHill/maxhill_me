@@ -1,4 +1,4 @@
-import * as esbuild from "npm:esbuild@0.20.0";
+import * as esbuild from "esbuild";
 
 export async function buildAssets(dev: boolean): Promise<string[]> {
   const filesToCache: string[] = [];
@@ -12,7 +12,7 @@ export async function buildAssets(dev: boolean): Promise<string[]> {
     bundle: true,
     outdir: "dist",
     platform: "browser",
-    target: "esnext",  // Changed from es2020 to support decorators
+    target: "esnext",
     format: "esm",
     minify: !dev,
     sourcemap: dev,

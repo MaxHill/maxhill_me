@@ -5,7 +5,7 @@
     "build": "deno run --allow-all build.ts"
   },
   "imports": {
-    "esbuild": "npm:esbuild@0.20.0",
+    "esbuild": "npm:esbuild@0.24.0",
     "@std/path": "jsr:@std/path@^1.0.0",
     "@std/http": "jsr:@std/http@^1.0.0"
   }
