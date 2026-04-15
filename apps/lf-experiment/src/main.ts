@@ -1,3 +1,4 @@
+import "./features/router/router.ts";
 import { registerAll } from "@maxhill/components/register-all";
 import { MShotTypeList } from "./features/bag/components/m-shot-type-list";
 import { MAddShotTypeForm } from "./features/bag/components/m-add-shot-type-form";

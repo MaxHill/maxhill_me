@@ -1,21 +1,19 @@
-type Routes = {
-  [key: string]: string;
-  "not-found": string;
-};
+import UniversalRouter from "../../vendor/universal-router/src/universal-router.ts"
 
-export class Router {
-  constructor(private mount: string, private routes: Routes) {
-    window.addEventListener("popstate", this.handleRouteChange.bind(this));
-  }
+const routes = [
+  {
+    path: '', 
+    action: () => `<h1>Home</h1>`,
+  },
+];
 
-  public render(e: PopStateEvent) {
-    const path = new URL(window.location.href).pathname;
+const router = new UniversalRouter(routes);
 
-    const mount = document.querySelector(this.mount);
-    if (!mount) throw new Error(`No mount '${this.mount} found`);
-    mount.innerHTML = this.routes[path] ?? `<h1>404</h1>`;
-  }
-
-  private handleRouteChange() {
-  }
+function resolve(path: string) {
+    const pathname = path || new URL(window.location).pathname;
+    router.resolve({pathname}).then((html) => {
+        document.body.innerHTML = html // renders: <h1>Posts</h1>
+    })
 }
+
+resolve();
