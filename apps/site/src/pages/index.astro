@@ -5,8 +5,8 @@ import BaseLayout from "../components/layouts/BaseLayout.astro";
 <BaseLayout title="Home">
   <main class="exposed-grid background-pattern" data-pattern="diagonal">
     <a href="/" class="home">maxhill.me</a>
-    <a href="/design-system" class="design-system">Design System</a>
-    <a href="/components" class="components">Components</a>
+    <a href="/design-system" class="design-system" title="Design tokens, patterns, and systematic guidelines">Design System</a>
+    <a href="/components" class="components" title="Web component library and documentation">Components</a>
     <m-fit-text font-display>Max <br/> Hill</m-fit-text>
   </main>
 </BaseLayout>
@@ -17,36 +17,56 @@ import BaseLayout from "../components/layouts/BaseLayout.astro";
     width: 100dvw;
     display: grid;
     grid-template-columns: repeat(12, 1fr);
-    grid-template-rows: 1fr);
+    grid-template-rows: 1fr;
     border-block: var(--border);
     direction: rtl;
 
     @media (width > 900px) { direction: ltr; }
   }
+
   a {
-      padding-inline: var(--body-margin);
+    padding-inline: var(--body-margin);
     writing-mode: vertical-rl;
     background: var(--color-background);
     text-decoration: none;
+    transition: background 0.15s ease-out;
 
     &:hover {
-        text-decoration: underline;
+      text-decoration: underline;
+      background: var(--color-primary-fill-softer);
+    }
+
+    &:focus-visible {
+      outline: var(--outline);
+      outline-offset: calc(-1 * var(--outline-size));
+      background: var(--color-primary-fill-softer);
     }
   }
+
   .home {
-    grid-column:  span 1;
-    background: var(--color-background);
+    grid-column: span 1;
   }
+
   .design-system {
-    grid-column:  span 2;
-    background: var(--color-background);
+    grid-column: span 2;
   }
+
   .components {
-    grid-column:  span 3;
+    grid-column: span 3;
   }
+
   m-fit-text {
-      grid-column: 8 / span 5;
+    grid-column: 8 / span 5;
     background: var(--color-background);
     text-align: right;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 </style>
