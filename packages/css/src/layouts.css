@@ -34,8 +34,6 @@
             grid-auto-columns: max-content;
             scroll-behavior: smooth;
 
-            border-block-start: var(--border);
-
             >.document,
             >.hero {
                 scroll-snap-align: end;

@@ -66,7 +66,18 @@ const { title, bodyClass } = Astro.props;
     </head>
     <body class={bodyClass}>
         <div class="main-menu">
-            <nav>
+            <!-- Mobile menu button -->
+            <button 
+                id="page-menu-trigger" 
+                class="mobile-menu-button" 
+                popovertarget="page-menu"
+                aria-label="Open menu"
+            >
+                Menu
+            </button>
+
+            <!-- Desktop navigation -->
+            <nav class="desktop-nav">
                 <a href="/">maxhill.me</a>
                 <m-command command="navigate" commandfor="/" keys="<C-b>1"></m-command>
                 <a href="/design-system">/design-system</a>
@@ -75,13 +86,68 @@ const { title, bodyClass } = Astro.props;
                 <m-command command="navigate" commandfor="/components" keys="<C-b>3"></m-command>
             </nav>
 
-            <ThemeSwitcher persist={true} />
+            <!-- Desktop theme button -->
+            <div class="desktop-theme">
+                <button 
+                    id="desktop-theme-trigger" 
+                    class="theme-menu-button" 
+                    popovertarget="desktop-theme-menu"
+                    aria-label="Change theme"
+                >
+                    <span id="theme-label">Theme: System</span>
+                </button>
+            </div>
         </div>
+
+        <!-- Desktop theme popover menu -->
+        <m-popover-menu id="desktop-theme-menu" popover="auto" anchor="desktop-theme-trigger">
+            <div class="menu-section">
+                <h3 class="menu-title">Theme</h3>
+                <ThemeSwitcher persist={true} />
+            </div>
+        </m-popover-menu>
+
+        <!-- Mobile popover menu -->
+        <m-popover-menu id="page-menu" popover="auto" anchor="page-menu-trigger">
+            <div class="menu-section">
+                <h3 class="menu-title">Navigation</h3>
+                <nav class="menu-nav">
+                    <a href="/">maxhill.me</a>
+                    <a href="/design-system">/design-system</a>
+                    <a href="/components">/components</a>
+                </nav>
+            </div>
+            
+            <div class="menu-section">
+                <h3 class="menu-title">Theme</h3>
+                <ThemeSwitcher persist={true} />
+            </div>
+        </m-popover-menu>
 
         <slot />
         
         <script>
             import "@maxhill/components/register-all";
+            
+            // Update theme button label
+            function updateThemeLabel() {
+                const themeLabel = document.getElementById('theme-label');
+                if (!themeLabel) return;
+                
+                const savedTheme = localStorage.getItem('theme');
+                const currentTheme = savedTheme || 'system';
+                const themeName = currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1);
+                
+                themeLabel.textContent = `Theme: ${themeName}`;
+            }
+            
+            // Update on load
+            updateThemeLabel();
+            
+            // Listen for theme change events
+            document.addEventListener('themechange', () => {
+                updateThemeLabel();
+            });
         </script>
     </body>
 </html>
@@ -105,6 +171,12 @@ const { title, bodyClass } = Astro.props;
         top: 0;
         height: var(--menu-height);
         gap: var(--size-fluid-2);
+        border-bottom: var(--border);
+
+        /* On mobile, align content to the right */
+        @media (width <= 768px) {
+            justify-content: flex-end;
+        }
 
         &>nav {
             display: flex;
@@ -113,6 +185,106 @@ const { title, bodyClass } = Astro.props;
             
             a {
                 text-decoration: none;
+            }
+        }
+
+        /* Desktop theme button - add margin to match nav */
+        & > .desktop-theme {
+            margin-inline-end: var(--size-1);
+        }
+
+        /* Desktop navigation - applies to direct children */
+        & > .desktop-nav,
+        & > .desktop-theme {
+            @media (width <= 768px) {
+                display: none;
+            }
+        }
+    }
+
+    /* Mobile menu button */
+    .mobile-menu-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        font: var(--h3);
+        font-family: var(--ff-display);
+        color: var(--color-text);
+        border-radius: var(--radius-box);
+
+        &:hover {
+            background-color: var(--color-primary-fill-softer);
+        }
+
+        &:focus-visible {
+            outline: var(--outline);
+            outline-offset: 2px;
+        }
+
+        /* Hide on desktop */
+        @media (width > 768px) {
+            display: none;
+        }
+    }
+
+    /* Desktop theme button */
+    .theme-menu-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        font: var(--h3);
+        font-family: var(--ff-display);
+        color: var(--color-text);
+
+        &:focus-visible {
+            outline: var(--outline);
+            outline-offset: 2px;
+        }
+    }
+
+    /* Mobile menu styles */
+    .menu-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--size-2);
+
+        &:not(:last-child) {
+            padding-bottom: var(--size-2);
+            border-bottom: var(--border);
+        }
+    }
+
+    .menu-title {
+        font: var(--h3);
+        font-family: var(--ff-display);
+        margin: 0;
+        color: var(--color-text-weak);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: var(--font-size-0);
+    }
+
+    .menu-nav {
+        display: flex;
+        flex-direction: column;
+        gap: var(--size-1);
+
+        a {
+            padding: var(--size-2);
+            border-radius: var(--radius-box);
+            text-decoration: none;
+            font: var(--h3);
+            font-family: var(--ff-display);
+
+            &:hover {
+                background-color: var(--color-primary-fill-softer);
+            }
+
+            &:focus-visible {
+                outline: var(--outline);
+                outline-offset: 2px;
             }
         }
     }

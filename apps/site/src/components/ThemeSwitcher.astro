@@ -100,6 +100,11 @@ const { target = "html", persist = false, unsetOption = "system", ...attrs } = A
                     }
                     targetElement.setAttribute("data-theme", theme);
                 }
+                
+                // Dispatch custom event after theme change
+                document.dispatchEvent(new CustomEvent('themechange', { 
+                    detail: { theme } 
+                }));
             }
 
             if (shouldPersist) {
