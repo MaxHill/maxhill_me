@@ -1,6 +1,6 @@
 :host {
   /* Positioning - updated by JS */
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   margin: 0;
@@ -22,9 +22,6 @@
   box-shadow: var(--shadow);
   padding: var(--size-2);
 
-  /* Reset popover default positioning */
-  inset: unset;
-
   /* This is set for inheritance */
   color: var(--color-text);
 }
@@ -32,4 +29,6 @@
 :host(:popover-open) {
   display: grid;
   gap: var(--size-1);
+  /* Safari fix: prevent children from expanding */
+  align-content: start;
 }
