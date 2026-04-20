@@ -3,7 +3,7 @@ import PageLayout from "../../components/layouts/PageLayout.astro";
 import { getCollection } from "astro:content";
 import { getComponentByTagName } from "@wc-toolkit/cem-utilities";
 import customElements from "@maxhill/components/custom-elements.json";
-import { Check, X } from "@lucide/astro";
+import { Check, X, Info } from "@lucide/astro";
 
 const title = "Components";
 
@@ -64,46 +64,68 @@ const components = docEntries
 <PageLayout title={title} bodyClass="component-index-page">
   <main>
     <m-fit-text class="title" font-display>
-      <h1 data-margin="0">Search Components</h1>
+      <h1 data-margin="0">Components</h1>
     </m-fit-text>
 
     <m-search-list target="#component-selector">
-      <m-input placeholder="Filter components.."></m-input>
+      <m-input slot="controller" label="Filter components" placeholder="Type to filter...">
+        <span slot="after" id="result-count" class="result-count"></span>
+      </m-input>
       <m-listbox
         id="component-selector"
         class="grid"
         mode="single-focus"
         skip="[data-match='false']"
+        aria-label="Components list"
       >
-        <div class="title-row component-row">
-          <div class="name">Name</div>
-          <div class="tag">Tag</div>
-          <div class="description">Description</div>
-          <div class="form-associated">Form</div>
+      <div class="title-row component-row" role="row">
+        <div class="tag" role="columnheader">Tag</div>
+        <div class="description" role="columnheader">Description</div>
+        <div class="form-associated" role="columnheader">
+          <button id="form-info-trigger" popovertarget="form-info-menu" aria-label="More information about form association" class="form-header-button">
+            Form Associated
+            <Info size={16} />
+          </button>
         </div>
-        {
-          components.map((component) => (
-            <m-option
-              value={component?.componentPath}
-              class="component-row"
-              data-keywords={component?.tagName}
-              data-subgrid
-            >
-              <div class="name">{component?.tagName}</div>
-              <div class="tag">&lt;{component?.tagName}&gt;</div>
-              <div class="description">
-                {component?.description || "No description available"}
-              </div>
-              <div class="form-associated">{component?.formAssociated ? <Check size={16} /> : <X size={16} />}</div>
-            </m-option>
-          ))
-        }
+      </div>
+      {
+        components.map((component) => (
+          <m-option
+            value={component?.componentPath}
+            class="component-row"
+            data-keywords={component?.tagName}
+            data-subgrid
+            role="row"
+          >
+            <div class="tag" role="cell">
+              <span class="bracket">&lt;</span>{component?.tagName}<span class="bracket">&gt;</span>
+            </div>
+            <div class="description" role="cell">
+              {component?.description || "No description available"}
+            </div>
+            <div class="form-associated" role="cell">
+              {component?.formAssociated ? 
+                <Check size={16} aria-label="Form associated" /> : 
+                <X size={16} aria-label="Not form associated" />
+              }
+            </div>
+          </m-option>
+        ))
+      }
       </m-listbox>
+      <div slot="empty" class="empty-state">
+        <p>No matches found. Try a different search term.</p>
+      </div>
     </m-search-list>
   </main>
 
+  <m-popover-menu id="form-info-menu" popover="auto" anchor="form-info-trigger" role="dialog">
+    <p>Indicates whether this component can participate in form submission.</p>
+  </m-popover-menu>
+
   <script>
     import type { MListbox } from "@maxhill/components/m-listbox/index";
+    import type { MSearchList } from "@maxhill/components/m-search-list/index";
 
     const list_box = document.getElementById(
       "component-selector",
@@ -111,6 +133,34 @@ const components = docEntries
     list_box?.addEventListener("m-listbox-change", () => {
       window.location.href = `/components/${list_box.value}`;
     });
+
+    // Update result count
+    const search_list = document.querySelector("m-search-list") as MSearchList;
+    const result_count = document.getElementById("result-count");
+    const input = search_list?.input;
+
+    function updateResultCount() {
+      if (!search_list || !result_count) return;
+      
+      const items = search_list.items;
+      const matchCount = items.filter(item => item.getAttribute("data-match") === "true").length;
+      const totalCount = items.length;
+      
+      if (input?.value) {
+        result_count.textContent = `${matchCount} of ${totalCount}`;
+      } else {
+        result_count.textContent = "";
+      }
+    }
+
+    let debounceTimer: ReturnType<typeof setTimeout>;
+    input?.addEventListener("input", () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(updateResultCount, 200);
+    });
+
+    // Initial count
+    updateResultCount();
   </script>
 
   <style>
@@ -138,10 +188,22 @@ const components = docEntries
       align-content: start;
       width: 100%;
       max-width: calc(100% - 2 * var(--body-margin));
-      border: var(--border-width) solid var(--color-stroke);
 
       m-input {
-        --border-width: 0;
+        ::part(input-wrapper) {
+          border: var(--border-width) solid var(--color-stroke);
+          border-bottom: none;
+        }
+        
+        label {
+          clip: rect(0 0 0 0);
+          clip-path: inset(50%);
+          height: 1px;
+          overflow: hidden;
+          position: absolute;
+          white-space: nowrap;
+          width: 1px;
+        }
       }
     }
     
@@ -149,17 +211,21 @@ const components = docEntries
       gap: 0;
       padding: 0;
       grid-auto-rows: auto;
-      grid-template-columns: 20% 20% 45% 15%;
-      border: none;
+      grid-template-columns: 30% 50% 20%;
+      border: var(--border-width) solid var(--color-stroke);
+      border-top: none;
 
       @media (width < 700px) {
-        grid-template-columns: 40% 40% 20%;
+        grid-template-columns: 100%;
+        
+        .description {
+          display: none;
+        }
+        
+        .form-associated {
+          display: none;
+        }
       }
-    }
-    
-    .search-row {
-      gap: 0;
-      padding: 0;
     }
     
     .component-row {
@@ -170,7 +236,24 @@ const components = docEntries
       margin: 0;
 
       @media (width < 700px) {
+        grid-template-rows: auto auto;
+        
+        .tag {
+          grid-column: 1;
+          padding-bottom: var(--size-00);
+          border-bottom: none;
+        }
+        
         .description {
+          display: block;
+          grid-column: 1;
+          font-size: var(--p2);
+          color: var(--color-text-softer);
+          padding-top: var(--size-00);
+          border-top: none;
+        }
+        
+        .form-associated {
           display: none;
         }
       }
@@ -178,9 +261,16 @@ const components = docEntries
       &.title-row {
         font-weight: var(--font-weight-bold);
         background: var(--color-surface);
+        position: sticky;
+        top: calc(var(--menu-height));
+        z-index: 10;
 
         div {
           border-top: var(--border-width) solid var(--color-stroke);
+        }
+        
+        .tag {
+          font-size: inherit;
         }
       }
 
@@ -188,10 +278,16 @@ const components = docEntries
         padding: var(--size-1);
         border-right: var(--border-width) solid var(--color-stroke);
         border-bottom: var(--border-width) solid var(--color-stroke);
+        display: flex;
+        align-items: center;
       }
       
       div:last-child {
         border-right: none;
+      }
+      
+      .form-associated {
+        justify-content: center;
       }
     }
     
@@ -205,10 +301,73 @@ const components = docEntries
     .component-row:last-child div {
       border-bottom: none;
     }
+    
+    .bracket {
+      color: var(--color-text-softer);
+    }
+    
+    .component-row:not(.title-row) .tag {
+      font-size: 1.5rem;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.1;
+      font-family: var(--ff-display);
+    }
+    
+    .result-count {
+      font-size: var(--p2);
+      color: var(--color-text-softer);
+      white-space: nowrap;
+      padding-left: var(--size-1);
+    }
+    
+    .empty-state {
+      padding: var(--size-4);
+      text-align: center;
+      color: var(--color-text-softer);
+    }
+    
+    .form-header-button {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: inherit;
+      font: inherit;
+      font-weight: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--size-1);
+      
+      &:hover {
+        color: var(--color-primary-text-colorful);
+      }
+      
+      &:focus-visible {
+        outline: var(--outline-size) solid var(--color-primary-fill-mid);
+        outline-offset: var(--size-000);
+      }
+      
+      svg {
+        flex-shrink: 0;
+      }
+    }
+    
+    m-popover-menu {
+      padding: var(--size-2);
+      background: var(--color-surface);
+      border: var(--border-width) solid var(--color-stroke);
+      max-width: var(--size-content-2);
+      
+      p {
+        margin: 0;
+        font-size: var(--p2);
+      }
+    }
     }
 
     .title {
-      margin-top: var(--size-fluid-3);
+      margin-top: var(--size-fluid-4);
+      margin-bottom: var(--size-fluid-3);
     }
 
     m-option[data-match="false"] {
