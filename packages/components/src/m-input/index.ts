@@ -47,6 +47,7 @@ baseStyleSheet.replaceSync(styles);
  */
 export class MInput extends MFormAssociatedElement {
   static tagName = "m-input";
+  static formAssociated = true;
 
   @query("input")
   private inputElement!: HTMLInputElement;

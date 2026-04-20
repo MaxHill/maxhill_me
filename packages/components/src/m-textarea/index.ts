@@ -46,6 +46,7 @@ baseStyleSheet.replaceSync(styles);
  */
 export class MTextarea extends MFormAssociatedElement {
   static tagName = "m-textarea";
+  static formAssociated = true;
 
   @query("textarea")
   private textareaElement!: HTMLTextAreaElement;
