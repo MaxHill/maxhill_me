@@ -1,47 +1,52 @@
 <div class="stack" data-gap="fluid-1">
-    <div class="stack" data-gap="1">
-        <label for="example-input-text">Text input</label>
-        <input id="example-input-text" type="text" />
-    </div>
+  <div class="stack" data-gap="1">
+    <label for="example-input-text">Text input</label>
+    <input id="example-input-text" type="text" />
+  </div>
 
-    <div class="stack" data-gap="1">
-        <label for="example-input-textarea">Textarea input</label>
-        <textarea id="example-input-textarea"></textarea>
-    </div>
+  <div class="stack" data-gap="1">
+    <label for="example-input-textarea">Textarea input</label>
+    <textarea id="example-input-textarea"></textarea>
+  </div>
 
-    <m-textarea 
-           label="M-textarea input" 
-           id="example-input-textarea-component"></m-textarea>
+  <m-textarea
+    label="M-textarea input"
+    id="example-input-textarea-component"></m-textarea>
 
+  <div class="stack" data-gap="1">
+    <label for="example-input-kitchen-sink">
+      Text input kitchen sink
+      <p class="input-description">Description...</p>
+    </label>
+    <input
+      id="example-input-kitchen-sink"
+      name="kitchen-sink"
+      type="text"
+      aria-invalid="true"
+      aria-errormessage="kitchen-sink-error-message"
+    />
+    <p
+      id="kitchen-sink-error-message"
+      aria-live="polite"
+      class="p2 error-message"
+    >
+      Something is wrong
+    </p>
+  </div>
 
-    <div class="stack" data-gap="1">
-        <label for="example-input-kitchen-sink">
-            Text input kitchen sink
-            <p class="input-description">Description...</p>
-        </label>
-        <input 
-            id="example-input-kitchen-sink" 
-            name="kitchen-sink"
-            type="text" 
-            aria-invalid="true"
-            aria-errormessage="kitchen-sink-error-message"
-        />
-        <p 
-            id="kitchen-sink-error-message"
-            aria-live="polite"
-            class="p2 error-message" 
-        >Something is wrong</p>
-    </div>
+  <m-input
+    label="Text input kitchen sink"
+    name="kitchen-sink"
+    type="text"
+    description="This imput has it all"
+    placeholder="Everything..."
+  >
+  </m-input>
 
-    <m-input 
-        label="Text input kitchen sink" 
-        name="kitchen-sink"
-        type="text" 
-        description="This imput has it all"
-        placeholder="Everything..."
-        >
-    </m-input>
-
-        <input type="submit" value="Submit"/>
-        <button class="button" type="submit">Actual button</button>
+  <div
+    style="display: flex; gap: var(--size-2); justify-content: flex-end;"
+  >
+    <input type="submit" value="Input type=submit" />
+    <button class="button" type="submit">Actual button</button>
+  </div>
 </div>

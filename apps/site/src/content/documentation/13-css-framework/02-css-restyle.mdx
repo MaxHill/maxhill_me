@@ -6,17 +6,146 @@ tags: [css]
 htmlId: doc-css-restyle
 ---
 
-import { Code } from 'astro:components';
-import ExampleInput from './ExampleInput.astro';
+import { Code } from "astro:components";
+import ExampleInput from "./ExampleInput.astro";
+import CodeExample from "../../../components/CodeExample.astro";
+
+## Buttons
+
+The button system provides a systematic approach to interactive elements
+with clear visual hierarchy through variants, styles, sizes, and states.
+Designed for terminal-like immediacy with instant state changes—no
+transitions.
+
+### Variants & Styles
+
+**Variants:**
+
+- **Primary** (default): Filled background, strong presence
+- **Secondary**: Outline style (`data-variant="secondary"`)
+
+**Styles:**
+
+- **Primary** (default): Terminal green - the default button color
+- **Neutral**: Neutral gray (`data-style="neutral"`)
+- **Constructive**: Success green (`data-style="constructive"`)
+- **Destructive**: Error red (`data-style="destructive"`)
+
+<CodeExample 
+  html={`<div style="display: flex; gap: var(--size-2); flex-wrap: wrap;">
+  <button class="button">Primary (default)</button>
+  <button class="button" data-style="neutral">Neutral</button>
+  <button class="button" data-style="constructive">Constructive</button>
+  <button class="button" data-style="destructive">Destructive</button>
+</div>
+
+<h4 style="margin-top: var(--size-3); margin-bottom: var(--size-2); font: var(--p); color: var(--color-text-mid);">
+  Secondary (Outline)
+</h4>
+<div style="display: flex; gap: var(--size-2); flex-wrap: wrap;">
+  <button class="button" data-variant="secondary">
+    Primary (default)
+  </button>
+  <button class="button" data-variant="secondary" data-style="neutral">
+    Neutral
+  </button>
+  <button
+    class="button"
+    data-variant="secondary"
+    data-style="constructive"
+  >
+    Constructive
+  </button>
+  <button class="button" data-variant="secondary" data-style="destructive">
+    Destructive
+  </button>
+</div>
+`} />
+
+### Sizes
+
+- **Compact**: Reduced padding (`data-size="compact"`)
+- **Default**: Standard size (no attribute)
+- **Large**: Generous padding (`data-size="large"`)
+
+<CodeExample
+  html={`<div style="display: flex; gap: var(--size-2); flex-wrap: wrap; align-items: center;">
+  <button class="button" data-style="primary" data-size="compact">Compact</button>
+  <button class="button" data-style="primary">Default</button>
+  <button class="button" data-style="primary" data-size="large">Large</button>
+</div>`}
+/>
+
+### States
+
+All buttons support hover, active, focus, and disabled states with instant
+transitions.
+
+<CodeExample
+  html={`<div style="display: flex; gap: var(--size-2); flex-wrap: wrap;">
+  <button class="button" data-style="primary">Normal</button>
+  <button class="button" data-style="primary" disabled>Disabled</button>
+  <button class="button" data-style="primary" aria-disabled="true">Aria Disabled</button>
+</div>`}
+/>
+
+### Special Layouts
+
+**Full Width:**
+
+<CodeExample
+  html={`<button class="button" data-style="primary" data-width="full">Full Width Button</button>`}
+/>
+
+**With Icons:**
+
+<CodeExample
+  html={`<div style="display: flex; gap: var(--size-2); flex-wrap: wrap;">
+  <button class="button" data-style="primary">
+    <span aria-hidden="true">→</span>
+    <span>Next</span>
+  </button>
+  <button class="button" data-style="primary">
+    <span>Previous</span>
+    <span aria-hidden="true">←</span>
+  </button>
+  <button class="button" data-style="primary" data-icon-only="true" aria-label="Close">
+    <span aria-hidden="true">×</span>
+  </button>
+</div>`}
+/>
+
+**Form Actions:**
+
+<CodeExample
+  html={`<form style="padding: var(--size-3); background: var(--color-surface); border: var(--border);">
+  <div style="display: flex; gap: var(--size-2); justify-content: flex-end;">
+    <button type="button" class="button" data-variant="secondary">Cancel</button>
+    <button type="submit" class="button" data-style="primary">Submit</button>
+  </div>
+</form>`}
+  js={`document.querySelector('form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  alert('Form submitted!');
+});`}
+/>
+
+### Accessibility
+
+- Minimum 44×44px touch target (met even with compact size)
+- Keyboard navigation with visible focus outline
+- Disabled state uses both `disabled` attribute and `aria-disabled` support
+- Icon-only buttons require `aria-label` for screen readers
 
 ## Inputs
 
-<ExampleInput/>
-
+<ExampleInput />
 
 ## Typesetting
 
-The `.typesetting` class creates consistent vertical rhythm for text-heavy content using CSS Grid. It styles headings, paragraphs, code blocks, horizontal rules, and maintains proper spacing between all elements.
+The `.typesetting` class creates consistent vertical rhythm for text-heavy
+content using CSS Grid. It styles headings, paragraphs, code blocks,
+horizontal rules, and maintains proper spacing between all elements.
 
 ### Features
 
@@ -64,6 +193,7 @@ function example() {
 
       <p>Final paragraph showing consistent vertical rhythm in action.</p>
     </div>
+
   </m-tab-panel>
   
   <m-tab-panel name="without">
@@ -89,7 +219,6 @@ function example() {
 
       <p>Final paragraph showing poor vertical rhythm.</p>
     </div>
+
   </m-tab-panel>
 </m-tab-list>
-
-
