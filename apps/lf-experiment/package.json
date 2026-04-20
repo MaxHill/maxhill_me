@@ -4,10 +4,9 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "dev": "pnpm run build:binary && ./build/main -env=dev",
-    "build:binary": "cd ./build && go build -o ./main .",
-    "build": "pnpm run build:binary && ./build/main",
-    "clean": "rm -rf dist/ .tmp/ build/main"
+    "dev": "deno task dev",
+    "build": "deno task build",
+    "clean": "rm -rf dist/"
   },
   "dependencies": {
     "@maxhill/components": "workspace:*",

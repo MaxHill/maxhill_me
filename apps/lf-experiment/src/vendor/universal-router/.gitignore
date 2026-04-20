@@ -1,0 +1,21 @@
+# See https://help.github.com/ignore-files/ for more about ignoring files
+
+# Dependencies
+node_modules/
+src/path-to-regexp.ts
+
+# Compiled output
+/dist/
+
+# Test coverage
+/coverage/
+
+# Logs
+npm-debug.log*
+
+# Editors and IDEs
+.claude/
+.idea/
+
+# Misc
+.DS_Store

@@ -14,7 +14,23 @@ const { title, bodyClass } = Astro.props;
         <meta charset="utf-8" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta name="viewport" content="width=device-width" />
-        <title>maxhill.se - {title}</title>
+        <title>maxhill.me - {title}</title>
+        
+        <!-- SEO Meta Tags -->
+        <meta name="description" content="Max Hill" />
+        <meta name="author" content="Max Hill" />
+        
+        <!-- OpenGraph Tags -->
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={`maxhill.me - ${title}`} />
+        <meta property="og:description" content="Max hill" />
+        <meta property="og:url" content="https://maxhill.me" />
+        <meta property="og:site_name" content="maxhill.me" />
+        
+        <!-- Twitter Card Tags -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`maxhill.me - ${title}`} />
+        <meta name="twitter:description" content="Max Hill" />
 
         <link
             rel="preload"
