@@ -4,9 +4,9 @@ import BaseLayout from "../components/layouts/BaseLayout.astro";
 
 <BaseLayout title="Home">
   <main class="exposed-grid background-pattern" data-pattern="diagonal">
-    <a href="/" class="home">maxhill.me</a>
-    <a href="/design-system" class="design-system" title="Design tokens, patterns, and systematic guidelines">Design System</a>
-    <a href="/components" class="components" title="Web component library and documentation">Components</a>
+    <a href="/" class="home"><span>maxhill.me</span></a>
+    <a href="/design-system" class="design-system" title="Design tokens, patterns, and systematic guidelines"><span>Design System</span></a>
+    <a href="/components" class="components" title="Web component library and documentation"><span>Components</span></a>
     <m-fit-text font-display>Max <br/> Hill</m-fit-text>
   </main>
 </BaseLayout>
@@ -25,34 +25,94 @@ import BaseLayout from "../components/layouts/BaseLayout.astro";
   }
 
   a {
-    padding-inline: var(--body-margin);
     writing-mode: vertical-rl;
-    background: var(--color-background);
+    background-color: var(--color-background);
     text-decoration: none;
-    transition: background 0.15s ease-out;
+    position: relative;
+    isolation: isolate;
+    font: var(--h2);
+    font-family: var(--ff-display);
+    overflow:hidden;
+
+
+
+    /* Pattern variables for hover effect */
+    --_color-fg: var(--color-primary-stroke-soft);
+    --_color-bg: transparent;
+    --_size: 10px 10px;
+    --_pattern-opacity: 0;
+
+    /* Instant background color change, fade in pattern */
+    transition: --_pattern-opacity 0.4s ease-out;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-size: var(--_size);
+      opacity: var(--_pattern-opacity);
+      transition: opacity 0.4s ease-out;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    & > span {
+        right: var(--body-margin);
+      background: var(--color-background);
+      position: relative;
+      padding: var(--body-margin);
+    }
 
     &:hover {
       text-decoration: underline;
-      background: var(--color-primary-fill-softer);
+      background-color: var(--color-primary-fill-softer);
+      --_pattern-opacity: 1;
+
+      & > span {
+        background: var(--color-primary-fill-softer);
+      }
     }
 
     &:focus-visible {
       outline: var(--outline);
       outline-offset: calc(-1 * var(--outline-size));
-      background: var(--color-primary-fill-softer);
+      background-color: var(--color-primary-fill-softer);
+      --_pattern-opacity: 1;
+
+      & > span {
+        background: var(--color-primary-fill-softer);
+      }
     }
   }
 
   .home {
     grid-column: span 1;
+
+    &::before {
+      background-image: radial-gradient(var(--_color-fg) 1px, var(--_color-bg) 1px);
+    }
   }
 
   .design-system {
     grid-column: span 2;
+
+    &::before {
+      background-image: repeating-linear-gradient(to right,
+        var(--_color-fg),
+        var(--_color-fg) 1px,
+        var(--_color-bg) 1px,
+        var(--_color-bg));
+    }
   }
 
   .components {
     grid-column: span 3;
+
+    &::before {
+      background-image: 
+        linear-gradient(var(--_color-fg) 1px, transparent 1px),
+        linear-gradient(to right, var(--_color-fg) 1px, var(--_color-bg) 1px);
+    }
   }
 
   m-fit-text {
