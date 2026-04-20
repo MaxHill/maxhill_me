@@ -30,9 +30,10 @@ import BaseLayout from "../components/layouts/BaseLayout.astro";
     text-decoration: none;
     position: relative;
     isolation: isolate;
-    font: var(--h2);
     font-family: var(--ff-display);
     overflow:hidden;
+
+    font: var(--h2);
 
     /* Pattern variables for hover effect */
     --_color-fg: var(--color-primary-stroke-soft);
@@ -55,10 +56,14 @@ import BaseLayout from "../components/layouts/BaseLayout.astro";
     }
 
     & > span {
-      right: var(--body-margin);
       background: var(--color-background);
       position: relative;
-      padding: var(--body-margin);
+      padding: 0;
+      
+      @media (width > 768px) {
+        right: var(--body-margin);
+        padding: var(--body-margin);
+      }
     }
 
     &:hover {
