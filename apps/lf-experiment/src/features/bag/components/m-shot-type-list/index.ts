@@ -1,7 +1,8 @@
-import { MElement, query } from "@maxhill/web-component-utils";
+import { MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
+import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
 import { get_DB } from "../../../../db";
-import { ShotTypeService } from "../../shot-type-service";
+import { ShotType, ShotTypeService } from "../../shot-type-service";
 import { TableChangeEvent } from "@maxhill/idb-distribute";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 
@@ -12,14 +13,8 @@ export class MShotTypeList extends MElement {
   static tagName = "m-shot-type-list";
 
   private shot_type_repository!: ShotTypeService;
-
-  @query("#shot-type-list-item-template")
-  private template!: HTMLTemplateElement;
-
-  @query("#shots")
-  private shots_container!: HTMLUListElement;
-
-  unsubscribe!: () => void;
+  private shotTypes: ShotType[] = [];
+  private unsubscribe!: () => void;
 
   constructor() {
     super();
@@ -32,57 +27,42 @@ export class MShotTypeList extends MElement {
     this.shot_type_repository = new ShotTypeService(db);
 
     this.unsubscribe = this.shot_type_repository.subscribe(async (_: TableChangeEvent) => {
-      await this.render();
+      await this.renderComponent();
     });
 
-    await this.render();
+    await this.renderComponent();
   }
 
   async disconnectedCallback() {
     this.unsubscribe?.();
   }
 
-  async render() {
-    this.shadowRoot!.innerHTML = `
-            <template id="shot-type-list-item-template">
-                <li>
-                    <div class="name"></div>
-                    <div class="club"></div>
-                    <div class="description"></div>
-                    <a class="edit-link">Edit</a>
-                </li>
-            </template>
-
-            <div>
-                <h2>Shot types</h2>
-                <ul id="shots" role="list" aria-label="List of shot types"> </ul>
-                <p id="empty-message" style="display: none; color: var(--color-text-muted, #666); font-style: italic;">No shot types yet. Add one to get started!</p>
-            </div>
-            `;
-
-    let hasShotTypes = false;
-    for await (const shot_type of this.shot_type_repository.table.query()) {
-      hasShotTypes = true;
-      const clone = document.importNode(this.template.content, true);
-
-      const name = clone.querySelector(".name");
-      if (name) name.textContent = shot_type.name;
-
-      const club = clone.querySelector(".club");
-      if (club) club.textContent = shot_type.club;
-
-      const description = clone.querySelector(".description");
-      if (description) description.textContent = shot_type.description;
-
-      this.shots_container?.appendChild(clone);
+  private async renderComponent() {
+    // Load shot types from database
+    this.shotTypes = [];
+    for await (const shotType of this.shot_type_repository.table.query()) {
+      this.shotTypes.push(shotType);
     }
 
-    // Show empty message if no shot types
-    if (!hasShotTypes) {
-      const emptyMessage = this.shadowRoot!.querySelector('#empty-message') as HTMLElement;
-      if (emptyMessage) {
-        emptyMessage.style.display = 'block';
-      }
-    }
+    render(this.shadowRoot!, html`
+      <div>
+        <h2>Shot types</h2>
+        ${this.shotTypes.length > 0 ? html`
+          <ul id="shots" role="list" aria-label="List of shot types">
+            ${this.shotTypes.map(shotType => html`
+              <li>
+                <div class="name">${shotType.name}</div>
+                <div class="description">${shotType.description}</div>
+                <a class="edit-link">Edit</a>
+              </li>
+            `)}
+          </ul>
+        ` : html`
+          <p style="color: var(--color-text-muted, #666); font-style: italic;">
+            No shot types yet. Add one to get started!
+          </p>
+        `}
+      </div>
+    `);
   }
 }

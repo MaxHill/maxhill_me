@@ -1,4 +1,4 @@
-import UniversalRouter from "../../vendor/universal-router/src/universal-router.ts";
+import UniversalRouter, { type RouteContext } from "../../vendor/universal-router/src/universal-router.ts";
 
 const routes = [
   {
@@ -22,7 +22,7 @@ const routes = [
       document.title = "Add Club - Golf Bag Tracker";
       return `
     <div class="stack" data-gap="4">
-      <m-add-club-form></m-add-club-form>
+      <m-club-form></m-club-form>
       <a href="/" aria-label="Go back to home page">Back</a>
     </div>
 `;
@@ -30,12 +30,11 @@ const routes = [
   },
   {
     path: "/bag/club/:key/edit",
-    action: () => {
+    action: ({ params }: RouteContext) => {
       document.title = `Edit Club - Golf Bag Tracker`;
       return `
     <div class="stack" data-gap="4">
-      <h1>Edit club</h1>
-      <m-add-club-form></m-add-club-form>
+      <m-club-form club-key="${params.key}"></m-club-form>
       <a href="/" aria-label="Go back to home page">Back</a>
     </div>
 `;
@@ -49,6 +48,19 @@ const routes = [
     <div class="stack" data-gap="4">
       <m-add-shot-type-form></m-add-shot-type-form>
       <a href="/" aria-label="Go back to home page">Back</a>
+    </div>
+`;
+    },
+  },
+  {
+    path: "/404",
+    action: () => {
+      document.title = "404 Not Found - Golf Bag Tracker";
+      return `
+    <div class="stack" data-gap="4">
+      <h1>404 - Page Not Found</h1>
+      <p>The page you're looking for doesn't exist.</p>
+      <a href="/" aria-label="Go back to home page">Back to Home</a>
     </div>
 `;
     },

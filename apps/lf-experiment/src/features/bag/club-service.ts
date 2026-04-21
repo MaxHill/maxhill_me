@@ -18,8 +18,8 @@ export class ClubService {
         this.table = this.db.table("clubs");
     }
 
-    async addClub(club: Club): Promise<void> {
-        await this.table.setRow(crypto.randomUUID(), club);
+    async setClub(key: string, club: Club): Promise<void> {
+        await this.table.setRow(key, club);
     }
 
     subscribe(handler: SubscriptionCallbackHandler): () => void {

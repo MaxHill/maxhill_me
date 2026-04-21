@@ -21,6 +21,9 @@ export async function buildAssets(dev: boolean): Promise<string[]> {
       ".css": "text",   // For Shadow DOM and inline CSS imports
       ".html": "text",  // For Shadow DOM
     },
+    alias: {
+      "@webreflection/alien-signals": "./src/vendor/uhtml/node_modules/@webreflection/alien-signals/index.js"
+    },
   });
   
   // Collect JS outputs (exclude service-worker.js and .map)
@@ -28,6 +31,11 @@ export async function buildAssets(dev: boolean): Promise<string[]> {
     if (!outputPath.endsWith(".map") && !outputPath.includes("service-worker")) {
       filesToCache.push("/" + outputPath.replace("dist/", ""));
     }
+  }
+  
+  // Write metafile for analysis
+  if (!dev) {
+    await Deno.writeTextFile("dist/metafile.json", JSON.stringify(jsResult.metafile, null, 2));
   }
   
   esbuild.stop();

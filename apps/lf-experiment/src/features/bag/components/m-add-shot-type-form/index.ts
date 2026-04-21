@@ -1,5 +1,6 @@
-import { MElement, query } from "@maxhill/web-component-utils";
+import { MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
+import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
 import { get_DB } from "../../../../db";
 import { ShotTypeService } from "../../shot-type-service";
 import { globalStyleSheet } from "../../../../styles/global-styles";
@@ -11,11 +12,7 @@ export class MAddShotTypeForm extends MElement {
   static tagName = "m-add-shot-type-form";
 
   private shot_type_repository!: ShotTypeService;
-
-  @query("#add-shot-type-form")
-  private add_shot_type_form!: HTMLFormElement;
-
-  unsubscribe!: () => void;
+  private formRef: HTMLFormElement | null = null;
 
   constructor() {
     super();
@@ -26,19 +23,14 @@ export class MAddShotTypeForm extends MElement {
   async connectedCallback() {
     const db = await get_DB();
     this.shot_type_repository = new ShotTypeService(db);
-
-    this.render();
-    this.add_shot_type_form.addEventListener("submit", this.handleFormSubmit);
-  }
-
-  disconnectedCallback() {
-    this.add_shot_type_form?.removeEventListener("submit", this.handleFormSubmit);
+    this.renderComponent();
   }
 
   private handleFormSubmit = async (e: Event) => {
     e.preventDefault();
-    const formData = new FormData(this.add_shot_type_form);
+    if (!this.formRef) return;
 
+    const formData = new FormData(this.formRef);
     const name = formData.get("name")?.toString();
     const description = formData.get("description")?.toString();
 
@@ -51,19 +43,24 @@ export class MAddShotTypeForm extends MElement {
       description,
     });
 
-    this.add_shot_type_form.reset();
-  }
+    this.formRef.reset();
+  };
 
-  render() {
-    this.shadowRoot!.innerHTML = `
-            <form id="add-shot-type-form" class="form box" aria-label="Add new shot type form">
-                <h2>Add shot type</h2>
-                
-                <m-input required min="2" name="name" label="Name" aria-required="true"></m-input>
-                <m-textarea required minlength="10" name="description" label="Description" rows="4" placeholder="Enter a detailed description..." clearable aria-required="true"></m-textarea>
+  private renderComponent() {
+    render(this.shadowRoot!, html`
+      <form 
+        ref=${(el: any) => this.formRef = el}
+        class="form box" 
+        aria-label="Add new shot type form"
+        @submit=${this.handleFormSubmit}
+      >
+        <h2>Add shot type</h2>
+        
+        <m-input required min="2" name="name" label="Name" aria-required="true"></m-input>
+        <m-textarea required minlength="10" name="description" label="Description" rows="4" placeholder="Enter a detailed description..." clearable aria-required="true"></m-textarea>
 
-                <button type="submit" aria-label="Submit form to add shot type">Add</button>
-            </form>
-        `;
+        <button class="button" type="submit" aria-label="Submit form to add shot type">Add</button>
+      </form>
+    `);
   }
 }
