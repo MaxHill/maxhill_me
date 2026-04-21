@@ -13,6 +13,7 @@
     "jsr:@std/path@1": "1.1.4",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/streams@^1.0.17": "1.0.17",
+    "npm:@webreflection/alien-signals@~0.3.2": "0.3.2",
     "npm:esbuild@0.24.0": "0.24.0",
     "npm:typescript@^5.9.3": "5.9.3"
   },
@@ -186,6 +187,15 @@
       "os": ["win32"],
       "cpu": ["x64"]
     },
+    "@webreflection/alien-signals@0.3.2": {
+      "integrity": "sha512-DmNjD8Kq5iM+Toirp3llS/izAiI3Dwav5nHRvKdR/YJBTgun3y4xK76rs9CFYD2bZwZJN/rP+HjEqKTteGK+Yw==",
+      "dependencies": [
+        "alien-signals"
+      ]
+    },
+    "alien-signals@2.0.8": {
+      "integrity": "sha512-844G1VLkk0Pe2SJjY0J8vp8ADI73IM4KliNu2OGlYzWpO28NexEUvjHTcFjFX3VXoiUtwTbHxLNI9ImkcoBqzA=="
+    },
     "esbuild@0.24.0": {
       "integrity": "sha512-FuLPevChGDshgSicjisSooU0cemp/sGXR841D5LHMB7mTVOmsEHcAxaH3irL53+8YDIeVNQEySh4DaYU/iuPqQ==",
       "optionalDependencies": [
@@ -226,6 +236,7 @@
     "dependencies": [
       "jsr:@std/http@1",
       "jsr:@std/path@1",
+      "npm:@webreflection/alien-signals@~0.3.2",
       "npm:esbuild@0.24.0"
     ],
     "packageJson": {

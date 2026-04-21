@@ -2,14 +2,12 @@
 import "./styles/global-styles.ts";
 
 import "./features/router/router.ts";
-import { registerAll } from "@maxhill/components/register-all";
 import { MShotTypeList } from "./features/bag/components/m-shot-type-list";
 import { MAddShotTypeForm } from "./features/bag/components/m-add-shot-type-form";
 import { MClubForm } from "./features/bag/components/m-club-form";
 import MClubList from "./features/bag/components/m-club-list";
 
-// Register all components
-registerAll();
+// Register app components
 MShotTypeList.define();
 MAddShotTypeForm.define();
 MClubForm.define();

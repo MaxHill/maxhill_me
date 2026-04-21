@@ -1,13 +1,21 @@
 import { BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
-import MCombobox from "@maxhill/components/m-combobox/index";
-import MOption from "@maxhill/components/m-option/index";
+import MCombobox from "@maxhill/components/m-combobox";
+import MOption from "@maxhill/components/m-option";
+import MInput from "@maxhill/components/m-input";
+import { MSearchList } from "@maxhill/components/m-search-list";
 import { ShotType, ShotTypeService } from "../../shot-type-service";
 import { get_DB } from "../../../../db";
 import { Club, ClubService, ClubTypes } from "../../club-service";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { ClubSavedEvent } from "../../events";
+
+// Register library components (order matters: dependencies first)
+MInput.define();
+MSearchList.define();
+MCombobox.define();
+MOption.define();
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
