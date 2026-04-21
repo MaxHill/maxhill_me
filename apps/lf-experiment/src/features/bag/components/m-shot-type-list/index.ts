@@ -39,7 +39,7 @@ export class MShotTypeList extends MElement {
   }
 
   async disconnectedCallback() {
-    this.unsubscribe();
+    this.unsubscribe?.();
   }
 
   async render() {
@@ -55,11 +55,14 @@ export class MShotTypeList extends MElement {
 
             <div>
                 <h2>Shot types</h2>
-                <ul id="shots"> </ul>
+                <ul id="shots" role="list" aria-label="List of shot types"> </ul>
+                <p id="empty-message" style="display: none; color: var(--color-text-muted, #666); font-style: italic;">No shot types yet. Add one to get started!</p>
             </div>
             `;
 
+    let hasShotTypes = false;
     for await (const shot_type of this.shot_type_repository.table.query()) {
+      hasShotTypes = true;
       const clone = document.importNode(this.template.content, true);
 
       const name = clone.querySelector(".name");
@@ -72,6 +75,14 @@ export class MShotTypeList extends MElement {
       if (description) description.textContent = shot_type.description;
 
       this.shots_container?.appendChild(clone);
+    }
+
+    // Show empty message if no shot types
+    if (!hasShotTypes) {
+      const emptyMessage = this.shadowRoot!.querySelector('#empty-message') as HTMLElement;
+      if (emptyMessage) {
+        emptyMessage.style.display = 'block';
+      }
     }
   }
 }

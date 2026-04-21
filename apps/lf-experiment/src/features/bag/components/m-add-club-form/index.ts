@@ -1,4 +1,4 @@
-import { MElement, BindAttribute, query } from "@maxhill/web-component-utils";
+import { MElement, query } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import template from "./index.html?inline";
 import MCombobox from "@maxhill/components/m-combobox/index";
@@ -19,9 +19,6 @@ baseStyleSheet.replaceSync(styles);
 export class MAddClubForm extends MElement {
     static tagName = 'm-add-club-form';
 
-    @BindAttribute()
-    example: string = '';
-
     @query('#shot-type-combobox')
     private shotTypeCombobox!: MCombobox;
 
@@ -30,9 +27,6 @@ export class MAddClubForm extends MElement {
 
     @query('#shot-type-option-template')
     private shotTypeOptionTemplate!: HTMLTemplateElement;
-
-    // @query("#shot-type-combobox")
-    // shotTypeCombobox!: MCombobox;
 
     private shotTypeService!: ShotTypeService
     private clubService!: ClubService
@@ -48,14 +42,14 @@ export class MAddClubForm extends MElement {
         this.shotTypeService = new ShotTypeService(db);
         this.clubService = new ClubService(db);
         await this.render();
-        this.addClubForm.addEventListener("submit", this.handleFormSubmit.bind(this));
+        this.addClubForm.addEventListener("submit", this.handleFormSubmit);
     }
 
     disconnectedCallback() {
-        this.addClubForm.removeEventListener("submit", this.handleFormSubmit)
+        this.addClubForm?.removeEventListener("submit", this.handleFormSubmit);
     }
 
-    private async handleFormSubmit(e: Event) {
+    private handleFormSubmit = async (e: Event) => {
         e.preventDefault();
         const formData = new FormData(this.addClubForm);
 
@@ -71,7 +65,7 @@ export class MAddClubForm extends MElement {
 
         await this.clubService.addClub({ name, clubType, shotTypes });
 
-        this.addClubForm.reset()
+        this.addClubForm.reset();
     }
 
     private async render() {

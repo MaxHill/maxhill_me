@@ -15,6 +15,8 @@ export class MAddShotTypeForm extends MElement {
   @query("#add-shot-type-form")
   private add_shot_type_form!: HTMLFormElement;
 
+  unsubscribe!: () => void;
+
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -26,14 +28,14 @@ export class MAddShotTypeForm extends MElement {
     this.shot_type_repository = new ShotTypeService(db);
 
     this.render();
-    this.add_shot_type_form.addEventListener("submit", this.handleFormSubmit.bind(this));
+    this.add_shot_type_form.addEventListener("submit", this.handleFormSubmit);
   }
 
   disconnectedCallback() {
-    this.add_shot_type_form.removeEventListener("submit", this.handleFormSubmit);
+    this.add_shot_type_form?.removeEventListener("submit", this.handleFormSubmit);
   }
 
-  private async handleFormSubmit(e: Event) {
+  private handleFormSubmit = async (e: Event) => {
     e.preventDefault();
     const formData = new FormData(this.add_shot_type_form);
 
@@ -54,13 +56,13 @@ export class MAddShotTypeForm extends MElement {
 
   render() {
     this.shadowRoot!.innerHTML = `
-            <form id="add-shot-type-form" class="form box">
-                <h2>Add a new shot type</h2>
+            <form id="add-shot-type-form" class="form box" aria-label="Add new shot type form">
+                <h2>Add shot type</h2>
                 
-                <m-input required min="2" name="name" label="Name"></m-input>
-                <m-textarea required minlength="10" name="description" label="Description" rows="4" placeholder="Enter a detailed description..." clearable></m-textarea>
+                <m-input required min="2" name="name" label="Name" aria-required="true"></m-input>
+                <m-textarea required minlength="10" name="description" label="Description" rows="4" placeholder="Enter a detailed description..." clearable aria-required="true"></m-textarea>
 
-                <button>Add</button>
+                <button type="submit" aria-label="Submit form to add shot type">Add</button>
             </form>
         `;
   }

@@ -1,46 +1,57 @@
 import UniversalRouter from "../../vendor/universal-router/src/universal-router.ts";
-import type { RouteContext } from "../../vendor/universal-router/src/universal-router.ts";
 
 const routes = [
   {
     path: "",
-    action: () => `
+    action: () => {
+      document.title = "Golf Bag Tracker";
+      return `
     <div class="grid" data-cols="2" data-gap="4">
       <m-club-list></m-club-list>
       <m-shot-type-list></m-shot-type-list>
 
-      <a href="/bag/club/add">Add club</a>
-      <a href="/bag/shot-type/add">Add shot type</a>
+      <a href="/bag/club/add" aria-label="Add a new club to your bag">Add club</a>
+      <a href="/bag/shot-type/add" aria-label="Add a new shot type">Add shot type</a>
     </div>
-`,
+`;
+    },
   },
   {
     path: "/bag/club/add",
-    action: () => `
+    action: () => {
+      document.title = "Add Club - Golf Bag Tracker";
+      return `
     <div class="stack" data-gap="4">
       <m-add-club-form></m-add-club-form>
-      <a href="/">Back</a>
+      <a href="/" aria-label="Go back to home page">Back</a>
     </div>
-`,
+`;
+    },
   },
   {
     path: "/bag/club/:key/edit",
-    action: ({ params }: RouteContext) => `
+    action: () => {
+      document.title = `Edit Club - Golf Bag Tracker`;
+      return `
     <div class="stack" data-gap="4">
-      <h1>Edit: ${params.key}</h1>
+      <h1>Edit club</h1>
       <m-add-club-form></m-add-club-form>
-      <a href="/">Back</a>
+      <a href="/" aria-label="Go back to home page">Back</a>
     </div>
-`,
+`;
+    },
   },
   {
     path: "/bag/shot-type/add",
-    action: () => `
+    action: () => {
+      document.title = "Add Shot Type - Golf Bag Tracker";
+      return `
     <div class="stack" data-gap="4">
       <m-add-shot-type-form></m-add-shot-type-form>
-      <a href="/">Back</a>
+      <a href="/" aria-label="Go back to home page">Back</a>
     </div>
-`,
+`;
+    },
   },
 ];
 
@@ -50,7 +61,10 @@ async function resolve(path?: string) {
   const pathname = path || window.location.pathname;
   const html = await router.resolve({ pathname });
   if (html) {
-    document.body.innerHTML = html;
+    const app = document.getElementById('app');
+    if (app) {
+      app.innerHTML = html;
+    }
   }
 }
 
