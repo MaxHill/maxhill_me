@@ -5,6 +5,7 @@ import MCombobox from "@maxhill/components/m-combobox/index";
 import { ShotType, ShotTypeService } from "../../shot-type-service";
 import { get_DB } from "../../../../db";
 import { ClubService, ClubTypes } from "../../club-service";
+import { globalStyleSheet } from "../../../../styles/global-styles";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -39,7 +40,7 @@ export class MAddClubForm extends MElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
-        this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
+        this.shadowRoot!.adoptedStyleSheets = [globalStyleSheet, baseStyleSheet];
     }
 
     async connectedCallback() {

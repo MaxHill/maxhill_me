@@ -8,6 +8,11 @@ export async function copyStaticFiles(): Promise<string[]> {
   await Deno.copyFile("index.html", "dist/index.html");
   copiedFiles.push("/index.html");
   
+  // Copy favicon
+  console.log("Copying favicon...");
+  await Deno.copyFile("favicon.svg", "dist/favicon.svg");
+  copiedFiles.push("/favicon.svg");
+  
   // Copy fonts
   console.log("Copying fonts...");
   await Deno.mkdir("dist/fonts/optimized", { recursive: true });

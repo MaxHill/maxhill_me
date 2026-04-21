@@ -18,7 +18,7 @@ export async function buildAssets(dev: boolean): Promise<string[]> {
     sourcemap: dev,
     metafile: true,
     loader: {
-      ".css": "text",   // For Shadow DOM
+      ".css": "text",   // For Shadow DOM and inline CSS imports
       ".html": "text",  // For Shadow DOM
     },
   });
@@ -26,24 +26,6 @@ export async function buildAssets(dev: boolean): Promise<string[]> {
   // Collect JS outputs (exclude service-worker.js and .map)
   for (const outputPath of Object.keys(jsResult.metafile!.outputs)) {
     if (!outputPath.endsWith(".map") && !outputPath.includes("service-worker")) {
-      filesToCache.push("/" + outputPath.replace("dist/", ""));
-    }
-  }
-  
-  console.log("Building CSS...");
-  const cssResult = await esbuild.build({
-    entryPoints: ["src/main.css"],
-    bundle: true,
-    outfile: "dist/css/style.css",
-    minify: !dev,
-    metafile: true,
-    loader: { ".css": "css" },
-    external: ["/fonts/*"],
-  });
-  
-  // Collect CSS outputs
-  for (const outputPath of Object.keys(cssResult.metafile!.outputs)) {
-    if (!outputPath.endsWith(".map")) {
       filesToCache.push("/" + outputPath.replace("dist/", ""));
     }
   }

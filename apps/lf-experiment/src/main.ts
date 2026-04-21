@@ -1,3 +1,6 @@
+// Import global styles first to ensure document.adoptedStyleSheets is set up
+import "./styles/global-styles.ts";
+
 import "./features/router/router.ts";
 import { registerAll } from "@maxhill/components/register-all";
 import { MShotTypeList } from "./features/bag/components/m-shot-type-list";
