@@ -264,10 +264,6 @@ const components = docEntries
         position: sticky;
         top: calc(var(--menu-height));
         z-index: 10;
-
-        div {
-          border-top: var(--border-width) solid var(--color-stroke);
-        }
         
         .tag {
           font-size: inherit;
@@ -276,10 +272,12 @@ const components = docEntries
 
       div {
         padding: var(--size-1);
-        border-right: var(--border-width) solid var(--color-stroke);
         border-bottom: var(--border-width) solid var(--color-stroke);
         display: flex;
         align-items: center;
+        @media (width > 700px) {
+            border-right: var(--border-width) solid var(--color-stroke);
+        }
       }
       
       div:last-child {
