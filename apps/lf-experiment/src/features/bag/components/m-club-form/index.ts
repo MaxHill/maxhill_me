@@ -74,7 +74,7 @@ export class MClubForm extends MElement {
       }
     }
 
-    await this.renderComponent();
+    this.renderComponent();
 
     // Populate form if editing
     if (this.isEditing && this.currentClub) {
@@ -140,66 +140,71 @@ export class MClubForm extends MElement {
     }
   };
 
-  private async renderComponent() {
+  private renderComponent() {
     const heading = this.isEditing ? "Edit club" : "Add club";
     const buttonText = this.isEditing ? "Save" : "Add";
     const ariaLabel = this.isEditing ? "Edit club form" : "Add new club form";
     const buttonAriaLabel = this.isEditing ? "Submit form to save club" : "Submit form to add club";
 
-    render(this.shadowRoot!, html`
-      <form 
-        ref=${(el: any) => this.formRef = el}
-        class="form box" 
-        aria-label=${ariaLabel}
-        @submit=${this.handleFormSubmit}
-      >
-        <h2>${heading}</h2>
-
-        <m-input 
-          required 
-          min="2" 
-          name="name" 
-          label="Name" 
-          placeholder="Ex. 60deg, 7, spoon" 
-          aria-required="true"
-          value=${this.currentClub?.name || ''}
-        ></m-input>
-
-        <m-combobox 
-          ref=${(el: any) => this.clubTypeCombobox = el}
-          required 
-          name="clubType" 
-          label="Club type" 
-          placeholder="Select what type of club" 
-          aria-required="true"
+    render(
+      this.shadowRoot!,
+      html`
+        <form
+          ref=${(el: any) => this.formRef = el}
+          class="form box"
+          aria-label=${ariaLabel}
+          @submit=${this.handleFormSubmit}
         >
-          <m-option value="putter">Putter</m-option>
-          <m-option value="wedge">Wedge</m-option>
-          <m-option value="iron">Iron</m-option>
-          <m-option value="hybrid">Hybrid</m-option>
-          <m-option value="wood">Wood</m-option>
-          <m-option value="driver">Driver</m-option>
-        </m-combobox>
+          <h2>${heading}</h2>
 
-        <m-combobox 
-          ref=${(el: any) => this.shotTypesCombobox = el}
-          required 
-          name="shotTypes" 
-          label="Shot types" 
-          multiple 
-          placeholder="Select available shot types" 
-          aria-required="true"
-        >
-          ${this.shotTypes.map(shotType => html`
-            <m-option value=${shotType._key}>${shotType.name}</m-option>
-          `)}
-        </m-combobox>
+          <m-input
+            required
+            min="2"
+            name="name"
+            label="Name"
+            placeholder="Ex. 60deg, 7, spoon"
+            aria-required="true"
+            value=${this.currentClub?.name || ''}
+          ></m-input>
 
-        <button class="button" type="submit" aria-label=${buttonAriaLabel}>
-          ${buttonText}
-        </button>
-      </form>
-    `);
+          <m-combobox
+            ref=${(el: any) => this.clubTypeCombobox = el}
+            required
+            name="clubType"
+            label="Club type"
+            placeholder="Select what type of club"
+            aria-required="true"
+          >
+            <m-option value="putter">Putter</m-option>
+            <m-option value="wedge">Wedge</m-option>
+            <m-option value="iron">Iron</m-option>
+            <m-option value="hybrid">Hybrid</m-option>
+            <m-option value="wood">Wood</m-option>
+            <m-option value="driver">Driver</m-option>
+          </m-combobox>
+
+          <m-combobox
+            ref=${(el: any) => this.shotTypesCombobox = el}
+            required
+            name="shotTypes"
+            label="Shot types"
+            multiple
+            placeholder="Select available shot types"
+            aria-required="true"
+          >
+            ${this.shotTypes.map((shotType) =>
+              html`
+                <m-option value=${shotType._key}>${shotType.name}</m-option>
+              `
+            )}
+          </m-combobox>
+
+          <button class="button" type="submit" aria-label=${buttonAriaLabel}>
+            ${buttonText}
+          </button>
+        </form>
+      `,
+    );
   }
 }
 
