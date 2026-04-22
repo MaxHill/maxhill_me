@@ -2,6 +2,7 @@ import { BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
 import "@maxhill/components/m-combobox";
+import "@maxhill/components/m-listbox";
 import "@maxhill/components/m-option";
 import "@maxhill/components/m-input";
 import "@maxhill/components/m-search-list";
@@ -151,7 +152,7 @@ export class MClubForm extends MElement {
       html`
         <form
           ref=${(el: any) => this.formRef = el}
-          class="form box"
+          class="form"
           aria-label=${ariaLabel}
           @submit=${this.handleFormSubmit}
         >
@@ -167,7 +168,7 @@ export class MClubForm extends MElement {
             value=${this.currentClub?.name || ''}
           ></m-input>
 
-          <m-combobox
+          <m-listbox
             ref=${(el: any) => this.clubTypeCombobox = el}
             required
             name="clubType"
@@ -181,7 +182,7 @@ export class MClubForm extends MElement {
             <m-option value="hybrid">Hybrid</m-option>
             <m-option value="wood">Wood</m-option>
             <m-option value="driver">Driver</m-option>
-          </m-combobox>
+          </m-listbox>
 
           <m-combobox
             ref=${(el: any) => this.shotTypesCombobox = el}

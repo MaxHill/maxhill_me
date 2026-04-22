@@ -1,11 +1,75 @@
 :host {
     display: grid;
+    grid-template-columns: 1fr;
+    grid-column: span 1;
+    row-gap: var(--size-1);
+    align-items: start;
+}
+
+/* Hide default focus outline on host element - always */
+:host {
+    outline: none !important;
+}
+
+:host(:focus) {
+    outline: none !important;
+}
+
+:host(:focus-visible) {
+    outline: none !important;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+label {
+    color: var(--color-text-mid);
+    font-family: var(--ff-display);
+}
+
+.input-wrapper {
+    /* Shape */
+    corner-shape: squircle;
+    border-radius: var(--radius-input);
+
+    /* Color */
+    background: var(--color-input-fill);
+    border: var(--border-width) solid var(--color-input-stroke);
+    color: var(--color-input-text);
+    outline: var(--outline-size) var(--outline-style) var(--outline-color);
+    outline-width: var(--outline-size);
+    outline-style: var(--outline-style);
+    outline-color: transparent;
+
+    /* Layout */
+    display: grid;
     gap: var(--size-1);
-    padding: var(--size-1);
-    border: var(--border);
-    border-radius: var(--radius-box);
+    padding: var(--size-2);
+    overflow: clip;
+    max-width: 100%;
+    min-width: 0;
+}
+
+/* Show outline when host component is focused */
+:host(:focus-within) .input-wrapper {
+    outline: var(--outline);
+    outline-offset: calc(var(--outline-size) * -1);
+}
+
+/* Hide default focus outline on host element */
+:host(:focus) {
+    outline: none;
+}
+
+:host(:focus-visible) {
+    outline: none;
 }
 
 :host([disabled]) {
-    opacity: 0.5;
+    opacity: .5;
+}
+
+:host([readonly]) {
+    opacity: .7;
 }

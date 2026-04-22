@@ -5,80 +5,8 @@
   /* Add any lf-experiment specific CSS variables/overrides here */
 }
 
-body {
-  display: grid;
-  place-items: center;
-  height: 100dvh;
-  padding: 1rem;
-}
+
 
 #app {
-  width: 100%;
-  max-width: 1200px;
-}
-
-/* Focus styles for accessibility */
-a:focus-visible,
-button:focus-visible,
-[tabindex]:focus-visible {
-  outline: 2px solid var(--color-primary, #2563eb);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-
-/* Remove default focus outline */
-a:focus,
-button:focus,
-[tabindex]:focus {
-  outline: none;
-}
-
-/* Required field indicators */
-m-input[required]::part(label)::after,
-m-combobox[required]::part(label)::after,
-m-textarea[required]::part(label)::after {
-  content: " *";
-  color: var(--color-error, #d32f2f);
-}
-
-/* Responsive breakpoints */
-@media (max-width: 768px) {
-  body {
-    padding: 0.5rem;
-  }
-  
-  /* Stack grid layouts on mobile */
-  .grid[data-cols="2"] {
-    grid-template-columns: 1fr !important;
-  }
-  
-  /* Adjust font sizes for mobile */
-  h1 {
-    font-size: 1.5rem;
-  }
-  
-  h2 {
-    font-size: 1.25rem;
-  }
-  
-  /* Make buttons and links easier to tap */
-  button,
-  a {
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  body {
-    padding: 0.25rem;
-  }
-  
-  /* Further reduce spacing on small screens */
-  .stack[data-gap],
-  .grid[data-gap] {
-    gap: 0.5rem !important;
-  }
+    display: contents;
 }

@@ -9,21 +9,11 @@ baseStyleSheet.replaceSync(styles);
 /**
  * @customElement
  * @tagname m-listing-page
- *
- * @slot - Default slot for component content
- *
- * @attr {string} example - An example property
- *
- * @prop {string} example - An example property
  */
 export class MListingPage extends MElement {
   static tagName = "m-listing-page";
 
-  @BindAttribute()
-  example: string = "";
-
-  @query("slot")
-  private defaultSlot!: HTMLSlotElement;
+  selectedClub: string |null = null;
 
   constructor() {
     super();
@@ -39,16 +29,9 @@ export class MListingPage extends MElement {
     render(
       this.shadowRoot!,
       html`
-        <p>m-listing-page</p>
-        <slot></slot>
-
-        <div class="grid" data-cols="2" data-gap="4">
-          <m-club-list></m-club-list>
-          <m-shot-type-list></m-shot-type-list>
-
-          <a href="/bag/club/add" aria-label="Add a new club to your bag">Add club</a>
-          <a href="/bag/shot-type/add" aria-label="Add a new shot type">Add shot type</a>
-        </div>
+          <m-club-list class="club-list"></m-club-list>
+          <m-shot-type-list class="shot-type-list"></m-shot-type-list>
+          <m-club-form class="form"></m-club-form>
       `,
     );
   }
