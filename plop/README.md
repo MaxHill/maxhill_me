@@ -22,8 +22,12 @@ Creates a new MElement-based web component with the following options:
 4. **Use uhtml** - Choose whether to use uhtml for rendering
    - Library components: imports from `@maxhill/uhtml`
    - App components: imports from relative vendor path
-5. **Include DOCS.mdx** - Generate documentation file (defaults to true for library)
-6. **Update register-all.ts** - Auto-update the registration file (library only)
+5. **Include global stylesheet** (app only) - Include global styles in the component
+   - Only shown for app components
+   - Imports from `styles/global-styles`
+   - Adds `globalStyleSheet` to `adoptedStyleSheets`
+6. **Include DOCS.mdx** - Generate documentation file (defaults to true for library)
+7. **Update register-all.ts** - Auto-update the registration file (library only)
 
 ### Auto-Define Pattern
 
@@ -68,6 +72,22 @@ private render() {
     `);
 }
 ```
+
+### Global Stylesheet (App Components)
+
+App components can optionally include the global stylesheet for consistent theming:
+
+```typescript
+import { globalStyleSheet } from "../styles/global-styles";
+
+constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this.shadowRoot!.adoptedStyleSheets = [globalStyleSheet, baseStyleSheet];
+}
+```
+
+This provides access to global CSS custom properties and base styles while maintaining component encapsulation.
 
 ### Event Generator
 

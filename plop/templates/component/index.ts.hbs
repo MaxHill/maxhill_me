@@ -3,6 +3,9 @@ import styles from "./index.css?inline";
 {{#if useUhtml}}
 import { html, render } from "{{#if (eq target 'library')}}@maxhill/uhtml{{else}}../../../../vendor/uhtml/src/dom/index.js{{/if}}";
 {{/if}}
+{{#if includeGlobalStylesheet}}
+import { globalStyleSheet } from "{{#if (eq appLocation 'features')}}../../../../styles/global-styles{{else}}../styles/global-styles{{/if}}";
+{{/if}}
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -31,7 +34,7 @@ export class {{componentNamePascal}} extends MElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
-        this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
+        this.shadowRoot!.adoptedStyleSheets = [{{#if includeGlobalStylesheet}}globalStyleSheet, {{/if}}baseStyleSheet];
     }
 
     connectedCallback() {

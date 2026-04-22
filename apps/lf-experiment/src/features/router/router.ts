@@ -1,18 +1,13 @@
-import UniversalRouter, { type RouteContext } from "../../vendor/universal-router/src/universal-router.ts";
+import UniversalRouter, {
+  type RouteContext,
+} from "../../vendor/universal-router/src/universal-router.ts";
 
 const routes = [
   {
     path: "",
     action: () => {
       document.title = "Golf Bag Tracker";
-      return `
-    <div class="grid" data-cols="2" data-gap="4">
-      <m-club-list></m-club-list>
-      <m-shot-type-list></m-shot-type-list>
-
-      <a href="/bag/club/add" aria-label="Add a new club to your bag">Add club</a>
-      <a href="/bag/shot-type/add" aria-label="Add a new shot type">Add shot type</a>
-    </div>
+      return `<m-listing-page/>
 `;
     },
   },
@@ -73,7 +68,7 @@ async function resolve(path?: string) {
   const pathname = path || window.location.pathname;
   const html = await router.resolve({ pathname });
   if (html) {
-    const app = document.getElementById('app');
+    const app = document.getElementById("app");
     if (app) {
       app.innerHTML = html;
     }

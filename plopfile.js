@@ -90,6 +90,13 @@ export default function (plop) {
             },
             {
                 type: 'confirm',
+                name: 'includeGlobalStylesheet',
+                message: 'Include global stylesheet?',
+                default: false,
+                when: (answers) => answers.target === 'app',
+            },
+            {
+                type: 'confirm',
                 name: 'includeDocs',
                 message: 'Include DOCS.mdx file?',
                 default: (answers) => answers.target === 'library',
