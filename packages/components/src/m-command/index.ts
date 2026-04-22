@@ -240,4 +240,7 @@ export class MCommand extends MElement {
     }
 }
 
+// Auto-define when using default import
+MCommand.define();
+
 export default MCommand;

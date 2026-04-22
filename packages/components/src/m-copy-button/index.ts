@@ -125,4 +125,8 @@ class MCopyButton extends MElement {
     }
 }
 
+// Auto-define when using default import
+// Auto-define when using default import
+MCopyButton.define();
+
 export default MCopyButton;

@@ -135,4 +135,7 @@ export class MPopoverMenu extends MElement {
     }
 }
 
+// Auto-define when using default import
+MPopoverMenu.define();
+
 export default MPopoverMenu;

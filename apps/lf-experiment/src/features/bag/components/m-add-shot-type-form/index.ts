@@ -4,12 +4,8 @@ import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
 import { get_DB } from "../../../../db";
 import { ShotTypeService } from "../../shot-type-service";
 import { globalStyleSheet } from "../../../../styles/global-styles";
-import MInput from "@maxhill/components/m-input";
-import MTextarea from "@maxhill/components/m-textarea";
-
-// Register library components
-MInput.define();
-MTextarea.define();
+import "@maxhill/components/m-input";
+import "@maxhill/components/m-textarea";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);

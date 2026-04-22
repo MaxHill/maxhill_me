@@ -385,4 +385,7 @@ export class MTextarea extends MFormAssociatedElement {
   }
 }
 
+// Auto-define when using default import
+MTextarea.define();
+
 export default MTextarea;

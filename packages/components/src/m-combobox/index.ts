@@ -605,4 +605,7 @@ export class MCombobox extends MFormAssociatedElement {
     }
 }
 
+// Auto-define when using default import
+MCombobox.define();
+
 export default MCombobox;

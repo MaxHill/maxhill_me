@@ -74,4 +74,7 @@ export class MTab extends MElement {
     }
 }
 
+// Auto-define when using default import
+MTab.define();
+
 export default MTab;

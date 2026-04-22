@@ -13,6 +13,10 @@ export default function (plop) {
             .replace(/[^a-zA-Z0-9]/g, '');
     });
 
+    plop.setHelper('eq', (a, b) => {
+        return a === b;
+    });
+
     plop.setGenerator('component', {
         description: 'Create a new MElement-based web component',
         prompts: [
@@ -77,6 +81,12 @@ export default function (plop) {
                     if (!value) return 'Feature name is required';
                     return true;
                 },
+            },
+            {
+                type: 'confirm',
+                name: 'useUhtml',
+                message: 'Use uhtml for rendering?',
+                default: false,
             },
             {
                 type: 'confirm',

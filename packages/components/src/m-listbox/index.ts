@@ -555,4 +555,7 @@ export class MListbox extends MFormAssociatedElement {
   };
 }
 
+// Auto-define when using default import
+MListbox.define();
+
 export default MListbox;

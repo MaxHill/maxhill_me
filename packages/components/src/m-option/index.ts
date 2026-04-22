@@ -118,4 +118,7 @@ export class MOption extends MElement {
     }
 }
 
+// Auto-define when using default import
+MOption.define();
+
 export default MOption;

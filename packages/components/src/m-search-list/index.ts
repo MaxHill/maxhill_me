@@ -243,3 +243,8 @@ export class MSearchList extends MElement {
         `;
     }
 }
+
+// Auto-define when using default import
+MSearchList.define();
+
+export default MSearchList;

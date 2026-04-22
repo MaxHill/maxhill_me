@@ -1,5 +1,8 @@
 import { MElement, BindAttribute, query, queryAll } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
+{{#if useUhtml}}
+import { html, render } from "{{#if (eq target 'library')}}@maxhill/uhtml{{else}}../../../../vendor/uhtml/src/dom/index.js{{/if}}";
+{{/if}}
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -36,11 +39,23 @@ export class {{componentNamePascal}} extends MElement {
     }
 
     private render() {
+{{#if useUhtml}}
+        render(this.shadowRoot!, html`
+            <p>{{componentName}}</p>
+            <slot></slot>
+        `);
+{{else}}
         this.shadowRoot!.innerHTML = `
             <p>{{componentName}}</p>
             <slot></slot>
         `;
+{{/if}}
     }
 }
 
+{{#if (eq target 'library')}}
+// Auto-define when using default import
+{{componentNamePascal}}.define();
+
+{{/if}}
 export default {{componentNamePascal}};

@@ -167,4 +167,7 @@ class MCard extends MElement {
   }
 }
 
+// Auto-define when using default import
+MCard.define();
+
 export default MCard;

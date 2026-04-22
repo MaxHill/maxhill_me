@@ -9,5 +9,8 @@
     "@std/path": "jsr:@std/path@^1.0.0",
     "@std/http": "jsr:@std/http@^1.0.0",
     "@webreflection/alien-signals": "npm:@webreflection/alien-signals@^0.3.2"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "dom", "dom.iterable"]
   }
 }

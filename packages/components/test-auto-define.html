@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto-Define Test</title>
+  <style>
+    body {
+      font-family: system-ui;
+      padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .test {
+      padding: 1rem;
+      margin: 1rem 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .test.pass {
+      background: #e7f5e7;
+      border-color: #4caf50;
+    }
+    .test.fail {
+      background: #ffeaea;
+      border-color: #f44336;
+    }
+    code {
+      background: #f5f5f5;
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Component Auto-Define Test</h1>
+  <p>Testing that default imports auto-define and named imports don't.</p>
+
+  <div id="results"></div>
+
+  <h2>Component Test</h2>
+  <m-input label="Test Input" value="Hello World"></m-input>
+  <m-textarea label="Test Textarea"></m-textarea>
+
+  <script type="module">
+    const results = document.getElementById('results');
+
+    function addTest(name, condition, description) {
+      const div = document.createElement('div');
+      div.className = `test ${condition ? 'pass' : 'fail'}`;
+      div.innerHTML = `
+        <h3>${condition ? '✅' : '❌'} ${name}</h3>
+        <p>${description}</p>
+      `;
+      results.appendChild(div);
+    }
+
+    // Before any imports
+    addTest(
+      'Initial State',
+      !customElements.get('m-input'),
+      'Before import, <code>m-input</code> should not be defined'
+    );
+
+    // Test 1: Default import should auto-define
+    await import('@maxhill/components/m-input');
+    
+    addTest(
+      'Default Import Auto-Defines',
+      customElements.get('m-input') !== undefined,
+      '<code>import MInput from "@maxhill/components/m-input"</code> should auto-define the component'
+    );
+
+    // Test 2: Named import should NOT auto-define
+    const beforeTextarea = customElements.get('m-textarea');
+    const { MTextarea } = await import('@maxhill/components/m-textarea');
+    const afterTextarea = customElements.get('m-textarea');
+
+    addTest(
+      'Named Import Does Not Auto-Define',
+      !beforeTextarea && !afterTextarea,
+      '<code>import { MTextarea } from "@maxhill/components/m-textarea"</code> should NOT auto-define'
+    );
+
+    // Test 3: Manual define works
+    customElements.define('m-textarea', MTextarea);
+    addTest(
+      'Manual Define Works',
+      customElements.get('m-textarea') !== undefined,
+      'After calling <code>customElements.define("m-textarea", MTextarea)</code>, component should be defined'
+    );
+
+    // Test 4: Components render correctly
+    await customElements.whenDefined('m-input');
+    await customElements.whenDefined('m-textarea');
+    
+    const input = document.querySelector('m-input');
+    const textarea = document.querySelector('m-textarea');
+    
+    addTest(
+      'Components Render',
+      input && textarea && input.shadowRoot && textarea.shadowRoot,
+      'Both components should render with shadow DOM'
+    );
+
+    // Test 5: Import same component again (should not error)
+    try {
+      await import('@maxhill/components/m-input');
+      addTest(
+        'Re-Import Safe',
+        true,
+        'Re-importing the same component should not cause errors'
+      );
+    } catch (e) {
+      addTest(
+        'Re-Import Safe',
+        false,
+        `Re-importing caused error: ${e.message}`
+      );
+    }
+
+    // Summary
+    const tests = document.querySelectorAll('.test');
+    const passed = document.querySelectorAll('.test.pass').length;
+    const total = tests.length;
+    
+    const summary = document.createElement('div');
+    summary.className = `test ${passed === total ? 'pass' : 'fail'}`;
+    summary.innerHTML = `
+      <h3>Summary</h3>
+      <p><strong>${passed}/${total} tests passed</strong></p>
+    `;
+    results.insertBefore(summary, results.firstChild);
+  </script>
+</body>
+</html>

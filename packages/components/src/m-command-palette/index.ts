@@ -81,4 +81,7 @@ export class MCommandPalette extends MElement {
     }
 }
 
+// Auto-define when using default import
+MCommandPalette.define();
+
 export default MCommandPalette;

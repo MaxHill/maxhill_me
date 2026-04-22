@@ -217,4 +217,7 @@ export class MTabList extends MElement {
     }
 }
 
+// Auto-define when using default import
+MTabList.define();
+
 export default MTabList;

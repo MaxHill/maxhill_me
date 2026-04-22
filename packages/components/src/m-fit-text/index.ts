@@ -72,4 +72,8 @@ class MFitText extends MElement {
     }
 }
 
+// Auto-define when using default import
+// Auto-define when using default import
+MFitText.define();
+
 export default MFitText;

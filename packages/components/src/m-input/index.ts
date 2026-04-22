@@ -425,4 +425,7 @@ export class MInput extends MFormAssociatedElement {
   }
 }
 
+// Auto-define when using default import
+MInput.define();
+
 export default MInput;

@@ -53,4 +53,7 @@ export class MTabPanel extends MElement {
     }
 }
 
+// Auto-define when using default import
+MTabPanel.define();
+
 export default MTabPanel;
