@@ -184,7 +184,7 @@ export class MClubForm extends MElement {
             <m-option value="driver">Driver</m-option>
           </m-listbox>
 
-          <m-combobox
+          <m-listbox
             ref=${(el: any) => this.shotTypesCombobox = el}
             required
             name="shotTypes"
@@ -198,7 +198,7 @@ export class MClubForm extends MElement {
                 <m-option value=${shotType._key}>${shotType.name}</m-option>
               `
             )}
-          </m-combobox>
+          </m-listbox>
 
           <button class="button" type="submit" aria-label=${buttonAriaLabel}>
             ${buttonText}

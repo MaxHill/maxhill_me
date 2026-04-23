@@ -46,9 +46,10 @@ export class MShotTypeList extends MElement {
 
     render(this.shadowRoot!, html`
       <div>
-        <h2>Shot types</h2>
+        <h2 class="h1">Shot types</h2>
+        <p>List of all shot types in the bag</p>
         ${this.shotTypes.length > 0 ? html`
-          <ul id="shots" role="list" aria-label="List of shot types">
+          <ul class="grid exposed-grid" id="shots" role="list" aria-label="List of shot types">
             ${this.shotTypes.map(shotType => html`
               <li>
                 <div class="name">${shotType.name}</div>

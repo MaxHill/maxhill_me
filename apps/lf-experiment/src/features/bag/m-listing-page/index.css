@@ -4,21 +4,24 @@
     width: 100%;
     min-height: 100vh;
     
-    grid-template-areas: "clubs shot-types form";
+    grid-template-areas: 
+    "title title        title"
+    "clubs shot-types   form";
     grid-template-rows: 1fr;
     grid-template-columns: 1fr 1fr var(--size-content-2);
 }
 
 .club-list {
+    padding: var(--body-margin);
     grid-area: clubs;
-    border-right: var(--border);
 }
 
 .shot-type-list {
+    padding: var(--body-margin);
     grid-area: shot-types;
-    border-right: var(--border);
 }
 
 .form {
+    padding: var(--body-margin);
     grid-area: form;
 }

@@ -3,6 +3,8 @@ import styles from "./index.css?inline";
 import { globalStyleSheet } from "../../../styles/global-styles";
 import { html, render } from "../../../vendor/uhtml/src/dom/index.js";
 
+import "@maxhill/components/m-fit-text";
+
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
@@ -29,6 +31,7 @@ export class MListingPage extends MElement {
     render(
       this.shadowRoot!,
       html`
+            <m-fit-text font-display>Hardware</m-fit-text>
           <m-club-list class="club-list"></m-club-list>
           <m-shot-type-list class="shot-type-list"></m-shot-type-list>
           <m-club-form class="form"></m-club-form>

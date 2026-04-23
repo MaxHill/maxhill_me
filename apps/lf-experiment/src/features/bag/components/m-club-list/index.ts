@@ -71,18 +71,22 @@ export class MClubList extends MElement {
       this.shadowRoot!,
       html`
         <div>
-          <h2>Clubs</h2>
+          <h2 class="h1">Clubs</h2>
+          <p>List of clubs in the bag</p>
           ${this.clubs.length > 0
             ? html`
-                <ul id="clubs" role="list" aria-label="List of clubs in your bag">
+                <m-listbox id="clubs"  class="clubs collection" role="list" aria-label="List of clubs in your bag">
                   ${this.clubs.map(
                     (club) => html`
-                      <li role="listitem">
+                      <m-option role="listitem" class="club" value=${club._key}>
                         <div class="name">${club.name} ${club.clubType}</div>
                         <div class="shot-types">
+                            <span class="label">Shot types</span>
+                            <span>
                           ${club.shotTypes && club.shotTypes.length > 0
                             ? club.shotTypes.map((shotType: ShotType) => shotType.name).join(", ")
                             : "No shot types"}
+                            </span>
                         </div>
                         <a
                           class="edit-link"
@@ -93,10 +97,10 @@ export class MClubList extends MElement {
                         >
                           Edit
                         </a>
-                      </li>
+                      </m-option>
                     `
                   )}
-                </ul>
+                </m-listbox>
               `
             : html`
                 <p style="color: var(--color-text-muted, #666); font-style: italic;">

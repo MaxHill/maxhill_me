@@ -1,2 +1,51 @@
 :host {
+    display: grid;
+}
+
+.clubs {
+    display: contents;
+    &::part(input-wrapper) {
+        --_card-width: var(--size-fluid-8);
+        border: none;
+        background: transparent;
+        display: grid;
+        padding: 0;
+        grid-template-columns: repeat(
+          var(--grid-type, auto-fill),
+          minmax(min(var(--_card-width), 100%), 1fr)
+        );
+    }
+}
+
+.club {
+    aspect-ratio: 1/1;
+    display: grid;
+    grid-template-areas: 
+        "name       edit" 
+        "details    details";
+    grid-template-rows: 1fr auto;
+    grid-template-columns: 1fr auto;
+    border: var(--border);
+}
+
+.name {
+    grid-area: name;
+    font: var(--h1);
+}
+
+.edit-link {
+    grid-area: edit;
+}
+
+.shot-types {
+    grid-area: details;
+    display: grid;
+    gap: 0;
+
+    .label {
+        font: var(--p2);
+        font-family: var(--ff-display);
+        text-transform: uppercase;
+        color: var(--color-text-muted);
+    }
 }
