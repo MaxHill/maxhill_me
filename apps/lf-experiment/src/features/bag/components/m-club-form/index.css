@@ -1,19 +1,119 @@
 :host {
+  display: block;
 }
 
-.shot-type {
-    display: grid;
-    overflow: visible; 
+.form {
+  display: grid;
+  gap: var(--size-4);
+}
 
-    .name {
-        font: var(--h2);
-    }
+@media (min-width: 768px) {
+  .form {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+    "header header"
+      "success success"
+      "fields shot-types"
+      "button button";
+  }
+  
+  .success-message {
+    grid-area: success;
+  }
+  
+  .form-header {
+    grid-area: header;
+  }
+  
+  .main-inputs {
+    grid-area: fields;
+  }
+  
+  .shot-type {
+    grid-area: shot-types;
+  }
+  
+  .submit-button {
+    grid-area: button;
+  }
+}
 
-    .description {
-        font: var(--p2);
-    }
+.success-message {
+  font: var(--p2);
+  color: var(--color-constructive, #5dbb55);
+  padding: var(--size-2);
+  text-align: center;
+  background: color-mix(in oklch, var(--color-constructive, #5dbb55) 10%, transparent);
+  border: 1px solid var(--color-constructive, #5dbb55);
+}
 
-    li {
-        padding: var(--size-fluid-1);
-    }
+.form-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--size-3);
+  align-items: start;
+}
+
+.form-header h2 {
+  margin: 0;
+  font: var(--h1);
+}
+
+.close-link {
+  font-size: 2rem;
+  font-family: var(--ff-body);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.close-link:hover {
+  color: var(--color-text);
+}
+
+.form > div {
+  display: grid;
+  gap: var(--size-3);
+}
+
+details {
+  border: var(--border);
+  padding: var(--size-2);
+}
+
+summary {
+  font: var(--p);
+  cursor: pointer;
+  user-select: none;
+}
+
+details[open] > :not(summary) {
+  margin-top: var(--size-3);
+  display: grid;
+  gap: var(--size-3);
+}
+
+.shot-type li {
+  padding: var(--size-2);
+  display: grid;
+  gap: var(--size-1);
+}
+
+.shot-type .name {
+  font: var(--h2);
+}
+
+.shot-type .description {
+  font: var(--p2);
+  color: var(--color-text-muted);
+}
+
+.submit-button {
+  margin-top: var(--size-3);
+  width: 100%;
+  padding: var(--size-3);
+  font: var(--p);
+  font-weight: 700;
 }

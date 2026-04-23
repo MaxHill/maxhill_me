@@ -38,6 +38,7 @@ export class MClubForm extends MElement {
   private formRef: HTMLFormElement | null = null;
   private clubTypeCombobox: MCombobox | null = null;
   private shotTypesCombobox: MCombobox | null = null;
+  private successMessage: string = '';
 
   get isEditing(): boolean {
     return !!this.clubKey;
@@ -141,9 +142,22 @@ export class MClubForm extends MElement {
     // Dispatch event
     this.dispatchEvent(new ClubSavedEvent({ key, club }));
 
+    // Show success message
+    this.successMessage = this.isEditing ? 'Club saved' : 'Club added';
+    this.renderComponent();
+    
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      this.successMessage = '';
+      this.renderComponent();
+    }, 3000);
+
     // Reset form only when adding (not editing)
     if (!this.isEditing) {
       this.formRef.reset();
+      // Reset combobox selections
+      this.clubTypeCombobox?.reset?.();
+      this.shotTypesCombobox?.reset?.();
     }
   };
 
@@ -163,13 +177,23 @@ export class MClubForm extends MElement {
           @submit=${this.handleFormSubmit}
           part="form"
         >
-        <h2 class="h1" part="title">${heading}</h2>
-        <div>
+        
+        ${this.successMessage ? html`
+          <div class="success-message" role="status" aria-live="polite">
+            ${this.successMessage}
+          </div>
+        ` : null}
+        
+        <div class="form-header">
+          <h2 class="h1" part="title">${heading}</h2>
+          <a href="/bag" class="close-link" aria-label="Close form">×</a>
+        </div>
+        <div class="main-inputs">
           <m-input
             required
             min="2"
             name="name"
-            label="Name"
+            label="Name *"
             placeholder="Ex. 60deg, 7, spoon"
             aria-required="true"
             value=${this.currentClub?.name || ''}
@@ -179,7 +203,7 @@ export class MClubForm extends MElement {
             ref=${(el: any) => this.clubTypeCombobox = el}
             required
             name="clubType"
-            label="Club type"
+            label="Club type *"
             placeholder="Select what type of club"
             aria-required="true"
           >
@@ -192,7 +216,7 @@ export class MClubForm extends MElement {
           </m-listbox>
 
           <details>
-            <summary>Specs</summary>
+            <summary>Optional specs</summary>
               <m-input
                 min="2"
                 name="brand"
@@ -230,13 +254,13 @@ export class MClubForm extends MElement {
 
           </details>
         </div>
-
-          <m-listbox
+        
+        <m-listbox
             ref=${(el: any) => this.shotTypesCombobox = el}
             class="shot-type"
             required
             name="shotTypes"
-            label="Shot types"
+            label="Shot types *"
             mode="multiple"
             placeholder="Select available shot types"
             aria-required="true"
@@ -250,10 +274,10 @@ export class MClubForm extends MElement {
               `
             )}
           </m-listbox>
-
-          <button part="save-button" class="button" type="submit" aria-label=${buttonAriaLabel}>
-            ${buttonText}
-          </button>
+        
+        <button part="save-button" class="button submit-button" type="submit" aria-label=${buttonAriaLabel}>
+          ${buttonText}
+        </button>
         </form>
       `,
     );

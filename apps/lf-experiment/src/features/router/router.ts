@@ -7,8 +7,28 @@ const routes = [
     path: "",
     action: () => {
       document.title = "Golf Bag Tracker";
-      return `<m-listing-page/>
-`;
+      return `<m-bag-list-page/>`;
+    },
+  },
+  {
+    path: "/bag",
+    action: () => {
+      document.title = "Golf Bag Tracker";
+      return `<m-bag-list-page/>`;
+    },
+  },
+  {
+    path: "/bag/add",
+    action: () => {
+      document.title = "Add Club - Golf Bag Tracker";
+      return `<m-bag-add-page/>`;
+    },
+  },
+  {
+    path: "/bag/edit/:key",
+    action: ({ params }: RouteContext) => {
+      document.title = `Edit Club - Golf Bag Tracker`;
+      return `<m-bag-edit-page club-key="${params.key}"/>`;
     },
   },
   {
@@ -76,16 +96,38 @@ async function resolve(path?: string) {
 }
 
 // Intercept all link clicks for client-side navigation
-// TODO: might be a m-card that is clicked. look for href instead of a
+// Handle any element with href attribute
 document.addEventListener("click", (e) => {
   const target = e.target as HTMLElement;
-  const link = target.closest("a");
-
-  if (link && link.href && link.origin === window.location.origin) {
+  
+  // Find the closest element with an href attribute
+  const elementWithHref = target.closest("[href]") as HTMLElement;
+  
+  if (!elementWithHref) return;
+  
+  // Get href from attribute (works for custom elements) or property (works for <a>)
+  const href = elementWithHref.getAttribute("href") || (elementWithHref as HTMLAnchorElement).href;
+  
+  if (!href) return;
+  
+  // Handle <a> tags with full URLs
+  if (elementWithHref instanceof HTMLAnchorElement && elementWithHref.origin === window.location.origin) {
     e.preventDefault();
-    const url = new URL(link.href);
+    const url = new URL(elementWithHref.href);
     window.history.pushState({}, "", url.pathname);
     resolve(url.pathname);
+    return;
+  }
+  
+  // Handle custom elements and relative paths
+  if (!(elementWithHref instanceof HTMLAnchorElement)) {
+    // Only handle internal navigation (relative paths or same-origin absolute paths)
+    if (!href.startsWith("http") || href.startsWith(window.location.origin)) {
+      e.preventDefault();
+      const pathname = href.startsWith("http") ? new URL(href).pathname : href;
+      window.history.pushState({}, "", pathname);
+      resolve(pathname);
+    }
   }
 });
 

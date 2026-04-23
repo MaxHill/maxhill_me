@@ -1,0 +1,50 @@
+:host {
+  display: contents;
+}
+
+.page-container {
+  display: grid;
+  grid-template-areas:
+    "title title"
+    "list form";
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+  width: 100%;
+  gap: 0;
+}
+
+.title {
+  grid-area: title;
+  padding: var(--body-margin);
+  margin-bottom: var(--size-6);
+  --max-font-size: 4rem;
+}
+
+.club-list {
+  grid-area: list;
+  padding: var(--body-margin);
+}
+
+.form {
+  grid-area: form;
+  padding: var(--body-margin);
+  border-left: var(--border);
+}
+
+@media (max-width: 767px) {
+  .page-container {
+    grid-template-areas:
+      "title"
+      "form";
+    grid-template-columns: 1fr;
+  }
+  
+  .club-list {
+    display: none;
+  }
+  
+  .form {
+    border-left: none;
+  }
+}

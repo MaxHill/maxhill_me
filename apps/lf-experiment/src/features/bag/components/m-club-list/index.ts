@@ -1,4 +1,4 @@
-import { MElement } from "@maxhill/web-component-utils";
+import { MElement, BindAttribute } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { ClubService } from "../../club-service";
 import { get_DB } from "../../../../db";
@@ -6,6 +6,7 @@ import { ShotType } from "../../shot-type-service";
 import { TableChangeEvent } from "@maxhill/idb-distribute";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
+import "@maxhill/components/m-card";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -22,9 +23,14 @@ interface Club {
  *
  * @customElement
  * @tagname m-club-list
+ * 
+ * @attr {boolean} interactive - Whether cards are clickable (default: true)
  */
 export class MClubList extends MElement {
   static tagName = "m-club-list";
+
+  @BindAttribute({ type: "boolean" })
+  interactive: boolean = true;
 
   private clubService!: ClubService;
   private clubs: Club[] = [];
@@ -58,54 +64,56 @@ export class MClubList extends MElement {
     this.render();
   }
 
-  private handleEditKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      const link = e.target as HTMLAnchorElement;
-      link.click();
-    }
-  }
-
   private render() {
     render(
       this.shadowRoot!,
       html`
         <div>
           <h2 class="h1">Clubs</h2>
-          <p>List of clubs in the bag</p>
           ${this.clubs.length > 0
             ? html`
-                <m-listbox id="clubs"  class="clubs collection" role="list" aria-label="List of clubs in your bag">
+                <div class="clubs" role="list" aria-label="List of clubs in your bag">
                   ${this.clubs.map(
                     (club) => html`
-                      <m-option role="listitem" class="club" value=${club._key}>
-                        <div class="name">${club.name} ${club.clubType}</div>
-                        <div class="shot-types">
+                      <m-card 
+                        href=${this.interactive ? `/bag/edit/${club._key}` : undefined}
+                        role="listitem"
+                        aria-label=${`${club.name}, ${club.shotTypes?.length || 0} shot types`}
+                      >
+                        <div class="card-content">
+                          <div class="name">${club.name}</div>
+                          <div class="club-type">${club.clubType}</div>
+                          <div class="shot-types">
                             <span class="label">Shot types</span>
                             <span>
-                          ${club.shotTypes && club.shotTypes.length > 0
-                            ? club.shotTypes.map((shotType: ShotType) => shotType.name).join(", ")
-                            : "No shot types"}
+                              ${club.shotTypes && club.shotTypes.length > 0
+                                ? club.shotTypes.map((shotType: ShotType) => shotType.name).join(", ")
+                                : "None"}
                             </span>
+                          </div>
                         </div>
-                        <a
-                          class="edit-link"
-                          href=${`/bag/club/${club._key}/edit`}
-                          tabindex="0"
-                          aria-label=${`Edit ${club.name} ${club.clubType}`}
-                          @keydown=${(e: KeyboardEvent) => this.handleEditKeydown(e)}
-                        >
-                          Edit
-                        </a>
-                      </m-option>
+                      </m-card>
                     `
                   )}
-                </m-listbox>
+                  ${this.interactive ? html`
+                    <m-card 
+                      href="/bag/add"
+                      class="add-club-card"
+                      aria-label="Add new club to bag"
+                    >
+                      <div class="add-club-content">
+                        <span class="plus-icon">+</span>
+                        <span class="label">Add club</span>
+                      </div>
+                    </m-card>
+                  ` : null}
+                </div>
               `
             : html`
-                <p style="color: var(--color-text-muted, #666); font-style: italic;">
-                  No clubs in your bag yet. Add one to get started!
-                </p>
+                <div class="empty-state">
+                  <p class="empty-message">No clubs in your bag yet.</p>
+                  <a href="/bag/add" class="empty-cta-button">+ Add club</a>
+                </div>
               `}
         </div>
       `
