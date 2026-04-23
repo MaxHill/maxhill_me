@@ -127,7 +127,13 @@ export class MClubForm extends MElement {
       return;
     }
 
-    const club: Club = { name, clubType, shotTypes };
+
+    const brand = formData.get("brand")?.toString();
+    const model = formData.get("model")?.toString();
+    const loft = formData.get("loft")?.toString();
+    const lie = formData.get("lie")?.toString();
+
+    const club: Club = { name, clubType, shotTypes, brand, model, loft, lie };
     const key = this.isEditing ? this.clubKey : crypto.randomUUID();
 
     await this.clubService.setClub(key, club);
@@ -159,7 +165,6 @@ export class MClubForm extends MElement {
         >
         <h2 class="h1" part="title">${heading}</h2>
         <div>
-
           <m-input
             required
             min="2"
@@ -185,7 +190,46 @@ export class MClubForm extends MElement {
             <m-option value="wood">Wood</m-option>
             <m-option value="driver">Driver</m-option>
           </m-listbox>
-          </div>
+
+          <details>
+            <summary>Specs</summary>
+              <m-input
+                min="2"
+                name="brand"
+                label="Brand"
+                placeholder="Ex. Titleist"
+                value=${this.currentClub?.brand || ''}
+              ></m-input>
+
+              <m-input
+                min="2"
+                name="model"
+                label="Model"
+                placeholder="Ex. t100"
+                value=${this.currentClub?.model || ''}
+              ></m-input>
+
+              <m-input
+                min="2"
+                type="number"
+                name="loft"
+                label="Loft (deg)"
+                placeholder="Ex. 38"
+                value=${this.currentClub?.loft || ''}
+              ></m-input>
+
+              <m-input
+                min="2"
+                type="number"
+                name="lie"
+                label="Lie"
+                placeholder="Ex. 30"
+                value=${this.currentClub?.loft || ''}
+              ></m-input>
+
+
+          </details>
+        </div>
 
           <m-listbox
             ref=${(el: any) => this.shotTypesCombobox = el}

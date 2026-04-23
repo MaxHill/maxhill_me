@@ -8,6 +8,11 @@ export type Club = {
     name: string;
     clubType: ClubTypes,
     shotTypes: ShotType[];  // embedded allowed shot types
+    // Optional specs
+    brand?: string,
+    model?: string,
+    loft?: string,
+    lie?: string
 };
 
 
