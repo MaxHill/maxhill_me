@@ -27,14 +27,22 @@ export class MListingPage extends MElement {
     this.render();
   }
 
+  selectClub(e: MListboxChangeEvent) {
+    this.selectedClub = e.detail.selected[0] || null
+    console.log("selected", this.selectedClub)
+    this.render();
+  }
+
   private render() {
+      console.log("Render:", this.selectedClub)
     render(
       this.shadowRoot!,
       html`
-            <m-fit-text font-display>Hardware</m-fit-text>
-          <m-club-list class="club-list"></m-club-list>
-          <m-shot-type-list class="shot-type-list"></m-shot-type-list>
-          <m-club-form class="form"></m-club-form>
+          <m-fit-text font-display>Hardware</m-fit-text>
+          <m-club-list @m-listbox-change${(e) => this.selectClub(e)} class="club-list"></m-club-list>
+          ${ ' ' || '<m-shot-type-list class="shot-type-list"></m-shot-type-list>'}
+
+          ${this.selectedClub ? html`<m-club-form club-key=${this.selectedClub} class="form"></m-club-form>` : html`<m-club-form class="form"></m-club-form>`}
       `,
     );
   }

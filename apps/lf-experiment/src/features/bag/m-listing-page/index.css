@@ -5,10 +5,10 @@
     min-height: 100vh;
     
     grid-template-areas: 
-    "title title        title"
-    "clubs shot-types   form";
+    "title title"
+    "clubs form";
     grid-template-rows: 1fr;
-    grid-template-columns: 1fr 1fr var(--size-content-2);
+    grid-template-columns: 1fr 1fr;
 }
 
 .club-list {
@@ -24,4 +24,22 @@
 .form {
     padding: var(--body-margin);
     grid-area: form;
+}
+
+.form::part(form) {
+    display:grid;
+    grid-template-areas: 
+    "title title"
+    "form shot-types"
+    "save-button save-button";
+    grid-template-rows: 1fr;
+    grid-template-columns: 1fr 1fr;
+}
+
+.form::part(title) {
+    grid-area: title;
+}
+
+.form::part(save-button) {
+    grid-area: save-button;
 }

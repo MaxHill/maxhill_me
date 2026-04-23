@@ -1,2 +1,19 @@
 :host {
 }
+
+.shot-type {
+    display: grid;
+    overflow: visible; 
+
+    .name {
+        font: var(--h2);
+    }
+
+    .description {
+        font: var(--p2);
+    }
+
+    li {
+        padding: var(--size-fluid-1);
+    }
+}

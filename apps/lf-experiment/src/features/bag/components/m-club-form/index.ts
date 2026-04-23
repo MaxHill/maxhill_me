@@ -155,8 +155,10 @@ export class MClubForm extends MElement {
           class="form"
           aria-label=${ariaLabel}
           @submit=${this.handleFormSubmit}
+          part="form"
         >
-          <h2>${heading}</h2>
+        <h2 class="h1" part="title">${heading}</h2>
+        <div>
 
           <m-input
             required
@@ -183,24 +185,29 @@ export class MClubForm extends MElement {
             <m-option value="wood">Wood</m-option>
             <m-option value="driver">Driver</m-option>
           </m-listbox>
+          </div>
 
           <m-listbox
             ref=${(el: any) => this.shotTypesCombobox = el}
+            class="shot-type"
             required
             name="shotTypes"
             label="Shot types"
-            multiple
+            mode="multiple"
             placeholder="Select available shot types"
             aria-required="true"
           >
             ${this.shotTypes.map((shotType) =>
               html`
-                <m-option value=${shotType._key}>${shotType.name}</m-option>
+                <m-option value=${shotType._key}>
+                    <div class="name">${shotType.name}</div>
+                    <div class="description">${shotType.description}</div>
+                </m-option>
               `
             )}
           </m-listbox>
 
-          <button class="button" type="submit" aria-label=${buttonAriaLabel}>
+          <button part="save-button" class="button" type="submit" aria-label=${buttonAriaLabel}>
             ${buttonText}
           </button>
         </form>
