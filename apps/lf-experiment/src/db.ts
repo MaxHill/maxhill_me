@@ -1,9 +1,10 @@
 import { CRDTDatabase, newDatabase } from "@maxhill/idb-distribute";
 
 export type DBInterface = CRDTDatabase<{
-    shot_types: {},
-    clubs: {},
-    shot_log: {},
+    shot_types: {};
+    clubs: {};
+    shot_log: {};
+    lag_putting_games: {};
 }>
 
 // Store the DB instance and promise on window to ensure it's truly a singleton
@@ -22,6 +23,7 @@ export async function get_DB(): Promise<DBInterface> {
         .addTable("shot_types", {})
         .addTable("clubs", {})
         .addTable("shot_log", {})
+        .addTable("lag_putting_games", {})
         .build()
         .open();
 
