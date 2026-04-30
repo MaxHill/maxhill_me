@@ -13,6 +13,7 @@ import { get_DB } from "../../../../db";
 import { Club, ClubService, ClubTypes } from "../../club-service";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { ClubSavedEvent } from "../../events";
+import "../m-shot-type-form";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -38,7 +39,8 @@ export class MClubForm extends MElement {
   private formRef: HTMLFormElement | null = null;
   private clubTypeCombobox: MCombobox | null = null;
   private shotTypesCombobox: MCombobox | null = null;
-  private successMessage: string = '';
+  private dialogRef: HTMLDialogElement | null = null;
+  private unsubscribe!: () => void;
 
   get isEditing(): boolean {
     return !!this.clubKey;
@@ -55,6 +57,12 @@ export class MClubForm extends MElement {
     this.shotTypeService = new ShotTypeService(db);
     this.clubService = new ClubService(db);
 
+    // Subscribe to shot type changes
+    this.unsubscribe = this.shotTypeService.subscribe(async () => {
+      await this.loadShotTypes();
+      this.renderComponent();
+    });
+
     // Load club if editing
     if (this.isEditing) {
       this.currentClub = await this.clubService.table.get(this.clubKey);
@@ -68,19 +76,27 @@ export class MClubForm extends MElement {
     }
 
     // Load shot types
-    this.shotTypes = [];
-    const shotTypesIterator = this.shotTypeService.table.query();
-    for await (const shotType of shotTypesIterator) {
-      if (shotType._key) {
-        this.shotTypes.push(shotType);
-      }
-    }
+    await this.loadShotTypes();
 
     this.renderComponent();
 
     // Populate form if editing
     if (this.isEditing && this.currentClub) {
       this.populateForm(this.currentClub);
+    }
+  }
+
+  disconnectedCallback() {
+    this.unsubscribe?.();
+  }
+
+  private async loadShotTypes() {
+    this.shotTypes = [];
+    const shotTypesIterator = this.shotTypeService.table.query();
+    for await (const shotType of shotTypesIterator) {
+      if (shotType._key) {
+        this.shotTypes.push(shotType);
+      }
     }
   }
 
@@ -139,25 +155,36 @@ export class MClubForm extends MElement {
 
     await this.clubService.setClub(key, club);
 
-    // Dispatch event
+    // Always emit event - let parent decide what to do
     this.dispatchEvent(new ClubSavedEvent({ key, club }));
+  };
 
-    // Show success message
-    this.successMessage = this.isEditing ? 'Club saved' : 'Club added';
-    this.renderComponent();
+  private handleOpenDialog = () => {
+    if (this.dialogRef) {
+      this.dialogRef.showModal();
+    }
+  };
+
+  private handleCloseDialog = () => {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
+  };
+
+  private handleShotTypeCreated = async (e: CustomEvent) => {
+    const { key } = e.detail;
     
-    // Clear success message after 3 seconds
-    setTimeout(() => {
-      this.successMessage = '';
-      this.renderComponent();
-    }, 3000);
+    this.handleCloseDialog();
 
-    // Reset form only when adding (not editing)
-    if (!this.isEditing) {
-      this.formRef.reset();
-      // Reset combobox selections
-      this.clubTypeCombobox?.reset?.();
-      this.shotTypesCombobox?.reset?.();
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    if (this.shotTypesCombobox) {
+      const option = this.shotTypesCombobox.querySelector(
+        `m-option[value="${key}"]`,
+      ) as MOption;
+      if (option) {
+        this.shotTypesCombobox.select(option);
+      }
     }
   };
 
@@ -177,12 +204,6 @@ export class MClubForm extends MElement {
           @submit=${this.handleFormSubmit}
           part="form"
         >
-        
-        ${this.successMessage ? html`
-          <div class="success-message" role="status" aria-live="polite">
-            ${this.successMessage}
-          </div>
-        ` : null}
         
         <div class="form-header">
           <h2 class="h1" part="title">${heading}</h2>
@@ -255,30 +276,50 @@ export class MClubForm extends MElement {
           </details>
         </div>
         
-        <m-listbox
-            ref=${(el: any) => this.shotTypesCombobox = el}
-            class="shot-type"
-            required
-            name="shotTypes"
-            label="Shot types *"
-            mode="multiple"
-            placeholder="Select available shot types"
-            aria-required="true"
+        <div class="shot-types-section">
+          <m-listbox
+              ref=${(el: any) => this.shotTypesCombobox = el}
+              class="shot-type"
+              required
+              name="shotTypes"
+              label="Shot types *"
+              mode="multiple"
+              placeholder="Select available shot types"
+              aria-required="true"
+            >
+              ${this.shotTypes.map((shotType) =>
+                html`
+                  <m-option value=${shotType._key}>
+                      <div class="name">${shotType.name}</div>
+                      <div class="description">${shotType.description}</div>
+                  </m-option>
+                `
+              )}
+            </m-listbox>
+          
+          <button 
+            type="button" 
+            class="button create-shot-type-button" 
+            data-variant="secondary"
+            @click=${this.handleOpenDialog}
+            aria-label="Create new shot type"
           >
-            ${this.shotTypes.map((shotType) =>
-              html`
-                <m-option value=${shotType._key}>
-                    <div class="name">${shotType.name}</div>
-                    <div class="description">${shotType.description}</div>
-                </m-option>
-              `
-            )}
-          </m-listbox>
+            + Create New Shot Type
+          </button>
+        </div>
         
         <button part="save-button" class="button submit-button" type="submit" aria-label=${buttonAriaLabel}>
           ${buttonText}
         </button>
         </form>
+        
+        <dialog ref=${(el: any) => this.dialogRef = el} class="shot-type-dialog">
+          <m-shot-type-form 
+            inline
+            @shot-type-created=${this.handleShotTypeCreated}
+            @cancel=${this.handleCloseDialog}
+          ></m-shot-type-form>
+        </dialog>
       `,
     );
   }

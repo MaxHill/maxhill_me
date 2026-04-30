@@ -1,16 +1,28 @@
-import { MElement } from "@maxhill/web-component-utils";
+import { MElement, BindAttribute } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
 import { get_DB } from "../../../../db";
 import { ShotType, ShotTypeService } from "../../shot-type-service";
 import { TableChangeEvent } from "@maxhill/idb-distribute";
 import { globalStyleSheet } from "../../../../styles/global-styles";
+import "@maxhill/components/m-card";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
+/**
+ * Display a list of all shot types
+ *
+ * @customElement
+ * @tagname m-shot-type-list
+ * 
+ * @attr {boolean} interactive - Whether items are clickable (default: true)
+ */
 export class MShotTypeList extends MElement {
   static tagName = "m-shot-type-list";
+
+  @BindAttribute({ type: "boolean" })
+  interactive: boolean = true;
 
   private shot_type_repository!: ShotTypeService;
   private shotTypes: ShotType[] = [];
@@ -43,25 +55,46 @@ export class MShotTypeList extends MElement {
     for await (const shotType of this.shot_type_repository.table.query()) {
       this.shotTypes.push(shotType);
     }
+    
+    // Sort alphabetically
+    this.shotTypes.sort((a, b) => a.name.localeCompare(b.name));
 
     render(this.shadowRoot!, html`
-      <div>
-        <h2 class="h1">Shot types</h2>
-        <p>List of all shot types in the bag</p>
+      <div class="shot-type-container">
+        <h2 class="h1">Shot Types</h2>
         ${this.shotTypes.length > 0 ? html`
-          <ul class="grid exposed-grid" id="shots" role="list" aria-label="List of shot types">
-            ${this.shotTypes.map(shotType => html`
-              <li>
-                <div class="name">${shotType.name}</div>
-                <div class="description">${shotType.description}</div>
-                <a class="edit-link">Edit</a>
-              </li>
-            `)}
-          </ul>
+          <div class="shot-types" role="list" aria-label="List of shot types">
+            ${this.shotTypes.map(shotType => {
+              const key = shotType._key;
+              return html`
+              <m-card 
+                href=${this.interactive ? `/bag/shot-type/edit/${key}` : undefined}
+                role="listitem"
+                aria-label=${`${shotType.name}, ${shotType.description || "no description"}`}
+                class="shot-type-card"
+              >
+                <div class="shot-type-content">
+                  <div class="name">
+                    ${shotType.name}
+                  </div>
+                  ${shotType.description ? html`<div class="description">${shotType.description}</div>` : null}
+                </div>
+              </m-card>
+            `})}
+            ${this.interactive ? html`
+              <a href="/bag/shot-type/add" class="button add-shot-type-button">
+                + Add Shot Type
+              </a>
+            ` : null}
+          </div>
         ` : html`
-          <p style="color: var(--color-text-muted, #666); font-style: italic;">
-            No shot types yet. Add one to get started!
-          </p>
+          <div class="empty-state">
+            <p class="empty-title">$ shottype --list</p>
+            <p class="empty-message">
+              No shot types configured. Add shot types to categorize different ways you can hit each club.
+            </p>
+            <a href="/bag/shot-type/add" class="button empty-cta-button">+ Add Shot Type</a>
+          </div>
         `}
       </div>
     `);

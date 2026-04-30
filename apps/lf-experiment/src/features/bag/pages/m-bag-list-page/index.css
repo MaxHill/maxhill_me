@@ -15,6 +15,20 @@
   --max-font-size: 4rem;
 }
 
-.club-list {
-  padding: var(--body-margin);
+.content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--size-6);
+  padding: 0 var(--body-margin) var(--body-margin);
+}
+
+@media (min-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.club-list,
+.shot-type-list {
+  min-width: 0;
 }

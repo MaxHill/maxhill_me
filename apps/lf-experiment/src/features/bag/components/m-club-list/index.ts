@@ -25,12 +25,16 @@ interface Club {
  * @tagname m-club-list
  * 
  * @attr {boolean} interactive - Whether cards are clickable (default: true)
+ * @attr {string} selected-club-key - Key of the currently selected/editing club
  */
 export class MClubList extends MElement {
   static tagName = "m-club-list";
 
   @BindAttribute({ type: "boolean" })
   interactive: boolean = true;
+
+  @BindAttribute({ attribute: "selected-club-key" })
+  selectedClubKey: string = "";
 
   private clubService!: ClubService;
   private clubs: Club[] = [];
@@ -77,21 +81,20 @@ export class MClubList extends MElement {
                     (club) => html`
                       <m-card 
                         href=${this.interactive ? `/bag/edit/${club._key}` : undefined}
+                        class=${club._key === this.selectedClubKey ? 'selected' : ''}
                         role="listitem"
                         aria-label=${`${club.name}, ${club.shotTypes?.length || 0} shot types`}
+                        aria-current=${club._key === this.selectedClubKey ? 'true' : undefined}
                       >
-                        <div class="card-content">
-                          <div class="name">${club.name}</div>
-                          <div class="club-type">${club.clubType}</div>
-                          <div class="shot-types">
-                            <span class="label">Shot types</span>
-                            <span>
+                          <div class="card-content">
+                            <div class="name">${club.name}</div>
+                            <div class="club-type">${club.clubType}</div>
+                            <div class="shot-types">
                               ${club.shotTypes && club.shotTypes.length > 0
                                 ? club.shotTypes.map((shotType: ShotType) => shotType.name).join(", ")
-                                : "None"}
-                            </span>
+                                : "No shot types"}
+                            </div>
                           </div>
-                        </div>
                       </m-card>
                     `
                   )}

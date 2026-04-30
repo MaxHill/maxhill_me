@@ -4,12 +4,13 @@ import { globalStyleSheet } from "../../../../styles/global-styles";
 import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
 import "@maxhill/components/m-fit-text";
 import "../../components/m-club-list";
+import "../../components/m-shot-type-list";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
 /**
- * Bag list page - shows only club list
+ * Bag list page - shows tabs for clubs and shot-types
  * Route: /bag
  * 
  * @customElement
@@ -34,7 +35,11 @@ export class MBagListPage extends MElement {
       html`
         <div class="page-container">
           <m-fit-text font-display class="title">Hardware</m-fit-text>
-          <m-club-list interactive class="club-list"></m-club-list>
+          
+          <div class="content">
+            <m-club-list interactive class="club-list"></m-club-list>
+            <m-shot-type-list interactive class="shot-type-list"></m-shot-type-list>
+          </div>
         </div>
       `
     );

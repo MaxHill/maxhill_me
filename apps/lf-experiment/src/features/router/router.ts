@@ -61,8 +61,20 @@ const routes = [
       document.title = "Add Shot Type - Golf Bag Tracker";
       return `
     <div class="stack" data-gap="4">
-      <m-add-shot-type-form></m-add-shot-type-form>
-      <a href="/" aria-label="Go back to home page">Back</a>
+      <m-shot-type-form></m-shot-type-form>
+      <a href="/bag" aria-label="Go back to bag page">Back</a>
+    </div>
+`;
+    },
+  },
+  {
+    path: "/bag/shot-type/edit/:key",
+    action: ({ params }: RouteContext) => {
+      document.title = "Edit Shot Type - Golf Bag Tracker";
+      return `
+    <div class="stack" data-gap="4">
+      <m-shot-type-form shot-type-key="${params.key}"></m-shot-type-form>
+      <a href="/bag" aria-label="Go back to bag page">Back</a>
     </div>
 `;
     },

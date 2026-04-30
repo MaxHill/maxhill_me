@@ -40,7 +40,7 @@ export class MBagEditPage extends MElement {
       html`
         <div class="page-container">
           <m-fit-text font-display class="title">Hardware</m-fit-text>
-          <m-club-list interactive class="club-list"></m-club-list>
+          <m-club-list interactive selected-club-key=${this.clubKey} class="club-list"></m-club-list>
           <m-club-form club-key=${this.clubKey} class="form"></m-club-form>
         </div>
       `

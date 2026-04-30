@@ -29,7 +29,6 @@
 .form {
   grid-area: form;
   padding: var(--body-margin);
-  border-left: var(--border);
 }
 
 @media (max-width: 767px) {

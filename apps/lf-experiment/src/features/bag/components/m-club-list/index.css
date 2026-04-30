@@ -21,11 +21,18 @@ h2 {
 m-card {
   height: 100%;
   cursor: pointer;
-  transition: border-color 0.2s;
 }
 
-m-card:hover {
-  border-color: var(--color-primary) !important;
+m-card.selected {
+  background: var(--color-primary-fill-mid);
+  border-color: var(--color-primary-fill-mid);
+  color: var(--color-primary-text-on-mid);
+}
+
+m-card.selected .club-type,
+m-card.selected .shot-types {
+  color: var(--color-text-on-primary);
+  opacity: 0.9;
 }
 
 m-card:focus-visible {
@@ -52,21 +59,14 @@ m-card .card-content {
 }
 
 .card-content .shot-types {
-  display: grid;
-  gap: var(--size-1);
-  margin-top: auto; /* Push to bottom */
-}
-
-.card-content .shot-types .label {
   font: var(--p2);
-  font-family: var(--ff-display);
   color: var(--color-text-muted);
+  margin-top: auto;
 }
 
 .add-club-card {
   border: 2px dashed var(--border-color, currentColor) !important;
   background: transparent !important;
-  transition: border-color 0.2s, color 0.2s;
   aspect-ratio: 1/1;
 }
 
@@ -116,7 +116,6 @@ m-card .card-content {
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
-  transition: border-color 0.2s, color 0.2s;
 }
 
 .empty-cta-button:hover {
