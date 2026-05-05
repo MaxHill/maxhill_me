@@ -11,6 +11,13 @@ const routes = [
     },
   },
   {
+    path: "/game",
+    action: () => {
+      document.title = "Lag putting game";
+      return `<m-lag-putting-listing-page/>`;
+    },
+  },
+  {
     path: "/bag",
     action: () => {
       document.title = "Golf Bag Tracker";

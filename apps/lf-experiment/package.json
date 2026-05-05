@@ -4,8 +4,8 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "dev": "deno task dev",
-    "build": "deno task build",
+    "dev": "deno run --watch=src/,index.html --allow-all --config=deno.config.json dev.ts",
+    "build": "deno run --allow-all --config=deno.config.json build.ts",
     "clean": "rm -rf dist/"
   },
   "dependencies": {

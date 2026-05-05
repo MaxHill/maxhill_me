@@ -11,6 +11,9 @@ import MListingPage from "./features/bag/m-listing-page/index.ts";
 import { MBagListPage } from "./features/bag/pages/m-bag-list-page";
 import { MBagAddPage } from "./features/bag/pages/m-bag-add-page";
 import { MBagEditPage } from "./features/bag/pages/m-bag-edit-page";
+import { MLagPuttingListingPage } from "./features/pratice-games/lag-putting/m-lag-putting-listing-page";
+import { MStartLagPuttingGameForm } from "./features/pratice-games/lag-putting/m-start-lag-putting-game-form"
+
 
 // Register app components
 MShotTypeList.define();
@@ -19,8 +22,10 @@ MShotTypeForm.define();
 MClubForm.define();
 MClubList.define();
 MListingPage.define();
+MStartLagPuttingGameForm.define();
 
 // Register new page components
 MBagListPage.define();
 MBagAddPage.define();
 MBagEditPage.define();
+MLagPuttingListingPage.define();

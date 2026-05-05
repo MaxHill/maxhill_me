@@ -86,7 +86,7 @@ interface CreateLagPuttingGameInput {
   practiceAreaName: string;
 }
 
-interface LagPuttingGame extends CreateLagPuttingGameInput {
+export interface LagPuttingGame extends CreateLagPuttingGameInput {
   _key: GameKey;
   putts: Array<{ distance: PuttDistance; result: PuttResult | null }>;
 }
@@ -106,6 +106,10 @@ export class LagPuttingGameService {
   constructor(private db: DBInterface) {
     this.table = this.db.table("lag_putting_games");
   }
+
+    subscribe(handler: SubscriptionCallbackHandler): () => void {
+        return this.table.subscribe(handler);
+    }
 
   // Data access
   async createGame(input: CreateLagPuttingGameInput): Promise<LagPuttingGame> {
