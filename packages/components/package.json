@@ -5,10 +5,10 @@
   "type": "module",
   "main": "dist/register-all.js",
   "module": "dist/register-all.js",
-  "types": "dist/register-all.d.ts",
+  "types": "./src/register-all.ts",
   "exports": {
     "./*": {
-      "types": "./dist/*.d.ts",
+      "types": "./src/*/index.ts",
       "default": "./dist/*.js"
     },
     "./custom-elements.json": "./dist/custom-elements.json"

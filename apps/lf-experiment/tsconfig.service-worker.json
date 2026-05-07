@@ -2,30 +2,25 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ES2020",
-    "lib": ["ES2020", "ES2022.Error", "DOM", "DOM.Iterable"],
+    "lib": ["ES2020", "WebWorker"],
     "moduleResolution": "bundler",
-    "types": ["vite/client"],
+    "types": [],
 
-    // Strict type checking
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "exactOptionalPropertyTypes": true,
 
-    // Module resolution
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-    "allowJs": true,
     "allowImportingTsExtensions": true,
 
-    // No emit — Vite handles bundling, this is editor / type-check only
     "noEmit": true,
     "sourceMap": true
   },
-  "include": ["src/**/*", "vite.config.ts"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "src/service-worker.ts"]
+  "include": ["src/service-worker.ts"]
 }

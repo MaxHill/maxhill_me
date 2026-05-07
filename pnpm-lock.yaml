@@ -58,10 +58,16 @@ importers:
       '@maxhill/web-component-utils':
         specifier: workspace:*
         version: link:../../packages/web-component-utils
+      uhtml:
+        specifier: ^5.0.9
+        version: 5.0.9
+      universal-router:
+        specifier: ^9.2.1
+        version: 9.2.1
     devDependencies:
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
+      vite:
+        specifier: ^6.0.11
+        version: 6.4.1(@types/node@24.9.1)(yaml@2.8.1)
 
   apps/site:
     dependencies:
@@ -1716,6 +1722,9 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
+  '@webreflection/alien-signals@0.3.2':
+    resolution: {integrity: sha512-DmNjD8Kq5iM+Toirp3llS/izAiI3Dwav5nHRvKdR/YJBTgun3y4xK76rs9CFYD2bZwZJN/rP+HjEqKTteGK+Yw==}
+
   '@xn-sakina/rml-darwin-arm64@2.6.0':
     resolution: {integrity: sha512-RuFHj6ro6Q24gPqNQGvH4uxpsvbgqBBy+ZUK+jbMuMaw4wyti7F6klQWuikBJAxhWpmRbhAB/jrq0PC82qlh5A==}
     engines: {node: '>=14'}
@@ -1802,6 +1811,9 @@ packages:
 
   ajv@8.17.1:
     resolution: {integrity: sha512-B/gBuNg5SiMTrPkC+A2+cW0RszwxYmn6VYxB/inlBStS5nx6xHIt/ehKRhIMhqusl7a8LjQoZnjCs5vhwxOQ1g==}
+
+  alien-signals@2.0.8:
+    resolution: {integrity: sha512-844G1VLkk0Pe2SJjY0J8vp8ADI73IM4KliNu2OGlYzWpO28NexEUvjHTcFjFX3VXoiUtwTbHxLNI9ImkcoBqzA==}
 
   ansi-align@3.0.1:
     resolution: {integrity: sha512-IOfwwBF5iczOjp/WeY4YxyjqAFMQoZufdQWDd19SEExbVLNXqvpzSJ/M7Za4/sCPmQ0+GRquoA7bGcINcxew6w==}
@@ -4409,6 +4421,9 @@ packages:
     engines: {node: '>=0.8.0'}
     hasBin: true
 
+  uhtml@5.0.9:
+    resolution: {integrity: sha512-qPyu3vGilaLe6zrjOCD/xezWEHLwdevxmbY3hzyhT25KBDF4F7YYW3YZcL3kylD/6dMoVISHjn8ggV3+9FY+5g==}
+
   ultrahtml@1.6.0:
     resolution: {integrity: sha512-R9fBn90VTJrqqLDwyMph+HGne8eqY1iPfYhPzZrvKpIfwkWZbcYlfpsb8B9dTvBfpy1/hqAD7Wi8EKfP9e8zdw==}
 
@@ -4470,6 +4485,9 @@ packages:
 
   unist-util-visit@5.0.0:
     resolution: {integrity: sha512-MR04uvD+07cwl/yhVuVWAtw+3GOR/knlL55Nd/wAdblk27GCVt3lqpTivy/tkJcZoNPzTwS1Y+KMojlLDhoTzg==}
+
+  universal-router@9.2.1:
+    resolution: {integrity: sha512-i3XDhyfg0znwCu2Ue1zwWIWgfed+XYDqlUYXgriGnS58tzO3RgKHe4KWtq9HLQOl/Tknnh0C6jEH0+FLTrrBiQ==}
 
   unpipe@1.0.0:
     resolution: {integrity: sha512-pjy2bYhSsufwWlKwPc+l3cN7+wuJlK6uz0YdJEOlQDbl6jo/YlPi4mb8agUkVC8BF7V8NuzeyPNqRksA3hztKQ==}
@@ -6608,6 +6626,10 @@ snapshots:
       - supports-color
       - utf-8-validate
 
+  '@webreflection/alien-signals@0.3.2':
+    dependencies:
+      alien-signals: 2.0.8
+
   '@xn-sakina/rml-darwin-arm64@2.6.0':
     optional: true
 
@@ -6665,6 +6687,8 @@ snapshots:
       fast-uri: 3.1.0
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
+
+  alien-signals@2.0.8: {}
 
   ansi-align@3.0.1:
     dependencies:
@@ -9931,6 +9955,10 @@ snapshots:
   uglify-js@3.19.3:
     optional: true
 
+  uhtml@5.0.9:
+    dependencies:
+      '@webreflection/alien-signals': 0.3.2
+
   ultrahtml@1.6.0: {}
 
   unc-path-regex@0.1.2: {}
@@ -10016,6 +10044,10 @@ snapshots:
       '@types/unist': 3.0.3
       unist-util-is: 6.0.1
       unist-util-visit-parents: 6.0.2
+
+  universal-router@9.2.1:
+    dependencies:
+      path-to-regexp: 6.3.0
 
   unpipe@1.0.0: {}
 

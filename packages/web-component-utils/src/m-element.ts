@@ -61,6 +61,8 @@ export class MElement extends HTMLElement {
     
     this.__syncedAttributes = Array.from(attributes);
     this.__attributeToProperty = attributeToProperty;
+    // Field is read dynamically via `ctor.__attributeToProperty` in reflect-attribute.ts
+    void this.__attributeToProperty;
   }
 
   attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {

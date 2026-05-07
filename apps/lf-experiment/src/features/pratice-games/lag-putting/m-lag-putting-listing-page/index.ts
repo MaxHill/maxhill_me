@@ -1,10 +1,11 @@
-import { BindAttribute, MElement, query, queryAll } from "@maxhill/web-component-utils";
+import { MElement } from "@maxhill/web-component-utils";
+import type { TableChangeEvent } from "@maxhill/idb-distribute";
 import styles from "./index.css?inline";
-import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
+import { html, render } from "uhtml";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { get_DB } from "../../../../db.ts";
 import { LagPuttingGame, LagPuttingGameService } from "../lag-putting-service.ts";
-import { CreateLagPuttingSubmitEventEvent } from "../create-lag-putting-submit-event";
+import { CreateLagPuttingSubmitEventEvent } from "../m-start-lag-putting-game-form/events";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -71,7 +72,7 @@ export class MLagPuttingListingPage extends MElement {
     const games = [];
     for await (const game of this.lagPuttingGameService.table.query()) {
       games.push(game as LagPuttingGame);
-
+    }
 
     render(
       this.shadowRoot!,
@@ -104,7 +105,6 @@ export class MLagPuttingListingPage extends MElement {
       `,
     );
   }
-};
-
+}
 
 export default MLagPuttingListingPage;

@@ -96,7 +96,7 @@ export class OptionListManager {
             // Signature 1: callbacks provided
             this.callbacks = callbacksOrSelectionMode;
             this.selectionMode = (selectionModeOrOptionsQuery as SelectionMode) || "single-select";
-            this.optionsQuery = optionsQuery;
+            if (optionsQuery) this.optionsQuery = optionsQuery;
         } else {
             // Signature 2: selectionMode provided (or nothing)
             this.callbacks = {

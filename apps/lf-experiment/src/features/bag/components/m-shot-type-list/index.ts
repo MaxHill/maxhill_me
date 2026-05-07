@@ -1,6 +1,6 @@
 import { MElement, BindAttribute } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
-import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
+import { html, render } from "uhtml";
 import { get_DB } from "../../../../db";
 import { ShotType, ShotTypeService } from "../../shot-type-service";
 import { TableChangeEvent } from "@maxhill/idb-distribute";
@@ -21,7 +21,7 @@ baseStyleSheet.replaceSync(styles);
 export class MShotTypeList extends MElement {
   static tagName = "m-shot-type-list";
 
-  @BindAttribute({ type: "boolean" })
+  @BindAttribute()
   interactive: boolean = true;
 
   private shot_type_repository!: ShotTypeService;
@@ -53,7 +53,7 @@ export class MShotTypeList extends MElement {
     // Load shot types from database
     this.shotTypes = [];
     for await (const shotType of this.shot_type_repository.table.query()) {
-      this.shotTypes.push(shotType);
+      this.shotTypes.push(shotType as ShotType);
     }
     
     // Sort alphabetically

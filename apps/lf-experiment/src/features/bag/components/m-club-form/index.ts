@@ -1,6 +1,6 @@
 import { BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
-import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
+import { html, render } from "uhtml";
 import "@maxhill/components/m-combobox";
 import "@maxhill/components/m-listbox";
 import "@maxhill/components/m-option";
@@ -65,7 +65,8 @@ export class MClubForm extends MElement {
 
     // Load club if editing
     if (this.isEditing) {
-      this.currentClub = await this.clubService.table.get(this.clubKey);
+      const row = await this.clubService.table.get(this.clubKey);
+      this.currentClub = row ? (row as Club) : null;
 
       // Redirect to 404 if club doesn't exist
       if (!this.currentClub) {
@@ -95,7 +96,7 @@ export class MClubForm extends MElement {
     const shotTypesIterator = this.shotTypeService.table.query();
     for await (const shotType of shotTypesIterator) {
       if (shotType._key) {
-        this.shotTypes.push(shotType);
+        this.shotTypes.push(shotType as ShotType);
       }
     }
   }
@@ -150,7 +151,11 @@ export class MClubForm extends MElement {
     const loft = formData.get("loft")?.toString();
     const lie = formData.get("lie")?.toString();
 
-    const club: Club = { name, clubType, shotTypes, brand, model, loft, lie };
+    const club: Club = { name, clubType, shotTypes };
+    if (brand) club.brand = brand;
+    if (model) club.model = model;
+    if (loft) club.loft = loft;
+    if (lie) club.lie = lie;
     const key = this.isEditing ? this.clubKey : crypto.randomUUID();
 
     await this.clubService.setClub(key, club);

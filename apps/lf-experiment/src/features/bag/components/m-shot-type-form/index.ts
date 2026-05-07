@@ -1,6 +1,6 @@
 import { MElement, BindAttribute } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
-import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
+import { html, render } from "uhtml";
 import { get_DB } from "../../../../db";
 import { ShotType, ShotTypeService } from "../../shot-type-service";
 import { globalStyleSheet } from "../../../../styles/global-styles";
@@ -23,7 +23,7 @@ export class MShotTypeForm extends MElement {
   @BindAttribute({ attribute: "shot-type-key" })
   shotTypeKey: string = "";
 
-  @BindAttribute({ type: "boolean" })
+  @BindAttribute()
   inline: boolean = false; // If true, renders in inline/dialog mode
 
   private shotTypeService!: ShotTypeService;
@@ -47,7 +47,8 @@ export class MShotTypeForm extends MElement {
     
     // Load existing shot type if in edit mode
     if (this.isEditMode) {
-      this.shotType = await this.shotTypeService.table.get(this.shotTypeKey);
+      const row = await this.shotTypeService.table.get(this.shotTypeKey);
+      this.shotType = row ? (row as ShotType) : null;
       this.isStockShotType = this.shotType?.name === "Stock";
     }
     

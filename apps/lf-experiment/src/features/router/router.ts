@@ -1,6 +1,4 @@
-import UniversalRouter, {
-  type RouteContext,
-} from "../../vendor/universal-router/src/universal-router.ts";
+import UniversalRouter, { type RouteContext } from "universal-router";
 
 const routes = [
   {

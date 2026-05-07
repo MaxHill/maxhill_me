@@ -1,4 +1,4 @@
-import { Table } from "@maxhill/idb-distribute";
+import { Table, SubscriptionCallbackHandler } from "@maxhill/idb-distribute";
 import { DBInterface } from "../../../db";
 import { PracticeGameMetadata } from "../practice-game";
 
@@ -143,8 +143,11 @@ export class LagPuttingGameService {
   }
 
   async listGames(): Promise<LagPuttingGame[]> {
-    const games = await this.table.getAll();
-    return games as LagPuttingGame[];
+    const games: LagPuttingGame[] = [];
+    for await (const row of this.table.query()) {
+      games.push(row as LagPuttingGame);
+    }
+    return games;
   }
 
   async getGame(gameKey: GameKey): Promise<LagPuttingGame | null> {
@@ -181,11 +184,9 @@ export class LagPuttingGameService {
 
   // Calculations
   getSkillLevel(
-    game: LagPuttingGame,
-    comparisonGroup: "men" | "women",
+    _game: LagPuttingGame,
+    _comparisonGroup: "men" | "women",
   ): ComparisonResultMen | ComparisonResultWomen | null {
-    const totalScore = this.calculateTotalScore(game.putts);
-
     // TODO: Implement skill level comparison logic
     return null;
   }

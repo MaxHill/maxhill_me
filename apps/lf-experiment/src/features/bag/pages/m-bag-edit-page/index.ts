@@ -1,7 +1,7 @@
 import { BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { globalStyleSheet } from "../../../../styles/global-styles";
-import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
+import { html, render } from "uhtml";
 import "@maxhill/components/m-fit-text";
 import "../../components/m-club-list";
 import "../../components/m-club-form";

@@ -71,14 +71,6 @@ export class MOption extends MElement {
         this.updateDisabledState();
     }
     
-    private ensureColorInheritance() {
-        // Get the computed color from CSS variables
-        const computedColor = getComputedStyle(this).color;
-        if (computedColor && computedColor !== 'rgba(0, 0, 0, 0)') {
-            this.style.color = computedColor;
-        }
-    }
-
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
 

@@ -5,7 +5,7 @@ import { get_DB } from "../../../../db";
 import { ShotType } from "../../shot-type-service";
 import { TableChangeEvent } from "@maxhill/idb-distribute";
 import { globalStyleSheet } from "../../../../styles/global-styles";
-import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
+import { html, render } from "uhtml";
 import "@maxhill/components/m-card";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -30,7 +30,7 @@ interface Club {
 export class MClubList extends MElement {
   static tagName = "m-club-list";
 
-  @BindAttribute({ type: "boolean" })
+  @BindAttribute()
   interactive: boolean = true;
 
   @BindAttribute({ attribute: "selected-club-key" })

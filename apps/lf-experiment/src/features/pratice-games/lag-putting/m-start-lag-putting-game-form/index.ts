@@ -1,6 +1,6 @@
 import { MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
-import { html, render } from "../../../../vendor/uhtml/src/dom/index.js";
+import { html, render } from "uhtml";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { CreateLagPuttCancelEvent, CreateLagPuttingSubmitEventEvent } from "./events";
 

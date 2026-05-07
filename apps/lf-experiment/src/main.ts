@@ -29,3 +29,26 @@ MBagListPage.define();
 MBagAddPage.define();
 MBagEditPage.define();
 MLagPuttingListingPage.define();
+
+// Register service worker only in production builds. In dev, Vite serves modules
+// directly and the service worker file isn't emitted.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/service-worker.js")
+      .then((registration) => {
+        console.log("Service Worker registered:", registration.scope);
+      })
+      .catch((error) => {
+        console.error("Service Worker registration failed:", error);
+      });
+  });
+
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshing) return;
+    refreshing = true;
+    console.log("Service Worker updated, reloading page...");
+    window.location.reload();
+  });
+}

@@ -36,7 +36,7 @@ export class IDBRepository {
   indexes?: IndexDefinition[];
 
   constructor(indexes?: IndexDefinition[]) {
-    this.indexes = indexes;
+    if (indexes) this.indexes = indexes;
   }
 
   private validateIndexDefinitions(): void {

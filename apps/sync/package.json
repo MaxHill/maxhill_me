@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "wgo -file=.go -xfile=_test.go go run ./cmd/server/",
-    "build": "go build -o sync .",
+    "build": "go build -o sync ./cmd/server",
     "test": "go test ./...",
     
     "sim:quick": "go run ./cmd/simulator -clients=3 -ticks=20 -seed=quick-test -fault-delay-sync=0.1 -fault-corrupt-request=0.1 -fault-corrupt-response=0.1",

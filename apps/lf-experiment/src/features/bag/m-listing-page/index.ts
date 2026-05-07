@@ -1,7 +1,8 @@
-import { BindAttribute, MElement, query } from "@maxhill/web-component-utils";
+import { MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { globalStyleSheet } from "../../../styles/global-styles";
-import { html, render } from "../../../vendor/uhtml/src/dom/index.js";
+import { html, render } from "uhtml";
+import type { MListboxChangeEvent } from "@maxhill/components/m-listbox";
 
 import "@maxhill/components/m-fit-text";
 
@@ -39,8 +40,8 @@ export class MListingPage extends MElement {
       this.shadowRoot!,
       html`
           <m-fit-text font-display>Hardware</m-fit-text>
-          <m-club-list @m-listbox-change${(e) => this.selectClub(e)} class="club-list"></m-club-list>
-          ${ ' ' || '<m-shot-type-list class="shot-type-list"></m-shot-type-list>'}
+          <m-club-list @m-listbox-change=${(e: MListboxChangeEvent) => this.selectClub(e)} class="club-list"></m-club-list>
+          ${/* TODO: re-enable shot-type list */ ''}
 
           ${this.selectedClub ? html`<m-club-form club-key=${this.selectedClub} class="form"></m-club-form>` : html`<m-club-form class="form"></m-club-form>`}
       `,

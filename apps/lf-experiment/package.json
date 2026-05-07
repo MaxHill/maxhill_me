@@ -4,18 +4,21 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "dev": "deno run --watch=src/,index.html --allow-all --config=deno.config.json dev.ts",
-    "build": "deno run --allow-all --config=deno.config.json build.ts",
-    "clean": "rm -rf dist/"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "@maxhill/components": "workspace:*",
     "@maxhill/css": "workspace:*",
     "@maxhill/web-component-utils": "workspace:*",
-    "@maxhill/idb-distribute": "workspace:*"
+    "@maxhill/idb-distribute": "workspace:*",
+    "uhtml": "^5.0.9",
+    "universal-router": "^9.2.1"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "vite": "^6.0.11"
   },
   "keywords": [],
   "author": "",

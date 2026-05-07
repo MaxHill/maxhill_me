@@ -6,10 +6,12 @@
     "main": "./dist/style.css",
     "exports": {
         ".": "./dist/style.css",
+        "./fonts/*": "./public/fonts/*",
         "./*": "./dist/*"
     },
     "files": [
-        "dist"
+        "dist",
+        "public"
     ],
     "scripts": {
         "build": "vite build",
