@@ -56,9 +56,7 @@ export class {{componentNamePascal}} extends MElement {
     }
 }
 
-{{#if (eq target 'library')}}
 // Auto-define when using default import
 {{componentNamePascal}}.define();
 
-{{/if}}
 export default {{componentNamePascal}};

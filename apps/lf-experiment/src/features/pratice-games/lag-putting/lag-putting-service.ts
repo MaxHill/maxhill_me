@@ -67,20 +67,34 @@ type PuttResult =
   | { outcome: "0-0.5m" | "0.5-1m" | "1-2m" | "2-3m" | "+3m"; leave: "short" | "long" };
 
 const FIXED_PUTT_SEQUENCE: readonly PuttDistance[] = [
-  22, 12, 18, 10, 14, 8, // First 6
-  22, 12, 18,             // 7-9 (halfway)
-  10, 14, 8,              // 10-12
-  22, 12, 18, 10, 14, 8,  // Last 6
+  22,
+  12,
+  18,
+  10,
+  14,
+  8, // First 6
+  22,
+  12,
+  18, // 7-9 (halfway)
+  10,
+  14,
+  8, // 10-12
+  22,
+  12,
+  18,
+  10,
+  14,
+  8, // Last 6
 ] as const;
 
 function createPuttSequence(): Array<{ distance: PuttDistance; result: PuttResult | null }> {
-  return FIXED_PUTT_SEQUENCE.map(distance => ({
+  return FIXED_PUTT_SEQUENCE.map((distance) => ({
     distance,
     result: null,
   }));
 }
 
-interface CreateLagPuttingGameInput {
+export interface CreateLagPuttingGameInput {
   playerName: string;
   courseName: string;
   practiceAreaName: string;
@@ -107,9 +121,9 @@ export class LagPuttingGameService {
     this.table = this.db.table("lag_putting_games");
   }
 
-    subscribe(handler: SubscriptionCallbackHandler): () => void {
-        return this.table.subscribe(handler);
-    }
+  subscribe(handler: SubscriptionCallbackHandler): () => void {
+    return this.table.subscribe(handler);
+  }
 
   // Data access
   async createGame(input: CreateLagPuttingGameInput): Promise<LagPuttingGame> {
@@ -121,10 +135,10 @@ export class LagPuttingGameService {
 
     // Validate
     if (game.putts.length !== 18) {
-      throw new Error('Invalid putt sequence: must have exactly 18 putts');
+      throw new Error("Invalid putt sequence: must have exactly 18 putts");
     }
 
-    await this.table.set(game._key, game);
+    await this.table.setRow(game._key, game);
     return game;
   }
 
@@ -139,7 +153,7 @@ export class LagPuttingGameService {
   }
 
   async updateGame(game: LagPuttingGame): Promise<void> {
-    await this.table.set(game._key, game);
+    await this.table.setRow(game._key, game);
   }
 
   async recordPuttResult(
@@ -171,7 +185,7 @@ export class LagPuttingGameService {
     comparisonGroup: "men" | "women",
   ): ComparisonResultMen | ComparisonResultWomen | null {
     const totalScore = this.calculateTotalScore(game.putts);
-    
+
     // TODO: Implement skill level comparison logic
     return null;
   }
@@ -189,7 +203,9 @@ export class LagPuttingGameService {
   }
 
   // Utils
-  private calculateScore(putts: Array<{ distance: PuttDistance; result: PuttResult | null }>): number {
+  private calculateScore(
+    putts: Array<{ distance: PuttDistance; result: PuttResult | null }>,
+  ): number {
     return putts.reduce((score, putt) => {
       if (putt.result === null) return score;
       return score + OUTCOME_POINTS[putt.result.outcome];
