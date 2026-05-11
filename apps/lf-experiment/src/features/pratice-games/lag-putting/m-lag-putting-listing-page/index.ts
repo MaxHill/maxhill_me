@@ -5,7 +5,7 @@ import { html, render } from "uhtml";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { get_DB } from "../../../../db.ts";
 import { LagPuttingGame, LagPuttingGameService } from "../lag-putting-service.ts";
-import { CreateLagPuttingSubmitEventEvent } from "../m-start-lag-putting-game-form/events";
+import { CreateLagPuttingSubmitEventEvent } from "../m-create-lag-putting-game-form/events";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -90,7 +90,7 @@ export class MLagPuttingListingPage extends MElement {
           </button>
 
           <dialog id="testing" ref="${(el: any) => this.dialogRef = el}" class="new-game-dialog">
-            <m-start-lag-putting-game-form
+            <m-create-lag-putting-game-form
               @create-lag-putt-cancel="${this.handleCloseDialog}"
               @create-lag-putting-submit-event="${this.handleSubmit}"
             />
@@ -99,7 +99,7 @@ export class MLagPuttingListingPage extends MElement {
         <h2>List of games</h2>
         ${games.map((game) =>
           html`
-            <li>${game._key}</li>
+            <li><a href=${"/game/" + game._key}>${game.courseName}</li>
           `
         )}
       `,

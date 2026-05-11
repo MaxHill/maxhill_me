@@ -11,7 +11,7 @@ baseStyleSheet.replaceSync(styles);
  * Form for creating a new lag putting game
  *
  * @customElement
- * @tagname m-start-lag-putting-game-form
+ * @tagname m-create-lag-putting-game-form
  *
  * @slot - Default slot for component content
  *
@@ -19,8 +19,8 @@ baseStyleSheet.replaceSync(styles);
  *
  * @prop {string} example - An example property
  */
-export class MStartLagPuttingGameForm extends MElement {
-  static tagName = "m-start-lag-putting-game-form";
+export class MCreateLagPuttingGameForm extends MElement {
+  static tagName = "m-create-lag-putting-game-form";
 
   private formRef: HTMLFormElement | null = null;
 
@@ -95,4 +95,4 @@ export class MStartLagPuttingGameForm extends MElement {
   }
 }
 
-export default MStartLagPuttingGameForm;
+export default MCreateLagPuttingGameForm;

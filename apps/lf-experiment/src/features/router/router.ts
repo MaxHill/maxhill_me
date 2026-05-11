@@ -1,4 +1,5 @@
 import UniversalRouter, { type RouteContext } from "universal-router";
+import "../pratice-games/lag-putting/m-lag-putting-scorecard-page";
 
 const routes = [
   {
@@ -13,6 +14,13 @@ const routes = [
     action: () => {
       document.title = "Lag putting game";
       return `<m-lag-putting-listing-page/>`;
+    },
+  },
+  {
+    path: "/game/:key",
+    action: ({ params }: RouteContext) => {
+      document.title = "Lag putting game";
+      return `<m-lag-putting-scorecard-page game-key="${params.key}" />`;
     },
   },
   {
@@ -116,26 +124,29 @@ async function resolve(path?: string) {
 // Handle any element with href attribute
 document.addEventListener("click", (e) => {
   const target = e.target as HTMLElement;
-  
+
   // Find the closest element with an href attribute
   const elementWithHref = target.closest("[href]") as HTMLElement;
-  
+
   if (!elementWithHref) return;
-  
+
   // Get href from attribute (works for custom elements) or property (works for <a>)
   const href = elementWithHref.getAttribute("href") || (elementWithHref as HTMLAnchorElement).href;
-  
+
   if (!href) return;
-  
+
   // Handle <a> tags with full URLs
-  if (elementWithHref instanceof HTMLAnchorElement && elementWithHref.origin === window.location.origin) {
+  if (
+    elementWithHref instanceof HTMLAnchorElement &&
+    elementWithHref.origin === window.location.origin
+  ) {
     e.preventDefault();
     const url = new URL(elementWithHref.href);
     window.history.pushState({}, "", url.pathname);
     resolve(url.pathname);
     return;
   }
-  
+
   // Handle custom elements and relative paths
   if (!(elementWithHref instanceof HTMLAnchorElement)) {
     // Only handle internal navigation (relative paths or same-origin absolute paths)

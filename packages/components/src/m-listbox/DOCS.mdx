@@ -252,6 +252,7 @@ In addition to bubbling native events (`change`, `focus`, `blur`), `m-listbox` e
 Fires when the selection changes. This is the primary event for tracking user selections.
 
 **Event Detail:**
+- `option`: The `MOption` element that was selected, or `null`
 - `selected`: Array of currently selected option values
 
 ### m-listbox-select Event
@@ -259,23 +260,21 @@ Fires when the selection changes. This is the primary event for tracking user se
 Fires when an individual option is selected.
 
 **Event Detail:**
-- `item`: The `MOption` element that was selected
-- `selected`: `true` (always true for this event)
+- `option`: The `MOption` element that was selected
 
 ### m-listbox-unselected Event
 
 Fires when an individual option is unselected.
 
 **Event Detail:**
-- `item`: The `MOption` element that was unselected
-- `selected`: `false` (always false for this event)
+- `option`: The `MOption` element that was unselected
 
 ### m-listbox-focus-change Event
 
 Fires when keyboard focus moves to a different option. This tracks the "active descendant" for keyboard navigation, not the selected state.
 
 **Event Detail:**
-- `item`: The `MOption` element that received focus (or `null`)
+- `option`: The `MOption` element that received focus (or `null`)
 
 </div>
 <CodeExample html={`<div class="stack" data-gap="2">
@@ -310,11 +309,11 @@ eventListbox.addEventListener('m-listbox-change', (e) => {
 });
 
 eventListbox.addEventListener('m-listbox-select', (e) => {
-  logEvent(\`m-listbox-select: "\${e.detail.item.value}"\`, 'var(--color-success-fill-mid)');
+  logEvent(\`m-listbox-select: "\${e.detail.option.value}"\`, 'var(--color-success-fill-mid)');
 });
 
 eventListbox.addEventListener('m-listbox-unselected', (e) => {
-  logEvent(\`m-listbox-unselected: "\${e.detail.item.value}"\`, 'var(--color-destructive-fill-mid)');
+  logEvent(\`m-listbox-unselected: "\${e.detail.option.value}"\`, 'var(--color-destructive-fill-mid)');
 });
 
 eventListbox.addEventListener('m-listbox-focus-change', (e) => {

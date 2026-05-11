@@ -28,6 +28,7 @@ export type {
     MListboxChangeEventDetail,
     MListboxFocusChangeEventDetail,
     MListboxSelectEventDetail,
+    MListboxUnselectedEventDetail,
 } from "./events";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -63,10 +64,10 @@ baseStyleSheet.replaceSync(styles);
  * @prop {string} name - The form control name
  * @prop {string} label - The accessible label
  *
- * @fires {MListboxSelectEvent} m-listbox-select - Fired when an option is selected. Detail: { item: MOption, selected: boolean }
- * @fires {MListboxUnselectedEvent} m-listbox-unselected - Fired when an option is unselected. Detail: { item: MOption, selected: boolean }
- * @fires {MListboxChangeEvent} m-listbox-change - Fired when the selection changes. Detail: { selected: string[] }
- * @fires {MListboxFocusChangeEvent} m-listbox-focus-change - Fired when focus moves to a different option. Detail: { item: MOption | null }
+ * @fires {MListboxSelectEvent} m-listbox-select - Fired when an option is selected. Detail: { option: MOption }
+ * @fires {MListboxUnselectedEvent} m-listbox-unselected - Fired when an option is unselected. Detail: { option: MOption }
+ * @fires {MListboxChangeEvent} m-listbox-change - Fired when the selection changes. Detail: { option: MOption | null, selected: string[] }
+ * @fires {MListboxFocusChangeEvent} m-listbox-focus-change - Fired when focus moves to a different option. Detail: { option: MOption | null }
  * @fires {Event} change - Standard change event (bubbles)
  * @fires {MInvalidEvent} m-invalid - Fired when validation fails (inherited). Detail: { validity, validationMessage, value }
  *
@@ -201,21 +202,21 @@ export class MListbox extends MFormAssociatedElement {
     private handleSelectCallback(result: SelectionResult): void {
         result.itemsToDeselect.forEach((i) => {
             this.dispatchEvent(
-                new MListboxUnselectedEvent({ option: i as MOption, selected: false }),
+                new MListboxUnselectedEvent({ option: i as MOption }),
             );
         });
 
         const option = result.itemToSelect as MOption;
         const EventClass = option.selected ? MListboxSelectEvent : MListboxUnselectedEvent;
         this.dispatchEvent(
-            new EventClass({ option: option, selected: option.selected! }),
+            new EventClass({ option: option }),
         );
 
         const selectedValues = this.optionListManager.selectedValues;
         this.value = this.mode === "multiple" ? selectedValues : (selectedValues[0] ?? null);
 
         this.dispatchEvent(
-            new MListboxChangeEvent({ selected: selectedValues }),
+            new MListboxChangeEvent({ option: option.selected ? option : null, selected: selectedValues }),
         );
         this.dispatchEvent(new Event("change", { bubbles: true }));
     }

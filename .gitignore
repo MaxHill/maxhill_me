@@ -12,6 +12,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+mprocs.log
+
+# playwright mcp artifacts
+.playwright-mcp/
 
 # environment variables
 .env
