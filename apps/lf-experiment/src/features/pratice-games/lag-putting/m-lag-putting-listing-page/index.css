@@ -1,2 +1,21 @@
 :host {
 }
+
+dl {
+  font-family: var(--ff-display);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--size-1);
+  padding-block: 1lh;
+  align-items: center;
+  dt {
+    font: var(--p2);
+    font-family: var(--ff-display);
+    text-transform: uppercase;
+    color: var(--color-text-softer);
+    text-align: end;
+  }
+  dd {
+    min-width: 0;
+  }
+}

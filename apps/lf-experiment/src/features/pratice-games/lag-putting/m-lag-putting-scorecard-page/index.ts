@@ -59,6 +59,23 @@ export class MLagPuttingScorecardPage extends MElement {
     }
 
 
+    handleNavClick = (e: MouseEvent) => {
+        e.preventDefault();
+        const target = e.target as HTMLAnchorElement;
+        if (target.tagName !== 'A' || !target.hash) return;
+
+        const targetId = target.hash.slice(1);
+        const targetElement = this.shadowRoot?.getElementById(targetId);
+        
+        if (targetElement) {
+            targetElement.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'nearest', 
+                inline: 'start' 
+            });
+        }
+    }
+
     handleChange = async (e: MListboxChangeEvent) => {
         if (!e.detail.option || !this.currentGame) return;
 
@@ -150,13 +167,19 @@ export class MLagPuttingScorecardPage extends MElement {
           <dd>${totalScore > 0 ? '+' : ''}${totalScore}</dd>
         </dl>
 
+        <nav class="exposed-grid stack" data-direction="row" data-border @click=${this.handleNavClick}>
+          ${this.currentGame?.putts.map((putt, index) => html`
+            <a href=${`#putt-${index + 1}`} data-padding="2">${index + 1}${putt.result ? '*' : ''}</a>
+          `) || html``}
+        </nav>
+
         <div class="putts-container">
           ${this.currentGame?.putts.map((
                 putt,
                 index,
             ) =>
                 html`
-              <m-card>
+              <m-card id=${`putt-${index + 1}`}>
                 <dl>
                 <dt>Putt no</dt>
                 <dd>${index + 1}</dd>

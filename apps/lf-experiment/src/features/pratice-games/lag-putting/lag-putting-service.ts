@@ -102,6 +102,7 @@ export interface CreateLagPuttingGameInput {
 
 export interface LagPuttingGame extends CreateLagPuttingGameInput {
     _key: GameKey;
+    createdAt?: string;
     putts: Array<{ distance: PuttDistance; result: PuttResult | null }>;
 }
 
@@ -130,6 +131,7 @@ export class LagPuttingGameService {
         const game: LagPuttingGame = {
             ...input,
             _key: crypto.randomUUID(),
+            createdAt: new Date().toString(),
             putts: createPuttSequence(),
         };
 

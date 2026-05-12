@@ -23,60 +23,60 @@ baseStyleSheet.replaceSync(styles);
  * @prop {string} example - An example property
  */
 export class MLagPuttingListingPage extends MElement {
-  static tagName = "m-lag-putting-listing-page";
+    static tagName = "m-lag-putting-listing-page";
 
-  private dialogRef: HTMLDialogElement | null = null;
+    private dialogRef: HTMLDialogElement | null = null;
 
-  lagPuttingGameService!: LagPuttingGameService;
-  private unsubscribe!: () => void;
+    lagPuttingGameService!: LagPuttingGameService;
+    private unsubscribe!: () => void;
 
-  constructor() {
-    super();
-    this.attachShadow({ mode: "open" });
-    this.shadowRoot!.adoptedStyleSheets = [globalStyleSheet, baseStyleSheet];
-  }
-
-  async connectedCallback() {
-    const db = await get_DB();
-    this.lagPuttingGameService = new LagPuttingGameService(db);
-    this.unsubscribe = this.lagPuttingGameService.subscribe(async (_: TableChangeEvent) => {
-      await this.render();
-    });
-    await this.render();
-  }
-
-  disconnectedCallback() {
-    this.unsubscribe();
-  }
-
-  private handleOpenDialog = () => {
-    if (this.dialogRef) {
-      this.dialogRef.showModal();
-    }
-  };
-
-  private handleCloseDialog = () => {
-    if (this.dialogRef) {
-      this.dialogRef.close();
-    }
-  };
-
-  private handleSubmit = async (e: CreateLagPuttingSubmitEventEvent) => {
-    console.log("what's the value?", e.detail.value);
-    const game = await this.lagPuttingGameService.createGame(e.detail.value);
-    console.log("TODO: navigate to the game", game);
-    this.handleCloseDialog();
-  };
-
-  private async render() {
-    const games = [];
-    for await (const game of this.lagPuttingGameService.table.query()) {
-      games.push(game as LagPuttingGame);
+    constructor() {
+        super();
+        this.attachShadow({ mode: "open" });
+        this.shadowRoot!.adoptedStyleSheets = [globalStyleSheet, baseStyleSheet];
     }
 
-    render(
-      this.shadowRoot!,
-      html`
+    async connectedCallback() {
+        const db = await get_DB();
+        this.lagPuttingGameService = new LagPuttingGameService(db);
+        this.unsubscribe = this.lagPuttingGameService.subscribe(async (_: TableChangeEvent) => {
+            await this.render();
+        });
+        await this.render();
+    }
+
+    disconnectedCallback() {
+        this.unsubscribe();
+    }
+
+    private handleOpenDialog = () => {
+        if (this.dialogRef) {
+            this.dialogRef.showModal();
+        }
+    };
+
+    private handleCloseDialog = () => {
+        if (this.dialogRef) {
+            this.dialogRef.close();
+        }
+    };
+
+    private handleSubmit = async (e: CreateLagPuttingSubmitEventEvent) => {
+        console.log("what's the value?", e.detail.value);
+        const game = await this.lagPuttingGameService.createGame(e.detail.value);
+        console.log("TODO: navigate to the game", game);
+        this.handleCloseDialog();
+    };
+
+    private async render() {
+        const games = [];
+        for await (const game of this.lagPuttingGameService.table.query()) {
+            games.push(game as LagPuttingGame);
+        }
+
+        render(
+            this.shadowRoot!,
+            html`
         <div class="stack" data-direction="row" data-justify="content-between">
           <h1 class="h1">m-lag-putting-listing-page</h1>
           <button
@@ -97,14 +97,48 @@ export class MLagPuttingListingPage extends MElement {
           </dialog>
         </div>
         <h2>List of games</h2>
-        ${games.map((game) =>
-          html`
-            <li><a href=${"/game/" + game._key}>${game.courseName}</li>
-          `
-        )}
+
+        <div class="collection" data-padding="body" data-size="10" data-gap="3">
+            ${games.map((game) => {
+                const completedPutts = game?.putts.filter(p => p.result !== null).length || 0;
+                const totalPutts = 18;
+                const outScore = this.lagPuttingGameService.calculateOutScore(game.putts);
+                const inScore = this.lagPuttingGameService.calculateInScore(game.putts);
+                const totalScore = this.lagPuttingGameService.calculateTotalScore(game.putts);
+                return html`
+                <m-card href=${"/game/" + game._key}>
+                    <dl class="game-hud">
+                      <dt>Created</dt>
+                      <dd>${game.createdAt || '-'}</dd>
+
+                      <dt>Player</dt>
+                      <dd>${game?.playerName}</dd>
+
+                      <dt>Course</dt>
+                      <dd>${game?.courseName}</dd>
+
+                      <dt>Pratice area</dt>
+                      <dd>${game?.practiceAreaName}</dd>
+
+                      <dt>Progress</dt>
+                      <dd>${completedPutts}/${totalPutts}</dd>
+
+                      <dt>Out Score</dt>
+                      <dd>${outScore > 0 ? '+' : ''}${outScore}</dd>
+
+                      <dt>In Score</dt>
+                      <dd>${inScore > 0 ? '+' : ''}${inScore}</dd>
+
+                      <dt>Total Score</dt>
+                      <dd>${totalScore > 0 ? '+' : ''}${totalScore}</dd>
+                    </dl>
+                </m-card>
+              `;
+            })}
+        </div>
       `,
-    );
-  }
+        );
+    }
 }
 
 export default MLagPuttingListingPage;
