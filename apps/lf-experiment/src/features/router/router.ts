@@ -123,10 +123,11 @@ async function resolve(path?: string) {
 // Intercept all link clicks for client-side navigation
 // Handle any element with href attribute
 document.addEventListener("click", (e) => {
-  const target = e.target as HTMLElement;
-
-  // Find the closest element with an href attribute
-  const elementWithHref = target.closest("[href]") as HTMLElement;
+  // Use composedPath() to cross shadow DOM boundaries
+  const path = e.composedPath() as HTMLElement[];
+  const elementWithHref = path.find(
+    (el) => el instanceof HTMLElement && el.hasAttribute?.("href")
+  ) as HTMLElement | undefined;
 
   if (!elementWithHref) return;
 
