@@ -216,7 +216,7 @@ export class MListbox extends MFormAssociatedElement {
         this.value = this.mode === "multiple" ? selectedValues : (selectedValues[0] ?? null);
 
         this.dispatchEvent(
-            new MListboxChangeEvent({ option: option.selected ? option : null, selected: selectedValues }),
+            new MListboxChangeEvent({ option: option, selected: selectedValues }),
         );
         this.dispatchEvent(new Event("change", { bubbles: true }));
     }
