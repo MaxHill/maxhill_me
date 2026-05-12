@@ -56,7 +56,10 @@ export class MLagPuttingScorecardPage extends MElement {
   }
 
   handleChange(e: MListboxChangeEvent) {
-    console.log("change:", e.detail.selected[0]);
+    console.log("e", e);
+    console.log("target:", e.target);
+    console.log("selected:", e.detail.selected);
+    console.log("option:", e.detail.option);
   }
 
   private render() {
@@ -85,6 +88,7 @@ export class MLagPuttingScorecardPage extends MElement {
                 <div slot="title">Putt no.${index}</div>
                 <span>Distance:${putt.distance}</span>
                 <m-listbox
+                  data-putt-number="${index}"
                   @m-listbox-change="${this.handleChange}"
                 >
                   <m-option value="+3m" class="tripple-bogey">+3m</m-option>
