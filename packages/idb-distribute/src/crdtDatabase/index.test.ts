@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { CRDTDatabase } from "./index.ts";
 import { below } from "../indexes.ts";
+import { desc } from "../direction.ts";
 import "fake-indexeddb/auto";
 import { newDatabase } from "./builder.ts";
 import { IDBRepository } from "../IDBRepository.ts";
@@ -65,6 +66,61 @@ describe("CRDTDatabase", () => {
       expect(results[0]).not.toHaveProperty("clientId");
       expect(results[0]).not.toHaveProperty("version");
       expect(results[0]).not.toHaveProperty("fields");
+    });
+
+    it("should iterate index in descending order when passed desc", async () => {
+      const users = db.table("users");
+
+      await users.setRow("u1", { age: 25, name: "Alice" });
+      await users.setRow("u2", { age: 30, name: "Bob" });
+      await users.setRow("u3", { age: 35, name: "Charlie" });
+      await users.setRow("u4", { age: 40, name: "David" });
+
+      const results: any[] = [];
+      for await (const row of users.index("usersByAge").query(desc)) {
+        results.push(row);
+      }
+
+      expect(results).toHaveLength(4);
+      expect(results.map((r) => r.age)).toEqual([40, 35, 30, 25]);
+    });
+
+    it("should iterate index in descending order with a condition", async () => {
+      const users = db.table("users");
+
+      await users.setRow("u1", { age: 25, name: "Alice" });
+      await users.setRow("u2", { age: 30, name: "Bob" });
+      await users.setRow("u3", { age: 35, name: "Charlie" });
+      await users.setRow("u4", { age: 40, name: "David" });
+
+      const results: any[] = [];
+      for await (
+        const row of users.index("usersByAge").query(below(35, { inclusive: true }), desc)
+      ) {
+        results.push(row);
+      }
+
+      expect(results.map((r) => r.age)).toEqual([35, 30, 25]);
+    });
+
+    it("should iterate table in descending order when passed desc", async () => {
+      const users = db.table("users");
+
+      await users.setRow("u1", { age: 25, name: "Alice" });
+      await users.setRow("u2", { age: 30, name: "Bob" });
+      await users.setRow("u3", { age: 35, name: "Charlie" });
+
+      const ascResults: any[] = [];
+      for await (const row of users.query()) {
+        ascResults.push(row);
+      }
+
+      const descResults: any[] = [];
+      for await (const row of users.query(desc)) {
+        descResults.push(row);
+      }
+
+      expect(descResults).toEqual([...ascResults].reverse());
     });
   });
 

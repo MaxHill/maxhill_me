@@ -7,6 +7,7 @@ import {
     ROWS_STORE,
 } from "./IDBRepository.ts";
 import { Index, QueryCondition } from "./indexes.ts";
+import { asc, Direction, resolveQueryArgs } from "./direction.ts";
 import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
 import { SubscriptionCallbackHandler, TableSubscriptions } from "./tableSubscriptions.ts";
 
@@ -149,10 +150,19 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
     }
 
     async *query(
-        condition: QueryCondition = { type: "all" },
+        conditionOrDirection: QueryCondition | Direction = { type: "all" },
+        direction: Direction = asc,
     ): AsyncGenerator<Record<string, any>, void, unknown> {
+        const { condition, idbDirection } = resolveQueryArgs(conditionOrDirection, direction);
+
         const tx = this.idbRepository!.transaction([ROWS_STORE], "readonly");
-        const queryIterator = this.idbRepository.query(tx, this.tableName, condition);
+        const queryIterator = this.idbRepository.query(
+            tx,
+            this.tableName,
+            condition,
+            undefined,
+            idbDirection,
+        );
 
         for await (const row of queryIterator) {
             const result = toUserRow(row);

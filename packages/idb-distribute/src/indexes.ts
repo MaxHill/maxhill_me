@@ -1,5 +1,6 @@
 import { CLIENT_STATE_STORE, IDBRepository, INDEXES_HASH, ROWS_STORE } from "./IDBRepository.ts";
 import { TABLE_NAME, toUserRow } from "./crdt.ts";
+import { asc, Direction, resolveQueryArgs } from "./direction.ts";
 import { promisifyIDBRequest, validateTransactionStores } from "./utils.ts";
 
 export class Index {
@@ -19,7 +20,8 @@ export class Index {
   }
 
   async *query(
-    condition: QueryCondition = { type: "all" },
+    conditionOrDirection: QueryCondition | Direction = { type: "all" },
+    direction: Direction = asc,
   ): AsyncGenerator<Record<string, any>, void, unknown> {
     const indexNames = (this.idbRepository.indexes || []).map((index) => index.name);
     if (!indexNames.includes(this.indexName)) {
@@ -30,8 +32,16 @@ export class Index {
       );
     }
 
+    const { condition, idbDirection } = resolveQueryArgs(conditionOrDirection, direction);
+
     const tx = this.idbRepository!.transaction([ROWS_STORE], "readonly");
-    const queryIterator = this.idbRepository.query(tx, this.tableName, condition, this.indexName);
+    const queryIterator = this.idbRepository.query(
+      tx,
+      this.tableName,
+      condition,
+      this.indexName,
+      idbDirection,
+    );
 
     for await (const row of queryIterator) {
       const result = toUserRow(row);

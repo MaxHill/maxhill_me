@@ -60,7 +60,7 @@ export class MLagPuttingListingPage extends MElement {
   };
 
   private render() {
-    const games = this.lagPuttingGameService.table.query() as AsyncIterable<LagPuttingGame>;
+    const games = this.lagPuttingGameService.queryGamesNewestFirst();
 
     render(
       html`

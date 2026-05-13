@@ -1,4 +1,4 @@
-import { SubscriptionCallbackHandler, Table } from "@maxhill/idb-distribute";
+import { desc, SubscriptionCallbackHandler, Table } from "@maxhill/idb-distribute";
 import { DBInterface } from "../../../db";
 import { PracticeGameMetadata } from "../practice-game";
 
@@ -131,7 +131,7 @@ export class LagPuttingGameService {
     const game: LagPuttingGame = {
       ...input,
       _key: crypto.randomUUID(),
-      createdAt: new Date().toString(),
+      createdAt: new Date().toISOString(),
       putts: createPuttSequence(),
     };
 
@@ -150,6 +150,13 @@ export class LagPuttingGameService {
       games.push(row as LagPuttingGame);
     }
     return games;
+  }
+
+  /**
+   * Iterate games newest-first using the `byCreatedAt` index in descending order.
+   */
+  queryGamesNewestFirst(): AsyncIterable<LagPuttingGame> {
+    return this.table.index("byCreatedAt").query(desc) as AsyncIterable<LagPuttingGame>;
   }
 
   async getGame(gameKey: GameKey): Promise<LagPuttingGame | null> {

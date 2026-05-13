@@ -249,6 +249,7 @@ export class IDBRepository {
     table: string,
     query: QueryCondition,
     indexName?: string,
+    direction: IDBCursorDirection = "next",
   ): AsyncIterableIterator<ORMapRow> {
     validateTransactionStores(tx, [ROWS_STORE]);
     const indexNames = (this.indexes || []).map((index) => index.name);
@@ -266,7 +267,7 @@ export class IDBRepository {
     }
 
     const range = queryToIDBRange(table, query);
-    const cursorRequest = source.openCursor(range);
+    const cursorRequest = source.openCursor(range, direction);
     return asyncCursorIterator<ORMapRow>(cursorRequest);
   }
 
