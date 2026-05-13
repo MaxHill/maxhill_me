@@ -19,7 +19,7 @@ export const lagPuttingHud = (game: LagPuttingGame, gameService: LagPuttingGameS
       <dt>Course</dt>
       <dd>${game?.courseName}</dd>
 
-      <dt>Pratice area</dt>
+      <dt>Practice area</dt>
       <dd>${game?.practiceAreaName}</dd>
 
       <dt>Progress</dt>

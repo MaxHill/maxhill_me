@@ -4,8 +4,7 @@ import { html, render } from "lit-html";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { get_DB } from "../../../../db";
 import { LagPuttingGameService } from "../lag-putting-service";
-import type { LagPuttingGame, PuttOutcome, PuttResult } from "../lag-putting-service";
-import { TableChangeEvent } from "@maxhill/idb-distribute";
+import type { LagPuttingGame, PuttResult } from "../lag-putting-service";
 import type { MListboxChangeEvent } from "@maxhill/components/m-listbox";
 import { lagPuttingHud } from "../lag-putting-game-hud";
 
@@ -138,7 +137,6 @@ export class MLagPuttingScorecardPage extends MElement {
 
     const currentResult = this.currentGame.putts[puttIndex].result;
     if (currentResult && currentResult === result) {
-      console.log("Value unchanged, skipping save");
       return;
     }
 
@@ -157,10 +155,21 @@ export class MLagPuttingScorecardPage extends MElement {
     return `${putt.result.outcome}-${putt.result.leave}`;
   }
 
+  private formatRoundDate(createdAt: string | undefined): string {
+    if (!createdAt) return "—";
+    const date = new Date(createdAt);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
+
   private render() {
     render(
       html`
-        <h1>Game</h1>
+        <h1>Round · ${this.formatRoundDate(this.currentGame?.createdAt)}</h1>
 
         ${this.currentGame ? lagPuttingHud(this.currentGame, this.lagPuttingGameService) : ""}
 

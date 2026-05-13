@@ -55,8 +55,7 @@ export class MLagPuttingListingPage extends MElement {
   };
 
   private handleSubmit = async (e: CreateLagPuttingSubmitEventEvent) => {
-    const game = await this.lagPuttingGameService.createGame(e.detail.value);
-    console.log("TODO: navigate to the game", game);
+    await this.lagPuttingGameService.createGame(e.detail.value);
     this.handleCloseDialog();
   };
 
@@ -66,7 +65,7 @@ export class MLagPuttingListingPage extends MElement {
     render(
       html`
         <div class="stack" data-direction="row" data-justify="content-between">
-          <h1 class="h1">m-lag-putting-listing-page</h1>
+          <h1 class="h1">Lag Putting Practice</h1>
           <button
             type="button"
             class="button new-game-button"
@@ -77,7 +76,7 @@ export class MLagPuttingListingPage extends MElement {
             Start new game
           </button>
 
-          <dialog id="testing" ${ref(this.dialogRef)} class="new-game-dialog">
+          <dialog ${ref(this.dialogRef)} class="new-game-dialog">
             <m-create-lag-putting-game-form
               @create-lag-putt-cancel="${this.handleCloseDialog}"
               @create-lag-putting-submit-event="${this.handleSubmit}"
@@ -85,7 +84,7 @@ export class MLagPuttingListingPage extends MElement {
           </dialog>
         </div>
 
-        <h2>List of games</h2>
+        <h2>Rounds</h2>
 
         <div class="collection" data-padding="body" data-size="10" data-gap="3">
           ${asyncAppend(games, (g) => {

@@ -65,7 +65,7 @@ export class MCreateLagPuttingGameForm extends MElement {
           />
           <m-input
             name="practiceAreaName"
-            label="Pratice area name"
+            label="Practice area name"
             required
           />
 
