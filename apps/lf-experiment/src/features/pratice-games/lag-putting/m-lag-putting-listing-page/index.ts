@@ -3,6 +3,7 @@ import type { TableChangeEvent } from "@maxhill/idb-distribute";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
 import { ref, createRef } from "lit-html/directives/ref.js";
+import { asyncAppend } from "lit-html/directives/async-append.js";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { get_DB } from "../../../../db.ts";
 import { LagPuttingGame, LagPuttingGameService } from "../lag-putting-service.ts";
@@ -34,10 +35,10 @@ export class MLagPuttingListingPage extends MElement {
     async connectedCallback() {
         const db = await get_DB();
         this.lagPuttingGameService = new LagPuttingGameService(db);
-        this.unsubscribe = this.lagPuttingGameService.subscribe(async (_: TableChangeEvent) => {
-            await this.render();
+        this.unsubscribe = this.lagPuttingGameService.subscribe((_: TableChangeEvent) => {
+            this.render();
         });
-        await this.render();
+        this.render();
     }
 
     disconnectedCallback() {
@@ -59,11 +60,8 @@ export class MLagPuttingListingPage extends MElement {
         this.handleCloseDialog();
     };
 
-    private async render() {
-        const games = [];
-        for await (const game of this.lagPuttingGameService.table.query()) {
-            games.push(game as LagPuttingGame);
-        }
+    private render() {
+        const games = this.lagPuttingGameService.table.query() as AsyncIterable<LagPuttingGame>;
 
         render(
             html`
@@ -89,7 +87,8 @@ export class MLagPuttingListingPage extends MElement {
         <h2>List of games</h2>
 
         <div class="collection" data-padding="body" data-size="10" data-gap="3">
-            ${games.map((game) => {
+            ${asyncAppend(games, (g) => {
+                const game = g as LagPuttingGame;
                 const completedPutts = game?.putts.filter(p => p.result !== null).length || 0;
                 const totalPutts = 18;
                 const outScore = this.lagPuttingGameService.calculateOutScore(game.putts);
