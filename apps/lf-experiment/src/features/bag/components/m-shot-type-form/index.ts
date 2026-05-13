@@ -1,6 +1,7 @@
 import { MElement, BindAttribute } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
-import { html, render } from "uhtml";
+import { html, render } from "lit-html";
+import { ref } from "lit-html/directives/ref.js";
 import { get_DB } from "../../../../db";
 import { ShotType, ShotTypeService } from "../../shot-type-service";
 import { globalStyleSheet } from "../../../../styles/global-styles";
@@ -42,10 +43,8 @@ export class MShotTypeForm extends MElement {
     const db = await get_DB();
     this.shotTypeService = new ShotTypeService(db);
     
-    // Check if we're in edit mode
     this.isEditMode = !!this.shotTypeKey;
     
-    // Load existing shot type if in edit mode
     if (this.isEditMode) {
       const row = await this.shotTypeService.table.get(this.shotTypeKey);
       this.shotType = row ? (row as ShotType) : null;
@@ -68,7 +67,6 @@ export class MShotTypeForm extends MElement {
     }
 
     if (this.isEditMode) {
-      // Update existing shot type
       await this.shotTypeService.table.setRow(this.shotTypeKey, {
         ...this.shotType,
         name: this.isStockShotType ? "Stock" : name, // Don't allow changing Stock name
@@ -82,12 +80,10 @@ export class MShotTypeForm extends MElement {
         composed: true
       }));
       
-      // Navigate back if not in inline mode
       if (!this.inline) {
         window.location.href = '/bag';
       }
     } else {
-      // Add new shot type
       const newKey = crypto.randomUUID();
       await this.shotTypeService.table.setRow(newKey, {
         name,
@@ -101,7 +97,6 @@ export class MShotTypeForm extends MElement {
         composed: true
       }));
       
-      // Navigate back if not in inline mode
       if (!this.inline) {
         window.location.href = '/bag';
       }
@@ -111,7 +106,6 @@ export class MShotTypeForm extends MElement {
   private handleDelete = async () => {
     if (!this.isEditMode || !this.shotType) return;
     
-    // Confirm deletion
     if (!confirm(`Archive "${this.shotType.name}" shot type? It will be hidden from new clubs but preserved in existing clubs.`)) {
       return;
     }
@@ -122,7 +116,6 @@ export class MShotTypeForm extends MElement {
       archived: true,
     });
     
-    // Navigate back
     window.history.back();
   };
 
@@ -134,9 +127,9 @@ export class MShotTypeForm extends MElement {
       ? "Save Changes" 
       : this.inline ? "Create & Select" : "Add Shot Type";
 
-    render(this.shadowRoot!, html`
+    render(html`
       <form 
-        ref=${(el: any) => this.formRef = el}
+        ${ref((el) => { this.formRef = el as HTMLFormElement ?? null; })}
         class="form" 
         aria-label=${`${title} form`}
         @submit=${this.handleFormSubmit}
@@ -196,7 +189,7 @@ export class MShotTypeForm extends MElement {
           </button>
         ` : null}
       </form>
-    `);
+    `, this.shadowRoot!);
   }
 }
 

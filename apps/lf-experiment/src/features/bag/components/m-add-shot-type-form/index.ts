@@ -1,6 +1,7 @@
 import { MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
-import { html, render } from "uhtml";
+import { html, render } from "lit-html";
+import { ref } from "lit-html/directives/ref.js";
 import { get_DB } from "../../../../db";
 import { ShotTypeService } from "../../shot-type-service";
 import { globalStyleSheet } from "../../../../styles/global-styles";
@@ -49,9 +50,9 @@ export class MAddShotTypeForm extends MElement {
   };
 
   private renderComponent() {
-    render(this.shadowRoot!, html`
+    render(html`
       <form 
-        ref=${(el: any) => this.formRef = el}
+        ${ref((el) => { this.formRef = el as HTMLFormElement ?? null; })}
         class="form box" 
         aria-label="Add new shot type form"
         @submit=${this.handleFormSubmit}
@@ -63,6 +64,6 @@ export class MAddShotTypeForm extends MElement {
 
         <button class="button" type="submit" aria-label="Submit form to add shot type">Add</button>
       </form>
-    `);
+    `, this.shadowRoot!);
   }
 }

@@ -1,6 +1,7 @@
 import { MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
-import { html, render } from "uhtml";
+import { html, render } from "lit-html";
+import { ref } from "lit-html/directives/ref.js";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { CreateLagPuttCancelEvent, CreateLagPuttingSubmitEventEvent } from "./events";
 
@@ -12,12 +13,6 @@ baseStyleSheet.replaceSync(styles);
  *
  * @customElement
  * @tagname m-create-lag-putting-game-form
- *
- * @slot - Default slot for component content
- *
- * @attr {string} example - An example property
- *
- * @prop {string} example - An example property
  */
 export class MCreateLagPuttingGameForm extends MElement {
   static tagName = "m-create-lag-putting-game-form";
@@ -51,10 +46,9 @@ export class MCreateLagPuttingGameForm extends MElement {
 
   private render() {
     render(
-      this.shadowRoot!,
       html`
         <form
-          ref="${(el: any) => this.formRef = el}"
+          ${ref((el) => { this.formRef = el as HTMLFormElement ?? null; })}
           class="form"
           @submit="${this.handleSubmit.bind(this)}"
         >
@@ -91,6 +85,7 @@ export class MCreateLagPuttingGameForm extends MElement {
           </div>
         </form>
       `,
+      this.shadowRoot!,
     );
   }
 }

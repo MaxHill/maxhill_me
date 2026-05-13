@@ -1,7 +1,7 @@
 import { MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { globalStyleSheet } from "../../../styles/global-styles";
-import { html, render } from "uhtml";
+import { html, render } from "lit-html";
 import type { MListboxChangeEvent } from "@maxhill/components/m-listbox";
 
 import "@maxhill/components/m-fit-text";
@@ -37,7 +37,6 @@ export class MListingPage extends MElement {
   private render() {
       console.log("Render:", this.selectedClub)
     render(
-      this.shadowRoot!,
       html`
           <m-fit-text font-display>Hardware</m-fit-text>
           <m-club-list @m-listbox-change=${(e: MListboxChangeEvent) => this.selectClub(e)} class="club-list"></m-club-list>
@@ -45,6 +44,7 @@ export class MListingPage extends MElement {
 
           ${this.selectedClub ? html`<m-club-form club-key=${this.selectedClub} class="form"></m-club-form>` : html`<m-club-form class="form"></m-club-form>`}
       `,
+      this.shadowRoot!,
     );
   }
 }

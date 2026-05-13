@@ -1,7 +1,7 @@
 import { MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { globalStyleSheet } from "../../../../styles/global-styles";
-import { html, render } from "uhtml";
+import { html, render } from "lit-html";
 import "@maxhill/components/m-fit-text";
 import "../../components/m-club-list";
 import "../../components/m-shot-type-list";
@@ -31,7 +31,6 @@ export class MBagListPage extends MElement {
 
   private render() {
     render(
-      this.shadowRoot!,
       html`
         <div class="page-container">
           <m-fit-text font-display class="title">Hardware</m-fit-text>
@@ -41,7 +40,8 @@ export class MBagListPage extends MElement {
             <m-shot-type-list interactive class="shot-type-list"></m-shot-type-list>
           </div>
         </div>
-      `
+      `,
+      this.shadowRoot!,
     );
   }
 }

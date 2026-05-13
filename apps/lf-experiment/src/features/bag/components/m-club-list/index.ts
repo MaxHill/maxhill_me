@@ -5,7 +5,7 @@ import { get_DB } from "../../../../db";
 import { ShotType } from "../../shot-type-service";
 import { TableChangeEvent } from "@maxhill/idb-distribute";
 import { globalStyleSheet } from "../../../../styles/global-styles";
-import { html, render } from "uhtml";
+import { html, render } from "lit-html";
 import "@maxhill/components/m-card";
 
 const baseStyleSheet = new CSSStyleSheet();
@@ -55,12 +55,19 @@ export class MClubList extends MElement {
     await this.loadAndRender();
   }
 
+  attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
+    super.attributeChangedCallback(name, oldValue, newValue);
+    // Re-render when the selection changes so the `.selected` class on the
+    // matching <m-card> stays in sync. Skipped pre-connection to avoid
+    // rendering before data has loaded.
+    if (this.isConnected && this.clubs.length > 0) this.render();
+  }
+
   async disconnectedCallback() {
     this.unsubscribe?.();
   }
 
   private async loadAndRender() {
-    // Load clubs into state array
     this.clubs = [];
     for await (const club of this.clubService.table.query()) {
       this.clubs.push(club as Club);
@@ -70,7 +77,6 @@ export class MClubList extends MElement {
 
   private render() {
     render(
-      this.shadowRoot!,
       html`
         <div>
           <h2 class="h1">Clubs</h2>
@@ -119,7 +125,8 @@ export class MClubList extends MElement {
                 </div>
               `}
         </div>
-      `
+      `,
+      this.shadowRoot!,
     );
   }
 }

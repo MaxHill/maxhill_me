@@ -1,6 +1,8 @@
 import UniversalRouter, { type RouteContext } from "universal-router";
 import "../pratice-games/lag-putting/m-lag-putting-scorecard-page";
-import { html, render } from "uhtml";
+import { html, render, type TemplateResult } from "lit-html";
+
+type RouteResult = TemplateResult;
 
 const routes = [
   {
@@ -8,7 +10,7 @@ const routes = [
     action: () => {
       document.title = "Golf Bag Tracker";
       return html`
-        <m-bag-list-page />
+        <m-bag-list-page></m-bag-list-page>
       `;
     },
   },
@@ -17,7 +19,7 @@ const routes = [
     action: () => {
       document.title = "Lag putting game";
       return html`
-        <m-lag-putting-listing-page />
+        <m-lag-putting-listing-page></m-lag-putting-listing-page>
       `;
     },
   },
@@ -26,7 +28,7 @@ const routes = [
     action: ({ params }: RouteContext) => {
       document.title = "Lag putting game";
       return html`
-        <m-lag-putting-scorecard-page game-key="${params.key}" />
+        <m-lag-putting-scorecard-page game-key="${params.key}"></m-lag-putting-scorecard-page>
       `;
     },
   },
@@ -35,7 +37,7 @@ const routes = [
     action: () => {
       document.title = "Golf Bag Tracker";
       return html`
-        <m-bag-list-page />
+        <m-bag-list-page></m-bag-list-page>
       `;
     },
   },
@@ -44,7 +46,7 @@ const routes = [
     action: () => {
       document.title = "Add Club - Golf Bag Tracker";
       return html`
-        <m-bag-add-page />
+        <m-bag-add-page></m-bag-add-page>
       `;
     },
   },
@@ -53,7 +55,7 @@ const routes = [
     action: ({ params }: RouteContext) => {
       document.title = `Edit Club - Golf Bag Tracker`;
       return html`
-        <m-bag-edit-page club-key="${params.key}" />
+        <m-bag-edit-page club-key=${params.key}></m-bag-edit-page>
       `;
     },
   },
@@ -120,26 +122,22 @@ const routes = [
   },
 ];
 
-const router = new UniversalRouter(routes);
+const router = new UniversalRouter<RouteResult>(routes);
 
 async function resolve(path?: string) {
   const pathname = path || window.location.pathname;
-  const html = await router.resolve({ pathname });
-  if (html) {
-    const app = document.getElementById("app");
-    if (app) {
-      render(app, html);
-    }
-  }
+  const template = await router.resolve({ pathname });
+  if (!template) return;
+  const app = document.getElementById("app");
+  if (!app) return;
+  render(template, app);
 }
 
-// Intercept all link clicks for client-side navigation
-// Handle any element with href attribute
 document.addEventListener("click", (e) => {
   // Use composedPath() to cross shadow DOM boundaries
   const path = e.composedPath() as HTMLElement[];
   const elementWithHref = path.find(
-    (el) => el instanceof HTMLElement && el.hasAttribute?.("href")
+    (el) => el instanceof HTMLElement && el.hasAttribute?.("href"),
   ) as HTMLElement | undefined;
 
   if (!elementWithHref) return;
@@ -149,7 +147,6 @@ document.addEventListener("click", (e) => {
 
   if (!href) return;
 
-  // Handle <a> tags with full URLs
   if (
     elementWithHref instanceof HTMLAnchorElement &&
     elementWithHref.origin === window.location.origin
@@ -161,9 +158,7 @@ document.addEventListener("click", (e) => {
     return;
   }
 
-  // Handle custom elements and relative paths
   if (!(elementWithHref instanceof HTMLAnchorElement)) {
-    // Only handle internal navigation (relative paths or same-origin absolute paths)
     if (!href.startsWith("http") || href.startsWith(window.location.origin)) {
       e.preventDefault();
       const pathname = href.startsWith("http") ? new URL(href).pathname : href;
@@ -173,7 +168,6 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// Handle browser back/forward buttons
 window.addEventListener("popstate", () => {
   resolve(window.location.pathname);
 });

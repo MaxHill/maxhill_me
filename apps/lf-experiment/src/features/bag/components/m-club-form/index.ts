@@ -1,6 +1,7 @@
 import { BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
-import { html, render } from "uhtml";
+import { html, render } from "lit-html";
+import { ref } from "lit-html/directives/ref.js";
 import "@maxhill/components/m-combobox";
 import "@maxhill/components/m-listbox";
 import "@maxhill/components/m-option";
@@ -57,18 +58,31 @@ export class MClubForm extends MElement {
     this.shotTypeService = new ShotTypeService(db);
     this.clubService = new ClubService(db);
 
-    // Subscribe to shot type changes
     this.unsubscribe = this.shotTypeService.subscribe(async () => {
       await this.loadShotTypes();
       this.renderComponent();
     });
 
-    // Load club if editing
+    await this.loadForCurrentKey();
+  }
+
+  attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
+    super.attributeChangedCallback(name, oldValue, newValue);
+    // Guarded on `clubService` to avoid racing connectedCallback.
+    if (name === "club-key" && this.clubService) {
+      void this.loadForCurrentKey();
+    }
+  }
+
+  private async loadForCurrentKey() {
+    // Reset state before reload so a navigation from one edit to another
+    // (or to /add) doesn't leak previous values into the new render.
+    this.currentClub = null;
+
     if (this.isEditing) {
       const row = await this.clubService.table.get(this.clubKey);
       this.currentClub = row ? (row as Club) : null;
 
-      // Redirect to 404 if club doesn't exist
       if (!this.currentClub) {
         window.history.pushState({}, "", "/404");
         window.dispatchEvent(new PopStateEvent("popstate"));
@@ -76,12 +90,9 @@ export class MClubForm extends MElement {
       }
     }
 
-    // Load shot types
     await this.loadShotTypes();
-
     this.renderComponent();
 
-    // Populate form if editing
     if (this.isEditing && this.currentClub) {
       this.populateForm(this.currentClub);
     }
@@ -102,7 +113,6 @@ export class MClubForm extends MElement {
   }
 
   private populateForm(club: Club) {
-    // Set club type by selecting the matching option
     if (this.clubTypeCombobox && club.clubType) {
       const clubTypeOption = this.clubTypeCombobox.querySelector(
         `m-option[value="${club.clubType}"]`,
@@ -112,7 +122,6 @@ export class MClubForm extends MElement {
       }
     }
 
-    // Set shot types by selecting the matching options
     if (this.shotTypesCombobox && club.shotTypes) {
       for (const shotType of club.shotTypes) {
         if (shotType._key) {
@@ -200,10 +209,9 @@ export class MClubForm extends MElement {
     const buttonAriaLabel = this.isEditing ? "Submit form to save club" : "Submit form to add club";
 
     render(
-      this.shadowRoot!,
       html`
         <form
-          ref=${(el: any) => this.formRef = el}
+          ${ref((el) => { this.formRef = el as HTMLFormElement ?? null; })}
           class="form"
           aria-label=${ariaLabel}
           @submit=${this.handleFormSubmit}
@@ -226,7 +234,7 @@ export class MClubForm extends MElement {
           ></m-input>
 
           <m-listbox
-            ref=${(el: any) => this.clubTypeCombobox = el}
+            ${ref((el) => { this.clubTypeCombobox = el as MCombobox ?? null; })}
             required
             name="clubType"
             label="Club type *"
@@ -283,7 +291,7 @@ export class MClubForm extends MElement {
         
         <div class="shot-types-section">
           <m-listbox
-              ref=${(el: any) => this.shotTypesCombobox = el}
+              ${ref((el) => { this.shotTypesCombobox = el as MCombobox ?? null; })}
               class="shot-type"
               required
               name="shotTypes"
@@ -318,7 +326,7 @@ export class MClubForm extends MElement {
         </button>
         </form>
         
-        <dialog ref=${(el: any) => this.dialogRef = el} class="shot-type-dialog">
+        <dialog ${ref((el) => { this.dialogRef = el as HTMLDialogElement ?? null; })} class="shot-type-dialog">
           <m-shot-type-form 
             inline
             @shot-type-created=${this.handleShotTypeCreated}
@@ -326,6 +334,7 @@ export class MClubForm extends MElement {
           ></m-shot-type-form>
         </dialog>
       `,
+      this.shadowRoot!,
     );
   }
 }

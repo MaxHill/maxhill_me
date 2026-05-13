@@ -7,17 +7,27 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "web-test-runner",
+    "test:watch": "web-test-runner --watch"
   },
   "dependencies": {
     "@maxhill/components": "workspace:*",
     "@maxhill/css": "workspace:*",
     "@maxhill/web-component-utils": "workspace:*",
     "@maxhill/idb-distribute": "workspace:*",
-    "uhtml": "^5.0.9",
+    "lit-html": "^3.2.1",
     "universal-router": "^9.2.1"
   },
   "devDependencies": {
+    "@esm-bundle/chai": "4.3.4-fix.0",
+    "@open-wc/testing": "3.0.0-next.5",
+    "@open-wc/testing-helpers": "2.0.0-next.3",
+    "@types/mocha": "^10.0.10",
+    "@web/dev-server-esbuild": "^1.0.4",
+    "@web/test-runner": "^0.20.2",
+    "@web/test-runner-playwright": "^0.11.1",
+    "typescript": "^5.9.3",
     "vite": "^6.0.11"
   },
   "keywords": [],

@@ -1,7 +1,7 @@
 import { MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { globalStyleSheet } from "../../../../styles/global-styles";
-import { html, render } from "uhtml";
+import { html, render } from "lit-html";
 import "@maxhill/components/m-fit-text";
 import "../../components/m-club-list";
 import "../../components/m-club-form";
@@ -31,14 +31,14 @@ export class MBagAddPage extends MElement {
 
   private render() {
     render(
-      this.shadowRoot!,
       html`
         <div class="page-container">
           <m-fit-text font-display class="title">Hardware</m-fit-text>
           <m-club-list interactive class="club-list"></m-club-list>
           <m-club-form class="form"></m-club-form>
         </div>
-      `
+      `,
+      this.shadowRoot!,
     );
   }
 }

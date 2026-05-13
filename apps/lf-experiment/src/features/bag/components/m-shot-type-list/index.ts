@@ -1,6 +1,6 @@
 import { MElement, BindAttribute } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
-import { html, render } from "uhtml";
+import { html, render } from "lit-html";
 import { get_DB } from "../../../../db";
 import { ShotType, ShotTypeService } from "../../shot-type-service";
 import { TableChangeEvent } from "@maxhill/idb-distribute";
@@ -50,16 +50,14 @@ export class MShotTypeList extends MElement {
   }
 
   private async renderComponent() {
-    // Load shot types from database
     this.shotTypes = [];
     for await (const shotType of this.shot_type_repository.table.query()) {
       this.shotTypes.push(shotType as ShotType);
     }
     
-    // Sort alphabetically
     this.shotTypes.sort((a, b) => a.name.localeCompare(b.name));
 
-    render(this.shadowRoot!, html`
+    render(html`
       <div class="shot-type-container">
         <h2 class="h1">Shot Types</h2>
         ${this.shotTypes.length > 0 ? html`
@@ -97,6 +95,6 @@ export class MShotTypeList extends MElement {
           </div>
         `}
       </div>
-    `);
+    `, this.shadowRoot!);
   }
 }

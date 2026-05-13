@@ -58,13 +58,37 @@ importers:
       '@maxhill/web-component-utils':
         specifier: workspace:*
         version: link:../../packages/web-component-utils
-      uhtml:
-        specifier: ^5.0.9
-        version: 5.0.9
+      lit-html:
+        specifier: ^3.2.1
+        version: 3.3.2
       universal-router:
         specifier: ^9.2.1
         version: 9.2.1
     devDependencies:
+      '@esm-bundle/chai':
+        specifier: 4.3.4-fix.0
+        version: 4.3.4-fix.0
+      '@open-wc/testing':
+        specifier: 3.0.0-next.5
+        version: 3.0.0-next.5
+      '@open-wc/testing-helpers':
+        specifier: 2.0.0-next.3
+        version: 2.0.0-next.3
+      '@types/mocha':
+        specifier: ^10.0.10
+        version: 10.0.10
+      '@web/dev-server-esbuild':
+        specifier: ^1.0.4
+        version: 1.0.4
+      '@web/test-runner':
+        specifier: ^0.20.2
+        version: 0.20.2
+      '@web/test-runner-playwright':
+        specifier: ^0.11.1
+        version: 0.11.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
       vite:
         specifier: ^6.0.11
         version: 6.4.1(@types/node@24.9.1)(yaml@2.8.1)
@@ -1722,9 +1746,6 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  '@webreflection/alien-signals@0.3.2':
-    resolution: {integrity: sha512-DmNjD8Kq5iM+Toirp3llS/izAiI3Dwav5nHRvKdR/YJBTgun3y4xK76rs9CFYD2bZwZJN/rP+HjEqKTteGK+Yw==}
-
   '@xn-sakina/rml-darwin-arm64@2.6.0':
     resolution: {integrity: sha512-RuFHj6ro6Q24gPqNQGvH4uxpsvbgqBBy+ZUK+jbMuMaw4wyti7F6klQWuikBJAxhWpmRbhAB/jrq0PC82qlh5A==}
     engines: {node: '>=14'}
@@ -1811,9 +1832,6 @@ packages:
 
   ajv@8.17.1:
     resolution: {integrity: sha512-B/gBuNg5SiMTrPkC+A2+cW0RszwxYmn6VYxB/inlBStS5nx6xHIt/ehKRhIMhqusl7a8LjQoZnjCs5vhwxOQ1g==}
-
-  alien-signals@2.0.8:
-    resolution: {integrity: sha512-844G1VLkk0Pe2SJjY0J8vp8ADI73IM4KliNu2OGlYzWpO28NexEUvjHTcFjFX3VXoiUtwTbHxLNI9ImkcoBqzA==}
 
   ansi-align@3.0.1:
     resolution: {integrity: sha512-IOfwwBF5iczOjp/WeY4YxyjqAFMQoZufdQWDd19SEExbVLNXqvpzSJ/M7Za4/sCPmQ0+GRquoA7bGcINcxew6w==}
@@ -1981,7 +1999,7 @@ packages:
   basic-ftp@5.0.5:
     resolution: {integrity: sha512-4Bcg1P8xhUuqcii/S0Z9wiHIrQVPMermM1any+MX5GeGD7faD3/msQUDGLol9wOcz4/jbg/WJnGqoJF6LiBdtg==}
     engines: {node: '>=10.0.0'}
-    deprecated: Security vulnerability fixed in 5.2.0, please upgrade
+    deprecated: Security vulnerability fixed in 5.2.1, please upgrade
 
   binary-extensions@2.3.0:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
@@ -3217,6 +3235,9 @@ packages:
   lit-html@2.8.0:
     resolution: {integrity: sha512-o9t+MQM3P4y7M7yNzqAyjp7z+mQGa4NS4CxiyLqFPyFWyc4O+nodLrkrxSaCTrla6M5YOLaT3RpbbqjszB5g3Q==}
 
+  lit-html@3.3.2:
+    resolution: {integrity: sha512-Qy9hU88zcmaxBXcc10ZpdK7cOLXvXpRoBxERdtqV9QOrfpMZZ6pSYP91LhpPtap3sFMUiL7Tw2RImbe0Al2/kw==}
+
   lit@2.8.0:
     resolution: {integrity: sha512-4Sc3OFX9QHOJaHbmTMk28SYgVxLN3ePDjg7hofEft2zWlehFL3LiAuapWc4U/kYwMYJSh2hTCPZ6/LIC7ii0MA==}
 
@@ -4420,9 +4441,6 @@ packages:
     resolution: {integrity: sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ==}
     engines: {node: '>=0.8.0'}
     hasBin: true
-
-  uhtml@5.0.9:
-    resolution: {integrity: sha512-qPyu3vGilaLe6zrjOCD/xezWEHLwdevxmbY3hzyhT25KBDF4F7YYW3YZcL3kylD/6dMoVISHjn8ggV3+9FY+5g==}
 
   ultrahtml@1.6.0:
     resolution: {integrity: sha512-R9fBn90VTJrqqLDwyMph+HGne8eqY1iPfYhPzZrvKpIfwkWZbcYlfpsb8B9dTvBfpy1/hqAD7Wi8EKfP9e8zdw==}
@@ -6626,10 +6644,6 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@webreflection/alien-signals@0.3.2':
-    dependencies:
-      alien-signals: 2.0.8
-
   '@xn-sakina/rml-darwin-arm64@2.6.0':
     optional: true
 
@@ -6687,8 +6701,6 @@ snapshots:
       fast-uri: 3.1.0
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
-
-  alien-signals@2.0.8: {}
 
   ansi-align@3.0.1:
     dependencies:
@@ -8344,6 +8356,10 @@ snapshots:
     dependencies:
       '@types/trusted-types': 2.0.7
 
+  lit-html@3.3.2:
+    dependencies:
+      '@types/trusted-types': 2.0.7
+
   lit@2.8.0:
     dependencies:
       '@lit/reactive-element': 1.6.3
@@ -9954,10 +9970,6 @@ snapshots:
 
   uglify-js@3.19.3:
     optional: true
-
-  uhtml@5.0.9:
-    dependencies:
-      '@webreflection/alien-signals': 0.3.2
 
   ultrahtml@1.6.0: {}
 

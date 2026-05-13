@@ -1,6 +1,6 @@
 import { BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
-import { html, render } from "uhtml";
+import { html, render } from "lit-html";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { get_DB } from "../../../../db";
 import { LagPuttingGameService } from "../lag-putting-service";
@@ -16,12 +16,6 @@ baseStyleSheet.replaceSync(styles);
  *
  * @customElement
  * @tagname m-lag-putting-scorecard-page
- *
- * @slot - Default slot for component content
- *
- * @attr {string} example - An example property
- *
- * @prop {string} example - An example property
  */
 export class MLagPuttingScorecardPage extends MElement {
     static tagName = "m-lag-putting-scorecard-page";
@@ -88,7 +82,6 @@ export class MLagPuttingScorecardPage extends MElement {
         const puttIndex = parseInt(puttIndexStr, 10);
         const optionValue = e.detail.option.value;
 
-        // Create the PuttResult
         let result: PuttResult;
         switch (optionValue) {
             case "+3m-long": { result = { outcome: "+3m", leave: "long" }; break; }
@@ -129,7 +122,6 @@ export class MLagPuttingScorecardPage extends MElement {
     private getListboxValue(putt: LagPuttingGame['putts'][0]): string {
         if (!putt.result) return "";
         if (putt.result.outcome === "holed") return "holed";
-        // Combine outcome and leave direction for unique value
         return `${putt.result.outcome}-${putt.result.leave}`;
     }
 
@@ -141,7 +133,6 @@ export class MLagPuttingScorecardPage extends MElement {
         const totalScore = this.currentGame ? this.lagPuttingGameService.calculateTotalScore(this.currentGame.putts) : 0;
 
         render(
-            this.shadowRoot!,
             html`
         <h1>Game</h1>
         <dl class="game-hud">
@@ -214,11 +205,11 @@ export class MLagPuttingScorecardPage extends MElement {
             )}
         </div>
       `,
+            this.shadowRoot!,
         );
     }
 }
 
-// Auto-define when using default import
 MLagPuttingScorecardPage.define();
 
 export default MLagPuttingScorecardPage;

@@ -1,7 +1,8 @@
 import { MElement } from "@maxhill/web-component-utils";
 import type { TableChangeEvent } from "@maxhill/idb-distribute";
 import styles from "./index.css?inline";
-import { html, render } from "uhtml";
+import { html, render } from "lit-html";
+import { ref } from "lit-html/directives/ref.js";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { get_DB } from "../../../../db.ts";
 import { LagPuttingGame, LagPuttingGameService } from "../lag-putting-service.ts";
@@ -15,12 +16,6 @@ baseStyleSheet.replaceSync(styles);
  *
  * @customElement
  * @tagname m-lag-putting-listing-page
- *
- * @slot - Default slot for component content
- *
- * @attr {string} example - An example property
- *
- * @prop {string} example - An example property
  */
 export class MLagPuttingListingPage extends MElement {
     static tagName = "m-lag-putting-listing-page";
@@ -75,7 +70,6 @@ export class MLagPuttingListingPage extends MElement {
         }
 
         render(
-            this.shadowRoot!,
             html`
         <div class="stack" data-direction="row" data-justify="content-between">
           <h1 class="h1">m-lag-putting-listing-page</h1>
@@ -89,7 +83,7 @@ export class MLagPuttingListingPage extends MElement {
             Start new game
           </button>
 
-          <dialog id="testing" ref="${(el: any) => this.dialogRef = el}" class="new-game-dialog">
+          <dialog id="testing" ${ref((el) => { this.dialogRef = el as HTMLDialogElement ?? null; })} class="new-game-dialog">
             <m-create-lag-putting-game-form
               @create-lag-putt-cancel="${this.handleCloseDialog}"
               @create-lag-putting-submit-event="${this.handleSubmit}"
@@ -137,6 +131,7 @@ export class MLagPuttingListingPage extends MElement {
             })}
         </div>
       `,
+            this.shadowRoot!,
         );
     }
 }
