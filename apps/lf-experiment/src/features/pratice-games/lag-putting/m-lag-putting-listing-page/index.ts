@@ -2,12 +2,13 @@ import { MElement } from "@maxhill/web-component-utils";
 import type { TableChangeEvent } from "@maxhill/idb-distribute";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
-import { ref, createRef } from "lit-html/directives/ref.js";
+import { createRef, ref } from "lit-html/directives/ref.js";
 import { asyncAppend } from "lit-html/directives/async-append.js";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { get_DB } from "../../../../db.ts";
 import { LagPuttingGame, LagPuttingGameService } from "../lag-putting-service.ts";
 import { CreateLagPuttingSubmitEventEvent } from "../m-create-lag-putting-game-form/events";
+import { lagPuttingHud } from "../lag-putting-game-hud.ts";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -19,52 +20,51 @@ baseStyleSheet.replaceSync(styles);
  * @tagname m-lag-putting-listing-page
  */
 export class MLagPuttingListingPage extends MElement {
-    static tagName = "m-lag-putting-listing-page";
+  static tagName = "m-lag-putting-listing-page";
 
-    private dialogRef = createRef<HTMLDialogElement>();
+  private dialogRef = createRef<HTMLDialogElement>();
 
-    lagPuttingGameService!: LagPuttingGameService;
-    private unsubscribe!: () => void;
+  lagPuttingGameService!: LagPuttingGameService;
+  private unsubscribe!: () => void;
 
-    constructor() {
-        super();
-        this.attachShadow({ mode: "open" });
-        this.shadowRoot!.adoptedStyleSheets = [globalStyleSheet, baseStyleSheet];
-    }
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this.shadowRoot!.adoptedStyleSheets = [globalStyleSheet, baseStyleSheet];
+  }
 
-    async connectedCallback() {
-        const db = await get_DB();
-        this.lagPuttingGameService = new LagPuttingGameService(db);
-        this.unsubscribe = this.lagPuttingGameService.subscribe((_: TableChangeEvent) => {
-            this.render();
-        });
-        this.render();
-    }
+  async connectedCallback() {
+    const db = await get_DB();
+    this.lagPuttingGameService = new LagPuttingGameService(db);
+    this.unsubscribe = this.lagPuttingGameService.subscribe((_: TableChangeEvent) => {
+      this.render();
+    });
+    this.render();
+  }
 
-    disconnectedCallback() {
-        this.unsubscribe();
-    }
+  disconnectedCallback() {
+    this.unsubscribe();
+  }
 
-    private handleOpenDialog = () => {
-        this.dialogRef.value?.showModal();
-    };
+  private handleOpenDialog = () => {
+    this.dialogRef.value?.showModal();
+  };
 
-    private handleCloseDialog = () => {
-        this.dialogRef.value?.close();
-    };
+  private handleCloseDialog = () => {
+    this.dialogRef.value?.close();
+  };
 
-    private handleSubmit = async (e: CreateLagPuttingSubmitEventEvent) => {
-        console.log("what's the value?", e.detail.value);
-        const game = await this.lagPuttingGameService.createGame(e.detail.value);
-        console.log("TODO: navigate to the game", game);
-        this.handleCloseDialog();
-    };
+  private handleSubmit = async (e: CreateLagPuttingSubmitEventEvent) => {
+    const game = await this.lagPuttingGameService.createGame(e.detail.value);
+    console.log("TODO: navigate to the game", game);
+    this.handleCloseDialog();
+  };
 
-    private render() {
-        const games = this.lagPuttingGameService.table.query() as AsyncIterable<LagPuttingGame>;
+  private render() {
+    const games = this.lagPuttingGameService.table.query() as AsyncIterable<LagPuttingGame>;
 
-        render(
-            html`
+    render(
+      html`
         <div class="stack" data-direction="row" data-justify="content-between">
           <h1 class="h1">m-lag-putting-listing-page</h1>
           <button
@@ -84,51 +84,23 @@ export class MLagPuttingListingPage extends MElement {
             />
           </dialog>
         </div>
+
         <h2>List of games</h2>
 
         <div class="collection" data-padding="body" data-size="10" data-gap="3">
-            ${asyncAppend(games, (g) => {
-                const game = g as LagPuttingGame;
-                const completedPutts = game?.putts.filter(p => p.result !== null).length || 0;
-                const totalPutts = 18;
-                const outScore = this.lagPuttingGameService.calculateOutScore(game.putts);
-                const inScore = this.lagPuttingGameService.calculateInScore(game.putts);
-                const totalScore = this.lagPuttingGameService.calculateTotalScore(game.putts);
-                return html`
-                <m-card href=${"/game/" + game._key}>
-                    <dl class="game-hud">
-                      <dt>Created</dt>
-                      <dd>${game.createdAt || '-'}</dd>
-
-                      <dt>Player</dt>
-                      <dd>${game?.playerName}</dd>
-
-                      <dt>Course</dt>
-                      <dd>${game?.courseName}</dd>
-
-                      <dt>Pratice area</dt>
-                      <dd>${game?.practiceAreaName}</dd>
-
-                      <dt>Progress</dt>
-                      <dd>${completedPutts}/${totalPutts}</dd>
-
-                      <dt>Out Score</dt>
-                      <dd>${outScore > 0 ? '+' : ''}${outScore}</dd>
-
-                      <dt>In Score</dt>
-                      <dd>${inScore > 0 ? '+' : ''}${inScore}</dd>
-
-                      <dt>Total Score</dt>
-                      <dd>${totalScore > 0 ? '+' : ''}${totalScore}</dd>
-                    </dl>
-                </m-card>
-              `;
-            })}
+          ${asyncAppend(games, (g) => {
+            const game = g as LagPuttingGame;
+            return html`
+              <m-card href="${"/game/" + game._key}">
+                ${lagPuttingHud(game, this.lagPuttingGameService)}
+              </m-card>
+            `;
+          })}
         </div>
       `,
-            this.shadowRoot!,
-        );
-    }
+      this.shadowRoot!,
+    );
+  }
 }
 
 export default MLagPuttingListingPage;
