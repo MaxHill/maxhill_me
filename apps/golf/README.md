@@ -1,4 +1,4 @@
-# lf-experiment
+# golf
 
 Pure Go static site generator using esbuild's native Go API - no Node.js subprocess calls. Inspired by TigerBeetle's minimal tooling philosophy.
 
@@ -8,16 +8,16 @@ Pure Go static site generator using esbuild's native Go API - no Node.js subproc
 
 ```bash
 # First time setup: Build the Go binary
-pnpm run build:binary --filter=lf-experiment
+pnpm run build:binary --filter=golf
 
 # Development (with hot reload)
-pnpm dev --filter=lf-experiment
+pnpm dev --filter=golf
 
 # Production build
-pnpm build --filter=lf-experiment
+pnpm build --filter=golf
 
 # Clean build artifacts
-pnpm clean --filter=lf-experiment
+pnpm clean --filter=golf
 ```
 
 **Dev server:** http://localhost:8090 (Air proxy with live reload)  
@@ -28,7 +28,7 @@ pnpm clean --filter=lf-experiment
 **Fast Workflow (20ms rebuilds):**
 1. Build Go binary **once**: `pnpm run build:binary` → creates `build/main` (16 MB, includes esbuild)
 2. Run Air: `pnpm dev` → runs the pre-built binary with `--env=dev` flag
-3. Edit files: Air watches `.html`, `.ts`, `.css` files in lf-experiment
+3. Edit files: Air watches `.html`, `.ts`, `.css` files in golf
 4. On change: Air **restarts** the binary (no recompilation!) → esbuild rebuilds in ~20ms
 
 **When to rebuild the Go binary:**
@@ -84,7 +84,7 @@ Works seamlessly with pnpm workspaces:
 
 ```bash
 # Rebuild on @maxhill/components changes
-pnpm turbo build --filter=lf-experiment
+pnpm turbo build --filter=golf
 ```
 
 ## Build Performance
@@ -113,7 +113,7 @@ pnpm turbo build --filter=lf-experiment
 ## Project Structure
 
 ```
-apps/lf-experiment/
+apps/golf/
 ├── build/
 │   ├── main              # Pre-built Go binary (16 MB, gitignored)
 │   ├── main.go           # Entry point, orchestrates build

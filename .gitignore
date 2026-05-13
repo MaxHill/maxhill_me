@@ -46,7 +46,7 @@ mprocs.log
 
 # Go binaries
 apps/account/main
-apps/lf-experiment/main
+apps/golf/main
 apps/sync/main
 
 # SQLite databases

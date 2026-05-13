@@ -55,7 +55,7 @@ export default function (plop) {
                         value: 'library' 
                     },
                     { 
-                        name: 'lf-experiment App', 
+                        name: 'golf App', 
                         value: 'app' 
                     },
                 ],
@@ -120,9 +120,9 @@ export default function (plop) {
             if (data.target === 'library') {
                 basePath = 'packages/components/src/{{componentName}}';
             } else if (data.appLocation === 'features') {
-                basePath = `apps/lf-experiment/src/features/${data.featureName}/{{componentName}}`;
+                basePath = `apps/golf/src/features/${data.featureName}/{{componentName}}`;
             } else {
-                basePath = 'apps/lf-experiment/src/{{componentName}}';
+                basePath = 'apps/golf/src/{{componentName}}';
             }
 
             // Create component directory and files
@@ -206,12 +206,12 @@ export default function (plop) {
                         value: 'packages/components/src/' 
                     },
                     { 
-                        name: 'apps/lf-experiment/src/ (app root)', 
-                        value: 'apps/lf-experiment/src/' 
+                        name: 'apps/golf/src/ (app root)', 
+                        value: 'apps/golf/src/' 
                     },
                     { 
-                        name: 'apps/lf-experiment/src/features/ (app feature)', 
-                        value: 'apps/lf-experiment/src/features/' 
+                        name: 'apps/golf/src/features/ (app feature)', 
+                        value: 'apps/golf/src/features/' 
                     },
                     { 
                         name: '(none - full custom path)', 

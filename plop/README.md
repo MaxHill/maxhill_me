@@ -18,7 +18,7 @@ Creates a new MElement-based web component with the following options:
 2. **Description** - Component description for JSDoc
 3. **Target Location** - Choose between:
    - Component Library (`@maxhill/components`)
-   - lf-experiment App (with sub-options for root or feature folders)
+   - golf App (with sub-options for root or feature folders)
 4. **Use uhtml** - Choose whether to use uhtml for rendering
    - Library components: imports from `@maxhill/uhtml`
    - App components: imports from relative vendor path
