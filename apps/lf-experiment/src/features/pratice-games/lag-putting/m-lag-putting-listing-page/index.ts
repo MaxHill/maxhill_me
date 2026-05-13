@@ -80,7 +80,7 @@ export class MLagPuttingListingPage extends MElement {
             <m-create-lag-putting-game-form
               @create-lag-putt-cancel="${this.handleCloseDialog}"
               @create-lag-putting-submit-event="${this.handleSubmit}"
-            />
+            ></m-create-lag-putting-game-form>
           </dialog>
         </div>
 
@@ -90,7 +90,7 @@ export class MLagPuttingListingPage extends MElement {
           ${asyncAppend(games, (g) => {
             const game = g as LagPuttingGame;
             return html`
-              <m-card href="${"/game/" + game._key}">
+              <m-card href="${"/lag-putting/" + game._key}">
                 ${lagPuttingHud(game, this.lagPuttingGameService)}
               </m-card>
             `;

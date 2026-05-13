@@ -57,17 +57,17 @@ export class MCreateLagPuttingGameForm extends MElement {
             name="playerName"
             label="Player name"
             required
-          />
+          ></m-input>
           <m-input
             name="courseName"
             label="Course name"
             required
-          />
+          ></m-input>
           <m-input
             name="practiceAreaName"
             label="Practice area name"
             required
-          />
+          ></m-input>
 
           <div class="form-actions stack" data-direction="row" data-justify="content-between">
             <button class="button" value="yes">Start Game</button>

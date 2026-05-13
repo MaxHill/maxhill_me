@@ -1,5 +1,19 @@
 :host {
 }
+
+.back-link {
+  font-family: var(--ff-display);
+  font: var(--p2);
+  text-transform: uppercase;
+  color: var(--color-text-softer);
+  display: inline-block;
+  padding-block: var(--size-1);
+}
+
+.back-link:hover,
+.back-link:focus-visible {
+  color: var(--color-text);
+}
 .putts-container {
   overflow-x: auto;
   overflow-y: hidden;

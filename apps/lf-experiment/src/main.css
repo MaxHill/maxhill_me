@@ -6,5 +6,149 @@
 }
 
 #app {
-    display: contents;
+  display: contents;
+}
+
+body {
+  padding-top: var(--menu-height);
+}
+
+/* ---------- Persistent top menu (matches apps/site PageLayout) ---------- */
+
+.main-menu {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline-end: 5vw;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  scroll-behavior: smooth;
+  background: var(--color-background);
+
+  justify-content: space-between;
+  padding-inline: var(--size-2);
+  position: fixed;
+  width: 100%;
+  top: 0;
+  height: var(--menu-height);
+  gap: var(--size-fluid-2);
+  border-bottom: var(--border);
+  z-index: 10;
+
+  /* On mobile, align content to the right */
+  @media (width <= 768px) {
+    justify-content: flex-end;
+  }
+
+  & > nav {
+    display: flex;
+    align-items: center;
+    gap: var(--size-1);
+
+    a {
+      text-decoration: none;
+    }
+  }
+
+  /* Desktop theme button - add margin to match nav */
+  & > .desktop-theme {
+    margin-inline-end: var(--size-1);
+  }
+
+  /* Desktop-only items */
+  & > .desktop-nav,
+  & > .desktop-theme {
+    @media (width <= 768px) {
+      display: none;
+    }
+  }
+}
+
+/* Mobile menu button */
+.mobile-menu-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font: var(--h3);
+  font-family: var(--ff-display);
+  color: var(--color-text);
+  border-radius: var(--radius-box);
+}
+
+.mobile-menu-button:hover {
+  background-color: var(--color-primary-fill-softer);
+}
+
+.mobile-menu-button:focus-visible {
+  outline: var(--outline);
+  outline-offset: 2px;
+}
+
+@media (width > 768px) {
+  .mobile-menu-button {
+    display: none;
+  }
+}
+
+/* Desktop theme button */
+.theme-menu-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font: var(--h3);
+  font-family: var(--ff-display);
+  color: var(--color-text);
+}
+
+.theme-menu-button:focus-visible {
+  outline: var(--outline);
+  outline-offset: 2px;
+}
+
+/* Popover menu sections */
+.menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2);
+}
+
+.menu-section:not(:last-child) {
+  padding-bottom: var(--size-2);
+  border-bottom: var(--border);
+}
+
+.menu-title {
+  font: var(--h3);
+  font-family: var(--ff-display);
+  margin: 0;
+  color: var(--color-text-weak);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: var(--font-size-0);
+}
+
+.menu-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-1);
+}
+
+.menu-nav a {
+  padding: var(--size-2);
+  border-radius: var(--radius-box);
+  text-decoration: none;
+  font: var(--h3);
+  font-family: var(--ff-display);
+}
+
+.menu-nav a:hover {
+  background-color: var(--color-primary-fill-softer);
+}
+
+.menu-nav a:focus-visible {
+  outline: var(--outline);
+  outline-offset: 2px;
 }

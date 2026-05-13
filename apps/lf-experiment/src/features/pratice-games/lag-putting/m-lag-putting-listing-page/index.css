@@ -1,6 +1,22 @@
 :host {
 }
 
+.new-game-dialog {
+  background: var(--color-background);
+  color: var(--color-text);
+  border: var(--border);
+  border-radius: var(--radius-box, var(--size-2));
+  padding: var(--size-4);
+  max-width: min(40rem, calc(100vw - var(--size-4) * 2));
+  width: 100%;
+  box-shadow: var(--shadow-4, 0 12px 32px oklch(0% 0 0 / 0.18));
+}
+
+.new-game-dialog::backdrop {
+  background: oklch(0% 0 0 / 0.4);
+  backdrop-filter: blur(2px);
+}
+
 dl {
   font-family: var(--ff-display);
   display: grid;

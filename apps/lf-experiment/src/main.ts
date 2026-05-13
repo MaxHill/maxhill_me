@@ -1,7 +1,11 @@
 // Import global styles first to ensure document.adoptedStyleSheets is set up
 import "./styles/global-styles.ts";
 
+// Register shared web components (m-popover-menu, m-fit-text, etc.)
+import "@maxhill/components/register-all";
+
 import "./features/router/router.ts";
+import "./features/menu/main-menu.ts";
 import { MShotTypeList } from "./features/bag/components/m-shot-type-list";
 import { MAddShotTypeForm } from "./features/bag/components/m-add-shot-type-form";
 import { MShotTypeForm } from "./features/bag/components/m-shot-type-form";
@@ -13,6 +17,7 @@ import { MBagAddPage } from "./features/bag/pages/m-bag-add-page";
 import { MBagEditPage } from "./features/bag/pages/m-bag-edit-page";
 import { MLagPuttingListingPage } from "./features/pratice-games/lag-putting/m-lag-putting-listing-page";
 import { MCreateLagPuttingGameForm } from "./features/pratice-games/lag-putting/m-create-lag-putting-game-form"
+import { MLandingPage } from "./features/landing/m-landing-page";
 
 
 // Register app components
@@ -29,6 +34,7 @@ MBagListPage.define();
 MBagAddPage.define();
 MBagEditPage.define();
 MLagPuttingListingPage.define();
+MLandingPage.define();
 
 // Register service worker only in production builds. In dev, Vite serves modules
 // directly and the service worker file isn't emitted.

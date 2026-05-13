@@ -8,14 +8,14 @@ const routes = [
   {
     path: "",
     action: () => {
-      document.title = "Golf Bag Tracker";
+      document.title = "Max Hill";
       return html`
-        <m-bag-list-page></m-bag-list-page>
+        <m-landing-page></m-landing-page>
       `;
     },
   },
   {
-    path: "/game",
+    path: "/lag-putting",
     action: () => {
       document.title = "Lag putting game";
       return html`
@@ -24,7 +24,7 @@ const routes = [
     },
   },
   {
-    path: "/game/:key",
+    path: "/lag-putting/:key",
     action: ({ params }: RouteContext) => {
       document.title = "Lag putting game";
       return html`

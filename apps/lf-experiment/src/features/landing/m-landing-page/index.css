@@ -1,0 +1,19 @@
+:host {
+  display: contents;
+}
+
+.page-container {
+  padding: var(--body-margin);
+  display: grid;
+  gap: var(--size-6);
+}
+
+.title {
+  --max-font-size: 8rem;
+}
+
+.intro {
+  max-width: 65ch;
+  font: var(--h3);
+  color: var(--color-text-weak);
+}

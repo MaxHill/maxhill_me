@@ -169,6 +169,7 @@ export class MLagPuttingScorecardPage extends MElement {
   private render() {
     render(
       html`
+        <a href="/lag-putting" class="back-link">← All rounds</a>
         <h1>Round · ${this.formatRoundDate(this.currentGame?.createdAt)}</h1>
 
         ${this.currentGame ? lagPuttingHud(this.currentGame, this.lagPuttingGameService) : ""}
