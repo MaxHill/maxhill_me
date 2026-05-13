@@ -1,7 +1,7 @@
 import { MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
-import { ref } from "lit-html/directives/ref.js";
+import { ref, createRef } from "lit-html/directives/ref.js";
 import { get_DB } from "../../../../db";
 import { ShotTypeService } from "../../shot-type-service";
 import { globalStyleSheet } from "../../../../styles/global-styles";
@@ -15,7 +15,7 @@ export class MAddShotTypeForm extends MElement {
   static tagName = "m-add-shot-type-form";
 
   private shot_type_repository!: ShotTypeService;
-  private formRef: HTMLFormElement | null = null;
+  private formRef = createRef<HTMLFormElement>();
 
   constructor() {
     super();
@@ -31,9 +31,9 @@ export class MAddShotTypeForm extends MElement {
 
   private handleFormSubmit = async (e: Event) => {
     e.preventDefault();
-    if (!this.formRef) return;
+    if (!this.formRef.value) return;
 
-    const formData = new FormData(this.formRef);
+    const formData = new FormData(this.formRef.value);
     const name = formData.get("name")?.toString();
     const description = formData.get("description")?.toString();
 
@@ -46,13 +46,13 @@ export class MAddShotTypeForm extends MElement {
       description,
     });
 
-    this.formRef.reset();
+    this.formRef.value.reset();
   };
 
   private renderComponent() {
     render(html`
       <form 
-        ${ref((el) => { this.formRef = el as HTMLFormElement ?? null; })}
+        ${ref(this.formRef)}
         class="form box" 
         aria-label="Add new shot type form"
         @submit=${this.handleFormSubmit}

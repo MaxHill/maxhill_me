@@ -1,7 +1,7 @@
 import { BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
-import { ref } from "lit-html/directives/ref.js";
+import { ref, createRef } from "lit-html/directives/ref.js";
 import "@maxhill/components/m-combobox";
 import "@maxhill/components/m-listbox";
 import "@maxhill/components/m-option";
@@ -37,10 +37,10 @@ export class MClubForm extends MElement {
   private clubService!: ClubService;
   private currentClub: Club | null = null;
   private shotTypes: ShotType[] = [];
-  private formRef: HTMLFormElement | null = null;
-  private clubTypeCombobox: MCombobox | null = null;
-  private shotTypesCombobox: MCombobox | null = null;
-  private dialogRef: HTMLDialogElement | null = null;
+  private formRef = createRef<HTMLFormElement>();
+  private clubTypeCombobox = createRef<MCombobox>();
+  private shotTypesCombobox = createRef<MCombobox>();
+  private dialogRef = createRef<HTMLDialogElement>();
   private unsubscribe!: () => void;
 
   get isEditing(): boolean {
@@ -113,23 +113,23 @@ export class MClubForm extends MElement {
   }
 
   private populateForm(club: Club) {
-    if (this.clubTypeCombobox && club.clubType) {
-      const clubTypeOption = this.clubTypeCombobox.querySelector(
+    if (this.clubTypeCombobox.value && club.clubType) {
+      const clubTypeOption = this.clubTypeCombobox.value.querySelector(
         `m-option[value="${club.clubType}"]`,
       ) as MOption;
       if (clubTypeOption) {
-        this.clubTypeCombobox.select(clubTypeOption);
+        this.clubTypeCombobox.value.select(clubTypeOption);
       }
     }
 
-    if (this.shotTypesCombobox && club.shotTypes) {
+    if (this.shotTypesCombobox.value && club.shotTypes) {
       for (const shotType of club.shotTypes) {
         if (shotType._key) {
-          const option = this.shotTypesCombobox.querySelector(
+          const option = this.shotTypesCombobox.value.querySelector(
             `m-option[value="${shotType._key}"]`,
           ) as MOption;
           if (option) {
-            this.shotTypesCombobox.select(option);
+            this.shotTypesCombobox.value.select(option);
           }
         }
       }
@@ -138,9 +138,9 @@ export class MClubForm extends MElement {
 
   private handleFormSubmit = async (e: Event) => {
     e.preventDefault();
-    if (!this.formRef) return;
+    if (!this.formRef.value) return;
 
-    const formData = new FormData(this.formRef);
+    const formData = new FormData(this.formRef.value);
 
     const name = formData.get("name")?.toString();
     const clubType = formData.get("clubType")?.toString() as ClubTypes;
@@ -174,15 +174,11 @@ export class MClubForm extends MElement {
   };
 
   private handleOpenDialog = () => {
-    if (this.dialogRef) {
-      this.dialogRef.showModal();
-    }
+    this.dialogRef.value?.showModal();
   };
 
   private handleCloseDialog = () => {
-    if (this.dialogRef) {
-      this.dialogRef.close();
-    }
+    this.dialogRef.value?.close();
   };
 
   private handleShotTypeCreated = async (e: CustomEvent) => {
@@ -192,12 +188,12 @@ export class MClubForm extends MElement {
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    if (this.shotTypesCombobox) {
-      const option = this.shotTypesCombobox.querySelector(
+    if (this.shotTypesCombobox.value) {
+      const option = this.shotTypesCombobox.value.querySelector(
         `m-option[value="${key}"]`,
       ) as MOption;
       if (option) {
-        this.shotTypesCombobox.select(option);
+        this.shotTypesCombobox.value.select(option);
       }
     }
   };
@@ -211,7 +207,7 @@ export class MClubForm extends MElement {
     render(
       html`
         <form
-          ${ref((el) => { this.formRef = el as HTMLFormElement ?? null; })}
+          ${ref(this.formRef)}
           class="form"
           aria-label=${ariaLabel}
           @submit=${this.handleFormSubmit}
@@ -234,7 +230,7 @@ export class MClubForm extends MElement {
           ></m-input>
 
           <m-listbox
-            ${ref((el) => { this.clubTypeCombobox = el as MCombobox ?? null; })}
+            ${ref(this.clubTypeCombobox)}
             required
             name="clubType"
             label="Club type *"
@@ -291,7 +287,7 @@ export class MClubForm extends MElement {
         
         <div class="shot-types-section">
           <m-listbox
-              ${ref((el) => { this.shotTypesCombobox = el as MCombobox ?? null; })}
+              ${ref(this.shotTypesCombobox)}
               class="shot-type"
               required
               name="shotTypes"
@@ -326,7 +322,7 @@ export class MClubForm extends MElement {
         </button>
         </form>
         
-        <dialog ${ref((el) => { this.dialogRef = el as HTMLDialogElement ?? null; })} class="shot-type-dialog">
+        <dialog ${ref(this.dialogRef)} class="shot-type-dialog">
           <m-shot-type-form 
             inline
             @shot-type-created=${this.handleShotTypeCreated}

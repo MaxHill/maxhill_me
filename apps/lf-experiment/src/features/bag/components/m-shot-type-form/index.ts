@@ -1,7 +1,7 @@
 import { MElement, BindAttribute } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
-import { ref } from "lit-html/directives/ref.js";
+import { ref, createRef } from "lit-html/directives/ref.js";
 import { get_DB } from "../../../../db";
 import { ShotType, ShotTypeService } from "../../shot-type-service";
 import { globalStyleSheet } from "../../../../styles/global-styles";
@@ -28,7 +28,7 @@ export class MShotTypeForm extends MElement {
   inline: boolean = false; // If true, renders in inline/dialog mode
 
   private shotTypeService!: ShotTypeService;
-  private formRef: HTMLFormElement | null = null;
+  private formRef = createRef<HTMLFormElement>();
   private shotType: ShotType | null = null;
   private isEditMode = false;
   private isStockShotType = false;
@@ -56,9 +56,9 @@ export class MShotTypeForm extends MElement {
 
   private handleFormSubmit = async (e: Event) => {
     e.preventDefault();
-    if (!this.formRef) return;
+    if (!this.formRef.value) return;
 
-    const formData = new FormData(this.formRef);
+    const formData = new FormData(this.formRef.value);
     const name = formData.get("name")?.toString();
     const description = formData.get("description")?.toString();
 
@@ -129,7 +129,7 @@ export class MShotTypeForm extends MElement {
 
     render(html`
       <form 
-        ${ref((el) => { this.formRef = el as HTMLFormElement ?? null; })}
+        ${ref(this.formRef)}
         class="form" 
         aria-label=${`${title} form`}
         @submit=${this.handleFormSubmit}

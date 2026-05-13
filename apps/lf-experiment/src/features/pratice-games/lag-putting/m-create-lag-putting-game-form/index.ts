@@ -1,7 +1,7 @@
 import { MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
-import { ref } from "lit-html/directives/ref.js";
+import { ref, createRef } from "lit-html/directives/ref.js";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { CreateLagPuttCancelEvent, CreateLagPuttingSubmitEventEvent } from "./events";
 
@@ -17,7 +17,7 @@ baseStyleSheet.replaceSync(styles);
 export class MCreateLagPuttingGameForm extends MElement {
   static tagName = "m-create-lag-putting-game-form";
 
-  private formRef: HTMLFormElement | null = null;
+  private formRef = createRef<HTMLFormElement>();
 
   constructor() {
     super();
@@ -31,8 +31,8 @@ export class MCreateLagPuttingGameForm extends MElement {
 
   handleSubmit(e: SubmitEvent) {
     e.preventDefault();
-    if (!this.formRef) throw new Error("No form ref found");
-    const formData = new FormData(this.formRef);
+    if (!this.formRef.value) throw new Error("No form ref found");
+    const formData = new FormData(this.formRef.value);
     this.dispatchEvent(
       new CreateLagPuttingSubmitEventEvent({
         value: {
@@ -48,7 +48,7 @@ export class MCreateLagPuttingGameForm extends MElement {
     render(
       html`
         <form
-          ${ref((el) => { this.formRef = el as HTMLFormElement ?? null; })}
+          ${ref(this.formRef)}
           class="form"
           @submit="${this.handleSubmit.bind(this)}"
         >

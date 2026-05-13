@@ -2,7 +2,7 @@ import { MElement } from "@maxhill/web-component-utils";
 import type { TableChangeEvent } from "@maxhill/idb-distribute";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
-import { ref } from "lit-html/directives/ref.js";
+import { ref, createRef } from "lit-html/directives/ref.js";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { get_DB } from "../../../../db.ts";
 import { LagPuttingGame, LagPuttingGameService } from "../lag-putting-service.ts";
@@ -20,7 +20,7 @@ baseStyleSheet.replaceSync(styles);
 export class MLagPuttingListingPage extends MElement {
     static tagName = "m-lag-putting-listing-page";
 
-    private dialogRef: HTMLDialogElement | null = null;
+    private dialogRef = createRef<HTMLDialogElement>();
 
     lagPuttingGameService!: LagPuttingGameService;
     private unsubscribe!: () => void;
@@ -45,15 +45,11 @@ export class MLagPuttingListingPage extends MElement {
     }
 
     private handleOpenDialog = () => {
-        if (this.dialogRef) {
-            this.dialogRef.showModal();
-        }
+        this.dialogRef.value?.showModal();
     };
 
     private handleCloseDialog = () => {
-        if (this.dialogRef) {
-            this.dialogRef.close();
-        }
+        this.dialogRef.value?.close();
     };
 
     private handleSubmit = async (e: CreateLagPuttingSubmitEventEvent) => {
@@ -83,7 +79,7 @@ export class MLagPuttingListingPage extends MElement {
             Start new game
           </button>
 
-          <dialog id="testing" ${ref((el) => { this.dialogRef = el as HTMLDialogElement ?? null; })} class="new-game-dialog">
+          <dialog id="testing" ${ref(this.dialogRef)} class="new-game-dialog">
             <m-create-lag-putting-game-form
               @create-lag-putt-cancel="${this.handleCloseDialog}"
               @create-lag-putting-submit-event="${this.handleSubmit}"
