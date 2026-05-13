@@ -1,108 +1,121 @@
 import UniversalRouter, { type RouteContext } from "universal-router";
 import "../pratice-games/lag-putting/m-lag-putting-scorecard-page";
+import { html, render } from "uhtml";
 
 const routes = [
   {
     path: "",
     action: () => {
       document.title = "Golf Bag Tracker";
-      return `<m-bag-list-page/>`;
+      return html`
+        <m-bag-list-page />
+      `;
     },
   },
   {
     path: "/game",
     action: () => {
       document.title = "Lag putting game";
-      return `<m-lag-putting-listing-page/>`;
+      return html`
+        <m-lag-putting-listing-page />
+      `;
     },
   },
   {
     path: "/game/:key",
     action: ({ params }: RouteContext) => {
       document.title = "Lag putting game";
-      return `<m-lag-putting-scorecard-page game-key="${params.key}" />`;
+      return html`
+        <m-lag-putting-scorecard-page game-key="${params.key}" />
+      `;
     },
   },
   {
     path: "/bag",
     action: () => {
       document.title = "Golf Bag Tracker";
-      return `<m-bag-list-page/>`;
+      return html`
+        <m-bag-list-page />
+      `;
     },
   },
   {
     path: "/bag/add",
     action: () => {
       document.title = "Add Club - Golf Bag Tracker";
-      return `<m-bag-add-page/>`;
+      return html`
+        <m-bag-add-page />
+      `;
     },
   },
   {
     path: "/bag/edit/:key",
     action: ({ params }: RouteContext) => {
       document.title = `Edit Club - Golf Bag Tracker`;
-      return `<m-bag-edit-page club-key="${params.key}"/>`;
+      return html`
+        <m-bag-edit-page club-key="${params.key}" />
+      `;
     },
   },
   {
     path: "/bag/club/add",
     action: () => {
       document.title = "Add Club - Golf Bag Tracker";
-      return `
-    <div class="stack" data-gap="4">
-      <m-club-form></m-club-form>
-      <a href="/" aria-label="Go back to home page">Back</a>
-    </div>
-`;
+      return html`
+        <div class="stack" data-gap="4">
+          <m-club-form></m-club-form>
+          <a href="/" aria-label="Go back to home page">Back</a>
+        </div>
+      `;
     },
   },
   {
     path: "/bag/club/:key/edit",
     action: ({ params }: RouteContext) => {
       document.title = `Edit Club - Golf Bag Tracker`;
-      return `
-    <div class="stack" data-gap="4">
-      <m-club-form club-key="${params.key}"></m-club-form>
-      <a href="/" aria-label="Go back to home page">Back</a>
-    </div>
-`;
+      return html`
+        <div class="stack" data-gap="4">
+          <m-club-form club-key="${params.key}"></m-club-form>
+          <a href="/" aria-label="Go back to home page">Back</a>
+        </div>
+      `;
     },
   },
   {
     path: "/bag/shot-type/add",
     action: () => {
       document.title = "Add Shot Type - Golf Bag Tracker";
-      return `
-    <div class="stack" data-gap="4">
-      <m-shot-type-form></m-shot-type-form>
-      <a href="/bag" aria-label="Go back to bag page">Back</a>
-    </div>
-`;
+      return html`
+        <div class="stack" data-gap="4">
+          <m-shot-type-form></m-shot-type-form>
+          <a href="/bag" aria-label="Go back to bag page">Back</a>
+        </div>
+      `;
     },
   },
   {
     path: "/bag/shot-type/edit/:key",
     action: ({ params }: RouteContext) => {
       document.title = "Edit Shot Type - Golf Bag Tracker";
-      return `
-    <div class="stack" data-gap="4">
-      <m-shot-type-form shot-type-key="${params.key}"></m-shot-type-form>
-      <a href="/bag" aria-label="Go back to bag page">Back</a>
-    </div>
-`;
+      return html`
+        <div class="stack" data-gap="4">
+          <m-shot-type-form shot-type-key="${params.key}"></m-shot-type-form>
+          <a href="/bag" aria-label="Go back to bag page">Back</a>
+        </div>
+      `;
     },
   },
   {
     path: "/404",
     action: () => {
       document.title = "404 Not Found - Golf Bag Tracker";
-      return `
-    <div class="stack" data-gap="4">
-      <h1>404 - Page Not Found</h1>
-      <p>The page you're looking for doesn't exist.</p>
-      <a href="/" aria-label="Go back to home page">Back to Home</a>
-    </div>
-`;
+      return html`
+        <div class="stack" data-gap="4">
+          <h1>404 - Page Not Found</h1>
+          <p>The page you're looking for doesn't exist.</p>
+          <a href="/" aria-label="Go back to home page">Back to Home</a>
+        </div>
+      `;
     },
   },
 ];
@@ -115,7 +128,7 @@ async function resolve(path?: string) {
   if (html) {
     const app = document.getElementById("app");
     if (app) {
-      app.innerHTML = html;
+      render(app, html);
     }
   }
 }
