@@ -75,8 +75,6 @@ export abstract class MFormAssociatedElement extends MElement {
      * @param {string|string[]|null} value - sets both the value and the form value for the element
      */
     set value(value: string | string[] | null) {
-        // Don't set value if the element is disabled
-        if (this.disabled) return;
         if (this.value === value) return;
 
         if (Array.isArray(value)) {
@@ -157,10 +155,12 @@ export abstract class MFormAssociatedElement extends MElement {
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
         super.attributeChangedCallback(name, oldValue, newValue);
 
-        // Guard: Don't process if internals not yet initialized
         if (!this.internals) return;
 
-        this.updateValidity();
+        if (name === "value") {
+            this.value = (newValue as string | null) ?? null;
+            this.hasInteracted = false;
+        }
 
         if (name === "label") {
             this.internals.ariaLabel = newValue as string;
@@ -173,6 +173,10 @@ export abstract class MFormAssociatedElement extends MElement {
                 this.setAttribute("tabindex", "0");
             }
         }
+
+        if (name !== "value") {
+            this.updateValidity();
+        }
     }
 
     //  ------------------------------------------------------------------------
@@ -183,7 +187,6 @@ export abstract class MFormAssociatedElement extends MElement {
         // (native browser can't focus through shadow DOM, so we handle it ourselves)
         e.preventDefault();
 
-        // Update custom validation state
         this.hasInteracted = true;
         this.updateValidity();
 
