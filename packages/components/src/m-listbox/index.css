@@ -3,7 +3,7 @@
     grid-template-columns: 1fr;
     grid-column: span 1;
     row-gap: var(--size-1);
-    align-items: start;
+    align-items: var(--listbox-align, start);
 }
 
 /* Hide default focus outline on host element - always */

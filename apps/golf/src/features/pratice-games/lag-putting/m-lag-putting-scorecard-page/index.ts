@@ -6,7 +6,7 @@ import { get_DB } from "../../../../db";
 import { LagPuttingGameService } from "../lag-putting-service";
 import type { LagPuttingGame, PuttResult } from "../lag-putting-service";
 import type { MListboxChangeEvent } from "@maxhill/components/m-listbox";
-import { lagPuttingHud } from "../lag-putting-game-hud";
+
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -166,88 +166,121 @@ export class MLagPuttingScorecardPage extends MElement {
     });
   }
 
+  private formatScore(score: number): string {
+    if (score === 0) return "E";
+    return score > 0 ? `+${score}` : `${score}`;
+  }
+
+  private getScoreClass(putt: LagPuttingGame["putts"][0]): string {
+    if (!putt.result) return "";
+    switch (putt.result.outcome) {
+      case "holed": return "nav--holed";
+      case "0-0.5m": return "nav--birdie";
+      case "0.5-1m": return "nav--par";
+      case "1-2m": return "nav--bogey";
+      case "2-3m": return "nav--double-bogey";
+      case "+3m": return "nav--tripple-bogey";
+      default: return "";
+    }
+  }
+
   private render() {
+    if (!this.currentGame) return;
+
+    const game = this.currentGame;
+    const outScore = this.lagPuttingGameService.calculateOutScore(game.putts);
+    const inScore = this.lagPuttingGameService.calculateInScore(game.putts);
+    const totalScore = this.lagPuttingGameService.calculateTotalScore(game.putts);
+
     render(
       html`
-        <a href="/lag-putting" class="back-link">← All rounds</a>
-        <h1>Round · ${this.formatRoundDate(this.currentGame?.createdAt)}</h1>
+        <div class="page-header">
+          <a href="/lag-putting" class="back-link">← Alla rundor</a>
+          <span class="round-date">${this.formatRoundDate(game.createdAt)}</span>
+        </div>
 
-        ${this.currentGame ? lagPuttingHud(this.currentGame, this.lagPuttingGameService) : ""}
+        <div class="hud">
+          <div class="hud-cell">
+            <span class="hud-label">Ut</span>
+            <span class="hud-value">${this.formatScore(outScore)}</span>
+          </div>
+          <div class="hud-cell">
+            <span class="hud-label">In</span>
+            <span class="hud-value">${this.formatScore(inScore)}</span>
+          </div>
+          <div class="hud-cell">
+            <span class="hud-label">Totalt</span>
+            <span class="hud-value hud-value--total">${this.formatScore(totalScore)}</span>
+          </div>
+        </div>
 
-        <nav class="exposed-grid stack" data-direction="row" data-border @click="${this
-          .handleNavClick}">
-          ${this.currentGame?.putts.map((putt, index) =>
+        <nav class="nav-strip" @click="${this.handleNavClick}">
+          ${game.putts.map((putt, index) =>
             html`
-              <a href="${`#putt-${index + 1}`}" data-padding="2">${index + 1}${putt.result
-                ? "*"
-                : ""}</a>
+              <a
+                href="${`#putt-${index + 1}`}"
+                class="${this.getScoreClass(putt)}"
+                ?data-completed="${putt.result !== null}"
+              >${index + 1}</a>
             `
-          ) || html`
-
-          `}
+          )}
         </nav>
 
         <div class="putts-container">
-          ${this.currentGame?.putts.map((
-            putt,
-            index,
-          ) =>
-            html`
-              <m-card id="${`putt-${index + 1}`}">
-                <dl>
-                  <dt>Putt no</dt>
-                  <dd>${index + 1}</dd>
+          ${game.putts.map((putt, index) => {
+            const holeScore = this.lagPuttingGameService.calculateHoleScore(putt);
+            return html`
+              <div class="putt-card" id="${`putt-${index + 1}`}">
+                <div class="putt-header">
+                  <div>
+                    <span class="putt-number">Putt ${index + 1} / 18</span>
+                    <div class="putt-distance">${putt.distance}m</div>
+                  </div>
+                  ${putt.result
+                    ? html`<span
+                        class="putt-score"
+                        ?data-negative="${holeScore < 0}"
+                        ?data-positive="${holeScore > 0}"
+                      >${this.formatScore(holeScore)}</span>`
+                    : html``}
+                </div>
 
-                  <dt>Distance</dt>
-                  <dd>${putt.distance}m</dd>
-
-                  <dt>Result</dt>
-                  <dd>${putt.result?.outcome}</dd>
-
-                  <dt>Leave</dt>
-                  <dd>${putt.result && putt.result.outcome !== "holed"
-                    ? putt.result.leave
-                    : "-"}</dd>
-
-                  <dt>Score</dt>
-                  <dd>${this.lagPuttingGameService.calculateHoleScore(putt)}</dd>
-                </dl>
                 <m-listbox
                   data-putt-index="${index}"
                   @m-listbox-change="${this.handleChange}"
                 >
                   <m-option value="+3m-long" class="tripple-bogey" ?selected="${this
-                    .getListboxValue(putt) === "+3m-long"}">+3m</m-option>
+                    .getListboxValue(putt) === "+3m-long"}"><span>↑ 3m</span><span class="score-name">Triple Bogey</span></m-option>
                   <m-option value="2-3m-long" class="double-bogey" ?selected="${this
-                    .getListboxValue(putt) === "2-3m-long"}">+2-3m</m-option>
+                    .getListboxValue(putt) === "2-3m-long"}"><span>↑ 2-3m</span><span class="score-name">Double Bogey</span></m-option>
                   <m-option value="1-2m-long" class="bogey" ?selected="${this.getListboxValue(
                     putt,
-                  ) === "1-2m-long"}">+1-2m</m-option>
+                  ) === "1-2m-long"}"><span>↑ 1-2m</span><span class="score-name">Bogey</span></m-option>
                   <m-option value="0.5-1m-long" class="par" ?selected="${this.getListboxValue(
                     putt,
-                  ) === "0.5-1m-long"}">+0.5-1m</m-option>
+                  ) === "0.5-1m-long"}"><span>↑ 0.5-1m</span><span class="score-name">Par</span></m-option>
                   <m-option value="0-0.5m-long" class="birdie" ?selected="${this.getListboxValue(
                     putt,
-                  ) === "0-0.5m-long"}">+0-0.5m</m-option>
+                  ) === "0-0.5m-long"}"><span>↑ 0-0.5m</span><span class="score-name">Birdie</span></m-option>
                   <m-option value="holed" class="holed" ?selected="${this.getListboxValue(putt) ===
-                    "holed"}">Holed</m-option>
+                    "holed"}"><span>Hålad</span><span class="score-name">Eagle</span></m-option>
                   <m-option value="0-0.5m-short" class="birdie" ?selected="${this.getListboxValue(
                     putt,
-                  ) === "0-0.5m-short"}">-0-0.5m</m-option>
+                  ) === "0-0.5m-short"}"><span>↓ 0-0.5m</span><span class="score-name">Birdie</span></m-option>
                   <m-option value="0.5-1m-short" class="par" ?selected="${this.getListboxValue(
                     putt,
-                  ) === "0.5-1m-short"}">-0.5-1m</m-option>
+                  ) === "0.5-1m-short"}"><span>↓ 0.5-1m</span><span class="score-name">Par</span></m-option>
                   <m-option value="1-2m-short" class="bogey" ?selected="${this.getListboxValue(
                     putt,
-                  ) === "1-2m-short"}">-1-2m</m-option>
+                  ) === "1-2m-short"}"><span>↓ 1-2m</span><span class="score-name">Bogey</span></m-option>
                   <m-option value="2-3m-short" class="double-bogey" ?selected="${this
-                    .getListboxValue(putt) === "2-3m-short"}">-2-3m</m-option>
+                    .getListboxValue(putt) === "2-3m-short"}"><span>↓ 2-3m</span><span class="score-name">Double Bogey</span></m-option>
                   <m-option value="+3m-short" class="tripple-bogey" ?selected="${this
-                    .getListboxValue(putt) === "+3m-short"}">-3m</m-option>
+                    .getListboxValue(putt) === "+3m-short"}"><span>↓ 3m</span><span class="score-name">Triple Bogey</span></m-option>
                 </m-listbox>
-              </m-card>
-            `
-          )}
+              </div>
+            `;
+          })}
         </div>
       `,
       this.shadowRoot!,

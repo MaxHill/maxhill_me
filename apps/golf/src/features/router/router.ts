@@ -1,5 +1,6 @@
 import UniversalRouter, { type RouteContext } from "universal-router";
 import "../pratice-games/lag-putting/m-lag-putting-scorecard-page";
+import "../pratice-games/lag-putting/m-lag-putting-rules-page";
 import { html, render, type TemplateResult } from "lit-html";
 
 type RouteResult = TemplateResult;
@@ -17,9 +18,18 @@ const routes = [
   {
     path: "/lag-putting",
     action: () => {
-      document.title = "Lag putting game";
+      document.title = "Lagputt";
       return html`
         <m-lag-putting-listing-page></m-lag-putting-listing-page>
+      `;
+    },
+  },
+  {
+    path: "/lag-putting/regler",
+    action: () => {
+      document.title = "Lagputt - Regler";
+      return html`
+        <m-lag-putting-rules-page></m-lag-putting-rules-page>
       `;
     },
   },

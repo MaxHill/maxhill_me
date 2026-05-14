@@ -8,7 +8,6 @@ import { globalStyleSheet } from "../../../../styles/global-styles";
 import { get_DB } from "../../../../db.ts";
 import { LagPuttingGame, LagPuttingGameService } from "../lag-putting-service.ts";
 import { CreateLagPuttingSubmitEventEvent } from "../m-create-lag-putting-game-form/events";
-import { lagPuttingHud } from "../lag-putting-game-hud.ts";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -59,40 +58,70 @@ export class MLagPuttingListingPage extends MElement {
     this.handleCloseDialog();
   };
 
+  private formatDate(createdAt: string | undefined): string {
+    if (!createdAt) return "—";
+    const date = new Date(createdAt);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleDateString("sv-SE", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
+
+  private formatScore(score: number): string {
+    if (score === 0) return "E";
+    return score > 0 ? `+${score}` : `${score}`;
+  }
+
   private render() {
     const games = this.lagPuttingGameService.queryGamesNewestFirst();
 
     render(
       html`
-        <div class="stack" data-direction="row" data-justify="content-between">
-          <h1 class="h1">Lag Putting Practice</h1>
-          <button
-            type="button"
-            class="button new-game-button"
-            data-variant="secondary"
-            @click="${this.handleOpenDialog}"
-            aria-label="Start a new game"
-          >
-            Start new game
-          </button>
-
-          <dialog ${ref(this.dialogRef)} class="new-game-dialog">
-            <m-create-lag-putting-game-form
-              @create-lag-putt-cancel="${this.handleCloseDialog}"
-              @create-lag-putting-submit-event="${this.handleSubmit}"
-            ></m-create-lag-putting-game-form>
-          </dialog>
+        <div class="page-header">
+          <h1>Lagputt</h1>
         </div>
 
-        <h2>Rounds</h2>
+        <div class="actions-bar">
+          <button
+            type="button"
+            class="button"
+            @click="${this.handleOpenDialog}"
+          >Ny runda</button>
+          <a href="/lag-putting/regler" class="button" data-variant="secondary">Regler</a>
+        </div>
 
-        <div class="collection" data-padding="body" data-size="10" data-gap="3">
+        <dialog ${ref(this.dialogRef)} class="new-game-dialog">
+          <m-create-lag-putting-game-form
+            @create-lag-putt-cancel="${this.handleCloseDialog}"
+            @create-lag-putting-submit-event="${this.handleSubmit}"
+          ></m-create-lag-putting-game-form>
+        </dialog>
+
+        <div class="game-list">
           ${asyncAppend(games, (g) => {
             const game = g as LagPuttingGame;
+            const totalScore = this.lagPuttingGameService.calculateTotalScore(game.putts);
+            const completed = game.putts.filter((p) => p.result !== null).length;
+            const isComplete = completed === 18;
+
             return html`
-              <m-card href="${"/lag-putting/" + game._key}">
-                ${lagPuttingHud(game, this.lagPuttingGameService)}
-              </m-card>
+              <a class="game-row" href="${"/lag-putting/" + game._key}">
+                <div class="game-meta">
+                  <span class="game-date">${this.formatDate(game.createdAt)}</span>
+                  <span class="game-details">${game.playerName} · ${game.courseName}</span>
+                </div>
+                <span
+                  class="game-progress"
+                  ?data-incomplete="${!isComplete}"
+                >${completed}/18</span>
+                <span
+                  class="game-score"
+                  ?data-negative="${totalScore < 0}"
+                  ?data-positive="${totalScore > 0}"
+                >${this.formatScore(totalScore)}</span>
+              </a>
             `;
           })}
         </div>

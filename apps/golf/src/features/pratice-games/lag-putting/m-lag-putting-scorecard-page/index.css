@@ -1,91 +1,274 @@
 :host {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--menu-height));
+  overflow: hidden;
+}
+
+/* ---- Header ---- */
+
+.page-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-inline: var(--body-margin);
+  padding-block: var(--size-2) var(--size-1);
 }
 
 .back-link {
-  font-family: var(--ff-display);
   font: var(--p2);
+  font-family: var(--ff-display);
   text-transform: uppercase;
   color: var(--color-text-softer);
-  display: inline-block;
-  padding-block: var(--size-1);
+  text-decoration: none;
+  letter-spacing: 0.05em;
 }
 
 .back-link:hover,
 .back-link:focus-visible {
   color: var(--color-text);
 }
+
+.round-date {
+  font: var(--p2);
+  color: var(--color-text-softer);
+}
+
+/* ---- HUD ---- */
+
+.hud {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1px;
+  background: var(--color-stroke);
+  border-block: 1px solid var(--color-stroke);
+}
+
+.hud-cell {
+  background: var(--color-background);
+  padding: var(--size-2) var(--size-2);
+  text-align: center;
+}
+
+.hud-label {
+  font: var(--p2);
+  font-family: var(--ff-display);
+  text-transform: uppercase;
+  color: var(--color-text-softer);
+  letter-spacing: 0.05em;
+  display: block;
+  margin-block-end: 2px;
+}
+
+.hud-value {
+  font: var(--h2);
+  font-family: var(--ff-display);
+}
+
+.hud-value--total {
+  color: var(--color-primary-text-colorful);
+}
+
+/* ---- Nav strip ---- */
+
+.nav-strip {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 0;
+  border-block-end: 1px solid var(--color-stroke);
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.nav-strip a {
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  padding: var(--size-2) var(--size-1);
+  text-align: center;
+  font: var(--p2);
+  font-family: var(--ff-display);
+  text-decoration: none;
+  color: var(--color-text-softer);
+  border-inline-end: 1px solid var(--color-stroke);
+  position: relative;
+}
+
+.nav-strip a:first-child {
+  border-inline-start: none;
+}
+
+.nav-strip a[data-completed] {
+  color: var(--color-text);
+}
+
+.nav-strip a[data-active] {
+  color: var(--color-primary-text-colorful);
+  background: var(--color-primary-fill-softer);
+}
+
+/* Nav score colors */
+.nav-strip a.nav--holed {
+  background: var(--color-constructive-fill-loud);
+  color: var(--color-constructive-text-on-loud);
+}
+.nav-strip a.nav--birdie {
+  background: var(--color-constructive-fill-mid);
+  color: var(--color-constructive-text-on-mid);
+}
+.nav-strip a.nav--par {
+  background: var(--color-constructive-fill-soft);
+  color: var(--color-constructive-text-on-soft);
+}
+.nav-strip a.nav--bogey {
+  background: var(--color-destructive-fill-soft);
+  color: var(--color-destructive-text-on-soft);
+}
+.nav-strip a.nav--double-bogey {
+  background: var(--color-destructive-fill-mid);
+  color: var(--color-destructive-text-on-mid);
+}
+.nav-strip a.nav--tripple-bogey {
+  background: var(--color-destructive-fill-loud);
+  color: var(--color-destructive-text-on-loud);
+}
+
+/* ---- Putts container ---- */
+
 .putts-container {
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
-  scroll-padding-inline-end: 5vw;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 100%;
+  grid-auto-rows: 100%;
   scroll-behavior: smooth;
-  gap: var(--size-fluid-2);
-  padding: var(--body-margin);
-
-  m-card {
-    scroll-snap-align: start;
-  }
-
-  m-option {
-    display: flex;
-    align-items: center;
-  }
-
-  m-option[aria-selected="true"]::after {
-    content: "✓";
-    margin-inline-start: auto;
-    font-weight: 700;
-  }
-
-  m-option[focused] {
-    filter: brightness(0.85);
-  }
-
-  .holed {
-    background: var(--color-constructive-fill-loud);
-    color: var(--color-constructive-text-on-loud);
-  }
-  .birdie {
-    background: var(--color-constructive-fill-mid);
-    color: var(--color-constructive-text-on-mid);
-  }
-  .par {
-    background: var(--color-constructive-fill-soft);
-    color: var(--color-constructive-text-on-soft);
-  }
-  .bogey {
-    background: var(--color-destructive-fill-soft);
-    color: var(--color-destructive-text-on-soft);
-  }
-  .double-bogey {
-    background: var(--color-destructive-fill-mid);
-    color: var(--color-destructive-text-on-mid);
-  }
-  .tripple-bogey {
-    background: var(--color-destructive-fill-loud);
-    color: var(--color-destructive-text-on-loud);
-  }
+  flex: 1;
+  min-height: 0;
 }
 
-dl {
+.putt-card {
+  scroll-snap-align: start;
+  padding-inline: var(--body-margin);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ---- Putt header ---- */
+
+.putt-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-block-end: var(--size-3);
+}
+
+.putt-number {
+  font: var(--p2);
   font-family: var(--ff-display);
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: var(--size-1);
-  padding-block: 1lh;
+  text-transform: uppercase;
+  color: var(--color-text-softer);
+  letter-spacing: 0.05em;
+}
+
+.putt-distance {
+  font-family: var(--ff-display);
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.putt-score {
+  font: var(--h2);
+  font-family: var(--ff-display);
+  color: var(--color-text-softer);
+}
+
+.putt-score[data-negative] {
+  color: var(--color-constructive-text-colorful);
+}
+
+.putt-score[data-positive] {
+  color: var(--color-destructive-text-colorful);
+}
+
+/* ---- Listbox options ---- */
+
+.putt-card m-listbox {
+  flex: 1;
+  min-height: 0;
+  border-block-start: 1px solid var(--color-stroke);
+  --listbox-align: stretch;
+}
+
+.putt-card m-listbox::part(input-wrapper) {
+  padding: 0;
+  gap: 0;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  overflow-y: auto;
+  height: 100%;
+  grid-template-rows: repeat(11, minmax(2.75rem, 1fr));
+  align-items: stretch;
+}
+
+.putt-card m-option {
+  display: flex;
   align-items: center;
-  dt {
-    font: var(--p2);
-    font-family: var(--ff-display);
-    text-transform: uppercase;
-    color: var(--color-text-softer);
-    text-align: end;
-  }
-  dd {
-    min-width: 0;
-  }
+  justify-content: space-between;
+  padding-inline: var(--size-3);
+  font: var(--p);
+  font-family: var(--ff-display);
+  cursor: pointer;
+}
+
+.putt-card m-option[aria-selected="true"]::after {
+  content: "✓";
+  font-weight: 700;
+  margin-inline-start: var(--size-2);
+}
+
+.putt-card m-option[focused] {
+  filter: brightness(0.85);
+}
+
+.score-name {
+  font: var(--p2);
+  opacity: 0.7;
+}
+
+/* ---- Score colors ---- */
+
+.holed {
+  background: var(--color-constructive-fill-loud);
+  color: var(--color-constructive-text-on-loud);
+}
+.birdie {
+  background: var(--color-constructive-fill-mid);
+  color: var(--color-constructive-text-on-mid);
+}
+.par {
+  background: var(--color-constructive-fill-soft);
+  color: var(--color-constructive-text-on-soft);
+}
+.bogey {
+  background: var(--color-destructive-fill-soft);
+  color: var(--color-destructive-text-on-soft);
+}
+.double-bogey {
+  background: var(--color-destructive-fill-mid);
+  color: var(--color-destructive-text-on-mid);
+}
+.tripple-bogey {
+  background: var(--color-destructive-fill-loud);
+  color: var(--color-destructive-text-on-loud);
 }
