@@ -27,7 +27,7 @@ const routes = [
   {
     path: "/lag-putting/regler",
     action: () => {
-      document.title = "Lagputt - Regler";
+      document.title = "Lag Putting - Rules";
       return html`
         <m-lag-putting-rules-page></m-lag-putting-rules-page>
       `;

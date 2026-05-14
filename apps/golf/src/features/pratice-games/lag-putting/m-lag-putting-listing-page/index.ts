@@ -62,7 +62,7 @@ export class MLagPuttingListingPage extends MElement {
     if (!createdAt) return "—";
     const date = new Date(createdAt);
     if (Number.isNaN(date.getTime())) return "—";
-    return date.toLocaleDateString("sv-SE", {
+    return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -80,7 +80,7 @@ export class MLagPuttingListingPage extends MElement {
     render(
       html`
         <div class="page-header">
-          <h1>Lagputt</h1>
+          <h1>Lag Putting</h1>
         </div>
 
         <div class="actions-bar">
@@ -88,8 +88,8 @@ export class MLagPuttingListingPage extends MElement {
             type="button"
             class="button"
             @click="${this.handleOpenDialog}"
-          >Ny runda</button>
-          <a href="/lag-putting/regler" class="button" data-variant="secondary">Regler</a>
+          >New round</button>
+          <a href="/lag-putting/regler" class="button" data-variant="secondary">Rules</a>
         </div>
 
         <dialog ${ref(this.dialogRef)} class="new-game-dialog">

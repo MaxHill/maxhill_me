@@ -1,6 +1,7 @@
 import { BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
+import { createRef, ref } from "lit-html/directives/ref.js";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { get_DB } from "../../../../db";
 import { LagPuttingGameService } from "../lag-putting-service";
@@ -26,6 +27,9 @@ export class MLagPuttingScorecardPage extends MElement {
 
   lagPuttingGameService!: LagPuttingGameService;
   private unsubscribe!: () => void;
+  private puttsContainerRef = createRef<HTMLDivElement>();
+  private navStripRef = createRef<HTMLElement>();
+  private scrollObserver: IntersectionObserver | null = null;
 
   constructor() {
     super();
@@ -42,13 +46,53 @@ export class MLagPuttingScorecardPage extends MElement {
 
     this.unsubscribe = this.lagPuttingGameService.subscribe(() => {
       this.render();
+      this.setupScrollObserver();
     });
 
     this.render();
+    this.setupScrollObserver();
   }
 
   disconnectedCallback() {
     this.unsubscribe();
+    this.scrollObserver?.disconnect();
+  }
+
+  private setupScrollObserver() {
+    this.scrollObserver?.disconnect();
+
+    const container = this.puttsContainerRef.value;
+    const nav = this.navStripRef.value;
+    if (!container || !nav) return;
+
+    this.scrollObserver = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (visible.length === 0) return;
+
+        const mostVisible = visible[0].target as HTMLElement;
+        const puttId = mostVisible.id; // "putt-1", "putt-2", etc.
+
+        const links = nav.querySelectorAll("a");
+        links.forEach((link) => link.removeAttribute("data-active"));
+
+        const matchingLink = nav.querySelector(`a[href="#${puttId}"]`);
+        if (matchingLink) {
+          matchingLink.setAttribute("data-active", "");
+          matchingLink.scrollIntoView({ behavior: "instant", block: "nearest", inline: "nearest" });
+        }
+      },
+      {
+        root: container,
+        threshold: 0.5,
+      },
+    );
+
+    const puttCards = container.querySelectorAll(".putt-card");
+    puttCards.forEach((card) => this.scrollObserver!.observe(card));
   }
 
   handleNavClick = (e: MouseEvent) => {
@@ -60,8 +104,9 @@ export class MLagPuttingScorecardPage extends MElement {
     const targetElement = this.shadowRoot?.getElementById(targetId);
 
     if (targetElement) {
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       targetElement.scrollIntoView({
-        behavior: "smooth",
+        behavior: prefersReducedMotion ? "instant" : "smooth",
         block: "nearest",
         inline: "start",
       });
@@ -136,7 +181,12 @@ export class MLagPuttingScorecardPage extends MElement {
     }
 
     const currentResult = this.currentGame.putts[puttIndex].result;
-    if (currentResult && currentResult === result) {
+    if (
+      currentResult &&
+      currentResult.outcome === result.outcome &&
+      ("leave" in currentResult ? currentResult.leave : undefined) ===
+        ("leave" in result ? result.leave : undefined)
+    ) {
       return;
     }
 
@@ -195,13 +245,13 @@ export class MLagPuttingScorecardPage extends MElement {
     render(
       html`
         <div class="page-header">
-          <a href="/lag-putting" class="back-link">← Alla rundor</a>
+          <a href="/lag-putting" class="back-link">← All rounds</a>
           <span class="round-date">${this.formatRoundDate(game.createdAt)}</span>
         </div>
 
         <div class="hud">
           <div class="hud-cell">
-            <span class="hud-label">Ut</span>
+            <span class="hud-label">Out</span>
             <span class="hud-value">${this.formatScore(outScore)}</span>
           </div>
           <div class="hud-cell">
@@ -209,12 +259,12 @@ export class MLagPuttingScorecardPage extends MElement {
             <span class="hud-value">${this.formatScore(inScore)}</span>
           </div>
           <div class="hud-cell">
-            <span class="hud-label">Totalt</span>
+            <span class="hud-label">Total</span>
             <span class="hud-value hud-value--total">${this.formatScore(totalScore)}</span>
           </div>
         </div>
 
-        <nav class="nav-strip" @click="${this.handleNavClick}">
+        <nav class="nav-strip" aria-label="Putt navigation" ${ref(this.navStripRef)} @click="${this.handleNavClick}">
           ${game.putts.map((putt, index) =>
             html`
               <a
@@ -226,7 +276,7 @@ export class MLagPuttingScorecardPage extends MElement {
           )}
         </nav>
 
-        <div class="putts-container">
+        <div class="putts-container" ${ref(this.puttsContainerRef)}>
           ${game.putts.map((putt, index) => {
             const holeScore = this.lagPuttingGameService.calculateHoleScore(putt);
             return html`
@@ -242,7 +292,7 @@ export class MLagPuttingScorecardPage extends MElement {
                         ?data-negative="${holeScore < 0}"
                         ?data-positive="${holeScore > 0}"
                       >${this.formatScore(holeScore)}</span>`
-                    : html``}
+                    : html`<span class="putt-score">-</span>`}
                 </div>
 
                 <m-listbox
@@ -263,7 +313,7 @@ export class MLagPuttingScorecardPage extends MElement {
                     putt,
                   ) === "0-0.5m-long"}"><span>↑ 0-0.5m</span><span class="score-name">Birdie</span></m-option>
                   <m-option value="holed" class="holed" ?selected="${this.getListboxValue(putt) ===
-                    "holed"}"><span>Hålad</span><span class="score-name">Eagle</span></m-option>
+                    "holed"}"><span>Holed</span><span class="score-name">Eagle</span></m-option>
                   <m-option value="0-0.5m-short" class="birdie" ?selected="${this.getListboxValue(
                     putt,
                   ) === "0-0.5m-short"}"><span>↓ 0-0.5m</span><span class="score-name">Birdie</span></m-option>

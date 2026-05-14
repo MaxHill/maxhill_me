@@ -87,14 +87,22 @@
 .nav-strip a {
   flex: 0 0 auto;
   min-width: 2.5rem;
-  padding: var(--size-2) var(--size-1);
-  text-align: center;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--size-2);
   font: var(--p2);
   font-family: var(--ff-display);
   text-decoration: none;
   color: var(--color-text-softer);
   border-inline-end: 1px solid var(--color-stroke);
   position: relative;
+}
+
+.nav-strip a:focus-visible {
+  outline: var(--outline);
+  outline-offset: -2px;
 }
 
 .nav-strip a:first-child {
@@ -106,8 +114,7 @@
 }
 
 .nav-strip a[data-active] {
-  color: var(--color-primary-text-colorful);
-  background: var(--color-primary-fill-softer);
+  box-shadow: inset 0 -3px 0 currentColor;
 }
 
 /* Nav score colors */
@@ -153,7 +160,6 @@
 
 .putt-card {
   scroll-snap-align: start;
-  padding-inline: var(--body-margin);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -164,9 +170,10 @@
 
 .putt-header {
   display: flex;
-  align-items: baseline;
+  align-items: end;
   justify-content: space-between;
-  margin-block-end: var(--size-3);
+  margin-block: var(--size-3);
+  padding-inline: var(--body-margin);
 }
 
 .putt-number {
@@ -186,8 +193,10 @@
 }
 
 .putt-score {
-  font: var(--h2);
   font-family: var(--ff-display);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
   color: var(--color-text-softer);
 }
 
@@ -243,7 +252,15 @@
 
 .score-name {
   font: var(--p2);
-  opacity: 0.7;
+  opacity: 0.75;
+}
+
+/* ---- Reduced motion ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  .putts-container {
+    scroll-behavior: auto;
+  }
 }
 
 /* ---- Score colors ---- */

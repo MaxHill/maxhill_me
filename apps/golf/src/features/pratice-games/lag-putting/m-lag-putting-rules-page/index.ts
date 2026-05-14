@@ -30,41 +30,36 @@ export class MLagPuttingRulesPage extends MElement {
     render(
       html`
         <div class="page-header">
-          <a href="/lag-putting" class="back-link">&larr; Tillbaka</a>
+          <a href="/lag-putting" class="back-link">&larr; Back</a>
         </div>
 
         <div class="rules-content">
-          <h1>Lagputt-test</h1>
+          <h1>Lag Putting Test</h1>
           <p class="source">
-            Källa:
+            Source:
             <a href="${LagPuttingGameMetadata.source}" target="_blank" rel="noopener">
               Landslaget / tournytt.se
             </a>
           </p>
 
           <section>
-            <h2>Syfte</h2>
-            <p>${LagPuttingGameMetadata.purpose}</p>
+            <h2>Purpose</h2>
+            <p>Score test for lag putting. A competition-style test of distance control from 8-22 meters with varying putts throughout.</p>
           </section>
 
           <section>
-            <h2>Beskrivning</h2>
-            <p>${LagPuttingGameMetadata.description}</p>
+            <h2>Instructions</h2>
+            <p>18 putts from 8 to 22 meters. One putt per position. Each putt should be unique and randomly chosen. Measure from the center of the hole to the center of the ball. If performed during warm-up or practice play, one putt per hole.</p>
           </section>
 
           <section>
-            <h2>Instruktioner</h2>
-            <p>${LagPuttingGameMetadata.instructions}</p>
+            <h2>Equipment</h2>
+            <p>Putter, ball, tape measure, tape on putter at 50 cm.</p>
           </section>
 
           <section>
-            <h2>Utrustning</h2>
-            <p>${LagPuttingGameMetadata.equipment}</p>
-          </section>
-
-          <section>
-            <h2>Avstånd</h2>
-            <p>18 puttar i följande ordning (upprepas 3 gånger):</p>
+            <h2>Distances</h2>
+            <p>18 putts in the following sequence (repeated 3 times):</p>
             <div class="distance-sequence">
               <span>22m</span>
               <span>12m</span>
@@ -76,16 +71,16 @@ export class MLagPuttingRulesPage extends MElement {
           </section>
 
           <section>
-            <h2>Poängsystem</h2>
+            <h2>Scoring</h2>
             <table>
               <thead>
                 <tr>
-                  <th>Resultat</th>
-                  <th>Poäng</th>
+                  <th>Result</th>
+                  <th>Score</th>
                 </tr>
               </thead>
               <tbody>
-                <tr data-score="eagle"><td>Hålad</td><td>-2</td></tr>
+                <tr data-score="eagle"><td>Holed</td><td>-2</td></tr>
                 <tr data-score="birdie"><td>0 - 0.5m</td><td>-1</td></tr>
                 <tr data-score="par"><td>0.5 - 1m</td><td>0</td></tr>
                 <tr data-score="bogey"><td>1 - 2m</td><td>+1</td></tr>
@@ -96,12 +91,12 @@ export class MLagPuttingRulesPage extends MElement {
           </section>
 
           <section>
-            <h2>Jämförelsetal</h2>
+            <h2>Benchmarks</h2>
 
-            <h3>Herrar / Pojkar</h3>
+            <h3>Men</h3>
             <table>
               <thead>
-                <tr><th>Nivå</th><th>Snitt</th></tr>
+                <tr><th>Level</th><th>Average</th></tr>
               </thead>
               <tbody>
                 <tr><td>World Class</td><td>-5.5</td></tr>
@@ -114,10 +109,10 @@ export class MLagPuttingRulesPage extends MElement {
               </tbody>
             </table>
 
-            <h3>Damer / Flickor</h3>
+            <h3>Women</h3>
             <table>
               <thead>
-                <tr><th>Nivå</th><th>Snitt</th></tr>
+                <tr><th>Level</th><th>Average</th></tr>
               </thead>
               <tbody>
                 <tr><td>World Class</td><td>+1.0</td></tr>
@@ -129,10 +124,10 @@ export class MLagPuttingRulesPage extends MElement {
               </tbody>
             </table>
 
-            <p class="note">Maxscore: -36</p>
-            <p class="note">Rekord herrar: -15 (Johan Edfors, 2011-12-01)</p>
-            <p class="note">Rekord damer: -6 (Christine Hallström, 2011-07-25)</p>
-            <p class="note">Snittscore för test gjort på bana är 4.5 poäng sämre.</p>
+            <p class="note">Max score: -36</p>
+            <p class="note">Men's record: -15 (Johan Edfors, 2011-12-01)</p>
+            <p class="note">Women's record: -6 (Christine Hallström, 2011-07-25)</p>
+            <p class="note">Average score for tests on-course is 4.5 points worse.</p>
           </section>
         </div>
       `,
