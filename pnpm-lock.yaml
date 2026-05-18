@@ -58,6 +58,9 @@ importers:
       '@maxhill/web-component-utils':
         specifier: workspace:*
         version: link:../../packages/web-component-utils
+      '@openauthjs/openauth':
+        specifier: ^0.4.3
+        version: 0.4.3(arctic@2.3.4)(hono@4.10.8)
       lit-html:
         specifier: ^3.2.1
         version: 3.3.2

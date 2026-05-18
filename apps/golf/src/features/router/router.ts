@@ -1,11 +1,22 @@
 import UniversalRouter, { type RouteContext } from "universal-router";
 import "../pratice-games/lag-putting/m-lag-putting-scorecard-page";
 import "../pratice-games/lag-putting/m-lag-putting-rules-page";
+import "../landing/m-landing-page";
 import { html, render, type TemplateResult } from "lit-html";
+import { authClient } from "../auth/auth-client";
 
 type RouteResult = TemplateResult;
 
 const routes = [
+  {
+    path: "/callback",
+    action: async () => {
+      await authClient.handleCallback();
+      window.history.replaceState({}, "", "/");
+      resolve("/");
+      return html``;
+    },
+  },
   {
     path: "",
     action: () => {

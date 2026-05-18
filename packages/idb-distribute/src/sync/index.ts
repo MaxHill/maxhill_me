@@ -64,11 +64,28 @@ export interface SyncResponse {
   syncedOperations: Dot[];
 }
 
+export type SyncHeadersProvider = () => Promise<Record<string, string>>;
+
+/**
+ * Called when a sync request receives a 401 Unauthorized response.
+ * Return true to retry the request (e.g. after refreshing a token),
+ * or false to give up.
+ */
+export type OnUnauthorizedHandler = () => Promise<boolean>;
+
 export class Sync {
   private idbRepository: IDBRepository;
+  private headersProvider?: SyncHeadersProvider;
+  private onUnauthorized?: OnUnauthorizedHandler;
 
-  constructor(idbRepository: IDBRepository) {
+  constructor(
+    idbRepository: IDBRepository,
+    headersProvider?: SyncHeadersProvider,
+    onUnauthorized?: OnUnauthorizedHandler,
+  ) {
     this.idbRepository = idbRepository;
+    if (headersProvider) this.headersProvider = headersProvider;
+    if (onUnauthorized) this.onUnauthorized = onUnauthorized;
   }
 
   /**
@@ -115,14 +132,33 @@ export class Sync {
   async sendSyncRequest(endpointUrl: string, request: SyncRequest): Promise<SyncResponse> {
     const body = JSON.stringify(request);
 
-    try {
-      const response = await fetch(endpointUrl, {
+    const doFetch = async (): Promise<Response> => {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (this.headersProvider) {
+        const customHeaders = await this.headersProvider();
+        Object.assign(headers, customHeaders);
+      }
+
+      return fetch(endpointUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body,
       });
+    };
+
+    try {
+      let response = await doFetch();
+
+      // 401 retry: refresh credentials and try once more
+      if (response.status === 401 && this.onUnauthorized) {
+        const shouldRetry = await this.onUnauthorized();
+        if (shouldRetry) {
+          response = await doFetch();
+        }
+      }
 
       if (!response.ok) {
         // Try to parse structured error from response

@@ -1,9 +1,31 @@
 /**
  * Persistent main menu behavior: keeps the theme button label in sync,
  * and wires up the theme switcher radio forms in the popover menus.
+ * Also renders auth status (sign in / sign out) into menu placeholders.
  *
  * Mirrors the behavior of apps/site PageLayout + ThemeSwitcher.
  */
+
+import { authClient } from "../auth/auth-client";
+
+function renderAuthStatus() {
+  const containers = document.querySelectorAll<HTMLElement>(".auth-status");
+  authClient.getToken().then((token) => {
+    for (const container of containers) {
+      if (token) {
+        container.innerHTML = `<button class="button" data-variant="secondary" data-size="compact">Sign out</button>`;
+        container.querySelector("button")!.addEventListener("click", () => {
+          authClient.logout();
+        });
+      } else {
+        container.innerHTML = `<button class="button" data-size="compact">Sign in</button>`;
+        container.querySelector("button")!.addEventListener("click", () => {
+          authClient.authorize();
+        });
+      }
+    }
+  });
+}
 
 function updateThemeLabel() {
   const themeLabel = document.getElementById("theme-label");
@@ -108,6 +130,8 @@ function init() {
   document.querySelectorAll<HTMLFormElement>(".theme-switcher").forEach(initThemeSwitcher);
   updateThemeLabel();
   document.addEventListener("themechange", updateThemeLabel);
+  renderAuthStatus();
+  authClient.onAuthChange(() => renderAuthStatus());
 }
 
 if (document.readyState === "loading") {

@@ -13,4 +13,5 @@ export { asc, desc, type Direction } from "./direction.ts";
 export type { IndexDefinition } from "./indexes.ts";
 export type { DatabaseSchema, EmptySchema } from "./types.ts";
 export { isSyncError, type SyncError, SyncErrorCode } from "./sync/errors.ts";
+export type { SyncHeadersProvider } from "./sync/index.ts";
 export type { SubscriptionCallbackHandler, TableChangeEvent } from "./tableSubscriptions.ts";

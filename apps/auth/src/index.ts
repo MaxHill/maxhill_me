@@ -26,9 +26,7 @@ export default issuer({
   // Use CloudflareStorage for production, MemoryStorage for local dev
   storage: (globalThis as any).MAXHILL_AUTH 
     ? CloudflareStorage({ namespace: (globalThis as any).MAXHILL_AUTH })
-    : MemoryStorage({
-        persist: "./.wrangler/state/auth-storage.json"
-      }),
+    : MemoryStorage(),
   
   providers: {
     password: PasswordProvider(

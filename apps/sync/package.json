@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "wgo -file=.go -xfile=_test.go go run ./cmd/server/",
+    "dev": "AUTH_ISSUER_URL=http://localhost:3002 wgo -file=.go -xfile=_test.go go run ./cmd/server/",
     "build": "go build -o sync ./cmd/server",
     "test": "go test ./...",
     

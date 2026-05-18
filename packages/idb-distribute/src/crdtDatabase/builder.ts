@@ -2,7 +2,7 @@ import { CRDTDatabase } from "./index.ts";
 import { IDBRepository } from "../IDBRepository.ts";
 import { IndexDefinition } from "../indexes.ts";
 import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
-import { Sync } from "../sync/index.ts";
+import { OnUnauthorizedHandler, Sync, SyncHeadersProvider } from "../sync/index.ts";
 import { DatabaseSchema, EmptySchema, MergeSchema } from "../types.ts";
 
 export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
@@ -15,6 +15,8 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
   logicalClock?: PersistedLogicalClock;
   syncManager?: Sync;
   generateId?: () => string;
+  private headersProvider?: SyncHeadersProvider;
+  private onUnauthorized?: OnUnauthorizedHandler;
 
   constructor(dbName: string) {
     this.dbName = dbName;
@@ -55,6 +57,16 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
     return this;
   }
 
+  withSyncHeaders(fn: SyncHeadersProvider): CRDTDatabaseBuilder<TSchema> {
+    this.headersProvider = fn;
+    return this;
+  }
+
+  withOnUnauthorized(fn: OnUnauthorizedHandler): CRDTDatabaseBuilder<TSchema> {
+    this.onUnauthorized = fn;
+    return this;
+  }
+
   build(): CRDTDatabase<TSchema> {
     // Convert Map to IndexDefinition[] for IDBRepository
     const indexDefinitions: IndexDefinition[] = [];
@@ -65,7 +77,7 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
     }
 
     const idbRepository = this.idbRepository || new IDBRepository(indexDefinitions);
-    const syncManager = this.syncManager || new Sync(idbRepository);
+    const syncManager = this.syncManager || new Sync(idbRepository, this.headersProvider, this.onUnauthorized);
     const syncRemote = this.syncRemote || "";
     const generateId = this.generateId || crypto.randomUUID.bind(crypto);
 

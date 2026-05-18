@@ -17,7 +17,6 @@ import { MBagAddPage } from "./features/bag/pages/m-bag-add-page";
 import { MBagEditPage } from "./features/bag/pages/m-bag-edit-page";
 import { MLagPuttingListingPage } from "./features/pratice-games/lag-putting/m-lag-putting-listing-page";
 import { MCreateLagPuttingGameForm } from "./features/pratice-games/lag-putting/m-create-lag-putting-game-form"
-import { MLandingPage } from "./features/landing/m-landing-page";
 
 
 // Register app components
@@ -34,7 +33,6 @@ MBagListPage.define();
 MBagAddPage.define();
 MBagEditPage.define();
 MLagPuttingListingPage.define();
-MLandingPage.define();
 
 // Register service worker only in production builds. In dev, Vite serves modules
 // directly and the service worker file isn't emitted.

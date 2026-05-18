@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
+	"sync/internal/auth"
 	"sync/internal/repository"
 	"sync/internal/server"
 	"sync/internal/sync_engine"
@@ -44,10 +46,24 @@ func main() {
 	// Create sync service
 	syncService := sync_engine.NewSyncService(db)
 
+	// Setup auth middleware
+	issuerURL := os.Getenv("AUTH_ISSUER_URL")
+	var handler http.Handler
+	mux := server.NewServer(syncService, maxConcurrentConnections)
+
+	if issuerURL == "" {
+		log.Fatalf("AUTH_ISSUER_URL environment variable is required")
+	}
+	authMiddleware, err := auth.NewMiddleware(ctx, issuerURL)
+	if err != nil {
+		log.Fatalf("Failed to initialize auth middleware: %v", err)
+	}
+	handler = server.Cors(authMiddleware.Wrap(mux))
+	log.Printf("Auth enabled with issuer: %s", issuerURL)
+
 	// Start server
-	mux := server.Cors(server.NewServer(syncService, maxConcurrentConnections))
 	log.Printf("Server listening on http://localhost%s\n", serverPort)
-	if err := http.ListenAndServe(serverPort, mux); err != nil {
+	if err := http.ListenAndServe(serverPort, handler); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }

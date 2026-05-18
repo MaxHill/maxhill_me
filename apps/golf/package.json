@@ -16,6 +16,7 @@
     "@maxhill/css": "workspace:*",
     "@maxhill/web-component-utils": "workspace:*",
     "@maxhill/idb-distribute": "workspace:*",
+    "@openauthjs/openauth": "^0.4.3",
     "lit-html": "^3.2.1",
     "universal-router": "^9.2.1"
   },
