@@ -1,4 +1,4 @@
-import { IDBRepository } from "./IDBRepository.ts";
+import { ClientState } from "./indexeddb/clientState.ts";
 
 /**
  * A persisted logical clock implementation.
@@ -7,30 +7,30 @@ import { IDBRepository } from "./IDBRepository.ts";
  *
  * @example
  * ```typescript
- * // Assumes 'idbRepository' is an initialized IDBRepository
+ * // Assumes 'lifecycle' is an initialized Lifecycle and 'clientState' is a ClientState
  *
  * // Create a clock instance connected to the database
- * const clock = new PersistedLogicalClock(idbRepository);
+ * const clock = new PersistedLogicalClock(clientState);
  *
  * // Perform local events
- * const tx1 = idbRepository.transaction("clientState", "readwrite");
+ * const tx1 = lifecycle.transaction("clientState", "readwrite");
  * await clock.tick(tx1); // clock value is now 0
  *
- * const tx2 = idbRepository.transaction("clientState", "readwrite");
+ * const tx2 = lifecycle.transaction("clientState", "readwrite");
  * await clock.tick(tx2); // clock value is now 1
  *
  * // Synchronize with another clock's value
  * const otherVersion = 5;
- * const tx3 = idbRepository.transaction("clientState", "readwrite");
+ * const tx3 = lifecycle.transaction("clientState", "readwrite");
  * await clock.sync(tx3, otherVersion); // clock value is now 5 (max(1, 5))
  *
  * // Continue with a local event
- * const tx4 = idbRepository.transaction("clientState", "readwrite");
+ * const tx4 = lifecycle.transaction("clientState", "readwrite");
  * await clock.tick(tx4); // clock value is now 6
  * ```
  */
 export class PersistedLogicalClock {
-  constructor(private idbRepository: IDBRepository) {}
+  constructor(private clientState: ClientState) {}
 
   /**
    * Increments the clock by 1, representing a local event.
@@ -42,10 +42,10 @@ export class PersistedLogicalClock {
       throw new Error("Transaction is missing clientState objectStore");
     }
 
-    const currentVersion = await this.idbRepository.getVersion(tx);
+    const currentVersion = await this.clientState.getVersion(tx);
 
     const newVersion = currentVersion + 1;
-    await this.idbRepository.setVersion(tx, newVersion);
+    await this.clientState.setVersion(tx, newVersion);
 
     if (newVersion < 0) {
       throw new Error("Version could never be less than 0 after ticking. Got: " + newVersion);
@@ -75,11 +75,11 @@ export class PersistedLogicalClock {
     }
 
     // Read current version
-    const currentVersion = await this.idbRepository.getVersion(tx);
+    const currentVersion = await this.clientState.getVersion(tx);
     const newVersion = Math.max(currentVersion, otherVersion);
 
     // Write new version atomically
-    await this.idbRepository.setVersion(tx, newVersion);
+    await this.clientState.setVersion(tx, newVersion);
 
     if (newVersion < -1) {
       throw new Error("Version could never be less than initialized value -1. Got: " + newVersion);

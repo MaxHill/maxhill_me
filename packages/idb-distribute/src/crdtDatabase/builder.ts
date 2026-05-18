@@ -1,5 +1,8 @@
 import { CRDTDatabase } from "./index.ts";
-import { IDBRepository } from "../IDBRepository.ts";
+import { Lifecycle } from "../indexeddb/lifecycle.ts";
+import { ClientState } from "../indexeddb/clientState.ts";
+import { RowStore } from "../indexeddb/rowStore.ts";
+import { OperationLog } from "../indexeddb/operationLog.ts";
 import { IndexDefinition } from "../indexes.ts";
 import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
 import { OnUnauthorizedHandler, Sync, SyncHeadersProvider } from "../sync/index.ts";
@@ -11,7 +14,7 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
   private tables: Map<string, Map<string, string[]>> = new Map();
 
   // Should these be part of the config?
-  idbRepository?: IDBRepository;
+  lifecycle?: Lifecycle;
   logicalClock?: PersistedLogicalClock;
   syncManager?: Sync;
   generateId?: () => string;
@@ -42,8 +45,8 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
     return this as unknown as CRDTDatabaseBuilder<MergeSchema<TSchema, TTableName, TIndexes>>;
   }
 
-  withCustomStorageRepository(repository: IDBRepository): CRDTDatabaseBuilder<TSchema> {
-    this.idbRepository = repository;
+  withCustomStorageRepository(repository: Lifecycle): CRDTDatabaseBuilder<TSchema> {
+    this.lifecycle = repository;
     return this;
   }
 
@@ -68,7 +71,7 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
   }
 
   build(): CRDTDatabase<TSchema> {
-    // Convert Map to IndexDefinition[] for IDBRepository
+    // Convert Map to IndexDefinition[] for Lifecycle
     const indexDefinitions: IndexDefinition[] = [];
     for (const [tableName, indexes] of this.tables) {
       for (const [indexName, keys] of indexes) {
@@ -76,8 +79,11 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
       }
     }
 
-    const idbRepository = this.idbRepository || new IDBRepository(indexDefinitions);
-    const syncManager = this.syncManager || new Sync(idbRepository, this.headersProvider, this.onUnauthorized);
+    const lifecycle = this.lifecycle || new Lifecycle(indexDefinitions);
+    const clientState = new ClientState();
+    const rowStore = new RowStore(lifecycle.indexes);
+    const operationLog = new OperationLog();
+    const syncManager = this.syncManager || new Sync(clientState, rowStore, operationLog, this.headersProvider, this.onUnauthorized);
     const syncRemote = this.syncRemote || "";
     const generateId = this.generateId || crypto.randomUUID.bind(crypto);
 
@@ -86,7 +92,7 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
       this.tables,
       syncRemote,
       syncManager,
-      idbRepository,
+      lifecycle,
       generateId,
     );
   }

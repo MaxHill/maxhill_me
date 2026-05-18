@@ -1,11 +1,12 @@
 import { applyOperationToRow, CRDTOperation, Dot, toUserRow, ValidKey } from "./crdt.ts";
-import { CRDTDatabase } from "./crdtDatabase/index.ts";
 import {
     CLIENT_STATE_STORE,
-    IDBRepository,
+    Lifecycle,
     OPERATIONS_STORE,
     ROWS_STORE,
-} from "./IDBRepository.ts";
+} from "./indexeddb/lifecycle.ts";
+import { RowStore } from "./indexeddb/rowStore.ts";
+import { OperationLog } from "./indexeddb/operationLog.ts";
 import { Index, QueryCondition } from "./indexes.ts";
 import { asc, Direction, resolveQueryArgs } from "./direction.ts";
 import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
@@ -14,23 +15,29 @@ import { SubscriptionCallbackHandler, TableSubscriptions } from "./tableSubscrip
 export class Table<TIndexes extends Record<string, string[]> = Record<string, string[]>> {
     private tableName: string;
     private indexes: Map<string, string[]>;
-    private idbRepository: IDBRepository;
-    private crdtDatabase: CRDTDatabase;
+    private lifecycle: Lifecycle;
+    private rowStore: RowStore;
+    private operationLog: OperationLog;
+    private clientId: string;
     private logicalClock: PersistedLogicalClock;
     private tableSubscriptions: TableSubscriptions;
 
     constructor(
         tableName: string,
         indexes: Map<string, string[]>,
-        idbRepository: IDBRepository,
-        crdtDatabase: CRDTDatabase,
+        lifecycle: Lifecycle,
+        rowStore: RowStore,
+        operationLog: OperationLog,
+        clientId: string,
         logicalClock: PersistedLogicalClock,
         tableSubscriptions: TableSubscriptions,
     ) {
         this.tableName = tableName;
         this.indexes = indexes;
-        this.idbRepository = idbRepository;
-        this.crdtDatabase = crdtDatabase;
+        this.lifecycle = lifecycle;
+        this.rowStore = rowStore;
+        this.operationLog = operationLog;
+        this.clientId = clientId;
         this.logicalClock = logicalClock;
         this.tableSubscriptions = tableSubscriptions;
     }
@@ -53,11 +60,11 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
             value = cleanData;
         }
 
-        const tx = this.idbRepository.transaction(
+        const tx = this.lifecycle.transaction(
             [CLIENT_STATE_STORE, ROWS_STORE, OPERATIONS_STORE],
             "readwrite",
         );
-        const row = await this.idbRepository.getRow(tx, this.tableName, rowKey);
+        const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
 
         const dot = await this.nextDot(tx);
         const op: CRDTOperation = {
@@ -71,10 +78,10 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
         applyOperationToRow(row, op);
 
         await Promise.all([
-            this.idbRepository.saveRow(tx, row),
-            this.idbRepository.saveOperation(tx, op),
+            this.rowStore.saveRow(tx, row),
+            this.operationLog.saveOperation(tx, op),
         ]);
-        await this.idbRepository.commit(tx);
+        await this.lifecycle.commit(tx);
         this.tableSubscriptions.notify(this.tableName);
     }
 
@@ -86,8 +93,8 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
             );
         }
 
-        const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
-        const row = await this.idbRepository.getRow(tx, this.tableName, rowKey);
+        const tx = this.lifecycle.transaction(["clientState", "rows", "operations"], "readwrite");
+        const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
 
         const dot = await this.nextDot(tx);
         const op: CRDTOperation = {
@@ -102,16 +109,16 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
         applyOperationToRow(row, op);
 
         await Promise.all([
-            this.idbRepository.saveRow(tx, row),
-            this.idbRepository.saveOperation(tx, op),
+            this.rowStore.saveRow(tx, row),
+            this.operationLog.saveOperation(tx, op),
         ]);
-        await this.idbRepository.commit(tx);
+        await this.lifecycle.commit(tx);
         this.tableSubscriptions.notify(this.tableName);
     }
 
     async deleteRow(rowKey: ValidKey) {
-        const tx = this.idbRepository.transaction(["clientState", "rows", "operations"], "readwrite");
-        const row = await this.idbRepository.getRow(tx, this.tableName, rowKey);
+        const tx = this.lifecycle.transaction(["clientState", "rows", "operations"], "readwrite");
+        const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
 
         // Build context from current fields
         const context: Record<string, number> = {};
@@ -132,10 +139,10 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
         applyOperationToRow(row, op);
 
         await Promise.all([
-            this.idbRepository.saveRow(tx, row),
-            this.idbRepository.saveOperation(tx, op),
+            this.rowStore.saveRow(tx, row),
+            this.operationLog.saveOperation(tx, op),
         ]);
-        await this.idbRepository.commit(tx);
+        await this.lifecycle.commit(tx);
         this.tableSubscriptions.notify(this.tableName);
     }
 
@@ -143,8 +150,8 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
     //  Access
     //  ------------------------------------------------------------------------
     async get(rowKey: ValidKey): Promise<Record<string, any> | undefined> {
-        const tx = this.idbRepository.transaction(["rows"], "readonly");
-        const row = await this.idbRepository.getRow(tx, this.tableName, rowKey);
+        const tx = this.lifecycle.transaction(["rows"], "readonly");
+        const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
 
         return toUserRow(row);
     }
@@ -155,8 +162,8 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
     ): AsyncGenerator<Record<string, any>, void, unknown> {
         const { condition, idbDirection } = resolveQueryArgs(conditionOrDirection, direction);
 
-        const tx = this.idbRepository!.transaction([ROWS_STORE], "readonly");
-        const queryIterator = this.idbRepository.query(
+        const tx = this.lifecycle.transaction([ROWS_STORE], "readonly");
+        const queryIterator = this.rowStore.query(
             tx,
             this.tableName,
             condition,
@@ -177,7 +184,7 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
         if (!this.indexes.has(indexName)) {
             throw new Error(`Table ${this.tableName} does not have an index called ${indexName}`);
         }
-        return new Index(this.tableName, indexName, this.idbRepository);
+        return new Index(this.tableName, indexName, this.lifecycle);
     }
 
     //  ------------------------------------------------------------------------
@@ -185,10 +192,7 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
     //  ------------------------------------------------------------------------
     //  TODO: Move nextDot function to logicalClock
     private async nextDot(tx: IDBTransaction): Promise<Dot> {
-        if (!this.idbRepository) {
-            throw new Error("idbRepository is undefined in nextDot");
-        }
         const version = await this.logicalClock.tick(tx);
-        return { clientId: this.crdtDatabase.clientId, version };
+        return { clientId: this.clientId, version };
     }
 }

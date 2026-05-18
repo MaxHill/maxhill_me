@@ -1,10 +1,13 @@
 import { applyOperationToRow, CRDTOperation, Dot } from "../crdt.ts";
 import {
   CLIENT_STATE_STORE,
-  IDBRepository,
+  Lifecycle,
   OPERATIONS_STORE,
   ROWS_STORE,
-} from "../IDBRepository.ts";
+} from "../indexeddb/lifecycle.ts";
+import { RowStore } from "../indexeddb/rowStore.ts";
+import { OperationLog } from "../indexeddb/operationLog.ts";
+import { ClientState } from "../indexeddb/clientState.ts";
 import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
 import { validateTransactionStores } from "../utils.ts";
 import { isSyncError, SyncErrorCode } from "./errors.ts";
@@ -74,16 +77,22 @@ export type SyncHeadersProvider = () => Promise<Record<string, string>>;
 export type OnUnauthorizedHandler = () => Promise<boolean>;
 
 export class Sync {
-  private idbRepository: IDBRepository;
+  private clientState: ClientState;
+  private rowStore: RowStore;
+  private operationLog: OperationLog;
   private headersProvider?: SyncHeadersProvider;
   private onUnauthorized?: OnUnauthorizedHandler;
 
   constructor(
-    idbRepository: IDBRepository,
+    clientState: ClientState,
+    rowStore: RowStore,
+    operationLog: OperationLog,
     headersProvider?: SyncHeadersProvider,
     onUnauthorized?: OnUnauthorizedHandler,
   ) {
-    this.idbRepository = idbRepository;
+    this.clientState = clientState;
+    this.rowStore = rowStore;
+    this.operationLog = operationLog;
     if (headersProvider) this.headersProvider = headersProvider;
     if (onUnauthorized) this.onUnauthorized = onUnauthorized;
   }
@@ -108,11 +117,11 @@ export class Sync {
   async createSyncRequest(tx: IDBTransaction): Promise<SyncRequest> {
     validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE]);
 
-    const { clientId, lastSeenServerVersion } = await this.idbRepository
+    const { clientId, lastSeenServerVersion } = await this.clientState
       .getClientState(tx);
 
     // Extract operations using optimized compound index query
-    const operations = await this.idbRepository.getUnsyncedOperationsByClient(tx, clientId);
+    const operations = await this.operationLog.getUnsyncedOperationsByClient(tx, clientId);
 
     // create integrity hash
     const requestHash = await this.createRequestHash({
@@ -221,7 +230,7 @@ export class Sync {
 
     // Start IDB requests FIRST to keep transaction alive
     // Get client state synchronously
-    const clientStatePromise = this.idbRepository.getClientState(tx);
+    const clientStatePromise = this.clientState.getClientState(tx);
 
     // Now we can safely await non-IDB operations (hash validation)
     await this.validateResponseHash(response);
@@ -251,12 +260,12 @@ export class Sync {
       await this.applyRemoteOperations(tx, response.operations);
 
       // update lastSeenServerVersion to latestServerVersion from response
-      await this.idbRepository.saveServerVersion(tx, response.latestServerVersion);
+      await this.clientState.saveServerVersion(tx, response.latestServerVersion);
 
       // update synced field on the synced local entries
       const operationsPromises: Promise<void>[] = [];
       for (const operationId of response.syncedOperations) {
-        operationsPromises.push(this.idbRepository.saveOperationAsSynced(tx, operationId));
+        operationsPromises.push(this.operationLog.saveOperationAsSynced(tx, operationId));
       }
       await Promise.all(operationsPromises);
 
@@ -336,7 +345,7 @@ export class Sync {
       operationsByRow.get(key)!.push(operation);
     }
 
-    const saveOperationsPromise = this.idbRepository.batchSaveOperations(tx, operations);
+    const saveOperationsPromise = this.operationLog.batchSaveOperations(tx, operations);
     const savePromises = this.batchUpdateRows(tx, Array.from(operationsByRow.values()));
 
     await saveOperationsPromise;
@@ -357,7 +366,7 @@ export class Sync {
     const rowsData = await Promise.all(
       operationGroups.map(async (rowOperations) => {
         const firstOp = rowOperations[0];
-        const row = await this.idbRepository.getRow(
+        const row = await this.rowStore.getRow(
           tx,
           firstOp.table,
           firstOp.rowKey,
@@ -372,7 +381,7 @@ export class Sync {
       }
     }
     // Save all rows in parallel
-    await Promise.all(rowsData.map(({ row }) => this.idbRepository.saveRow(tx, row)));
+    await Promise.all(rowsData.map(({ row }) => this.rowStore.saveRow(tx, row)));
   }
 
   //  ------------------------------------------------------------------------

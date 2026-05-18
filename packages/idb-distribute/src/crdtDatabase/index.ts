@@ -1,9 +1,12 @@
 import {
   CLIENT_STATE_STORE,
-  IDBRepository,
+  Lifecycle,
   OPERATIONS_STORE,
   ROWS_STORE,
-} from "../IDBRepository.ts";
+} from "../indexeddb/lifecycle.ts";
+import { ClientState } from "../indexeddb/clientState.ts";
+import { OperationLog } from "../indexeddb/operationLog.ts";
+import { RowStore } from "../indexeddb/rowStore.ts";
 import { LWWField, ROW_KEY } from "../crdt.ts";
 import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
 import { Sync } from "../sync/index.ts";
@@ -15,7 +18,10 @@ import { TableSubscriptions } from "../tableSubscriptions.ts";
 
 export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
   clientId: string;
-  private idbRepository: IDBRepository;
+  private lifecycle: Lifecycle;
+  private clientState: ClientState;
+  private rowStore: RowStore;
+  private operationLog: OperationLog;
   private logicalClock: PersistedLogicalClock;
   private syncManager: Sync;
   private syncRemote: string;
@@ -29,7 +35,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
     tables: Map<string, Map<string, string[]>>,
     syncRemote: string,
     sync: Sync,
-    storageRepository: IDBRepository,
+    storageRepository: Lifecycle,
     generateId: () => string,
   ) {
     this.tables = tables;
@@ -37,28 +43,30 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
     this.syncRemote = syncRemote;
     this.tableSubscriptions = new TableSubscriptions();
 
-    // If clientPersistance is not provided, create one with indexes
-    this.idbRepository = storageRepository;
+    this.lifecycle = storageRepository;
+    this.clientState = new ClientState();
+    this.rowStore = new RowStore(storageRepository.indexes);
+    this.operationLog = new OperationLog();
     this.syncManager = sync;
-    this.logicalClock = new PersistedLogicalClock(this.idbRepository);
+    this.logicalClock = new PersistedLogicalClock(this.clientState);
     this.clientId = generateId();
   }
 
   async open(): Promise<CRDTDatabase<TSchema>> {
-    await this.idbRepository.open(this.dbName);
+    await this.lifecycle.open(this.dbName);
     await this.loadClientState();
     return this;
   }
 
   private async loadClientState(): Promise<void> {
-    const tx = this.idbRepository!.transaction(["clientState"], "readwrite");
-    const clientState = await this.idbRepository.getClientState(tx);
-    if (clientState.clientId) {
-      this.clientId = clientState.clientId;
+    const tx = this.lifecycle.transaction(["clientState"], "readwrite");
+    const state = await this.clientState.getClientState(tx);
+    if (state.clientId) {
+      this.clientId = state.clientId;
     } else {
-      await this.idbRepository.saveClientId(tx, this.clientId);
+      await this.clientState.saveClientId(tx, this.clientId);
     }
-    await this.idbRepository.commit(tx);
+    await this.lifecycle.commit(tx);
   }
 
   table<TTableName extends keyof TSchema & string>(
@@ -74,8 +82,10 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
     return new Table(
       tableName,
       indexes,
-      this.idbRepository,
-      this,
+      this.lifecycle,
+      this.rowStore,
+      this.operationLog,
+      this.clientId,
       this.logicalClock,
       this.tableSubscriptions,
     );
@@ -86,7 +96,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
    * TODO: This should be removed in favor of query
    */
   async getAllRows(table: string): Promise<Map<IDBValidKey, Record<string, any>>> {
-    const tx = this.idbRepository!.transaction([ROWS_STORE], "readonly");
+    const tx = this.lifecycle.transaction([ROWS_STORE], "readonly");
     const store = tx.objectStore("rows");
     const index = store.index("by-table");
     const records = await promisifyIDBRequest(index.getAll(table));
@@ -109,18 +119,18 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
 
   async sync(): Promise<void> {
     try {
-      const tx = this.idbRepository.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE]);
+      const tx = this.lifecycle.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE]);
       const syncRequest = await this.syncManager.createSyncRequest(tx);
 
       const response = await this.syncManager.sendSyncRequest(this.syncRemote, syncRequest);
 
-      const writeTx = this.idbRepository.transaction([
+      const writeTx = this.lifecycle.transaction([
         CLIENT_STATE_STORE,
         OPERATIONS_STORE,
         ROWS_STORE,
       ], "readwrite");
       await this.syncManager.handleSyncResponse(writeTx, this.logicalClock, response);
-      await this.idbRepository.commit(writeTx);
+      await this.lifecycle.commit(writeTx);
 
       const changedTables = new Set(
         response.operations.map((operation) => operation.table),
@@ -137,12 +147,12 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
         );
 
         // Reset the client state
-        const resetTx = this.idbRepository.transaction(
+        const resetTx = this.lifecycle.transaction(
           [CLIENT_STATE_STORE, OPERATIONS_STORE],
           "readwrite",
         );
-        await this.idbRepository.resetSyncState(resetTx);
-        await this.idbRepository.commit(resetTx);
+        await this.operationLog.resetSyncState(resetTx);
+        await this.lifecycle.commit(resetTx);
 
         console.log("Client state reset complete. Retrying sync...");
 
@@ -156,6 +166,6 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
   }
 
   async close(): Promise<void> {
-    this.idbRepository.close();
+    this.lifecycle.close();
   }
 }

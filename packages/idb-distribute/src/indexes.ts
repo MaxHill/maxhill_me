@@ -1,4 +1,5 @@
-import { CLIENT_STATE_STORE, IDBRepository, INDEXES_HASH, ROWS_STORE } from "./IDBRepository.ts";
+import { CLIENT_STATE_STORE, Lifecycle, INDEXES_HASH, ROWS_STORE } from "./indexeddb/lifecycle.ts";
+import { RowStore } from "./indexeddb/rowStore.ts";
 import { TABLE_NAME, toUserRow } from "./crdt.ts";
 import { asc, Direction, resolveQueryArgs } from "./direction.ts";
 import { promisifyIDBRequest, validateTransactionStores } from "./utils.ts";
@@ -7,9 +8,9 @@ export class Index {
   constructor(
     private tableName: string,
     private indexName: string,
-    private idbRepository: IDBRepository,
+    private lifecycle: Lifecycle,
   ) {
-    const indexNames = (this.idbRepository.indexes || []).map((index) => index.name);
+    const indexNames = (this.lifecycle.indexes || []).map((index) => index.name);
     if (!indexNames.includes(this.indexName)) {
       throw new Error(
         `Specified index ${indexName} does not exist in indexes:\n${
@@ -23,7 +24,7 @@ export class Index {
     conditionOrDirection: QueryCondition | Direction = { type: "all" },
     direction: Direction = asc,
   ): AsyncGenerator<Record<string, any>, void, unknown> {
-    const indexNames = (this.idbRepository.indexes || []).map((index) => index.name);
+    const indexNames = (this.lifecycle.indexes || []).map((index) => index.name);
     if (!indexNames.includes(this.indexName)) {
       throw new Error(
         `Invalid index ${this.indexName} does not exist in indexes:/n${
@@ -34,8 +35,9 @@ export class Index {
 
     const { condition, idbDirection } = resolveQueryArgs(conditionOrDirection, direction);
 
-    const tx = this.idbRepository!.transaction([ROWS_STORE], "readonly");
-    const queryIterator = this.idbRepository.query(
+    const tx = this.lifecycle.transaction([ROWS_STORE], "readonly");
+    const rowStore = new RowStore(this.lifecycle.indexes);
+    const queryIterator = rowStore.query(
       tx,
       this.tableName,
       condition,

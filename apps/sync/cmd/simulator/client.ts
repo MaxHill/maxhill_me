@@ -8,7 +8,7 @@ import {
   CLIENT_STATE_STORE,
   OPERATIONS_STORE,
   ROWS_STORE,
-} from "../../../../packages/idb-distribute/src/IDBRepository.ts";
+} from "../../../../packages/idb-distribute/src/indexeddb/lifecycle.ts";
 import type {
   SyncRequest,
   SyncResponse,
@@ -122,14 +122,12 @@ for await (const line of lines) {
 //  ------------------------------------------------------------------------
 async function handleGetAllOps(): Promise<VerificationResponse> {
   // Get all CRDT operations (for convergence verification)
-  const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
-  const crdtOperations = await client.repo.getAllOperations(opsTx);
-  // Readonly transaction - no need to explicitly wait for completion
+  const opsTx = client.lifecycle.transaction([OPERATIONS_STORE], "readonly");
+  const crdtOperations = await client.operationLog.getAllOperations(opsTx);
 
   // Get clock value
-  const clockTx = client.repo.transaction([CLIENT_STATE_STORE], "readonly");
-  const clockValue = await client.repo.getVersion(clockTx);
-  // Readonly transaction - no need to explicitly wait for completion
+  const clockTx = client.lifecycle.transaction([CLIENT_STATE_STORE], "readonly");
+  const clockValue = await client.clientState.getVersion(clockTx);
 
   // Get all materialized rows for verification
   const users = await client.crdtDb.getAllRows("users");
@@ -163,13 +161,11 @@ async function handleTick(request: TickRequest): Promise<TickResponse> {
   if (request.deletePost) await deletePost(prng);
 
   // Get state for logging
-  const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
-  const unsyncedCount = await client.repo.countUnsyncedOperations(opsTx);
-  // Readonly transaction - no need to explicitly wait for completion
+  const opsTx = client.lifecycle.transaction([OPERATIONS_STORE], "readonly");
+  const unsyncedCount = await client.operationLog.countUnsyncedOperations(opsTx);
 
-  const clockTx = client.repo.transaction([CLIENT_STATE_STORE], "readonly");
-  const clockValue = await client.repo.getVersion(clockTx);
-  // Readonly transaction - no need to explicitly wait for completion
+  const clockTx = client.lifecycle.transaction([CLIENT_STATE_STORE], "readonly");
+  const clockValue = await client.clientState.getVersion(clockTx);
 
   // Log client state
   logClientState(request.tick, clockValue, unsyncedCount);
@@ -177,12 +173,11 @@ async function handleTick(request: TickRequest): Promise<TickResponse> {
   // Optionally compute sync request
   let syncRequest: SyncRequest | undefined = undefined;
   if (request.requestSync) {
-    const syncTx = client.repo.transaction(
+    const syncTx = client.lifecycle.transaction(
       [CLIENT_STATE_STORE, OPERATIONS_STORE],
       "readonly",
     );
     syncRequest = await client.sync.createSyncRequest(syncTx);
-    // Readonly transaction - no need to explicitly wait for completion
   }
 
   return { syncRequest };
@@ -195,22 +190,18 @@ async function handleSyncDelivery(
   request: SyncDeliveryRequest,
 ): Promise<void> {
   // Apply sync response to client
-  const tx = client.repo.transaction(
+  const tx = client.lifecycle.transaction(
     [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE],
     "readwrite",
   );
   await client.sync.handleSyncResponse(tx, client.clock, request.syncResponse);
-  // Transaction will auto-commit after handleSyncResponse completes
-  // DON'T call commit() explicitly - it causes race conditions!
 
   // Get updated state for logging
-  const opsTx = client.repo.transaction([OPERATIONS_STORE], "readonly");
-  const crdtOperations = await client.repo.getUnsyncedOperations(opsTx);
-  // Readonly transaction - no need to explicitly wait for completion
+  const opsTx = client.lifecycle.transaction([OPERATIONS_STORE], "readonly");
+  const crdtOperations = await client.operationLog.getUnsyncedOperations(opsTx);
 
-  const clockTx = client.repo.transaction([CLIENT_STATE_STORE], "readonly");
-  const clockValue = await client.repo.getVersion(clockTx);
-  // Readonly transaction - no need to explicitly wait for completion
+  const clockTx = client.lifecycle.transaction([CLIENT_STATE_STORE], "readonly");
+  const clockValue = await client.clientState.getVersion(clockTx);
 
   // Log after-sync state
   logClientState(request.tick, clockValue, crdtOperations.length, "After sync");

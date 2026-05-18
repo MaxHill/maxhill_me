@@ -2,7 +2,10 @@
 import seedrandom from "seedrandom";
 import { newDatabase } from "../../../../packages/idb-distribute/src/crdtDatabase/builder.ts";
 import { CRDTDatabase } from "../../../../packages/idb-distribute/src/crdtDatabase/index.ts";
-import { IDBRepository } from "../../../../packages/idb-distribute/src/IDBRepository.ts";
+import { Lifecycle } from "../../../../packages/idb-distribute/src/indexeddb/lifecycle.ts";
+import { ClientState } from "../../../../packages/idb-distribute/src/indexeddb/clientState.ts";
+import { RowStore } from "../../../../packages/idb-distribute/src/indexeddb/rowStore.ts";
+import { OperationLog } from "../../../../packages/idb-distribute/src/indexeddb/operationLog.ts";
 import { Sync } from "../../../../packages/idb-distribute/src/sync/index.ts";
 import { PersistedLogicalClock } from "../../../../packages/idb-distribute/src/persistedLogicalClock.ts";
 
@@ -32,7 +35,9 @@ export interface SimClient {
     posts: Record<PropertyKey, never>;
     users: Record<PropertyKey, never>;
   }>; // High-level CRDT API for data operations
-  repo: IDBRepository; // Low-level repository for inspecting state
+  lifecycle: Lifecycle; // Low-level lifecycle for transactions
+  clientState: ClientState; // Client state access
+  operationLog: OperationLog; // Operation log access
   sync: Sync; // Sync manager (reusable instance)
   clock: PersistedLogicalClock; // Logical clock
 }
@@ -41,24 +46,28 @@ export const newClient = async (prng: seedrandom.PRNG): Promise<SimClient> => {
   const dbName = "db_" + randomUUID(prng);
   const generateId = () => randomUUID(prng);
 
-  // Create shared repository
-  const repo = new IDBRepository();
-  await repo.open(dbName);
+  // Create shared modules
+  const lifecycle = new Lifecycle();
+  await lifecycle.open(dbName);
 
-  // Create sync and clock using shared repo
-  const sync = new Sync(repo);
-  const clock = new PersistedLogicalClock(repo);
+  const clientState = new ClientState();
+  const rowStore = new RowStore();
+  const operationLog = new OperationLog();
+
+  // Create sync and clock using shared modules
+  const sync = new Sync(clientState, rowStore, operationLog);
+  const clock = new PersistedLogicalClock(clientState);
 
   const crdtDb = await newDatabase(dbName)
     .addTable("posts", {})
     .addTable("users", {})
-    .withCustomStorageRepository(repo)
+    .withCustomStorageRepository(lifecycle)
     .withCustomSync(sync)
     .withCustomIdGenerator(generateId)
     .build()
     .open();
 
-  return { crdtDb, repo, sync, clock };
+  return { crdtDb, lifecycle, clientState, operationLog, sync, clock };
 };
 
 //  ------------------------------------------------------------------------

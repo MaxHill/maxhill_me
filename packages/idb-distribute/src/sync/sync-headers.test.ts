@@ -1,13 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Sync } from "./index.ts";
-import { IDBRepository } from "../IDBRepository.ts";
+import { ClientState } from "../indexeddb/clientState.ts";
+import { RowStore } from "../indexeddb/rowStore.ts";
+import { OperationLog } from "../indexeddb/operationLog.ts";
 import "fake-indexeddb/auto";
 
 describe("Sync headers provider", () => {
-  let idbRepository: IDBRepository;
+  let clientState: ClientState;
+  let rowStore: RowStore;
+  let operationLog: OperationLog;
 
   beforeEach(() => {
-    idbRepository = new IDBRepository([]);
+    clientState = new ClientState();
+    rowStore = new RowStore();
+    operationLog = new OperationLog();
   });
 
   afterEach(() => {
@@ -20,7 +26,7 @@ describe("Sync headers provider", () => {
       "X-Custom": "value",
     });
 
-    const sync = new Sync(idbRepository, headersProvider);
+    const sync = new Sync(clientState, rowStore, operationLog, headersProvider);
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -55,7 +61,7 @@ describe("Sync headers provider", () => {
   });
 
   it("works without a headers provider (backward compatible)", async () => {
-    const sync = new Sync(idbRepository);
+    const sync = new Sync(clientState, rowStore, operationLog);
 
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,

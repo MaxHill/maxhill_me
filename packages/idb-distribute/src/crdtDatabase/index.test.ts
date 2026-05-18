@@ -4,15 +4,16 @@ import { below } from "../indexes.ts";
 import { desc } from "../direction.ts";
 import "fake-indexeddb/auto";
 import { newDatabase } from "./builder.ts";
-import { IDBRepository } from "../IDBRepository.ts";
+import { Lifecycle } from "../indexeddb/lifecycle.ts";
+import { RowStore } from "../indexeddb/rowStore.ts";
 
 describe("CRDTDatabase", () => {
   const dbName = "test-crdt-query";
   let db: CRDTDatabase<{ users: { usersByAge: string[] } }>;
-  let idbRepository: IDBRepository;
+  let lifecycle: Lifecycle;
 
   beforeEach(async () => {
-    idbRepository = new IDBRepository([{
+    lifecycle = new Lifecycle([{
       table: "users",
       name: "usersByAge",
       keys: ["age"],
@@ -21,7 +22,7 @@ describe("CRDTDatabase", () => {
     db = await newDatabase("test").addTable("users", {
       usersByAge: ["age"],
     })
-      .withCustomStorageRepository(idbRepository)
+      .withCustomStorageRepository(lifecycle)
       .build()
       .open();
   });
@@ -143,8 +144,9 @@ describe("CRDTDatabase", () => {
       await db.table("users").setRow("u1", { _key: "u1", name: "Alice", age: 30 });
 
       // Access raw storage to verify _key was stripped
-      const tx = idbRepository.transaction(["rows"], "readonly");
-      const row = await idbRepository.getRow(tx, "users", "u1");
+      const rowStore = new RowStore();
+      const tx = lifecycle.transaction(["rows"], "readonly");
+      const row = await rowStore.getRow(tx, "users", "u1");
 
       // Verify _key is NOT in the stored fields
       expect(row.fields).not.toHaveProperty("_key");
