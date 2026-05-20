@@ -1,11 +1,4 @@
 import { defineCollection, z } from "astro:content";
-import { glob } from "astro/loaders";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const componentsBase = path.resolve(__dirname, "../../../../packages/components/src");
 
 const documentation = defineCollection({
   type: "content",
@@ -18,38 +11,6 @@ const documentation = defineCollection({
   }),
 });
 
-const componentDocs = defineCollection({
-  loader: glob({
-    pattern: "*/DOCS.mdx",
-    base: componentsBase
-  }),
-});
-
-const componentOverview = defineCollection({
-  loader: glob({
-    pattern: "*/docs/overview.mdx",
-    base: componentsBase
-  }),
-});
-
-const componentExamples = defineCollection({
-  loader: glob({
-    pattern: "*/docs/examples.mdx",
-    base: componentsBase
-  }),
-});
-
-const componentKeyboard = defineCollection({
-  loader: glob({
-    pattern: "*/docs/keyboard.mdx",
-    base: componentsBase
-  }),
-});
-
 export const collections = {
   documentation,
-  componentDocs,
-  componentOverview,
-  componentExamples,
-  componentKeyboard,
 };

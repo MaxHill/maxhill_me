@@ -1,0 +1,430 @@
+---
+import { getAllComponentTagNames } from "../../utils/get-component-data";
+
+interface Props {
+    title: string;
+    currentComponent: string;
+}
+
+const { title, currentComponent } = Astro.props;
+const allComponents = getAllComponentTagNames();
+---
+
+<div class="components-app">
+    <aside class="components-sidebar" id="components-sidebar" role="navigation" aria-label="Components">
+        {allComponents.map((tagName, i) => (
+            <a
+                href={`/components/${tagName}`}
+                class={`sidebar-item${tagName === currentComponent ? ' active' : ''}`}
+                aria-current={tagName === currentComponent ? 'page' : undefined}
+            >
+                <span class="sidebar-index">{String(i + 1).padStart(2, '0')}</span>
+                {tagName}
+            </a>
+        ))}
+    </aside>
+
+    <main class="components-content">
+        <slot />
+    </main>
+
+    <footer class="statusbar">
+        <span class="statusbar-mode" id="statusbar-mode">NORMAL</span>
+        <span class="leader">C-b</span>
+        <span><kbd>space</kbd> palette</span>
+        <span class="sep">│</span>
+        <span><kbd>o</kbd> overview</span>
+        <span><kbd>x</kbd> examples</span>
+        <span><kbd>p</kbd> props</span>
+        <span><kbd>m</kbd> methods</span>
+        <span><kbd>e</kbd> events</span>
+        <span><kbd>s</kbd> slots</span>
+        <span><kbd>c</kbd> css</span>
+        <span class="statusbar-cursor"></span>
+    </footer>
+</div>
+
+<!-- Command palette -->
+<dialog id="palette-dialog" class="palette-dialog">
+    <m-command-palette></m-command-palette>
+</dialog>
+
+<!-- Mobile sidebar toggle -->
+<button class="sidebar-toggle" id="sidebar-toggle" aria-label="Show component list">
+    Components
+</button>
+<div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
+
+<style>
+    .components-app {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        grid-template-rows: 1fr auto;
+        height: calc(100dvh - var(--menu-height));
+        overflow: hidden;
+        background: var(--color-surface);
+    }
+
+    /* ═══════════════════════════════════════
+       SIDEBAR
+       ═══════════════════════════════════════ */
+
+    .components-sidebar {
+        grid-row: 1;
+        grid-column: 1;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        min-height: 0;
+        padding: var(--size-2) 0;
+        border-right: var(--border-width) solid var(--color-stroke);
+        background: color-mix(in oklch, var(--color-surface) 95%, black);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sidebar-item {
+        font-size: var(--font-size-1);
+        padding: var(--size-1) var(--size-2);
+        display: flex;
+        align-items: center;
+        gap: var(--size-1);
+        text-decoration: none;
+        color: var(--color-text);
+        transition: background 80ms ease-out;
+
+        .sidebar-index {
+            font-family: var(--ff-display);
+            font-size: var(--font-size-0);
+            color: var(--color-text-softer);
+            opacity: 0.5;
+            min-width: 1.5em;
+        }
+
+        &:hover {
+            background: var(--color-primary-fill-softer);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--color-primary-fill-mid);
+            outline-offset: -2px;
+        }
+
+        &.active {
+            background: var(--color-primary-fill-softer);
+            color: var(--color-primary-text-colorful);
+
+            .sidebar-index {
+                color: var(--color-primary-text-colorful);
+                opacity: 1;
+            }
+        }
+    }
+
+    /* ═══════════════════════════════════════
+       CONTENT
+       ═══════════════════════════════════════ */
+
+    .components-content {
+        grid-row: 1;
+        grid-column: 2;
+        overflow: hidden;
+        display: grid;
+        min-height: 0;
+    }
+
+    /* ═══════════════════════════════════════
+       STATUSBAR
+       ═══════════════════════════════════════ */
+
+    .statusbar {
+        grid-column: 1 / -1;
+        padding: var(--size-00) var(--size-4);
+        border-top: var(--border-width) solid var(--color-stroke);
+        background: color-mix(in oklch, var(--color-surface) 92%, black);
+        display: flex;
+        align-items: center;
+        gap: var(--size-2);
+        font-size: var(--font-size-0);
+        font-family: var(--ff-display);
+        color: var(--color-text-softer);
+        height: 28px;
+
+        kbd {
+            color: var(--color-primary-text-colorful);
+            font-family: inherit;
+            font-size: inherit;
+        }
+
+        .sep {
+            color: var(--color-stroke);
+            opacity: 0.5;
+        }
+
+        .leader {
+            color: var(--color-text);
+            font-weight: var(--font-weight-bold);
+            padding-right: var(--size-1);
+            border-right: var(--border-width) solid var(--color-stroke);
+        }
+
+        .statusbar-mode {
+            background: var(--color-primary-fill-mid);
+            color: var(--color-primary-text-on-fill);
+            padding: 2px var(--size-1);
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            margin-right: var(--size-1);
+        }
+
+        .statusbar-cursor {
+            margin-left: auto;
+            width: 7px;
+            height: 14px;
+            background: var(--color-primary-text-colorful);
+            animation: blink 1s step-end infinite;
+        }
+    }
+
+    @keyframes blink {
+        50% { opacity: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .statusbar-cursor {
+            animation: none;
+        }
+    }
+
+    /* ═══════════════════════════════════════
+       MOBILE
+       ═══════════════════════════════════════ */
+
+    .sidebar-toggle {
+        display: none;
+        position: fixed;
+        bottom: 36px;
+        right: var(--size-2);
+        z-index: 100;
+        background: var(--color-surface);
+        border: var(--border-width) solid var(--color-stroke);
+        color: var(--color-text);
+        font-family: var(--ff-display);
+        font-size: var(--font-size-0);
+        padding: var(--size-1) var(--size-2);
+        cursor: pointer;
+    }
+
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        top: var(--menu-height);
+        z-index: 199;
+        background: oklch(0 0 0 / 0.5);
+    }
+
+    @media (width <= 768px) {
+        .components-app {
+            grid-template-columns: 1fr;
+        }
+
+        .components-sidebar {
+            display: none;
+            position: fixed;
+            inset: 0;
+            top: var(--menu-height);
+            z-index: 200;
+            width: 260px;
+        }
+
+        .sidebar-toggle {
+            display: block;
+        }
+
+        .statusbar {
+            display: none;
+        }
+
+        :global(.sidebar-open) .components-sidebar {
+            display: flex;
+        }
+
+        :global(.sidebar-open) .sidebar-overlay {
+            display: block;
+        }
+    }
+
+    /* ═══════════════════════════════════════
+       COMMAND PALETTE
+       ═══════════════════════════════════════ */
+
+    :global(.palette-dialog) {
+        border: var(--border-width) solid var(--color-primary-fill-mid);
+        background: var(--color-surface);
+        color: var(--color-text);
+        padding: 0;
+        width: min(520px, 90vw);
+        max-height: 50vh;
+        border-radius: 0;
+        box-shadow: 0 24px 80px -12px oklch(0 0 0 / 0.5);
+
+        &::backdrop {
+            background: oklch(0 0 0 / 0.6);
+            backdrop-filter: blur(2px);
+        }
+
+        m-command-palette {
+            display: block;
+            padding: var(--size-2);
+            color: var(--color-text);
+        }
+    }
+
+    /* ═══════════════════════════════════════
+       LEADER ACTIVE STATE
+       ═══════════════════════════════════════ */
+
+    :global(.leader-active) .statusbar .statusbar-mode {
+        background: var(--color-destructive-fill-mid);
+        color: var(--color-destructive-text-on-fill);
+    }
+</style>
+
+<script>
+    import "@maxhill/components/m-command-palette";
+    import { registerCommand } from "@maxhill/components/m-command";
+
+    // ═══════════════════════════════════════
+    // MOBILE SIDEBAR
+    // ═══════════════════════════════════════
+    const toggle = document.getElementById('sidebar-toggle');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    toggle?.addEventListener('click', () => {
+        document.body.classList.toggle('sidebar-open');
+    });
+
+    overlay?.addEventListener('click', () => {
+        document.body.classList.remove('sidebar-open');
+    });
+
+    // ═══════════════════════════════════════
+    // LEADER KEY
+    // ═══════════════════════════════════════
+    const paletteDialog = document.getElementById('palette-dialog') as HTMLDialogElement;
+    const statusbarMode = document.getElementById('statusbar-mode');
+    let leaderActive = false;
+    let leaderTimeout: ReturnType<typeof setTimeout>;
+
+    const sectionKeyMap: Record<string, string> = {
+        o: 'overview', x: 'examples',
+        p: 'properties', m: 'methods', e: 'events',
+        s: 'slots', c: 'css-parts',
+    };
+
+    function activateLeader() {
+        leaderActive = true;
+        document.body.classList.add('leader-active');
+        if (statusbarMode) statusbarMode.textContent = 'COMMAND';
+        clearTimeout(leaderTimeout);
+        leaderTimeout = setTimeout(deactivateLeader, 1500);
+    }
+
+    function deactivateLeader() {
+        leaderActive = false;
+        document.body.classList.remove('leader-active');
+        if (statusbarMode) statusbarMode.textContent = 'NORMAL';
+        clearTimeout(leaderTimeout);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
+
+        if (e.ctrlKey && e.key === 'b') {
+            e.preventDefault();
+            activateLeader();
+            return;
+        }
+
+        if (leaderActive) {
+            deactivateLeader();
+
+            if (e.key === ' ') {
+                e.preventDefault();
+                paletteDialog?.showModal();
+                // Force palette to re-discover all m-command elements
+                document.dispatchEvent(new CustomEvent('m-command-register', { bubbles: true, composed: true }));
+                return;
+            }
+
+            const sectionId = sectionKeyMap[e.key];
+            if (sectionId) {
+                e.preventDefault();
+                // Find the tab with matching panel name and click it
+                const tabList = document.querySelector('m-tab-list.section-tabs');
+                if (tabList) {
+                    const tab = tabList.querySelector(`m-tab[panel="${sectionId}"]`) as HTMLElement;
+                    if (tab && !tab.hasAttribute('disabled')) {
+                        tab.click();
+                    }
+                }
+            }
+        }
+    });
+
+    // ═══════════════════════════════════════
+    // COMMAND PALETTE
+    // ═══════════════════════════════════════
+    document.addEventListener('m-command-trigger', () => {
+        if (paletteDialog?.open) paletteDialog.close();
+    });
+
+    // Register component navigation commands
+    const sidebarLinks = document.querySelectorAll('.sidebar-item');
+    sidebarLinks.forEach((link) => {
+        const href = link.getAttribute('href');
+        const tagName = href?.split('/').pop();
+        if (tagName) {
+            registerCommand({
+                id: `go-to-${tagName}`,
+                command: "custom",
+                customCommand: () => {
+                    window.location.href = href!;
+                }
+            });
+            const el = document.getElementById(`command_go-to-${tagName}`);
+            if (el) el.dataset.label = `Navigate to ${tagName}`;
+        }
+    });
+
+    // Register section commands
+    const sectionKeys = [
+        { keys: "C-b o", id: "section-overview", label: "Overview" },
+        { keys: "C-b x", id: "section-examples", label: "Examples" },
+        { keys: "C-b p", id: "section-properties", label: "Properties" },
+        { keys: "C-b m", id: "section-methods", label: "Methods" },
+        { keys: "C-b e", id: "section-events", label: "Events" },
+        { keys: "C-b s", id: "section-slots", label: "Slots" },
+        { keys: "C-b c", id: "section-css-parts", label: "CSS Parts" },
+    ];
+
+    sectionKeys.forEach(({ keys, id, label }) => {
+        registerCommand({
+            id,
+            keys,
+            preventDefault: true,
+            customCommand: () => {
+                const sectionId = id.replace('section-', '');
+                const tabList = document.querySelector('m-tab-list.section-tabs');
+                if (tabList) {
+                    const tab = tabList.querySelector(`m-tab[panel="${sectionId}"]`) as HTMLElement;
+                    if (tab && !tab.hasAttribute('disabled')) {
+                        tab.click();
+                    }
+                }
+            }
+        });
+        const el = document.getElementById(`command_${id}`);
+        if (el) el.dataset.label = `Show ${label}`;
+    });
+</script>

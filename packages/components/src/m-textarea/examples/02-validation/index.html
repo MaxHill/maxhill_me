@@ -1,0 +1,34 @@
+<form class="form" id="validation-form">
+  <m-textarea 
+      label="Required textarea" 
+      name="required-textarea" 
+      required
+      placeholder="This field is required"
+  ></m-textarea>
+
+  <m-textarea 
+      label="Minimum length (10 characters)" 
+      name="minlength-textarea" 
+      minlength="10"
+      placeholder="Enter at least 10 characters"
+  ></m-textarea>
+
+  <m-textarea 
+      label="Maximum length (100 characters)" 
+      name="maxlength-textarea" 
+      maxlength="100"
+      placeholder="Max 100 characters"
+  ></m-textarea>
+
+  <m-textarea 
+      label="Description (required, min 20 chars)" 
+      name="description" 
+      required
+      minlength="20"
+      rows="4"
+      placeholder="Enter a description (at least 20 characters)"
+  ></m-textarea>
+
+  <button type="submit">Submit</button>
+</form>
+<pre id="validation-form-output"></pre>

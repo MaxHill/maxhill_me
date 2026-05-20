@@ -1,0 +1,34 @@
+<form class="form" id="example-required-form">
+  <label for="normal-required-input">Normal input</label>
+  <input name="normal-required-input" required />
+  <label for="normal-min-input">Normal min 3</label>
+  <input name="normal-min-input" minlength="3" />
+
+  <m-input 
+      label="Required" 
+      name="m-input-required" 
+      required="true"
+  ></m-input>
+
+  <m-input 
+      label="Min length" 
+      name="m-input-min-length" 
+      minlength="3"
+  ></m-input>
+
+  <m-input 
+      label="Max length" 
+      name="m-input-max-length" 
+      maxlength="3"
+  ></m-input>
+
+  <m-input 
+      label="Pattern [0-9]" 
+      name="m-input-pattern" 
+      pattern="[0-9]"
+  ></m-input>
+
+  <button type="submit">Submit</button>
+  <button type="reset">Reset</button>
+</form>
+<pre id="example-required-form-output"></pre>

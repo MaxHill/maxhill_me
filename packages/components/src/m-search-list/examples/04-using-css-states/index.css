@@ -1,0 +1,11 @@
+m-search-list:state(empty) {
+  border: 2px solid var(--color-error);
+}
+
+m-search-list:state(match) {
+  border: 2px solid var(--color-success);
+}
+
+m-search-list:state(initial) {
+  border: 2px solid var(--color-border);
+}

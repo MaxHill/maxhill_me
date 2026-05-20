@@ -1,0 +1,19 @@
+<form class="form">
+  <m-textarea 
+      label="With before/after slots" 
+      name="slotted" 
+      rows="4"
+  >
+      <span slot="before" style="color: var(--color-text-softer);">📝</span>
+      <span slot="after" style="color: var(--color-accent);">✓</span>
+  </m-textarea>
+
+  <m-textarea 
+      label="Custom clear button" 
+      name="custom-clear" 
+      clearable
+      value="Custom clear icon"
+  >
+      <button slot="clear" type="button" style="color: var(--color-destructive);">🗑️</button>
+  </m-textarea>
+</form>

@@ -1,321 +1,350 @@
 ---
 import PageLayout from "../../components/layouts/PageLayout.astro";
-import { getCollection, render } from "astro:content";
-import {
-    getComponentByTagName,
-    getComponentPublicProperties,
-    getComponentPublicMethods,
-    getComponentEventsWithType,
-} from "@wc-toolkit/cem-utilities";
-import customElements from "@maxhill/components/custom-elements.json";
+import ComponentsLayout from "../../components/layouts/ComponentsLayout.astro";
+import CodeExample from "../../components/CodeExample.astro";
+import { getComponentData, getAllComponentTagNames } from "../../utils/get-component-data";
+import { getExamplesForComponent } from "../../utils/get-component-examples";
 import { marked } from "marked";
 
-export async function getStaticPaths() {
-    const docEntries = await getCollection("componentDocs");
-
-    return docEntries.map((docsEntry) => {
-        const tagName = docsEntry.id.split("/").slice(-2, -1)[0];
-
-        return {
-            params: { component: tagName.substring(2) },
-            props: { entry: docsEntry },
-        };
-    });
+export function getStaticPaths() {
+    const tagNames = getAllComponentTagNames();
+    return tagNames.map((tagName) => ({
+        params: { component: tagName },
+        props: { tagName },
+    }));
 }
 
-const { entry } = Astro.props;
+const { tagName } = Astro.props;
+const comp = getComponentData(tagName);
+const examples = getExamplesForComponent(tagName);
 
-const { Content } = await render(entry);
+if (!comp) {
+    return Astro.redirect("/components");
+}
 
-const tagName = entry.id.split("/").slice(-2, -1)[0];
+const firstExample = examples[0];
+const restExamples = examples.slice(1);
 
-const componentName = tagName
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-
-const title = componentName;
-
-const component = getComponentByTagName(customElements, tagName);
-const properties = component ? getComponentPublicProperties(component) : [];
-const methods = component ? getComponentPublicMethods(component) : [];
-const events = component
-    ? getComponentEventsWithType(component, { overrideCustomEventType: true })
-    : [];
+const sections = [
+    { id: "overview", label: "overview", disabled: false },
+    { id: "examples", label: "examples", disabled: restExamples.length === 0 },
+    { id: "properties", label: "properties", disabled: comp.properties.length === 0 },
+    { id: "methods", label: "methods", disabled: comp.methods.length === 0 },
+    { id: "events", label: "events", disabled: comp.events.length === 0 },
+    { id: "slots", label: "slots", disabled: comp.slots.length === 0 },
+    { id: "css-parts", label: "css parts", disabled: comp.cssParts.length === 0 },
+];
 ---
 
-<PageLayout title={title}>
-    <main
-        class="content-grid typesetting"
-        data-justify="start"
-    >
-        <m-fit-text
-            class="title"
-            font-display
-            data-margin="b-8"
-            data-width="full"
-        >
-            <h1 data-margin="0">{componentName}</h1>
-        </m-fit-text>
+<PageLayout title={tagName} bodyClass="component-page">
+    <ComponentsLayout currentComponent={tagName} title={tagName}>
+        <article class="component-view">
+            <header class="component-header">
+                <span class="component-name">&lt;{tagName}&gt;</span>
+                <span class="badges">
+                    {comp.formAssociated && <span class="badge badge--form">FORM</span>}
+                    {comp.slots.length > 0 && <span class="badge">{comp.slots.length} SLOTS</span>}
+                    {comp.properties.length > 0 && <span class="badge">{comp.properties.length} PROPS</span>}
+                    {comp.events.length > 0 && <span class="badge">{comp.events.length} EVENTS</span>}
+                </span>
+            </header>
 
-        {
-            component?.description && (
-                <div set:html={marked.parse(component.description)} />
-            )
-        }
+            <m-tab-list label="Component sections" transition="terminal-wipe" class="section-tabs">
+                {sections.map((sec) => (
+                    <m-tab panel={sec.id} disabled={sec.disabled || undefined}>
+                        {sec.label}
+                    </m-tab>
+                ))}
 
-        <Content components={{ script: Fragment }} />
+                <!-- Overview panel -->
+                <m-tab-panel name="overview">
+                    <div class="panel-inner typesetting">
+                        {comp.description && comp.description !== "—" && (
+                            <div class="typesetting" set:html={marked.parse(comp.description)} />
+                        )}
+                        {firstExample && (
+                            <>
+                                {firstExample.explanation && (
+                                    <div class="typesetting" set:html={marked.parse(firstExample.explanation)} />
+                                )}
+                                <CodeExample html={firstExample.html} css={firstExample.css} js={firstExample.js} />
+                            </>
+                        )}
+                    </div>
+                </m-tab-panel>
 
-        {
-            properties && properties.length > 0 && (
-                <>
-                    <h2>Properties</h2>
-                    <div class="table-wrapper" data-width="full">
+                <!-- Examples panel -->
+                <m-tab-panel name="examples">
+                    <div class="panel-inner typesetting">
+                        {restExamples.map((example) => (
+                            <div class="example-block">
+                                {example.explanation && (
+                                    <div class="typesetting" set:html={marked.parse(example.explanation)} />
+                                )}
+                                <CodeExample html={example.html} css={example.css} js={example.js} />
+                            </div>
+                        ))}
+                    </div>
+                </m-tab-panel>
+
+                <!-- Properties panel -->
+                <m-tab-panel name="properties">
+                    <div class="panel-inner">
                         <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
+                            <thead><tr><th>Name</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
                             <tbody>
-                                {properties.map((prop: any) => (
+                                {comp.properties.map((prop) => (
                                     <tr>
-                                        <td>
-                                            <m-copy-button value={prop.name}>
-                                                {prop.name}
-                                            </m-copy-button>
-                                        </td>
-                                        <td>{prop.type?.text}</td>
+                                        <td class="cell-name">{prop.name}</td>
+                                        <td class="cell-type">{prop.type}</td>
+                                        <td class="cell-default">{prop.default}</td>
                                         <td>{prop.description}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                </>
-            )
-        }
+                </m-tab-panel>
 
-        {
-            methods && methods.length > 0 && (
-                <>
-                    <h2>Methods</h2>
-                    <div class="table-wrapper" data-width="full">
+                <!-- Methods panel -->
+                <m-tab-panel name="methods">
+                    <div class="panel-inner">
                         <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
+                            <thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead>
                             <tbody>
-                                {methods.map((method: any) => (
+                                {comp.methods.map((method) => (
                                     <tr>
-                                        <td>
-                                            <m-copy-button value={method.name}>
-                                                {method.name}
-                                            </m-copy-button>
-                                        </td>
-                                        <td>{method.type?.text}</td>
+                                        <td class="cell-name">{method.name}</td>
+                                        <td class="cell-type">{method.type}</td>
                                         <td>{method.description}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                </>
-            )
-        }
+                </m-tab-panel>
 
-        {
-            events && events.length > 0 && (
-                <>
-                    <h2>Events</h2>
-                    <div class="table-wrapper" data-width="full">
+                <!-- Events panel -->
+                <m-tab-panel name="events">
+                    <div class="panel-inner">
                         <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
+                            <thead><tr><th>Name</th><th>Detail Type</th><th>Description</th></tr></thead>
                             <tbody>
-                                {events.map((event: any) => (
+                                {comp.events.map((event) => (
                                     <tr>
-                                        <td>
-                                            <m-copy-button value={event.name}>
-                                                {event.name}
-                                            </m-copy-button>
-                                        </td>
-                                        <td>{event.type?.text}</td>
+                                        <td class="cell-name">{event.name}</td>
+                                        <td class="cell-type">{event.type}</td>
                                         <td>{event.description}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                </>
-            )
-        }
+                </m-tab-panel>
 
-        {
-            component?.slots && component.slots.length > 0 && (
-                <>
-                    <h2>Slots</h2>
-                    <div class="table-wrapper" data-width="full">
+                <!-- Slots panel -->
+                <m-tab-panel name="slots">
+                    <div class="panel-inner">
                         <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
+                            <thead><tr><th>Name</th><th>Description</th></tr></thead>
                             <tbody>
-                                {component.slots.map((slot: any) => (
+                                {comp.slots.map((slot) => (
                                     <tr>
-                                        <td>
-                                            <m-copy-button
-                                                value={`slot="${slot.name || ""}"`}
-                                            >
-                                                slot="{slot.name || "(default)"}
-                                                "
-                                            </m-copy-button>
-                                        </td>
+                                        <td class="cell-name">{slot.name || "(default)"}</td>
                                         <td>{slot.description}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                </>
-            )
-        }
+                </m-tab-panel>
 
-        {
-            component?.cssParts && component.cssParts.length > 0 && (
-                <>
-                    <h2>CSS Parts</h2>
-                    <div class="table-wrapper" data-width="full">
+                <!-- CSS Parts panel -->
+                <m-tab-panel name="css-parts">
+                    <div class="panel-inner">
                         <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
+                            <thead><tr><th>Name</th><th>Description</th></tr></thead>
                             <tbody>
-                                {component.cssParts.map((part: any) => (
+                                {comp.cssParts.map((part) => (
                                     <tr>
-                                        <td>
-                                            <m-copy-button
-                                                value={`::part(${part.name})`}
-                                            >
-                                                ::part({part.name})
-                                            </m-copy-button>
-                                        </td>
+                                        <td class="cell-name">::part({part.name})</td>
                                         <td>{part.description}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                </>
-            )
-        }
-    </main>
+                </m-tab-panel>
+            </m-tab-list>
+        </article>
+    </ComponentsLayout>
 </PageLayout>
 
 <style>
+    :global(.component-page) {
+        padding-top: var(--menu-height);
+    }
 
-    :global(.example-section) {
-        padding-block: var(--size-fluid-4);
+    .component-view {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        min-height: 0;
+        overflow: hidden;
+        height: 100%;
+    }
+
+    /* ═══════════════════════════════════════
+       COMPONENT HEADER
+       ═══════════════════════════════════════ */
+
+    .component-header {
+        padding: var(--size-4) var(--size-4) var(--size-3);
+        border-bottom: var(--border-width) solid var(--color-stroke);
+        display: flex;
+        align-items: baseline;
+        gap: var(--size-3);
+        background: color-mix(in oklch, var(--color-surface) 97%, var(--color-primary-fill-mid));
+
+        @media (width <= 768px) {
+            padding: var(--size-3) var(--size-2);
+            flex-wrap: wrap;
+        }
+    }
+
+    .component-name {
+        font-family: var(--ff-display);
+        font-size: var(--font-size-4);
+        line-height: 1;
+        color: var(--color-primary-text-colorful);
+        letter-spacing: -0.01em;
+
+        @media (width <= 768px) {
+            font-size: var(--font-size-3);
+        }
+    }
+
+    .badges {
         display: flex;
         flex-wrap: wrap;
-        gap: var(--body-margin);
-        justify-content: center;
-        align-items: flex-start;
-        width: 100%;
+        gap: var(--size-1);
+        margin-left: auto;
+        align-self: center;
+    }
 
-        .typesetting {
-            width: var(--size-content-3);
+    .badge {
+        font-size: var(--font-size-00);
+        padding: 2px var(--size-1);
+        border: var(--border-width) solid var(--color-stroke);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-text-softer);
+        font-family: var(--ff-display);
+    }
+
+    .badge--form {
+        border-color: var(--color-primary-fill-mid);
+        color: var(--color-primary-text-colorful);
+    }
+
+    /* ═══════════════════════════════════════
+       TAB LIST
+       ═══════════════════════════════════════ */
+
+    .section-tabs {
+        min-height: 0;
+        overflow: hidden;
+        --_padding-inline: var(--size-2);
+        --_padding-block: var(--size-1);
+
+        m-tab {
+            font-size: var(--font-size-1);
+            color: var(--color-text-softer);
+            white-space: nowrap;
+            text-transform: lowercase;
         }
 
-        .code-example {
-            flex: 1;
-            width: 100%;
-            max-width: var(--size-content-3);
-            min-width: min(100%, var(--size-content-3));
+        m-tab[aria-selected="true"] {
+            color: var(--color-primary-text-colorful);
         }
 
-        &[data-reverse]{
-            flex-direction: row-reverse;
+        m-tab[disabled] {
+            opacity: 0.35;
+            cursor: not-allowed;
         }
-        h2 {
-            margin: 0;
+
+        m-tab-panel {
+            overflow-y: auto;
+            max-height: 100%;
         }
     }
 
-    .title {
-        margin-top: var(--size-fluid-3);
-        grid-column: full;
-    }
-    main {
-        --content-width: 600px;
-        --content-breakout-width: 850px;
-        margin: var(--menu-height) auto;
-        overflow-x: clip;
+    /* ═══════════════════════════════════════
+       PANELS
+       ═══════════════════════════════════════ */
 
-    }
-
-    .table-wrapper {
+    .panel-inner {
+        padding: var(--size-4) var(--size-5) var(--size-6);
         overflow-x: auto;
-        margin-bottom: 2rem;
-        grid-column: full;
-        width: 100%;
+
+        @media (width <= 768px) {
+            padding: var(--size-3) var(--size-2) var(--size-4);
+        }
+
+        > .typesetting {
+            max-width: var(--size-content-3);
+        }
     }
+
+    .example-block {
+        margin-bottom: var(--size-5);
+    }
+
+    /* ═══════════════════════════════════════
+       TABLES
+       ═══════════════════════════════════════ */
 
     table {
         width: 100%;
+        min-width: 480px;
         border-collapse: collapse;
+        font-size: var(--font-size-0);
 
-        th,
-        td {
+        th, td {
             text-align: left;
-            padding: var(--size-2);
+            padding: var(--size-00) var(--size-2) var(--size-00) 0;
+            border-bottom: var(--border-width) solid color-mix(in oklch, var(--color-stroke) 50%, transparent);
         }
 
         th {
-            font-weight: 600;
-            white-space: nowrap;
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text-softer);
+            text-transform: uppercase;
+            font-size: var(--font-size-0);
+            letter-spacing: 0.08em;
+            padding-bottom: var(--size-1);
+            font-family: var(--ff-display);
         }
 
-        tr {
-            border-bottom: var(--border);
+        tr:hover td {
+            background: var(--color-primary-fill-softer);
         }
+    }
 
-        th:nth-child(1),
-        td:nth-child(1),
-        th:nth-child(2),
-        td:nth-child(2) {
-            width: max-content;
-            min-width: var(--size-content-1);
-            white-space: nowrap;
-        }
+    .cell-name {
+        font-weight: var(--font-weight-medium);
+        color: var(--color-primary-text-colorful);
+        white-space: nowrap;
+    }
 
-        th:nth-child(3),
-        td:nth-child(3) {
-            min-width: var(--size-content-1);
-            width: 100%;
-        }
+    .cell-type {
+        color: var(--color-text-softer);
+        white-space: nowrap;
+        font-size: var(--font-size-0);
+    }
 
-        td {
-            m-copy-button {
-                font-size: var(--font-size-1);
-            }
-        }
+    .cell-default {
+        color: var(--color-text-softer);
+        font-style: italic;
+        font-size: var(--font-size-0);
     }
 </style>

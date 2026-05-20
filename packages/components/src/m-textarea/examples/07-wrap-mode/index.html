@@ -1,0 +1,29 @@
+<form class="form" id="wrap-form">
+  <m-textarea 
+      label="Soft wrap (default)" 
+      name="soft" 
+      wrap="soft"
+      rows="3"
+      placeholder="Text wraps but no line breaks in value"
+  ></m-textarea>
+
+  <m-textarea 
+      label="Hard wrap" 
+      name="hard" 
+      wrap="hard"
+      cols="40"
+      rows="3"
+      placeholder="Line breaks are inserted at wrap point"
+  ></m-textarea>
+
+  <m-textarea 
+      label="No wrap" 
+      name="off" 
+      wrap="off"
+      rows="3"
+      placeholder="No wrapping, scroll horizontally"
+  ></m-textarea>
+
+  <button type="submit">Submit</button>
+</form>
+<pre id="wrap-output"></pre>
