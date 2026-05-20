@@ -25,6 +25,10 @@ if (!comp) {
 const firstExample = examples[0];
 const restExamples = examples.slice(1);
 
+function slugToTitle(slug: string): string {
+    return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 const sections = [
     { id: "overview", label: "overview", disabled: false },
     { id: "examples", label: "examples", disabled: restExamples.length === 0 },
@@ -63,21 +67,23 @@ const sections = [
                             <div class="typesetting" set:html={marked.parse(comp.description)} />
                         )}
                         {firstExample && (
-                            <>
+                            <div class="example-block">
+                                <h2 class="h6">{slugToTitle(firstExample.slug)}</h2>
                                 {firstExample.explanation && (
                                     <div class="typesetting" set:html={marked.parse(firstExample.explanation)} />
                                 )}
                                 <CodeExample html={firstExample.html} css={firstExample.css} js={firstExample.js} />
-                            </>
+                            </div>
                         )}
                     </div>
                 </m-tab-panel>
 
                 <!-- Examples panel -->
                 <m-tab-panel name="examples">
-                    <div class="panel-inner typesetting">
+                    <div class="panel-inner">
                         {restExamples.map((example) => (
-                            <div class="example-block">
+                            <div class="example-block typesetting">
+                                <h2 class="h6">{slugToTitle(example.slug)}</h2>
                                 {example.explanation && (
                                     <div class="typesetting" set:html={marked.parse(example.explanation)} />
                                 )}
@@ -217,7 +223,7 @@ const sections = [
         display: flex;
         align-items: baseline;
         gap: var(--size-3);
-        background: color-mix(in oklch, var(--color-surface) 97%, var(--color-primary-fill-mid));
+        background: var(--color-surface);
 
         @media (width <= 768px) {
             padding: var(--size-3) var(--size-2);
@@ -247,7 +253,7 @@ const sections = [
 
     .badge {
         font-size: var(--font-size-0);
-        padding: 2px var(--size-1);
+        padding: var(--size-1) var(--size-1);
         border: var(--border-width) solid var(--color-stroke);
         text-transform: uppercase;
         letter-spacing: 0.08em;
@@ -303,14 +309,19 @@ const sections = [
         @media (width <= 768px) {
             padding: var(--size-3) var(--size-2) var(--size-4);
         }
+    }
 
-        > .typesetting {
-            max-width: var(--size-content-3);
-        }
+    .typesetting > .typesetting {
+        max-width: var(--size-content-3);
     }
 
     .example-block {
-        margin-bottom: var(--size-5);
+        padding-top: var(--size-4);
+
+        &:not(:last-child) {
+            padding-bottom: var(--size-4);
+            border-bottom: var(--border);
+        }
     }
 
     /* ═══════════════════════════════════════

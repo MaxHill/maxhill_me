@@ -12,13 +12,13 @@ const allComponents = getAllComponentTagNames();
 
 <div class="components-app">
     <aside class="components-sidebar" id="components-sidebar" role="navigation" aria-label="Components">
-        {allComponents.map((tagName, i) => (
+        <span class="sidebar-heading">Components</span>
+        {allComponents.map((tagName) => (
             <a
                 href={`/components/${tagName}`}
                 class={`sidebar-item${tagName === currentComponent ? ' active' : ''}`}
                 aria-current={tagName === currentComponent ? 'page' : undefined}
             >
-                <span class="sidebar-index">{String(i + 1).padStart(2, '0')}</span>
                 {tagName}
             </a>
         ))}
@@ -30,7 +30,7 @@ const allComponents = getAllComponentTagNames();
 
     <footer class="statusbar">
         <span class="statusbar-mode" id="statusbar-mode">NORMAL</span>
-        <span class="leader">C-b</span>
+        <span class="leader">space</span>
         <span><kbd>space</kbd> palette</span>
         <span class="sep">│</span>
         <span><kbd>o</kbd> overview</span>
@@ -49,6 +49,11 @@ const allComponents = getAllComponentTagNames();
     <m-command-palette></m-command-palette>
 </dialog>
 
+<!-- Keyboard commands (declarative) -->
+<m-command id="command_open-palette" data-label="Open command palette" command="show-modal" commandfor="#palette-dialog" keys="<Space><Space>" preventdefault>
+    Open palette
+</m-command>
+
 <!-- Mobile sidebar toggle -->
 <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Show component list">
     Components
@@ -58,7 +63,7 @@ const allComponents = getAllComponentTagNames();
 <style>
     .components-app {
         display: grid;
-        grid-template-columns: 220px 1fr;
+        grid-template-columns: var(--size-fluid-9) 1fr;
         grid-template-rows: 1fr auto;
         height: calc(100dvh - var(--menu-height));
         overflow: hidden;
@@ -77,31 +82,30 @@ const allComponents = getAllComponentTagNames();
         min-height: 0;
         padding: var(--size-2) 0;
         border-right: var(--border-width) solid var(--color-stroke);
-        background: color-mix(in oklch, var(--color-surface) 95%, black);
+        background: var(--color-background);
+        font-family: var(--ff-display);
         display: flex;
         flex-direction: column;
     }
 
+    .sidebar-heading {
+        font-size: var(--font-size-0);
+        padding: var(--size-2) var(--size-fluid-1);
+        color: var(--color-text-softer);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
     .sidebar-item {
         font-size: var(--font-size-1);
-        padding: var(--size-1) var(--size-2);
-        display: flex;
-        align-items: center;
-        gap: var(--size-1);
+        padding: var(--size-2) var(--size-fluid-1);
+        display: block;
         text-decoration: none;
         color: var(--color-text);
         transition: background 80ms ease-out;
 
-        .sidebar-index {
-            font-family: var(--ff-display);
-            font-size: var(--font-size-0);
-            color: var(--color-text-softer);
-            opacity: 0.5;
-            min-width: 1.5em;
-        }
-
         &:hover {
-            background: var(--color-primary-fill-softer);
+            background: var(--color-surface);
         }
 
         &:focus-visible {
@@ -110,12 +114,11 @@ const allComponents = getAllComponentTagNames();
         }
 
         &.active {
-            background: var(--color-primary-fill-softer);
-            color: var(--color-primary-text-colorful);
+            background: var(--color-surface);
 
-            .sidebar-index {
-                color: var(--color-primary-text-colorful);
-                opacity: 1;
+            &::before {
+                content: "> ";
+                color: var(--color-text-link);
             }
         }
     }
@@ -140,14 +143,14 @@ const allComponents = getAllComponentTagNames();
         grid-column: 1 / -1;
         padding: var(--size-00) var(--size-4);
         border-top: var(--border-width) solid var(--color-stroke);
-        background: color-mix(in oklch, var(--color-surface) 92%, black);
+        background: var(--color-surface);
         display: flex;
         align-items: center;
         gap: var(--size-2);
         font-size: var(--font-size-0);
         font-family: var(--ff-display);
         color: var(--color-text-softer);
-        height: 28px;
+        height: var(--size-6);
 
         kbd {
             color: var(--color-primary-text-colorful);
@@ -170,7 +173,7 @@ const allComponents = getAllComponentTagNames();
         .statusbar-mode {
             background: var(--color-primary-fill-mid);
             color: var(--color-primary-text-on-fill);
-            padding: 2px var(--size-1);
+            padding: var(--size-1) var(--size-1);
             font-weight: 700;
             letter-spacing: 0.05em;
             margin-right: var(--size-1);
@@ -178,8 +181,8 @@ const allComponents = getAllComponentTagNames();
 
         .statusbar-cursor {
             margin-left: auto;
-            width: 7px;
-            height: 14px;
+            width: 0.5ch;
+            height: 1lh;
             background: var(--color-primary-text-colorful);
             animation: blink 1s step-end infinite;
         }
@@ -202,7 +205,7 @@ const allComponents = getAllComponentTagNames();
     .sidebar-toggle {
         display: none;
         position: fixed;
-        bottom: 36px;
+        bottom: var(--size-7);
         right: var(--size-2);
         z-index: 100;
         background: var(--color-surface);
@@ -234,7 +237,7 @@ const allComponents = getAllComponentTagNames();
             inset: 0;
             top: var(--menu-height);
             z-index: 200;
-            width: 260px;
+            width: var(--size-fluid-9);
         }
 
         .sidebar-toggle {
@@ -263,14 +266,13 @@ const allComponents = getAllComponentTagNames();
         background: var(--color-surface);
         color: var(--color-text);
         padding: 0;
-        width: min(520px, 90vw);
+        width: min(var(--size-content-2), 90vw);
         max-height: 50vh;
         border-radius: 0;
-        box-shadow: 0 24px 80px -12px oklch(0 0 0 / 0.5);
 
         &::backdrop {
             background: oklch(0 0 0 / 0.6);
-            backdrop-filter: blur(2px);
+            backdrop-filter: blur(var(--size-1));
         }
 
         m-command-palette {
@@ -283,11 +285,6 @@ const allComponents = getAllComponentTagNames();
     /* ═══════════════════════════════════════
        LEADER ACTIVE STATE
        ═══════════════════════════════════════ */
-
-    :global(.leader-active) .statusbar .statusbar-mode {
-        background: var(--color-destructive-fill-mid);
-        color: var(--color-destructive-text-on-fill);
-    }
 </style>
 
 <script>
@@ -309,74 +306,22 @@ const allComponents = getAllComponentTagNames();
     });
 
     // ═══════════════════════════════════════
-    // LEADER KEY
-    // ═══════════════════════════════════════
-    const paletteDialog = document.getElementById('palette-dialog') as HTMLDialogElement;
-    const statusbarMode = document.getElementById('statusbar-mode');
-    let leaderActive = false;
-    let leaderTimeout: ReturnType<typeof setTimeout>;
-
-    const sectionKeyMap: Record<string, string> = {
-        o: 'overview', x: 'examples',
-        p: 'properties', m: 'methods', e: 'events',
-        s: 'slots', c: 'css-parts',
-    };
-
-    function activateLeader() {
-        leaderActive = true;
-        document.body.classList.add('leader-active');
-        if (statusbarMode) statusbarMode.textContent = 'COMMAND';
-        clearTimeout(leaderTimeout);
-        leaderTimeout = setTimeout(deactivateLeader, 1500);
-    }
-
-    function deactivateLeader() {
-        leaderActive = false;
-        document.body.classList.remove('leader-active');
-        if (statusbarMode) statusbarMode.textContent = 'NORMAL';
-        clearTimeout(leaderTimeout);
-    }
-
-    document.addEventListener('keydown', (e) => {
-        if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
-
-        if (e.ctrlKey && e.key === 'b') {
-            e.preventDefault();
-            activateLeader();
-            return;
-        }
-
-        if (leaderActive) {
-            deactivateLeader();
-
-            if (e.key === ' ') {
-                e.preventDefault();
-                paletteDialog?.showModal();
-                // Force palette to re-discover all m-command elements
-                document.dispatchEvent(new CustomEvent('m-command-register', { bubbles: true, composed: true }));
-                return;
-            }
-
-            const sectionId = sectionKeyMap[e.key];
-            if (sectionId) {
-                e.preventDefault();
-                // Find the tab with matching panel name and click it
-                const tabList = document.querySelector('m-tab-list.section-tabs');
-                if (tabList) {
-                    const tab = tabList.querySelector(`m-tab[panel="${sectionId}"]`) as HTMLElement;
-                    if (tab && !tab.hasAttribute('disabled')) {
-                        tab.click();
-                    }
-                }
-            }
-        }
-    });
-
-    // ═══════════════════════════════════════
     // COMMAND PALETTE
     // ═══════════════════════════════════════
-    document.addEventListener('m-command-trigger', () => {
-        if (paletteDialog?.open) paletteDialog.close();
+    const paletteDialog = document.getElementById('palette-dialog') as HTMLDialogElement;
+
+    // Force palette to re-render when opened (ensures all commands are listed)
+    const paletteCommand = document.getElementById('command_open-palette');
+    paletteCommand?.addEventListener('m-command-trigger', () => {
+        document.dispatchEvent(new CustomEvent('m-command-register', { bubbles: true, composed: true }));
+    });
+
+    document.addEventListener('m-command-trigger', (e) => {
+        // Close palette when a command is triggered from within it, not when opening it
+        const target = e.target as HTMLElement;
+        if (paletteDialog?.open && target.id !== 'command_open-palette') {
+            paletteDialog.close();
+        }
     });
 
     // Register component navigation commands
@@ -387,10 +332,8 @@ const allComponents = getAllComponentTagNames();
         if (tagName) {
             registerCommand({
                 id: `go-to-${tagName}`,
-                command: "custom",
-                customCommand: () => {
-                    window.location.href = href!;
-                }
+                command: "navigate",
+                commandfor: href!,
             });
             const el = document.getElementById(`command_go-to-${tagName}`);
             if (el) el.dataset.label = `Navigate to ${tagName}`;
@@ -399,13 +342,13 @@ const allComponents = getAllComponentTagNames();
 
     // Register section commands
     const sectionKeys = [
-        { keys: "C-b o", id: "section-overview", label: "Overview" },
-        { keys: "C-b x", id: "section-examples", label: "Examples" },
-        { keys: "C-b p", id: "section-properties", label: "Properties" },
-        { keys: "C-b m", id: "section-methods", label: "Methods" },
-        { keys: "C-b e", id: "section-events", label: "Events" },
-        { keys: "C-b s", id: "section-slots", label: "Slots" },
-        { keys: "C-b c", id: "section-css-parts", label: "CSS Parts" },
+        { keys: "<Space>o", id: "section-overview", label: "Overview" },
+        { keys: "<Space>x", id: "section-examples", label: "Examples" },
+        { keys: "<Space>p", id: "section-properties", label: "Properties" },
+        { keys: "<Space>m", id: "section-methods", label: "Methods" },
+        { keys: "<Space>e", id: "section-events", label: "Events" },
+        { keys: "<Space>s", id: "section-slots", label: "Slots" },
+        { keys: "<Space>c", id: "section-css-parts", label: "CSS Parts" },
     ];
 
     sectionKeys.forEach(({ keys, id, label }) => {
