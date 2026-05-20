@@ -22,10 +22,12 @@ baseStyleSheet.replaceSync(styles);
  * @attr {string} tab - The currently active tab panel name
  * @attr {string} label - Accessible label for the tab list (sets aria-label)
  * @attr {"top"|"bottom"|"start"|"end"} position - Tab list orientation: top/bottom for horizontal, start/end for vertical
+ * @attr {"none"|"terminal-wipe"} transition - Panel entry transition style
  * 
  * @prop {string} tab - The currently active tab panel name
  * @prop {string} label - Accessible label for the tab list
  * @prop {"top"|"bottom"|"start"|"end"} position - Tab list orientation
+ * @prop {"none"|"terminal-wipe"} transition - Panel entry transition style
  * 
  * @csspart tab - Container wrapping the tab buttons
  * 
@@ -43,6 +45,9 @@ export class MTabList extends MElement {
 
     @BindAttribute()
     position: "start"|"end"|"top"|"bottom" = 'top';
+
+    @BindAttribute()
+    transition: "none"|"terminal-wipe" = 'none';
 
     @query("slot[name='tab']")
     private tabSlot!: HTMLSlotElement;

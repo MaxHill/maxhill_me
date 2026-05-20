@@ -28,6 +28,8 @@ export class MTabPanel extends MElement {
     @BindAttribute()
     visible: boolean = false;
 
+    private _runningAnimation: Animation | null = null;
+
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
@@ -42,8 +44,41 @@ export class MTabPanel extends MElement {
         this.setAttribute("slot", "tab-panel");
         this.render();
     }
+
     disconnectedCallback() {
         this.visible = false;
+    }
+
+    attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
+        super.attributeChangedCallback(name, oldValue, newValue);
+
+        if (name === 'visible' && oldValue === null && newValue !== null) {
+            this.playEntryTransition();
+        }
+    }
+
+    private playEntryTransition() {
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reducedMotion) return;
+
+        const transition = this.closest('m-tab-list')?.getAttribute('transition');
+        if (!transition || transition === 'none') return;
+
+        this._runningAnimation?.cancel();
+
+        if (transition === 'terminal-wipe') {
+            this._runningAnimation = this.animate(
+                [
+                    { clipPath: 'inset(0 100% 0 0)', opacity: '0.6' },
+                    { clipPath: 'inset(0 0% 0 0)', opacity: '1' },
+                ],
+                {
+                    duration: 200,
+                    easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                    fill: 'none',
+                }
+            );
+        }
     }
 
     render() {

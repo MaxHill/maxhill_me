@@ -48,6 +48,19 @@ Disabled tabs cannot be selected or navigated to.
   <m-tab-panel name="tab3">Panel 3</m-tab-panel>
 </m-tab-list>`} />
 
+### Transition: Terminal Wipe
+
+Animate panel entry with a left-to-right reveal.
+
+<CodeExample html={`<m-tab-list label="Example" transition="terminal-wipe">
+  <m-tab panel="tab1">Tab 1</m-tab>
+  <m-tab panel="tab2">Tab 2</m-tab>
+  <m-tab panel="tab3">Tab 3</m-tab>
+  <m-tab-panel name="tab1">Panel 1 — switch tabs to see the wipe</m-tab-panel>
+  <m-tab-panel name="tab2">Panel 2 content</m-tab-panel>
+  <m-tab-panel name="tab3">Panel 3 content</m-tab-panel>
+</m-tab-list>`} />
+
 ### Event Listening
 
 Listen to tab show and hide events.
@@ -80,6 +93,7 @@ eventTabs.addEventListener('m-tab-hide', (e) => {
 - **`tab`** (string): The currently active tab panel name
 - **`label`** (string): Accessible label for the tab list (sets aria-label)
 - **`position`** ("top"|"bottom"|"start"|"end"): Tab list orientation - top/bottom for horizontal, start/end for vertical
+- **`transition`** ("none"|"terminal-wipe"): Panel entry transition style. Default: "none". Respects `prefers-reduced-motion`.
 
 ## Slots
 
