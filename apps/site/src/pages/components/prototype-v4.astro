@@ -1,0 +1,762 @@
+---
+/**
+ * PROTOTYPE v4 — Sidebar + Accordion
+ * Combines v2's sidebar (m-tab-list position="start") with v1's collapsible sections.
+ * Delete when direction is chosen.
+ */
+import PageLayout from "../../components/layouts/PageLayout.astro";
+import CodeExample from "../../components/CodeExample.astro";
+import { getCollection } from "astro:content";
+import {
+    getComponentByTagName,
+    getComponentPublicProperties,
+    getComponentPublicMethods,
+    getComponentEventsWithType,
+} from "@wc-toolkit/cem-utilities";
+import customElements from "@maxhill/components/custom-elements.json";
+
+const docEntries = await getCollection("componentDocs");
+
+const components = docEntries.map((docsEntry) => {
+  const tagName = docsEntry.id.split("/").slice(-2, -1)[0];
+  const comp = getComponentByTagName(customElements, tagName);
+  return {
+    tagName,
+    component: comp,
+    properties: comp ? getComponentPublicProperties(comp) : [],
+    methods: comp ? getComponentPublicMethods(comp) : [],
+    events: comp ? getComponentEventsWithType(comp, { overrideCustomEventType: true }) : [],
+    slots: comp?.slots || [],
+    cssParts: comp?.cssParts || [],
+    formAssociated: comp?.members?.some((m: any) => m.name === "formAssociated" && m.static === true && m.default === "true") ?? false,
+  };
+}).filter(c => c.tagName);
+
+const defaultComponent = components.find(c => c.tagName === "m-listbox") || components[0];
+---
+
+<PageLayout title="PROTOTYPE v4: Sidebar + Accordion" bodyClass="proto-v4-page">
+  <nav class="proto-nav">
+    <span class="proto-label">PROTOTYPE</span>
+    <a href="/components/prototype-v1">v1: Accordion</a>
+    <a href="/components/prototype-v2">v2: Split Pane</a>
+    <a href="/components/prototype-v3">v3: Tabs</a>
+    <a href="/components/prototype-v4" class="active">v4: Sidebar + Accordion</a>
+  </nav>
+
+  <div class="app">
+    <m-tab-list position="start" tab={defaultComponent.tagName} label="Component navigation" class="tab-container">
+      {components.map((comp, i) => (
+        <m-tab panel={comp.tagName}>
+          <span class="tab-index">{String(i + 1).padStart(2, '0')}</span>
+          {comp.tagName}
+        </m-tab>
+      ))}
+
+      {components.map((comp, i) => (
+        <m-tab-panel name={comp.tagName}>
+          <div class="panel-header">
+            <span class="filename">&lt;{comp.tagName}&gt;</span>
+            <span class="badges">
+              {comp.formAssociated && <span class="badge badge--form">FORM</span>}
+              {comp.slots.length > 0 && <span class="badge">{comp.slots.length} SLOTS</span>}
+              {comp.properties.length > 0 && <span class="badge">{comp.properties.length} PROPS</span>}
+              {comp.events.length > 0 && <span class="badge">{comp.events.length} EVENTS</span>}
+            </span>
+          </div>
+
+          <div class="panel-content">
+            <section class="section" data-key="o" data-expanded="true">
+              <h2 class="section-header">
+                <span class="key-hint">o</span>verview
+              </h2>
+              <div class="section-content"><div class="section-inner typesetting">
+                <p>{comp.component?.description?.split("\n")[0] || "No description."}</p>
+                <CodeExample html={`<${comp.tagName} name="example">\n  <m-option value="one">Option One</m-option>\n  <m-option value="two">Option Two</m-option>\n</${comp.tagName}>`} />
+              </div></div>
+            </section>
+
+            <section class="section" data-key="x">
+              <h2 class="section-header">
+                e<span class="key-hint">x</span>amples
+              </h2>
+              <div class="section-content"><div class="section-inner typesetting">
+                <h3>Form Participation</h3>
+                <p>{comp.formAssociated ? "Form-associated — participates in submission, responds to reset(), supports constraint validation." : "Not form-associated."}</p>
+                <CodeExample html={`<form>\n  <${comp.tagName} name="field" required>\n    <m-option value="a">Alpha</m-option>\n  </${comp.tagName}>\n  <button type="submit">Submit</button>\n</form>`} />
+              </div></div>
+            </section>
+
+            <section class="section" data-key="k">
+              <h2 class="section-header">
+                <span class="key-hint">k</span>eyboard
+              </h2>
+              <div class="section-content"><div class="section-inner">
+                <table>
+                  <thead><tr><th>Key</th><th>Action</th></tr></thead>
+                  <tbody>
+                    <tr><td class="cell-name">↑ / ↓</td><td>Move focus / selection</td></tr>
+                    <tr><td class="cell-name">Home / End</td><td>Jump to first / last</td></tr>
+                    <tr><td class="cell-name">Space / Enter</td><td>Select focused option</td></tr>
+                    <tr><td class="cell-name">Escape</td><td>Clear / close</td></tr>
+                  </tbody>
+                </table>
+              </div></div>
+            </section>
+
+            <section class="section" data-key="p">
+              <h2 class="section-header">
+                <span class="key-hint">p</span>roperties
+                <span class="count">{comp.properties.length}</span>
+              </h2>
+              <div class="section-content"><div class="section-inner">
+                {comp.properties.length > 0 ? (
+                  <table>
+                    <thead><tr><th>Name</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+                    <tbody>
+                      {comp.properties.map((prop: any) => (
+                        <tr>
+                          <td class="cell-name">{prop.name}</td>
+                          <td class="cell-type">{prop.type?.text || "—"}</td>
+                          <td class="cell-default">{prop.default || "—"}</td>
+                          <td>{prop.description || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p class="empty">No properties defined</p>
+                )}
+              </div></div>
+            </section>
+
+            <section class="section" data-key="m">
+              <h2 class="section-header">
+                <span class="key-hint">m</span>ethods
+                <span class="count">{comp.methods.length}</span>
+              </h2>
+              <div class="section-content"><div class="section-inner">
+                {comp.methods.length > 0 ? (
+                  <table>
+                    <thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead>
+                    <tbody>
+                      {comp.methods.map((method: any) => (
+                        <tr>
+                          <td class="cell-name">{method.name}</td>
+                          <td class="cell-type">{method.type?.text || "—"}</td>
+                          <td>{method.description || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p class="empty">No methods defined</p>
+                )}
+              </div></div>
+            </section>
+
+            <section class="section" data-key="e">
+              <h2 class="section-header">
+                <span class="key-hint">e</span>vents
+                <span class="count">{comp.events.length}</span>
+              </h2>
+              <div class="section-content"><div class="section-inner">
+                {comp.events.length > 0 ? (
+                  <table>
+                    <thead><tr><th>Name</th><th>Detail Type</th><th>Description</th></tr></thead>
+                    <tbody>
+                      {comp.events.map((event: any) => (
+                        <tr>
+                          <td class="cell-name">{event.name}</td>
+                          <td class="cell-type">{event.type?.text || "—"}</td>
+                          <td>{event.description || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p class="empty">No events defined</p>
+                )}
+              </div></div>
+            </section>
+
+            <section class="section" data-key="s">
+              <h2 class="section-header">
+                <span class="key-hint">s</span>lots
+                <span class="count">{comp.slots.length}</span>
+              </h2>
+              <div class="section-content"><div class="section-inner">
+                {comp.slots.length > 0 ? (
+                  <table>
+                    <thead><tr><th>Name</th><th>Description</th></tr></thead>
+                    <tbody>
+                      {comp.slots.map((slot: any) => (
+                        <tr>
+                          <td class="cell-name">{slot.name || "(default)"}</td>
+                          <td>{slot.description || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p class="empty">No slots defined</p>
+                )}
+              </div></div>
+            </section>
+
+            <section class="section" data-key="c">
+              <h2 class="section-header">
+                <span class="key-hint">c</span>ss parts
+                <span class="count">{comp.cssParts.length}</span>
+              </h2>
+              <div class="section-content"><div class="section-inner">
+                {comp.cssParts.length > 0 ? (
+                  <table>
+                    <thead><tr><th>Name</th><th>Description</th></tr></thead>
+                    <tbody>
+                      {comp.cssParts.map((part: any) => (
+                        <tr>
+                          <td class="cell-name">::part({part.name})</td>
+                          <td>{part.description || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p class="empty">No CSS parts defined</p>
+                )}
+              </div></div>
+            </section>
+          </div>
+        </m-tab-panel>
+      ))}
+    </m-tab-list>
+
+    <dialog id="palette-dialog" class="palette-dialog">
+      <m-command-palette></m-command-palette>
+    </dialog>
+
+    <footer class="statusbar">
+      <span class="statusbar-mode">NORMAL</span>
+      <span class="leader">C-b</span>
+      <span><kbd>space</kbd> palette</span>
+      <span class="sep">│</span>
+      <span><kbd>o</kbd> overview</span>
+      <span><kbd>x</kbd> examples</span>
+      <span><kbd>k</kbd> keyboard</span>
+      <span><kbd>p</kbd> props</span>
+      <span><kbd>m</kbd> methods</span>
+      <span><kbd>e</kbd> events</span>
+      <span><kbd>s</kbd> slots</span>
+      <span><kbd>c</kbd> css</span>
+      <span class="sep">│</span>
+      <span><kbd>j</kbd>/<kbd>k</kbd> nav</span>
+      <span class="statusbar-cursor"></span>
+    </footer>
+  </div>
+
+</PageLayout>
+
+<script>
+  import "@maxhill/components/m-command-palette";
+  import { registerCommand } from "@maxhill/components/m-command";
+
+  let leaderActive = false;
+  let leaderTimeout: ReturnType<typeof setTimeout>;
+  const paletteDialog = document.getElementById('palette-dialog') as HTMLDialogElement;
+
+  function expandSection(section: HTMLElement) {
+    const panel = section.closest('m-tab-panel');
+    if (!panel) return;
+    panel.querySelectorAll('.section').forEach(s => {
+      (s as HTMLElement).dataset.expanded = "false";
+    });
+    section.dataset.expanded = "true";
+    section.scrollIntoView({ behavior: "instant", block: "nearest" });
+  }
+
+  // Click headers to expand
+  document.querySelectorAll('.section-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const section = header.closest('.section') as HTMLElement;
+      if (section) expandSection(section);
+    });
+  });
+
+  // Leader key: ctrl+b, then section key
+  document.addEventListener('keydown', (e) => {
+    if ((e.target as HTMLElement).tagName === 'INPUT') return;
+
+    if (e.ctrlKey && e.key === 'b') {
+      e.preventDefault();
+      leaderActive = true;
+      document.body.classList.add('leader-active');
+      clearTimeout(leaderTimeout);
+      leaderTimeout = setTimeout(() => { 
+        leaderActive = false; 
+        document.body.classList.remove('leader-active');
+      }, 1500);
+      return;
+    }
+
+    if (leaderActive) {
+      leaderActive = false;
+      document.body.classList.remove('leader-active');
+      clearTimeout(leaderTimeout);
+
+      // Space opens command palette
+      if (e.key === ' ') {
+        e.preventDefault();
+        // Force palette to re-render with current commands
+        document.dispatchEvent(new CustomEvent('m-command-register', { bubbles: true }));
+        paletteDialog.showModal();
+        return;
+      }
+
+      const activePanel = document.querySelector('m-tab-panel[visible]');
+      if (!activePanel) return;
+
+      const section = activePanel.querySelector(`.section[data-key="${e.key}"]`) as HTMLElement;
+      if (section) {
+        e.preventDefault();
+        expandSection(section);
+      }
+    }
+  });
+
+  // Close palette when a command is triggered
+  document.addEventListener('m-command-trigger', () => {
+    if (paletteDialog.open) paletteDialog.close();
+  });
+
+  // Register commands so m-command-palette can list them
+  const sectionKeys = [
+    { keys: "C-b o", id: "section-overview", label: "Overview" },
+    { keys: "C-b x", id: "section-examples", label: "Examples" },
+    { keys: "C-b k", id: "section-keyboard", label: "Keyboard" },
+    { keys: "C-b p", id: "section-properties", label: "Properties" },
+    { keys: "C-b m", id: "section-methods", label: "Methods" },
+    { keys: "C-b e", id: "section-events", label: "Events" },
+    { keys: "C-b s", id: "section-slots", label: "Slots" },
+    { keys: "C-b c", id: "section-css-parts", label: "CSS Parts" },
+  ];
+
+  sectionKeys.forEach(({ keys, id, label }) => {
+    registerCommand({
+      id,
+      keys,
+      preventDefault: true,
+      customCommand: () => {
+        const key = id.split("-").pop()?.charAt(0);
+        const activePanel = document.querySelector('m-tab-panel[visible]');
+        if (!activePanel) return;
+        const section = activePanel.querySelector(`.section[data-key="${key}"]`) as HTMLElement;
+        if (section) expandSection(section);
+      }
+    });
+    const el = document.getElementById(`command_${id}`);
+    if (el) el.dataset.label = `Show ${label}`;
+  });
+
+  // Register component navigation commands (no keyboard shortcut, palette only)
+  const tabList = document.querySelector('.tab-container') as any;
+  document.querySelectorAll('m-tab[panel]').forEach((tab) => {
+    const panel = tab.getAttribute('panel')!;
+    registerCommand({
+      id: `go-to-${panel}`,
+      command: "custom",
+      customCommand: () => {
+        if (tabList && tabList.tab !== undefined) {
+          tabList.tab = panel;
+        }
+        paletteDialog.close();
+      }
+    });
+    const el = document.getElementById(`command_go-to-${panel}`);
+    if (el) el.dataset.label = `Navigate to ${panel}`;
+  });
+</script>
+
+<style>
+  :global(.proto-v4-page) {
+    padding-top: var(--menu-height);
+  }
+
+  .proto-nav {
+    position: fixed;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    gap: var(--size-1);
+    align-items: center;
+    padding: var(--size-1) var(--size-2);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-stroke);
+    font-size: var(--font-size-0);
+
+    .proto-label {
+      color: var(--color-destructive-text-colorful);
+      font-weight: bold;
+      font-family: var(--ff-display);
+    }
+
+    a {
+      padding: var(--size-00) var(--size-1);
+      text-decoration: none;
+      color: var(--color-text-softer);
+      &.active {
+        background: var(--color-primary-fill-softer);
+        color: var(--color-primary-text-colorful);
+      }
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     APP SHELL
+     ═══════════════════════════════════════ */
+
+  .app {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    min-height: calc(100dvh - var(--menu-height));
+    background: var(--color-surface);
+  }
+
+  /* ═══════════════════════════════════════
+     SIDEBAR
+     ═══════════════════════════════════════ */
+
+  .tab-container {
+    min-height: 0;
+    overflow: hidden;
+    height: 100%;
+
+    &::part(tab) {
+      overflow-y: auto;
+      padding: var(--size-2) 0;
+      min-width: 220px;
+      border-right: var(--border-width) solid var(--color-stroke);
+      background: color-mix(in oklch, var(--color-surface) 95%, black);
+    }
+
+    m-tab {
+      font-size: var(--font-size-1);
+      padding: var(--size-1) var(--size-2);
+      display: flex;
+      align-items: center;
+      gap: var(--size-1);
+      cursor: pointer;
+      transition: background 80ms ease-out;
+
+      .tab-index {
+        font-family: var(--ff-display);
+        font-size: 0.6875rem;
+        color: var(--color-text-softer);
+        opacity: 0.5;
+        min-width: 1.5em;
+      }
+
+      &:hover {
+        background: var(--color-primary-fill-softer);
+      }
+
+      &[active] {
+        background: var(--color-primary-fill-softer);
+        color: var(--color-primary-text-colorful);
+
+        .tab-index {
+          color: var(--color-primary-text-colorful);
+          opacity: 1;
+        }
+      }
+    }
+
+    m-tab-panel {
+      --border-width: 1px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     PANEL HEADER — The Hero Moment
+     ═══════════════════════════════════════ */
+
+  .panel-header {
+    padding: var(--size-5) var(--size-4) var(--size-4);
+    border-bottom: var(--border-width) solid var(--color-stroke);
+    display: flex;
+    align-items: baseline;
+    gap: var(--size-3);
+    background: color-mix(in oklch, var(--color-surface) 97%, var(--color-primary-fill-mid));
+  }
+
+  .filename {
+    font-family: var(--ff-display);
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--color-primary-text-colorful);
+    letter-spacing: -0.01em;
+  }
+
+  .badges {
+    display: flex;
+    gap: var(--size-1);
+    margin-left: auto;
+    align-self: center;
+  }
+
+  .badge {
+    font-size: 0.625rem;
+    padding: 2px var(--size-1);
+    border: var(--border-width) solid var(--color-stroke);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-softer);
+    font-family: var(--ff-display);
+  }
+
+  .badge--form {
+    border-color: var(--color-primary-fill-mid);
+    color: var(--color-primary-text-colorful);
+  }
+
+  /* ═══════════════════════════════════════
+     PANEL CONTENT & SECTIONS
+     ═══════════════════════════════════════ */
+
+  .panel-content {
+    overflow-y: auto;
+  }
+
+  .section {
+    border-bottom: var(--border-width) solid var(--color-stroke);
+
+    &[data-expanded="true"] {
+      background: color-mix(in oklch, var(--color-surface) 98%, var(--color-primary-fill-softer));
+    }
+  }
+
+  .section-header {
+    font: var(--p);
+    font-weight: var(--font-weight-medium);
+    margin: 0;
+    padding: var(--size-2) var(--size-4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--size-2);
+    user-select: none;
+
+    &:hover {
+      background: var(--color-primary-fill-softer);
+    }
+  }
+
+  .section[data-expanded="true"] .section-header {
+    color: var(--color-primary-text-colorful);
+    background: color-mix(in oklch, var(--color-surface) 94%, var(--color-primary-fill-softer));
+    border-bottom-width: var(--border-width);
+    border-bottom-style: solid;
+    border-bottom-color: color-mix(in oklch, var(--color-stroke) 40%, transparent);
+  }
+
+  .key-hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4em;
+    height: 1.4em;
+    border: var(--border-width) solid var(--color-stroke);
+    font-family: var(--ff-display);
+    font-size: 0.6875rem;
+    color: var(--color-primary-text-colorful);
+    background: color-mix(in oklch, var(--color-surface) 95%, var(--color-primary-fill-softer));
+  }
+
+  .count {
+    margin-left: auto;
+    font-size: 0.6875rem;
+    font-family: var(--ff-display);
+    color: var(--color-text-softer);
+    opacity: 0.6;
+  }
+
+  .section[data-expanded="true"] .count {
+    opacity: 0;
+  }
+
+  .section-content {
+    display: none;
+    overflow: hidden;
+  }
+
+  .section[data-expanded="true"] .section-content {
+    display: block;
+  }
+
+  .section-inner {
+    padding: var(--size-3) var(--size-4) var(--size-5);
+    overflow-x: auto;
+  }
+
+  /* ═══════════════════════════════════════
+     TABLES
+     ═══════════════════════════════════════ */
+
+  table {
+    width: 100%;
+    min-width: 480px;
+    border-collapse: collapse;
+    font-size: var(--font-size-0);
+
+    th, td {
+      text-align: left;
+      padding: var(--size-00) var(--size-2) var(--size-00) 0;
+      border-bottom: var(--border-width) solid color-mix(in oklch, var(--color-stroke) 50%, transparent);
+    }
+
+    th {
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-softer);
+      text-transform: uppercase;
+      font-size: 0.6875rem;
+      letter-spacing: 0.08em;
+      padding-bottom: var(--size-1);
+      font-family: var(--ff-display);
+    }
+
+    tr:hover td {
+      background: var(--color-primary-fill-softer);
+    }
+  }
+
+  .cell-name {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-primary-text-colorful);
+    white-space: nowrap;
+  }
+
+  .cell-type {
+    color: var(--color-text-softer);
+    white-space: nowrap;
+    font-size: 0.75rem;
+  }
+
+  .cell-default {
+    color: var(--color-text-softer);
+    font-style: italic;
+    font-size: 0.75rem;
+  }
+
+  .empty {
+    color: var(--color-text-softer);
+    font-style: italic;
+    margin: 0;
+    font-size: var(--font-size-0);
+  }
+
+  /* ═══════════════════════════════════════
+     COMMAND PALETTE
+     ═══════════════════════════════════════ */
+
+  .palette-dialog {
+    border: var(--border-width) solid var(--color-primary-fill-mid);
+    background: var(--color-surface);
+    color: var(--color-text);
+    padding: 0;
+    width: min(520px, 90vw);
+    max-height: 50vh;
+    border-radius: 0;
+    box-shadow: 0 24px 80px -12px oklch(0 0 0 / 0.5);
+
+    &::backdrop {
+      background: oklch(0 0 0 / 0.6);
+      backdrop-filter: blur(2px);
+    }
+
+    m-command-palette {
+      display: block;
+      padding: var(--size-2);
+      color: var(--color-text);
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     STATUSBAR — Terminal Status Line
+     ═══════════════════════════════════════ */
+
+  .statusbar {
+    padding: var(--size-00) var(--size-4);
+    border-top: var(--border-width) solid var(--color-stroke);
+    background: color-mix(in oklch, var(--color-surface) 92%, black);
+    display: flex;
+    align-items: center;
+    gap: var(--size-2);
+    font-size: 0.6875rem;
+    font-family: var(--ff-display);
+    color: var(--color-text-softer);
+    height: 28px;
+
+    kbd {
+      color: var(--color-primary-text-colorful);
+      font-family: inherit;
+      font-size: inherit;
+    }
+
+    .sep {
+      color: var(--color-stroke);
+      opacity: 0.5;
+    }
+
+    .leader {
+      color: var(--color-text);
+      font-weight: var(--font-weight-bold);
+      padding-right: var(--size-1);
+      border-right: var(--border-width) solid var(--color-stroke);
+    }
+
+    .statusbar-mode {
+      background: var(--color-primary-fill-mid);
+      color: var(--color-primary-text-on-fill);
+      padding: 2px var(--size-1);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-right: var(--size-1);
+    }
+
+    .statusbar-cursor {
+      margin-left: auto;
+      width: 7px;
+      height: 14px;
+      background: var(--color-primary-text-colorful);
+      animation: blink 1s step-end infinite;
+    }
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .statusbar-cursor {
+      animation: none;
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     LEADER KEY ACTIVE STATE
+     ═══════════════════════════════════════ */
+
+  :global(.leader-active) .statusbar .statusbar-mode {
+    background: var(--color-destructive-fill-mid);
+    color: var(--color-destructive-text-on-fill);
+  }
+
+  :global(.leader-active) .statusbar .statusbar-mode::after {
+    content: " → COMMAND";
+  }
+</style>

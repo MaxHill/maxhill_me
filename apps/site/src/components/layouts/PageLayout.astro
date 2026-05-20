@@ -79,11 +79,11 @@ const { title, bodyClass } = Astro.props;
             <!-- Desktop navigation -->
             <nav class="desktop-nav">
                 <a href="/">maxhill.me</a>
-                <m-command command="navigate" commandfor="/" keys="<C-b>1"></m-command>
+                <m-command command="navigate" commandfor="/" keys="<C-b>1" data-label="Navigate to Home"></m-command>
                 <a href="/design-system">/design-system</a>
-                <m-command command="navigate" commandfor="/design-system" keys="<C-b>2"></m-command>
+                <m-command command="navigate" commandfor="/design-system" keys="<C-b>2" data-label="Navigate to Design System"></m-command>
                 <a href="/components">/components</a>
-                <m-command command="navigate" commandfor="/components" keys="<C-b>3"></m-command>
+                <m-command command="navigate" commandfor="/components" keys="<C-b>3" data-label="Navigate to Components"></m-command>
             </nav>
 
             <!-- Desktop theme button -->

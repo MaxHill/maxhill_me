@@ -79,7 +79,7 @@ export class MCommandPalette extends MElement {
                     <m-input slot="controller" type="search" placeholder="Search commands..."></m-input>
                     <m-listbox name="command" skip="[data-match='false']" label="Commands">
                         ${Array.from(commands).reduce((acc, e) => {
-                            const label = e.id.replace(/^command_/, '').replace(/-/g, ' ');
+                            const label = (e as HTMLElement).dataset.label || e.id.replace(/^command_/, '').replace(/-/g, ' ');
                             return `${acc}<m-option value="${e.id}">${label}</m-option>`;
                         }, "")}
                     </m-listbox>
