@@ -6,7 +6,7 @@
  */
 import PageLayout from "../../components/layouts/PageLayout.astro";
 import CodeExample from "../../components/CodeExample.astro";
-import { getCollection } from "astro:content";
+import { getCollection, render } from "astro:content";
 import {
     getComponentByTagName,
     getComponentPublicProperties,
@@ -16,10 +16,19 @@ import {
 import customElements from "@maxhill/components/custom-elements.json";
 
 const docEntries = await getCollection("componentDocs");
+const overviewEntries = await getCollection("componentOverview");
+const examplesEntries = await getCollection("componentExamples");
+const keyboardEntries = await getCollection("componentKeyboard");
 
 const components = docEntries.map((docsEntry) => {
   const tagName = docsEntry.id.split("/").slice(-2, -1)[0];
   const comp = getComponentByTagName(customElements, tagName);
+  
+  // Find split docs by matching tag name in entry ID
+  const overview = overviewEntries.find(e => e.id.includes(tagName));
+  const examples = examplesEntries.find(e => e.id.includes(tagName));
+  const keyboard = keyboardEntries.find(e => e.id.includes(tagName));
+  
   return {
     tagName,
     component: comp,
@@ -29,8 +38,25 @@ const components = docEntries.map((docsEntry) => {
     slots: comp?.slots || [],
     cssParts: comp?.cssParts || [],
     formAssociated: comp?.members?.some((m: any) => m.name === "formAssociated" && m.static === true && m.default === "true") ?? false,
+    overview,
+    examples,
+    keyboard,
   };
 }).filter(c => c.tagName);
+
+// Pre-render all MDX content to Content components
+const renderedContent = new Map<string, {
+  overview?: Awaited<ReturnType<typeof render>>,
+  examples?: Awaited<ReturnType<typeof render>>,
+  keyboard?: Awaited<ReturnType<typeof render>>,
+}>();
+for (const comp of components) {
+  const rendered: any = {};
+  if (comp.overview) rendered.overview = await render(comp.overview);
+  if (comp.examples) rendered.examples = await render(comp.examples);
+  if (comp.keyboard) rendered.keyboard = await render(comp.keyboard);
+  renderedContent.set(comp.tagName, rendered);
+}
 
 const defaultComponent = components.find(c => c.tagName === "m-listbox") || components[0];
 ---
@@ -71,8 +97,14 @@ const defaultComponent = components.find(c => c.tagName === "m-listbox") || comp
                 <span class="key-hint">o</span>verview
               </h2>
               <div class="section-content"><div class="section-inner typesetting">
-                <p>{comp.component?.description?.split("\n")[0] || "No description."}</p>
-                <CodeExample html={`<${comp.tagName} name="example">\n  <m-option value="one">Option One</m-option>\n  <m-option value="two">Option Two</m-option>\n</${comp.tagName}>`} />
+                {renderedContent.get(comp.tagName)?.overview ? (
+                  <>{(() => { const C = renderedContent.get(comp.tagName)!.overview!.Content; return <C />; })()}</>
+                ) : (
+                  <>
+                    <p>{comp.component?.description?.split("\n")[0] || "No description."}</p>
+                    <CodeExample html={`<${comp.tagName} name="example">\n  <m-option value="one">Option One</m-option>\n  <m-option value="two">Option Two</m-option>\n</${comp.tagName}>`} />
+                  </>
+                )}
               </div></div>
             </section>
 
@@ -81,9 +113,15 @@ const defaultComponent = components.find(c => c.tagName === "m-listbox") || comp
                 e<span class="key-hint">x</span>amples
               </h2>
               <div class="section-content"><div class="section-inner typesetting">
-                <h3>Form Participation</h3>
-                <p>{comp.formAssociated ? "Form-associated — participates in submission, responds to reset(), supports constraint validation." : "Not form-associated."}</p>
-                <CodeExample html={`<form>\n  <${comp.tagName} name="field" required>\n    <m-option value="a">Alpha</m-option>\n  </${comp.tagName}>\n  <button type="submit">Submit</button>\n</form>`} />
+                {renderedContent.get(comp.tagName)?.examples ? (
+                  <>{(() => { const C = renderedContent.get(comp.tagName)!.examples!.Content; return <C />; })()}</>
+                ) : (
+                  <>
+                    <h3>Form Participation</h3>
+                    <p>{comp.formAssociated ? "Form-associated — participates in submission, responds to reset(), supports constraint validation." : "Not form-associated."}</p>
+                    <CodeExample html={`<form>\n  <${comp.tagName} name="field" required>\n    <m-option value="a">Alpha</m-option>\n  </${comp.tagName}>\n  <button type="submit">Submit</button>\n</form>`} />
+                  </>
+                )}
               </div></div>
             </section>
 
@@ -91,16 +129,20 @@ const defaultComponent = components.find(c => c.tagName === "m-listbox") || comp
               <h2 class="section-header">
                 <span class="key-hint">k</span>eyboard
               </h2>
-              <div class="section-content"><div class="section-inner">
-                <table>
-                  <thead><tr><th>Key</th><th>Action</th></tr></thead>
-                  <tbody>
-                    <tr><td class="cell-name">↑ / ↓</td><td>Move focus / selection</td></tr>
-                    <tr><td class="cell-name">Home / End</td><td>Jump to first / last</td></tr>
-                    <tr><td class="cell-name">Space / Enter</td><td>Select focused option</td></tr>
-                    <tr><td class="cell-name">Escape</td><td>Clear / close</td></tr>
-                  </tbody>
-                </table>
+              <div class="section-content"><div class="section-inner typesetting">
+                {renderedContent.get(comp.tagName)?.keyboard ? (
+                  <>{(() => { const C = renderedContent.get(comp.tagName)!.keyboard!.Content; return <C />; })()}</>
+                ) : (
+                  <table>
+                    <thead><tr><th>Key</th><th>Action</th></tr></thead>
+                    <tbody>
+                      <tr><td class="cell-name">↑ / ↓</td><td>Move focus / selection</td></tr>
+                      <tr><td class="cell-name">Home / End</td><td>Jump to first / last</td></tr>
+                      <tr><td class="cell-name">Space / Enter</td><td>Select focused option</td></tr>
+                      <tr><td class="cell-name">Escape</td><td>Clear / close</td></tr>
+                    </tbody>
+                  </table>
+                )}
               </div></div>
             </section>
 

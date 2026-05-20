@@ -1,0 +1,14 @@
+`m-listbox` supports full keyboard navigation following the ARIA listbox pattern:
+
+| Key | Single-Select | Single-Focus | Multiple |
+|-----|--------------|--------------|----------|
+| ↑ / ↓ | Move selection | Move focus | Move focus |
+| Ctrl+P / Ctrl+N | Navigate prev/next | Navigate prev/next | Navigate prev/next |
+| Home / End | Jump to first/last | Jump to first/last | Jump to first/last |
+| Space / Enter | Select focused | Select focused | Toggle focused |
+| Shift + ↑/↓ | — | — | Extended selection |
+| Shift + Home/End | — | — | Select to first/last |
+
+All keyboard interactions wrap around (moving past the last option goes to the first, and vice versa).
+
+The component uses the ARIA activedescendant pattern — the listbox container maintains DOM focus while visually highlighting the active option via `aria-activedescendant`.

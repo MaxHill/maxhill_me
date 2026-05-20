@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const componentsBase = path.resolve(__dirname, "../../../../packages/components/src");
+
 const documentation = defineCollection({
   type: "content",
   schema: z.object({
@@ -19,11 +21,35 @@ const documentation = defineCollection({
 const componentDocs = defineCollection({
   loader: glob({
     pattern: "*/DOCS.mdx",
-    base: path.resolve(__dirname, "../../../../packages/components/src")
+    base: componentsBase
+  }),
+});
+
+const componentOverview = defineCollection({
+  loader: glob({
+    pattern: "*/docs/overview.mdx",
+    base: componentsBase
+  }),
+});
+
+const componentExamples = defineCollection({
+  loader: glob({
+    pattern: "*/docs/examples.mdx",
+    base: componentsBase
+  }),
+});
+
+const componentKeyboard = defineCollection({
+  loader: glob({
+    pattern: "*/docs/keyboard.mdx",
+    base: componentsBase
   }),
 });
 
 export const collections = {
   documentation,
   componentDocs,
+  componentOverview,
+  componentExamples,
+  componentKeyboard,
 };

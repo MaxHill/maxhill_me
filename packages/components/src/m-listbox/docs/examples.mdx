@@ -1,0 +1,216 @@
+import CodeExample from '../../../../../apps/site/src/components/CodeExample.astro';
+
+## Form Participation
+
+`m-listbox` is a form-associated custom element, meaning it behaves just like a native form control:
+- Included in FormData
+- Participates in form submission
+- Responds to `form.reset()` and reset buttons
+- Supports constraint validation
+- Works with the `required` attribute
+- Preserves standard events (`change`, `focus`, `blur`)
+
+In single-select mode, the value is a string (or `null`). In multiple mode, the value is an array of strings.
+
+<CodeExample html={`<form id="fruit-form" class="form">
+  <label for="favorite-fruit">Favorite fruit</label>
+  <m-listbox id="favorite-fruit" name="favorite-fruit" required>
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear">Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+    <m-option value="banana">Banana</m-option>
+  </m-listbox>
+  
+  <div id="form-result" class="box" data-variant="surface" data-span="2">
+    <strong>Form Data:</strong>
+    <pre id="form-result-text" style="margin: 0.5rem 0 0 0;"></pre>
+  </div>
+  
+  <button type="submit">Submit</button>
+  <button type="reset">Reset</button>
+</form>`} js={`const form = document.getElementById('fruit-form');
+const resultText = document.getElementById('form-result-text');
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(form));
+  resultText.textContent = JSON.stringify(data, null, 2);
+});`} />
+
+---
+
+## Selection Modes
+
+`m-listbox` supports three distinct selection modes via the `mode` attribute:
+
+### Single Select (default)
+
+The default mode where arrow keys directly change the selection.
+
+### Single Focus
+
+Arrow keys move focus only (visual highlight), and Space/Enter keys select the focused item.
+
+### Multiple
+
+Enables multi-selection where users can select multiple options.
+
+<CodeExample html={`<div class="form">
+  <label for="single-select">Single select (default)</label>
+  <m-listbox id="single-select" name="single">
+    <m-option value="red">Red</m-option>
+    <m-option value="green">Green</m-option>
+    <m-option value="blue">Blue</m-option>
+  </m-listbox>
+  
+  <label for="single-focus">Single focus</label>
+  <m-listbox id="single-focus" name="single-focus" mode="single-focus">
+    <m-option value="red">Red</m-option>
+    <m-option value="green">Green</m-option>
+    <m-option value="blue">Blue</m-option>
+  </m-listbox>
+  
+  <label for="multi-select">Multiple select</label>
+  <m-listbox id="multi-select" name="multiple" mode="multiple">
+    <m-option value="red">Red</m-option>
+    <m-option value="green">Green</m-option>
+    <m-option value="blue">Blue</m-option>
+    <m-option value="yellow">Yellow</m-option>
+  </m-listbox>
+</div>`} />
+
+---
+
+## Pre-selected Values
+
+You can pre-select options using the `selected` attribute on individual `<m-option>` elements, or the `value` attribute on the `<m-listbox>` itself.
+
+<CodeExample html={`<div class="form">
+  <label for="selected-attr">Using selected attribute</label>
+  <m-listbox id="selected-attr" name="selected-attr">
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear" selected>Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+  </m-listbox>
+  
+  <label for="value-attr">Using value attribute</label>
+  <m-listbox id="value-attr" name="value-attr" value="orange">
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear">Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+  </m-listbox>
+</div>`} />
+
+---
+
+## Disabled State
+
+The `disabled` attribute prevents all user interaction. Individual options can also be disabled.
+
+<CodeExample html={`<div class="form">
+  <label for="disabled-listbox">Disabled listbox</label>
+  <m-listbox id="disabled-listbox" name="disabled" disabled>
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear" selected>Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+  </m-listbox>
+  
+  <label for="disabled-options">Disabled options</label>
+  <m-listbox id="disabled-options" name="partial-disabled">
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear" disabled>Pear (disabled)</m-option>
+    <m-option value="orange">Orange</m-option>
+  </m-listbox>
+</div>`} />
+
+---
+
+## Validation
+
+`m-listbox` supports the `required` attribute for form validation. The component uses the native Constraint Validation API and emits an `m-invalid` event when validation fails.
+
+<CodeExample html={`<form id="validation-form" class="form">
+  <label for="required-listbox">Country (required)</label>
+  <m-listbox id="required-listbox" name="country" required>
+    <m-option value="us">United States</m-option>
+    <m-option value="uk">United Kingdom</m-option>
+    <m-option value="ca">Canada</m-option>
+    <m-option value="au">Australia</m-option>
+  </m-listbox>
+  
+  <div id="validation-output" class="box" data-variant="surface" data-span="2">
+    <strong>Validation Status:</strong>
+    <pre id="validation-text" style="margin: 0.5rem 0 0 0;">Not yet validated</pre>
+  </div>
+  
+  <button type="submit">Submit</button>
+  <button type="reset">Reset</button>
+</form>`} js={`const validationForm = document.getElementById('validation-form');
+const requiredListbox = document.getElementById('required-listbox');
+const validationText = document.getElementById('validation-text');
+
+requiredListbox.addEventListener('m-invalid', (e) => {
+  validationText.textContent = \`Invalid: \${e.detail.validationMessage}\`;
+  validationText.style.color = 'var(--color-destructive-fill-mid)';
+});
+
+requiredListbox.addEventListener('change', () => {
+  if (requiredListbox.value) {
+    validationText.textContent = \`Valid: "\${requiredListbox.value}" selected\`;
+    validationText.style.color = 'var(--color-success-fill-mid)';
+  }
+});
+
+validationForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  validationText.textContent = 'Form submitted successfully!';
+  validationText.style.color = 'var(--color-success-fill-mid)';
+});`} />
+
+---
+
+## Events
+
+In addition to bubbling native events (`change`, `focus`, `blur`), `m-listbox` emits custom events for selection and focus changes.
+
+<CodeExample html={`<div class="stack" data-gap="2">
+  <m-listbox id="event-listbox" name="event-example" mode="multiple">
+    <m-option value="apple">Apple</m-option>
+    <m-option value="pear">Pear</m-option>
+    <m-option value="orange">Orange</m-option>
+    <m-option value="banana">Banana</m-option>
+  </m-listbox>
+  
+  <div id="event-log" class="box" data-variant="surface">
+    <strong>Event Log:</strong>
+    <ul id="event-log-list" style="margin: 0.5rem 0 0 0; padding-left: 1.5rem; max-height: 200px; overflow-y: auto;"></ul>
+  </div>
+</div>`} js={`const eventListbox = document.getElementById('event-listbox');
+const eventLogList = document.getElementById('event-log-list');
+
+function logEvent(message, color = 'var(--color-neutral-fill-mid)') {
+  const li = document.createElement('li');
+  li.textContent = message;
+  li.style.color = color;
+  eventLogList.prepend(li);
+  if (eventLogList.children.length > 10) {
+    eventLogList.removeChild(eventLogList.lastChild);
+  }
+}
+
+eventListbox.addEventListener('m-listbox-change', (e) => {
+  logEvent(\`m-listbox-change: [\${e.detail.selected.join(', ') || 'none'}]\`, 'var(--color-primary-fill-mid)');
+});
+
+eventListbox.addEventListener('m-listbox-select', (e) => {
+  logEvent(\`m-listbox-select: "\${e.detail.option.value}"\`, 'var(--color-success-fill-mid)');
+});
+
+eventListbox.addEventListener('m-listbox-unselected', (e) => {
+  logEvent(\`m-listbox-unselected: "\${e.detail.option.value}"\`, 'var(--color-destructive-fill-mid)');
+});
+
+eventListbox.addEventListener('m-listbox-focus-change', (e) => {
+  const value = e.detail.item?.value || 'none';
+  logEvent(\`m-listbox-focus-change: "\${value}"\`, 'var(--color-neutral-fill-mid)');
+});`} />
