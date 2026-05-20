@@ -79,7 +79,7 @@ export class MCommand extends MElement {
         this._customCommand = command;
         this.command = "custom"
     }
-    get customCommandse() {
+    get customCommand(): ((e: KeyboardEvent) => void) | undefined {
         return this._customCommand;
     }
 
@@ -185,6 +185,7 @@ export class MCommand extends MElement {
         if (this.command === "custom") {
             if (!this.customCommand) {
                 console.error(`Action ${this.id} does not have a custom command registered: ${this.customCommand}`);
+                return;
             }
             this.customCommand(e);
         }

@@ -3,6 +3,7 @@ import { query, queryAll } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import MCommand from "../m-command";
 import MListbox from "../m-listbox";
+import MInput from "../m-input";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -38,41 +39,49 @@ export class MCommandPalette extends MElement {
 
     connectedCallback() {
         this.render();
-        // this.dispatchEvent(new MCommandPaletteChangeEvent({ example: this.example }));
 
-        document.addEventListener("m-command-register", this.render)
-        document.addEventListener("m-command-unregister", this.render)
-        this.formElement.addEventListener("submit", this.handleSubmit)
+        document.addEventListener("m-command-register", this.handleReRender)
+        document.addEventListener("m-command-unregister", this.handleReRender)
+        this.shadowRoot!.addEventListener("submit", this.handleSubmit)
     }
 
     disconnectedCallback() {
-        document.removeEventListener("m-command-register", this.render)
-        document.removeEventListener("m-command-unregister", this.render)
-        this.formElement.removeEventListener("submit", this.handleSubmit);
+        document.removeEventListener("m-command-register", this.handleReRender)
+        document.removeEventListener("m-command-unregister", this.handleReRender)
+        this.shadowRoot!.removeEventListener("submit", this.handleSubmit);
     }
 
-    private handleSubmit = (e: SubmitEvent) => {
+    private handleSubmit = (e: Event) => {
         e.preventDefault();
-        const formData = new FormData(e.target as HTMLFormElement);
-
-        // Access as object
-        const data = Object.fromEntries(formData);
         const listbox = this.shadowRoot!.querySelector('m-listbox') as MListbox;
-    const selectedCommand = listbox?.value;
-        console.log(data, selectedCommand)
+        const selectedCommandId = Array.isArray(listbox?.value) ? listbox.value[0] : listbox?.value;
+        if (!selectedCommandId) return;
+
+        const commandEl = document.getElementById(selectedCommandId as string) as MCommand | null;
+        if (commandEl) {
+            commandEl.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
+            // Trigger the command's handler directly
+            const event = new KeyboardEvent('keydown');
+            (commandEl as any).handleChange(event);
+        }
     }
 
+
+    private handleReRender = () => {
+        this.render();
+    }
 
     private render() {
+        const commands = document.querySelectorAll('m-command');
         this.shadowRoot!.innerHTML = `
             <form>
                 <m-search-list target="m-listbox">
-                    <label>
-                        Search commands
-                        <input type="search"/>
-                    </label>
+                    <m-input slot="controller" type="search" placeholder="Search commands..."></m-input>
                     <m-listbox name="command" skip="[data-match='false']" label="Commands">
-                        ${this.commandElements.reduce((acc, e) => `${acc}<m-option value="${e.id}">${e.id}</m-option>`, "")}
+                        ${Array.from(commands).reduce((acc, e) => {
+                            const label = e.id.replace(/^command_/, '').replace(/-/g, ' ');
+                            return `${acc}<m-option value="${e.id}">${label}</m-option>`;
+                        }, "")}
                     </m-listbox>
                 </m-search-list>
                 <button type="submit">Select</button>
