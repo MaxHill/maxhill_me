@@ -1,0 +1,14 @@
+import CodeExample from '../../../../../apps/site/src/components/CodeExample.astro';
+
+A search list that filters its children using fuzzy search. Supports keyword matching via `data-keywords`, debounced input, and exposes CSS custom states for styling based on search results.
+
+<CodeExample html={`<m-search-list>
+  <input slot="controller" type="search" placeholder="Search programming languages..." />
+  <div data-keywords="javascript js ecmascript">JavaScript</div>
+  <div data-keywords="typescript ts">TypeScript</div>
+  <div data-keywords="python py">Python</div>
+  <div data-keywords="rust rs">Rust</div>
+  <div data-keywords="go golang">Go</div>
+  <p slot="empty">No matching languages found</p>
+  <p slot="initial">Start typing to search programming languages</p>
+</m-search-list>`} />

@@ -1,0 +1,32 @@
+import CodeExample from '../../../../../apps/site/src/components/CodeExample.astro';
+
+### Basic Usage
+
+<CodeExample
+  html={`<button id="basic-trigger" popovertarget="basic-menu">Open Menu</button>
+<m-popover-menu id="basic-menu" popover anchor="basic-trigger">
+  <a href="#profile">Profile</a>
+  <a href="#settings">Settings</a>
+  <a href="#logout">Logout</a>
+</m-popover-menu>`}
+/>
+
+### Context Menu
+
+<CodeExample
+  html={`<button id="ctx-trigger" popovertarget="ctx-menu">Actions ⋮</button>
+<m-popover-menu id="ctx-menu" popover anchor="ctx-trigger">
+  <button type="button">Edit</button>
+  <button type="button">Delete</button>
+  <button type="button">Share</button>
+</m-popover-menu>`}
+/>
+
+### With Custom Role
+
+<CodeExample
+  html={`<button id="help-trigger" popovertarget="help-menu">Help</button>
+<m-popover-menu id="help-menu" popover anchor="help-trigger" role="dialog">
+  <p>This is a help dialog, not a menu.</p>
+</m-popover-menu>`}
+/>

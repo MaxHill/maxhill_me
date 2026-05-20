@@ -1,0 +1,13 @@
+import CodeExample from '../../../../../apps/site/src/components/CodeExample.astro';
+
+The `m-command` component allows you to bind keyboard shortcuts to common actions like navigation, opening/closing dialogs and popovers, and focusing elements. Commands can be triggered programmatically or via keyboard shortcuts.
+
+<CodeExample html={`<m-command 
+    command="navigate" 
+    commandfor="/design-system#hero" 
+    keys="<C-b>1">
+  Command+b1
+</m-command>
+<m-command command="navigate" commandfor="/design-system#doc-components" keys="<C-b>2">
+  Command+b2
+</m-command>`} />

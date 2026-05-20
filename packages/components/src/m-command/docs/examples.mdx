@@ -1,0 +1,37 @@
+import CodeExample from '../../../../../apps/site/src/components/CodeExample.astro';
+
+### Dialog
+
+<CodeExample html={`<dialog id="example-dialog">I'm an example dialog</dialog>
+
+<m-command command="show-modal" commandfor="#example-dialog" keys="<C-b>o">
+  Command+b o (open)
+</m-command>
+
+<m-command command="close" commandfor="#example-dialog" keys="<C-b>c">
+  Command+b c (close)
+</m-command>`} />
+
+### Popover
+
+<CodeExample html={`<div id="example-popover" popover>I'm a popover</div>
+
+<m-command command="show-popover" commandfor="#example-popover" keys="<C-b>s">
+  Command+b s (show)
+</m-command>
+
+<m-command command="hide-popover" commandfor="#example-popover" keys="<C-b>h">
+  Command+b h (hide)
+</m-command>
+
+<m-command command="toggle-popover" commandfor="#example-popover" keys="<C-b>t">
+  Command+b t (toggle)
+</m-command>`} />
+
+### Focus
+
+<CodeExample html={`<input id="example-input" type="text" placeholder="Focus me with Command+b f" />
+
+<m-command command="focus" commandfor="#example-input" keys="<C-b>f">
+  Command+b f (focus)
+</m-command>`} />
