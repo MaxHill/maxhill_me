@@ -90,89 +90,103 @@ const sections = [
                 <!-- Properties panel -->
                 <m-tab-panel name="properties">
                     <div class="panel-inner">
-                        <table>
-                            <thead><tr><th>Name</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
-                            <tbody>
-                                {comp.properties.map((prop) => (
-                                    <tr>
-                                        <td class="cell-name">{prop.name}</td>
-                                        <td class="cell-type">{prop.type}</td>
-                                        <td class="cell-default">{prop.default}</td>
-                                        <td>{prop.description}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        <header class="ref-header">
+                            <span>NAME</span>
+                            <span>TYPE</span>
+                            <span>DEFAULT</span>
+                        </header>
+                        <dl class="ref-list">
+                            {comp.properties.map((prop) => (
+                                <div class="ref-entry">
+                                    <dt>
+                                        <span class="ref-name">{prop.name}</span>
+                                        <span class="ref-type">{prop.type}</span>
+                                        <span class="ref-default">{prop.default || "—"}</span>
+                                    </dt>
+                                    {prop.description && <dd>{prop.description}</dd>}
+                                </div>
+                            ))}
+                        </dl>
                     </div>
                 </m-tab-panel>
 
                 <!-- Methods panel -->
                 <m-tab-panel name="methods">
                     <div class="panel-inner">
-                        <table>
-                            <thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead>
-                            <tbody>
-                                {comp.methods.map((method) => (
-                                    <tr>
-                                        <td class="cell-name">{method.name}</td>
-                                        <td class="cell-type">{method.type}</td>
-                                        <td>{method.description}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        <header class="ref-header">
+                            <span>NAME</span>
+                            <span>RETURNS</span>
+                        </header>
+                        <dl class="ref-list">
+                            {comp.methods.map((method) => (
+                                <div class="ref-entry">
+                                    <dt>
+                                        <span class="ref-name">{method.name}</span>
+                                        <span class="ref-type">{method.type}</span>
+                                    </dt>
+                                    {method.description && <dd>{method.description}</dd>}
+                                </div>
+                            ))}
+                        </dl>
                     </div>
                 </m-tab-panel>
 
                 <!-- Events panel -->
                 <m-tab-panel name="events">
                     <div class="panel-inner">
-                        <table>
-                            <thead><tr><th>Name</th><th>Detail Type</th><th>Description</th></tr></thead>
-                            <tbody>
-                                {comp.events.map((event) => (
-                                    <tr>
-                                        <td class="cell-name">{event.name}</td>
-                                        <td class="cell-type">{event.type}</td>
-                                        <td>{event.description}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        <header class="ref-header">
+                            <span>NAME</span>
+                            <span>DETAIL TYPE</span>
+                        </header>
+                        <dl class="ref-list">
+                            {comp.events.map((event) => (
+                                <div class="ref-entry">
+                                    <dt>
+                                        <span class="ref-name">{event.name}</span>
+                                        <span class="ref-type">{event.type}</span>
+                                    </dt>
+                                    {event.description && <dd>{event.description}</dd>}
+                                </div>
+                            ))}
+                        </dl>
                     </div>
                 </m-tab-panel>
 
                 <!-- Slots panel -->
                 <m-tab-panel name="slots">
                     <div class="panel-inner">
-                        <table>
-                            <thead><tr><th>Name</th><th>Description</th></tr></thead>
-                            <tbody>
-                                {comp.slots.map((slot) => (
-                                    <tr>
-                                        <td class="cell-name">{slot.name || "(default)"}</td>
-                                        <td>{slot.description}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        <header class="ref-header">
+                            <span>NAME</span>
+                        </header>
+                        <dl class="ref-list">
+                            {comp.slots.map((slot) => (
+                                <div class="ref-entry">
+                                    <dt>
+                                        <span class="ref-name">{slot.name || "(default)"}</span>
+                                    </dt>
+                                    {slot.description && <dd>{slot.description}</dd>}
+                                </div>
+                            ))}
+                        </dl>
                     </div>
                 </m-tab-panel>
 
                 <!-- CSS Parts panel -->
                 <m-tab-panel name="css-parts">
                     <div class="panel-inner">
-                        <table>
-                            <thead><tr><th>Name</th><th>Description</th></tr></thead>
-                            <tbody>
-                                {comp.cssParts.map((part) => (
-                                    <tr>
-                                        <td class="cell-name">::part({part.name})</td>
-                                        <td>{part.description}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        <header class="ref-header">
+                            <span>NAME</span>
+                        </header>
+                        <dl class="ref-list">
+                            {comp.cssParts.map((part) => (
+                                <div class="ref-entry">
+                                    <dt>
+                                        <span class="ref-name">::part({part.name})</span>
+                                    </dt>
+                                    {part.description && <dd>{part.description}</dd>}
+                                </div>
+                            ))}
+                        </dl>
                     </div>
                 </m-tab-panel>
             </m-tab-list>
@@ -232,7 +246,7 @@ const sections = [
     }
 
     .badge {
-        font-size: var(--font-size-00);
+        font-size: var(--font-size-0);
         padding: 2px var(--size-1);
         border: var(--border-width) solid var(--color-stroke);
         text-transform: uppercase;
@@ -300,51 +314,75 @@ const sections = [
     }
 
     /* ═══════════════════════════════════════
-       TABLES
+       API REFERENCE (man-page style)
        ═══════════════════════════════════════ */
 
-    table {
-        width: 100%;
-        min-width: 480px;
-        border-collapse: collapse;
+    .ref-header {
+        display: flex;
+        gap: var(--size-4);
+        font-family: var(--ff-display);
         font-size: var(--font-size-0);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-softer);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding-bottom: var(--size-2);
+        border-bottom: var(--border);
+        margin-bottom: var(--size-3);
+    }
 
-        th, td {
-            text-align: left;
-            padding: var(--size-00) var(--size-2) var(--size-00) 0;
-            border-bottom: var(--border-width) solid color-mix(in oklch, var(--color-stroke) 50%, transparent);
-        }
+    .ref-list {
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0;
+    }
 
-        th {
-            font-weight: var(--font-weight-medium);
-            color: var(--color-text-softer);
-            text-transform: uppercase;
-            font-size: var(--font-size-0);
-            letter-spacing: 0.08em;
-            padding-bottom: var(--size-1);
-            font-family: var(--ff-display);
-        }
+    .ref-entry {
+        padding: var(--size-2) var(--size-2);
+        transition: background 80ms ease-out;
 
-        tr:hover td {
+        &:hover {
             background: var(--color-primary-fill-softer);
         }
+
+        dt {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: var(--size-2);
+        }
+
+        dd {
+            margin: 0;
+            padding-top: var(--size-1);
+            padding-left: var(--size-3);
+            color: var(--color-text);
+            font-size: var(--font-size-1);
+            max-width: var(--size-content-3);
+        }
     }
 
-    .cell-name {
+    .ref-name {
         font-weight: var(--font-weight-medium);
+        font-size: var(--font-size-1);
         color: var(--color-primary-text-colorful);
-        white-space: nowrap;
     }
 
-    .cell-type {
+    .ref-type {
+        font-size: var(--font-size-1);
         color: var(--color-text-softer);
-        white-space: nowrap;
-        font-size: var(--font-size-0);
     }
 
-    .cell-default {
+    .ref-default {
+        font-size: var(--font-size-1);
         color: var(--color-text-softer);
         font-style: italic;
-        font-size: var(--font-size-0);
+
+        &::before {
+            content: "= ";
+            font-style: normal;
+            opacity: 0.5;
+        }
     }
 </style>

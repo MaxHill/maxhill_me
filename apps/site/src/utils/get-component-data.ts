@@ -25,29 +25,31 @@ export function getComponentData(tagName: string): ComponentData | undefined {
     name: p.name || "—",
     type: p.type?.text || "—",
     default: p.default ?? "—",
-    description: p.description || "—",
+    description: p.description || "",
   }));
 
   const methods = (getComponentPublicMethods(comp) || []).map((m: any) => ({
     name: m.name || "—",
-    type: m.return?.type?.text || "—",
-    description: m.description || "—",
+    type: m.return?.type?.text || "void",
+    description: m.description || "",
   }));
 
-  const events = (getComponentEventsWithType(comp, { overrideCustomEventType: true }) || []).map((e: any) => ({
-    name: e.name || "—",
-    type: e.type?.text || "—",
-    description: e.description || "—",
-  }));
+  const events = (getComponentEventsWithType(comp, { overrideCustomEventType: true }) || [])
+    .filter((e: any) => e.name)
+    .map((e: any) => ({
+      name: e.name,
+      type: e.type?.text || "—",
+      description: e.description || "",
+    }));
 
   const slots = (comp.slots || []).map((s: any) => ({
-    name: s.name || "—",
-    description: s.description || "—",
+    name: s.name || "",
+    description: s.description || "",
   }));
 
   const cssParts = (comp.cssParts || []).map((p: any) => ({
     name: p.name || "—",
-    description: p.description || "—",
+    description: p.description || "",
   }));
 
   const formAssociated = comp.members?.some(
