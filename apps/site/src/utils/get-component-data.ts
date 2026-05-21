@@ -17,8 +17,12 @@ export interface ComponentData {
   formAssociated: boolean;
 }
 
-export function getComponentData(tagName: string): ComponentData | undefined {
-  const comp = getComponentByTagName(customElements as any, tagName);
+// ═══════════════════════════════════════
+// SINGLE PARSE
+// ═══════════════════════════════════════
+
+function parseComponent(tagName: string, cem: any): ComponentData | undefined {
+  const comp = getComponentByTagName(cem, tagName);
   if (!comp) return undefined;
 
   const properties = (getComponentPublicProperties(comp) || []).map((p: any) => ({
@@ -68,12 +72,8 @@ export function getComponentData(tagName: string): ComponentData | undefined {
   };
 }
 
-export function getAllComponents(): ComponentData[] {
-  return getAllComponentTagNames().map(getComponentData).filter(Boolean) as ComponentData[];
-}
-
-export function getAllComponentTagNames(): string[] {
-  const modules = (customElements as any).modules || [];
+function extractTagNames(cem: any): string[] {
+  const modules = cem.modules || [];
   const tagNames: string[] = [];
   for (const mod of modules) {
     for (const decl of mod.declarations || []) {
@@ -83,4 +83,30 @@ export function getAllComponentTagNames(): string[] {
     }
   }
   return tagNames;
+}
+
+// Parse once at module load
+const TAG_NAMES = extractTagNames(customElements);
+const ALL_COMPONENTS: ComponentData[] = TAG_NAMES
+  .map((tagName) => parseComponent(tagName, customElements))
+  .filter((c): c is ComponentData => c !== undefined);
+
+const COMPONENT_MAP = new Map<string, ComponentData>(
+  ALL_COMPONENTS.map((c) => [c.tagName, c])
+);
+
+// ═══════════════════════════════════════
+// PUBLIC ACCESSORS
+// ═══════════════════════════════════════
+
+export function getComponentData(tagName: string): ComponentData | undefined {
+  return COMPONENT_MAP.get(tagName);
+}
+
+export function getAllComponents(): ComponentData[] {
+  return ALL_COMPONENTS;
+}
+
+export function getAllComponentTagNames(): string[] {
+  return TAG_NAMES;
 }

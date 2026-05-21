@@ -2,6 +2,7 @@
 import PageLayout from "../../components/layouts/PageLayout.astro";
 import ComponentsLayout from "../../components/layouts/ComponentsLayout.astro";
 import CodeExample from "../../components/CodeExample.astro";
+import { SECTIONS } from "../../components/layouts/sections";
 import { getComponentData, getAllComponentTagNames } from "../../utils/get-component-data";
 import { getExamplesForComponent } from "../../utils/get-component-examples";
 import { marked } from "marked";
@@ -29,15 +30,19 @@ function slugToTitle(slug: string): string {
     return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-const sections = [
-    { id: "overview", label: "overview", disabled: false },
-    { id: "examples", label: "examples", disabled: restExamples.length === 0 },
-    { id: "properties", label: "properties", disabled: comp.properties.length === 0 },
-    { id: "methods", label: "methods", disabled: comp.methods.length === 0 },
-    { id: "events", label: "events", disabled: comp.events.length === 0 },
-    { id: "slots", label: "slots", disabled: comp.slots.length === 0 },
-    { id: "css-parts", label: "css parts", disabled: comp.cssParts.length === 0 },
-];
+const disabledSections: Record<string, boolean> = {
+    examples: restExamples.length === 0,
+    properties: comp.properties.length === 0,
+    methods: comp.methods.length === 0,
+    events: comp.events.length === 0,
+    slots: comp.slots.length === 0,
+    "css-parts": comp.cssParts.length === 0,
+};
+
+const sections = SECTIONS.map((sec) => ({
+    ...sec,
+    disabled: disabledSections[sec.id] ?? false,
+}));
 ---
 
 <PageLayout title={tagName} bodyClass="component-page">
@@ -56,7 +61,7 @@ const sections = [
             <m-tab-list label="Component sections" transition="terminal-wipe" class="section-tabs">
                 {sections.map((sec) => (
                     <m-tab panel={sec.id} disabled={sec.disabled || undefined}>
-                        {sec.label}
+                        {sec.label.toLowerCase()}
                     </m-tab>
                 ))}
 
@@ -201,9 +206,6 @@ const sections = [
 </PageLayout>
 
 <style>
-    :global(.component-page) {
-        padding-top: var(--menu-height);
-    }
 
     .component-view {
         display: grid;

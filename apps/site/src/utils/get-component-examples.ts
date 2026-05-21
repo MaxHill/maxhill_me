@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 export interface ComponentExample {
   slug: string;
@@ -10,8 +11,8 @@ export interface ComponentExample {
   explanation?: string;
 }
 
-const COMPONENTS_DIR = path.resolve(
-  path.dirname(import.meta.url.replace("file://", "")),
+const DEFAULT_COMPONENTS_DIR = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
   "../../../../packages/components/src"
 );
 
@@ -31,8 +32,8 @@ function readOptionalFile(filePath: string): string | undefined {
   }
 }
 
-export function getExamplesForComponent(tagName: string): ComponentExample[] {
-  const examplesDir = path.join(COMPONENTS_DIR, tagName, "examples");
+export function getExamplesForComponent(tagName: string, basePath = DEFAULT_COMPONENTS_DIR): ComponentExample[] {
+  const examplesDir = path.join(basePath, tagName, "examples");
 
   if (!fs.existsSync(examplesDir)) {
     return [];
@@ -67,18 +68,18 @@ export function getExamplesForComponent(tagName: string): ComponentExample[] {
   return examples.sort((a, b) => a.order - b.order);
 }
 
-export function getAllComponentExamples(): Map<string, ComponentExample[]> {
+export function getAllComponentExamples(basePath = DEFAULT_COMPONENTS_DIR): Map<string, ComponentExample[]> {
   const result = new Map<string, ComponentExample[]>();
 
-  if (!fs.existsSync(COMPONENTS_DIR)) {
+  if (!fs.existsSync(basePath)) {
     return result;
   }
 
-  const entries = fs.readdirSync(COMPONENTS_DIR, { withFileTypes: true });
+  const entries = fs.readdirSync(basePath, { withFileTypes: true });
   const componentDirs = entries.filter((e) => e.isDirectory());
 
   for (const dir of componentDirs) {
-    const examples = getExamplesForComponent(dir.name);
+    const examples = getExamplesForComponent(dir.name, basePath);
     if (examples.length > 0) {
       result.set(dir.name, examples);
     }

@@ -1,5 +1,6 @@
 ---
 import { getAllComponentTagNames } from "../../utils/get-component-data";
+import { SECTIONS } from "./sections";
 
 interface Props {
     title: string;
@@ -33,13 +34,9 @@ const allComponents = getAllComponentTagNames();
         <span class="leader">space</span>
         <span><kbd>space</kbd> palette</span>
         <span class="sep">│</span>
-        <span><kbd>o</kbd> overview</span>
-        <span><kbd>x</kbd> examples</span>
-        <span><kbd>p</kbd> props</span>
-        <span><kbd>m</kbd> methods</span>
-        <span><kbd>e</kbd> events</span>
-        <span><kbd>s</kbd> slots</span>
-        <span><kbd>c</kbd> css</span>
+        {SECTIONS.map((sec) => (
+            <span><kbd>{sec.key}</kbd> {sec.label.toLowerCase()}</span>
+        ))}
         <span class="statusbar-cursor"></span>
     </footer>
 </div>
@@ -61,6 +58,10 @@ const allComponents = getAllComponentTagNames();
 <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
 
 <style>
+    :global(.component-page) {
+        padding-top: var(--menu-height);
+    }
+
     .components-app {
         display: grid;
         grid-template-columns: var(--size-fluid-9) 1fr;
@@ -290,6 +291,7 @@ const allComponents = getAllComponentTagNames();
 <script>
     import "@maxhill/components/m-command-palette";
     import { registerCommand } from "@maxhill/components/m-command";
+    import { SECTIONS } from "./sections";
 
     // ═══════════════════════════════════════
     // MOBILE SIDEBAR
@@ -341,33 +343,22 @@ const allComponents = getAllComponentTagNames();
     });
 
     // Register section commands
-    const sectionKeys = [
-        { keys: "<Space>o", id: "section-overview", label: "Overview" },
-        { keys: "<Space>x", id: "section-examples", label: "Examples" },
-        { keys: "<Space>p", id: "section-properties", label: "Properties" },
-        { keys: "<Space>m", id: "section-methods", label: "Methods" },
-        { keys: "<Space>e", id: "section-events", label: "Events" },
-        { keys: "<Space>s", id: "section-slots", label: "Slots" },
-        { keys: "<Space>c", id: "section-css-parts", label: "CSS Parts" },
-    ];
-
-    sectionKeys.forEach(({ keys, id, label }) => {
+    SECTIONS.forEach(({ id, key, label }) => {
         registerCommand({
-            id,
-            keys,
+            id: `section-${id}`,
+            keys: `<Space>${key}`,
             preventDefault: true,
             customCommand: () => {
-                const sectionId = id.replace('section-', '');
                 const tabList = document.querySelector('m-tab-list.section-tabs');
                 if (tabList) {
-                    const tab = tabList.querySelector(`m-tab[panel="${sectionId}"]`) as HTMLElement;
+                    const tab = tabList.querySelector(`m-tab[panel="${id}"]`) as HTMLElement;
                     if (tab && !tab.hasAttribute('disabled')) {
                         tab.click();
                     }
                 }
             }
         });
-        const el = document.getElementById(`command_${id}`);
+        const el = document.getElementById(`command_section-${id}`);
         if (el) el.dataset.label = `Show ${label}`;
     });
 </script>

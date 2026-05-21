@@ -56,18 +56,21 @@ export function registerCommand(createCommandDefinition: CreateCommandDefinition
 }
 
 /**
- * A webcomponent used to add commands like focus naivgate open or other custom ones that can be triggered using javascript or keyboard shortcuts
+ * A web component for declarative commands — focus, navigate, open dialogs/popovers, or custom actions — triggered via JavaScript or keyboard shortcuts.
  * 
  * @customElement
  * @tagname m-command
  * 
- * @slot - Default slot for component content
+ * @slot - Default slot for label content (shown in command palette)
  * 
- * @attr {string} example - An example property
+ * @attr {string} keys - Keyboard shortcut in vim notation (e.g. "<Space>o", "<C-b>x")
+ * @attr {"navigate"|"show-modal"|"close"|"request-close"|"show-popover"|"hide-popover"|"toggle-popover"|"focus"|"custom"} command - The action type to perform
+ * @attr {string} commandfor - Target element selector (URL for navigate, CSS selector for others)
+ * @attr {boolean} preventdefault - Whether to call preventDefault on the keyboard event
  * 
- * @prop {string} example - An example property
- * 
- * @fires m-command-change - Fired when the example changes (detail: { example: string })
+ * @fires m-command-trigger - Fired when the command is triggered (detail: { command: CommandDefinition })
+ * @fires m-command-register - Fired when the command registers its keyboard shortcut (detail: { command: CommandDefinition })
+ * @fires m-command-unregister - Fired when the command unregisters its keyboard shortcut (detail: { command: CommandDefinition })
  */
 export class MCommand extends MElement {
     static tagName = 'm-command';
