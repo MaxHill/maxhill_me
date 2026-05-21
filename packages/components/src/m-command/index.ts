@@ -72,6 +72,15 @@ export function registerCommand(createCommandDefinition: CreateCommandDefinition
  * @fires m-command-register - Fired when the command registers its keyboard shortcut (detail: { command: CommandDefinition })
  * @fires m-command-unregister - Fired when the command unregisters its keyboard shortcut (detail: { command: CommandDefinition })
  */
+const COMMAND_ACTIONS: Record<string, string> = {
+    "show-modal": "showModal",
+    "close": "close",
+    "request-close": "close",
+    "show-popover": "showPopover",
+    "hide-popover": "hidePopover",
+    "toggle-popover": "togglePopover"
+};
+
 export class MCommand extends MElement {
     static tagName = 'm-command';
 
@@ -138,7 +147,7 @@ export class MCommand extends MElement {
         }
     }
     disconnectedCallback() {
-        if (this.unregister) { this.unregister(); }
+        if (this.unregister) { this.unregister(); this.unregister = undefined; }
     }
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
@@ -191,6 +200,7 @@ export class MCommand extends MElement {
                 return;
             }
             this.customCommand(e);
+            return;
         }
 
         if (this.command === "navigate") {
@@ -222,16 +232,7 @@ export class MCommand extends MElement {
             return;
         }
 
-        const actions: Record<string, keyof HTMLDialogElement | keyof HTMLElement> = {
-            "show-modal": "showModal",
-            "close": "close",
-            "request-close": "close",
-            "show-popover": "showPopover",
-            "hide-popover": "hidePopover",
-            "toggle-popover": "togglePopover"
-        };
-
-        const method = actions[this.command];
+        const method = COMMAND_ACTIONS[this.command];
         if (method && typeof (target as any)[method] === 'function') {
             (target as any)[method]();
         } else if (method) {
