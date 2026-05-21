@@ -1,0 +1,34 @@
+---
+export interface RefEntry {
+    name: string;
+    type?: string;
+    default?: string;
+    description?: string;
+}
+
+interface Props {
+    columns: string[];
+    items: RefEntry[];
+    formatName?: (name: string) => string;
+}
+
+const { columns, items, formatName } = Astro.props;
+---
+
+<div class="panel-inner">
+    <header class="ref-header">
+        {columns.map((col) => <span>{col}</span>)}
+    </header>
+    <dl class="ref-list">
+        {items.map((item) => (
+            <div class="ref-entry">
+                <dt>
+                    <span class="ref-name">{formatName ? formatName(item.name) : item.name}</span>
+                    {item.type && <span class="ref-type">{item.type}</span>}
+                    {item.default && <span class="ref-default">{item.default}</span>}
+                </dt>
+                {item.description && <dd>{item.description}</dd>}
+            </div>
+        ))}
+    </dl>
+</div>

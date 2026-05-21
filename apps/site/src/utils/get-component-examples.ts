@@ -35,11 +35,12 @@ function readOptionalFile(filePath: string): string | undefined {
 export function getExamplesForComponent(tagName: string, basePath = DEFAULT_COMPONENTS_DIR): ComponentExample[] {
   const examplesDir = path.join(basePath, tagName, "examples");
 
-  if (!fs.existsSync(examplesDir)) {
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(examplesDir, { withFileTypes: true });
+  } catch {
     return [];
   }
-
-  const entries = fs.readdirSync(examplesDir, { withFileTypes: true });
   const folders = entries.filter((e) => e.isDirectory());
 
   const examples: ComponentExample[] = [];
@@ -48,12 +49,14 @@ export function getExamplesForComponent(tagName: string, basePath = DEFAULT_COMP
     const folderPath = path.join(examplesDir, folder.name);
     const htmlPath = path.join(folderPath, "index.html");
 
-    if (!fs.existsSync(htmlPath)) {
+    let html: string;
+    try {
+      html = fs.readFileSync(htmlPath, "utf-8");
+    } catch {
       continue;
     }
 
     const { order, slug } = parseFolder(folder.name);
-    const html = fs.readFileSync(htmlPath, "utf-8");
 
     examples.push({
       slug,
@@ -71,11 +74,13 @@ export function getExamplesForComponent(tagName: string, basePath = DEFAULT_COMP
 export function getAllComponentExamples(basePath = DEFAULT_COMPONENTS_DIR): Map<string, ComponentExample[]> {
   const result = new Map<string, ComponentExample[]>();
 
-  if (!fs.existsSync(basePath)) {
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(basePath, { withFileTypes: true });
+  } catch {
     return result;
   }
 
-  const entries = fs.readdirSync(basePath, { withFileTypes: true });
   const componentDirs = entries.filter((e) => e.isDirectory());
 
   for (const dir of componentDirs) {
