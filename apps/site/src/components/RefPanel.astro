@@ -33,3 +33,83 @@ const { columns, items, formatName } = Astro.props;
         ))}
     </dl>
 </div>
+
+<style>
+    .panel-inner {
+        padding: var(--size-4) var(--size-5) var(--size-6);
+        overflow-x: auto;
+
+        @media (width <= 768px) {
+            padding: var(--size-3) var(--size-2) var(--size-4);
+        }
+    }
+
+    .ref-header {
+        display: flex;
+        gap: var(--size-4);
+        font-family: var(--ff-display);
+        font-size: var(--font-size-0);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-softer);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding-bottom: var(--size-2);
+        border-bottom: var(--border);
+        margin-bottom: var(--size-3);
+    }
+
+    .ref-list {
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0;
+    }
+
+    .ref-entry {
+        padding: var(--size-2) var(--size-2);
+        transition: background 80ms ease-out;
+
+        &:hover {
+            background: var(--color-primary-fill-softer);
+        }
+
+        dt {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: var(--size-2);
+        }
+
+        dd {
+            margin: 0;
+            padding-top: var(--size-1);
+            padding-left: var(--size-3);
+            color: var(--color-text);
+            font-size: var(--font-size-1);
+            max-width: var(--size-content-3);
+        }
+    }
+
+    .ref-name {
+        font-weight: var(--font-weight-medium);
+        font-size: var(--font-size-1);
+        color: var(--color-primary-text-colorful);
+    }
+
+    .ref-type {
+        font-size: var(--font-size-1);
+        color: var(--color-text-softer);
+    }
+
+    .ref-default {
+        font-size: var(--font-size-1);
+        color: var(--color-text-softer);
+        font-style: italic;
+
+        &::before {
+            content: "= ";
+            font-style: normal;
+            opacity: 0.5;
+        }
+    }
+</style>
