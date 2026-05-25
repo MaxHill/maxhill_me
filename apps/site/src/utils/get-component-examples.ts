@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 export interface ComponentExample {
   slug: string;
@@ -12,8 +11,8 @@ export interface ComponentExample {
 }
 
 const DEFAULT_COMPONENTS_DIR = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../../../packages/components/src"
+  process.cwd(),
+  "../../packages/components/src"
 );
 
 function parseFolder(folderName: string): { order: number; slug: string } {

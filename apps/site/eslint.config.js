@@ -19,6 +19,7 @@ export default [
         browser: true,
         es2022: true,
         node: true,
+        process: 'readonly',
       },
     },
     plugins: {
