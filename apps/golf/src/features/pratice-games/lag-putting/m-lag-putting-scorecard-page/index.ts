@@ -54,7 +54,7 @@ export class MLagPuttingScorecardPage extends MElement {
   }
 
   disconnectedCallback() {
-    this.unsubscribe();
+    this.unsubscribe?.();
     this.scrollObserver?.disconnect();
   }
 
