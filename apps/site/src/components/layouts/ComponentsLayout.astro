@@ -3,11 +3,11 @@ import { getAllComponentTagNames } from "../../utils/get-component-data";
 import { SECTIONS } from "./sections";
 
 interface Props {
-    title: string;
+    title?: string;
     currentComponent: string;
 }
 
-const { title, currentComponent } = Astro.props;
+const { currentComponent } = Astro.props;
 const allComponents = getAllComponentTagNames();
 ---
 

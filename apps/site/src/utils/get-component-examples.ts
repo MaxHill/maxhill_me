@@ -6,9 +6,9 @@ export interface ComponentExample {
   slug: string;
   order: number;
   html: string;
-  css?: string;
-  js?: string;
-  explanation?: string;
+  css?: string | undefined;
+  js?: string | undefined;
+  explanation?: string | undefined;
 }
 
 const DEFAULT_COMPONENTS_DIR = path.resolve(

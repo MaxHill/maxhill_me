@@ -3,8 +3,8 @@ import { Code } from "astro:components";
 
 export interface Props {
     html?: string;
-    css?: string;
-    js?: string;
+    css?: string | undefined;
+    js?: string | undefined;
 }
 
 const { html = "", css = "", js = "" } = Astro.props;
