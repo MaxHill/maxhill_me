@@ -9,7 +9,8 @@ export interface RefEntry {
 interface Props {
     columns: string[];
     items: RefEntry[];
-    formatName?: (name: string) => string;
+    // eslint-disable-next-line no-unused-vars
+    formatName?: (value: string) => string;
 }
 
 const { columns, items, formatName } = Astro.props;

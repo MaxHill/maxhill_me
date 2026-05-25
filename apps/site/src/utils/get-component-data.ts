@@ -3,6 +3,12 @@ import {
   getComponentPublicProperties,
   getComponentPublicMethods,
   getComponentEventsWithType,
+  type Component,
+  type Property,
+  type Method,
+  type ComponentEvent,
+  type CssPart,
+  type Slot,
 } from "@wc-toolkit/cem-utilities";
 import customElements from "@maxhill/components/custom-elements.json";
 
@@ -17,52 +23,58 @@ export interface ComponentData {
   formAssociated: boolean;
 }
 
+interface CemManifest {
+  modules?: Array<{
+    declarations?: Array<{ tagName?: string }>;
+  }>;
+}
+
 // ═══════════════════════════════════════
 // SINGLE PARSE
 // ═══════════════════════════════════════
 
-function parseComponent(tagName: string, cem: any): ComponentData | undefined {
+function parseComponent(tagName: string, cem: unknown): ComponentData | undefined {
   const comp = getComponentByTagName(cem, tagName);
   if (!comp) return undefined;
 
-  const properties = (getComponentPublicProperties(comp) || []).map((p: any) => ({
+  const properties = (getComponentPublicProperties(comp) || []).map((p: Property) => ({
     name: p.name || "—",
     type: p.type?.text || "—",
     default: p.default ?? "—",
     description: p.description || "",
   }));
 
-  const methods = (getComponentPublicMethods(comp) || []).map((m: any) => ({
+  const methods = (getComponentPublicMethods(comp) || []).map((m: Method) => ({
     name: m.name || "—",
     type: m.return?.type?.text || "void",
     description: m.description || "",
   }));
 
   const events = (getComponentEventsWithType(comp, { overrideCustomEventType: true }) || [])
-    .filter((e: any) => e.name)
-    .map((e: any) => ({
+    .filter((e: ComponentEvent) => e.name)
+    .map((e: ComponentEvent) => ({
       name: e.name,
       type: e.type?.text || "—",
       description: e.description || "",
     }));
 
-  const slots = (comp.slots || []).map((s: any) => ({
+  const slots = ((comp as Component & { slots?: Slot[] }).slots || []).map((s: Slot) => ({
     name: s.name || "",
     description: s.description || "",
   }));
 
-  const cssParts = (comp.cssParts || []).map((p: any) => ({
+  const cssParts = ((comp as Component & { cssParts?: CssPart[] }).cssParts || []).map((p: CssPart) => ({
     name: p.name || "—",
     description: p.description || "",
   }));
 
-  const formAssociated = comp.members?.some(
-    (m: any) => m.name === "formAssociated" && m.static === true && m.default === "true"
+  const formAssociated = (comp as Component & { members?: Array<{ name?: string; static?: boolean; default?: string }> }).members?.some(
+    (m: { name?: string; static?: boolean; default?: string }) => m.name === "formAssociated" && m.static === true && m.default === "true"
   ) ?? false;
 
   return {
     tagName,
-    description: (comp as any).description || "—",
+    description: (comp as Component & { description?: string }).description || "—",
     properties,
     methods,
     events,
@@ -72,7 +84,7 @@ function parseComponent(tagName: string, cem: any): ComponentData | undefined {
   };
 }
 
-function extractTagNames(cem: any): string[] {
+function extractTagNames(cem: CemManifest): string[] {
   const modules = cem.modules || [];
   const tagNames: string[] = [];
   for (const mod of modules) {
@@ -86,7 +98,7 @@ function extractTagNames(cem: any): string[] {
 }
 
 // Parse once at module load
-const TAG_NAMES = extractTagNames(customElements);
+const TAG_NAMES = extractTagNames(customElements as unknown as CemManifest);
 const ALL_COMPONENTS: ComponentData[] = TAG_NAMES
   .map((tagName) => parseComponent(tagName, customElements))
   .filter((c): c is ComponentData => c !== undefined);
