@@ -1,321 +1,331 @@
 ---
 import PageLayout from "../../components/layouts/PageLayout.astro";
-import { getCollection, render } from "astro:content";
-import {
-    getComponentByTagName,
-    getComponentPublicProperties,
-    getComponentPublicMethods,
-    getComponentEventsWithType,
-} from "@wc-toolkit/cem-utilities";
-import customElements from "@maxhill/components/custom-elements.json";
+import ComponentsLayout from "../../components/layouts/ComponentsLayout.astro";
+import CodeExample from "../../components/CodeExample.astro";
+import RefPanel from "../../components/RefPanel.astro";
+import { SECTIONS } from "../../components/layouts/sections";
+import { getComponentData, getAllComponentTagNames } from "../../utils/get-component-data";
+import { getExamplesForComponent } from "../../utils/get-component-examples";
 import { marked } from "marked";
 
-export async function getStaticPaths() {
-    const docEntries = await getCollection("componentDocs");
-
-    return docEntries.map((docsEntry) => {
-        const tagName = docsEntry.id.split("/").slice(-2, -1)[0];
-
-        return {
-            params: { component: tagName.substring(2) },
-            props: { entry: docsEntry },
-        };
-    });
+export function getStaticPaths() {
+    const tagNames = getAllComponentTagNames();
+    return tagNames.map((tagName) => ({
+        params: { component: tagName },
+        props: { tagName },
+    }));
 }
 
-const { entry } = Astro.props;
+const { tagName } = Astro.props;
+const comp = getComponentData(tagName);
+const examples = getExamplesForComponent(tagName);
 
-const { Content } = await render(entry);
+if (!comp) {
+    return Astro.redirect("/components");
+}
 
-const tagName = entry.id.split("/").slice(-2, -1)[0];
+const firstExample = examples[0];
+const restExamples = examples.slice(1);
 
-const componentName = tagName
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+function slugToTitle(slug: string): string {
+    return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
 
-const title = componentName;
-
-const component = getComponentByTagName(customElements, tagName);
-const properties = component ? getComponentPublicProperties(component) : [];
-const methods = component ? getComponentPublicMethods(component) : [];
-const events = component
-    ? getComponentEventsWithType(component, { overrideCustomEventType: true })
-    : [];
+const sectionCtx = { comp, examples };
+const sections = SECTIONS.map((sec) => ({
+    ...sec,
+    disabled: sec.isEmpty ? sec.isEmpty(sectionCtx) : false,
+}));
 ---
 
-<PageLayout title={title}>
-    <main
-        class="content-grid typesetting"
-        data-justify="start"
-    >
-        <m-fit-text
-            class="title"
-            font-display
-            data-margin="b-8"
-            data-width="full"
-        >
-            <h1 data-margin="0">{componentName}</h1>
-        </m-fit-text>
+<PageLayout title={tagName} bodyClass="component-page">
+    <ComponentsLayout currentComponent={tagName} title={tagName}>
+        <article class="component-view">
+            <header class="component-header">
+                <span class="component-name">&lt;{tagName}&gt;</span>
+                <span class="badges">
+                    {comp.formAssociated && <span class="badge badge--form">FORM</span>}
+                    {comp.slots.length > 0 && <span class="badge">{comp.slots.length} SLOTS</span>}
+                    {comp.properties.length > 0 && <span class="badge">{comp.properties.length} PROPS</span>}
+                    {comp.events.length > 0 && <span class="badge">{comp.events.length} EVENTS</span>}
+                </span>
+            </header>
 
-        {
-            component?.description && (
-                <div set:html={marked.parse(component.description)} />
-            )
-        }
+            <m-tab-list label="Component sections" transition="terminal-wipe" class="section-tabs">
+                {sections.map((sec) => (
+                    <m-tab panel={sec.id} disabled={sec.disabled || undefined}>
+                        {sec.label.toLowerCase()}
+                    </m-tab>
+                ))}
 
-        <Content components={{ script: Fragment }} />
-
-        {
-            properties && properties.length > 0 && (
-                <>
-                    <h2>Properties</h2>
-                    <div class="table-wrapper" data-width="full">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {properties.map((prop: any) => (
-                                    <tr>
-                                        <td>
-                                            <m-copy-button value={prop.name}>
-                                                {prop.name}
-                                            </m-copy-button>
-                                        </td>
-                                        <td>{prop.type?.text}</td>
-                                        <td>{prop.description}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                <!-- Overview panel -->
+                <m-tab-panel name="overview">
+                    <div class="panel-inner typesetting">
+                        {comp.description && comp.description !== "—" && (
+                            <div class="typesetting" set:html={marked.parse(comp.description)} />
+                        )}
+                        {firstExample && (
+                            <div class="example-block">
+                                <h2 class="h6">{slugToTitle(firstExample.slug)}</h2>
+                                {firstExample.explanation && (
+                                    <div class="typesetting" set:html={marked.parse(firstExample.explanation)} />
+                                )}
+                                <CodeExample html={firstExample.html} css={firstExample.css} js={firstExample.js} />
+                            </div>
+                        )}
                     </div>
-                </>
-            )
-        }
+                </m-tab-panel>
 
-        {
-            methods && methods.length > 0 && (
-                <>
-                    <h2>Methods</h2>
-                    <div class="table-wrapper" data-width="full">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {methods.map((method: any) => (
-                                    <tr>
-                                        <td>
-                                            <m-copy-button value={method.name}>
-                                                {method.name}
-                                            </m-copy-button>
-                                        </td>
-                                        <td>{method.type?.text}</td>
-                                        <td>{method.description}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                <!-- Examples panel -->
+                <m-tab-panel name="examples">
+                    <div class="panel-inner">
+                        {restExamples.map((example) => (
+                            <div class="example-block typesetting">
+                                <h2 class="h6">{slugToTitle(example.slug)}</h2>
+                                {example.explanation && (
+                                    <div class="typesetting" set:html={marked.parse(example.explanation)} />
+                                )}
+                                <CodeExample html={example.html} css={example.css} js={example.js} />
+                            </div>
+                        ))}
                     </div>
-                </>
-            )
-        }
+                </m-tab-panel>
 
-        {
-            events && events.length > 0 && (
-                <>
-                    <h2>Events</h2>
-                    <div class="table-wrapper" data-width="full">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {events.map((event: any) => (
-                                    <tr>
-                                        <td>
-                                            <m-copy-button value={event.name}>
-                                                {event.name}
-                                            </m-copy-button>
-                                        </td>
-                                        <td>{event.type?.text}</td>
-                                        <td>{event.description}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </>
-            )
-        }
+                <!-- Properties panel -->
+                <m-tab-panel name="properties">
+                    <RefPanel
+                        columns={["NAME", "TYPE", "DEFAULT"]}
+                        items={comp.properties.map((p) => ({ name: p.name, type: p.type, default: p.default || "—", description: p.description }))}
+                    />
+                </m-tab-panel>
 
-        {
-            component?.slots && component.slots.length > 0 && (
-                <>
-                    <h2>Slots</h2>
-                    <div class="table-wrapper" data-width="full">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {component.slots.map((slot: any) => (
-                                    <tr>
-                                        <td>
-                                            <m-copy-button
-                                                value={`slot="${slot.name || ""}"`}
-                                            >
-                                                slot="{slot.name || "(default)"}
-                                                "
-                                            </m-copy-button>
-                                        </td>
-                                        <td>{slot.description}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </>
-            )
-        }
+                <!-- Methods panel -->
+                <m-tab-panel name="methods">
+                    <RefPanel
+                        columns={["NAME", "RETURNS"]}
+                        items={comp.methods.map((m) => ({ name: m.name, type: m.type, description: m.description }))}
+                    />
+                </m-tab-panel>
 
-        {
-            component?.cssParts && component.cssParts.length > 0 && (
-                <>
-                    <h2>CSS Parts</h2>
-                    <div class="table-wrapper" data-width="full">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {component.cssParts.map((part: any) => (
-                                    <tr>
-                                        <td>
-                                            <m-copy-button
-                                                value={`::part(${part.name})`}
-                                            >
-                                                ::part({part.name})
-                                            </m-copy-button>
-                                        </td>
-                                        <td>{part.description}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </>
-            )
-        }
-    </main>
+                <!-- Events panel -->
+                <m-tab-panel name="events">
+                    <RefPanel
+                        columns={["NAME", "DETAIL TYPE"]}
+                        items={comp.events.map((e) => ({ name: e.name, type: e.type, description: e.description }))}
+                    />
+                </m-tab-panel>
+
+                <!-- Slots panel -->
+                <m-tab-panel name="slots">
+                    <RefPanel
+                        columns={["NAME"]}
+                        items={comp.slots.map((s) => ({ name: s.name || "(default)", description: s.description }))}
+                    />
+                </m-tab-panel>
+
+                <!-- CSS Parts panel -->
+                <m-tab-panel name="css-parts">
+                    <RefPanel
+                        columns={["NAME"]}
+                        items={comp.cssParts.map((p) => ({ name: `::part(${p.name})`, description: p.description }))}
+                    />
+                </m-tab-panel>
+            </m-tab-list>
+        </article>
+    </ComponentsLayout>
 </PageLayout>
 
 <style>
 
-    :global(.example-section) {
-        padding-block: var(--size-fluid-4);
+    .component-view {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        min-height: 0;
+        overflow: hidden;
+        height: 100%;
+    }
+
+    /* ═══════════════════════════════════════
+       COMPONENT HEADER
+       ═══════════════════════════════════════ */
+
+    .component-header {
+        padding: var(--size-4) var(--size-4) var(--size-3);
+        border-bottom: var(--border-width) solid var(--color-stroke);
+        display: flex;
+        align-items: baseline;
+        gap: var(--size-3);
+        background: var(--color-surface);
+
+        @media (width <= 768px) {
+            padding: var(--size-3) var(--size-2);
+            flex-wrap: wrap;
+        }
+    }
+
+    .component-name {
+        font-family: var(--ff-display);
+        font-size: var(--font-size-4);
+        line-height: 1;
+        color: var(--color-primary-text-colorful);
+        letter-spacing: -0.01em;
+
+        @media (width <= 768px) {
+            font-size: var(--font-size-3);
+        }
+    }
+
+    .badges {
         display: flex;
         flex-wrap: wrap;
-        gap: var(--body-margin);
-        justify-content: center;
-        align-items: flex-start;
-        width: 100%;
-
-        .typesetting {
-            width: var(--size-content-3);
-        }
-
-        .code-example {
-            flex: 1;
-            width: 100%;
-            max-width: var(--size-content-3);
-            min-width: min(100%, var(--size-content-3));
-        }
-
-        &[data-reverse]{
-            flex-direction: row-reverse;
-        }
-        h2 {
-            margin: 0;
-        }
+        gap: var(--size-1);
+        margin-left: auto;
+        align-self: center;
     }
 
-    .title {
-        margin-top: var(--size-fluid-3);
-        grid-column: full;
-    }
-    main {
-        --content-width: 600px;
-        --content-breakout-width: 850px;
-        margin: var(--menu-height) auto;
-        overflow-x: clip;
-
+    .badge {
+        font-size: var(--font-size-0);
+        padding: var(--size-1) var(--size-1);
+        border: var(--border-width) solid var(--color-stroke);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-text-softer);
+        font-family: var(--ff-display);
     }
 
-    .table-wrapper {
-        overflow-x: auto;
-        margin-bottom: 2rem;
-        grid-column: full;
-        width: 100%;
+    .badge--form {
+        border-color: var(--color-primary-fill-mid);
+        color: var(--color-primary-text-colorful);
     }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
+    /* ═══════════════════════════════════════
+       TAB LIST
+       ═══════════════════════════════════════ */
 
-        th,
-        td {
-            text-align: left;
-            padding: var(--size-2);
-        }
+    .section-tabs {
+        min-height: 0;
+        overflow: hidden;
+        --_padding-inline: var(--size-2);
+        --_padding-block: var(--size-1);
 
-        th {
-            font-weight: 600;
+        m-tab {
+            font-size: var(--font-size-1);
+            color: var(--color-text-softer);
             white-space: nowrap;
+            text-transform: lowercase;
         }
 
-        tr {
+        m-tab[aria-selected="true"] {
+            color: var(--color-primary-text-colorful);
+        }
+
+        m-tab[disabled] {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        m-tab-panel {
+            overflow-y: auto;
+            max-height: 100%;
+        }
+    }
+
+    /* ═══════════════════════════════════════
+       PANELS
+       ═══════════════════════════════════════ */
+
+    .panel-inner {
+        padding: var(--size-4) var(--size-5) var(--size-6);
+        overflow-x: auto;
+
+        @media (width <= 768px) {
+            padding: var(--size-3) var(--size-2) var(--size-4);
+        }
+    }
+
+    .typesetting > .typesetting {
+        max-width: var(--size-content-3);
+    }
+
+    .example-block {
+        padding-top: var(--size-4);
+
+        &:not(:last-child) {
+            padding-bottom: var(--size-4);
             border-bottom: var(--border);
         }
+    }
 
-        th:nth-child(1),
-        td:nth-child(1),
-        th:nth-child(2),
-        td:nth-child(2) {
-            width: max-content;
-            min-width: var(--size-content-1);
-            white-space: nowrap;
+    /* ═══════════════════════════════════════
+       API REFERENCE (man-page style)
+       ═══════════════════════════════════════ */
+
+    .ref-header {
+        display: flex;
+        gap: var(--size-4);
+        font-family: var(--ff-display);
+        font-size: var(--font-size-0);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-softer);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding-bottom: var(--size-2);
+        border-bottom: var(--border);
+        margin-bottom: var(--size-3);
+    }
+
+    .ref-list {
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0;
+    }
+
+    .ref-entry {
+        padding: var(--size-2) var(--size-2);
+        transition: background 80ms ease-out;
+
+        &:hover {
+            background: var(--color-primary-fill-softer);
         }
 
-        th:nth-child(3),
-        td:nth-child(3) {
-            min-width: var(--size-content-1);
-            width: 100%;
+        dt {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: var(--size-2);
         }
 
-        td {
-            m-copy-button {
-                font-size: var(--font-size-1);
-            }
+        dd {
+            margin: 0;
+            padding-top: var(--size-1);
+            padding-left: var(--size-3);
+            color: var(--color-text);
+            font-size: var(--font-size-1);
+            max-width: var(--size-content-3);
+        }
+    }
+
+    .ref-name {
+        font-weight: var(--font-weight-medium);
+        font-size: var(--font-size-1);
+        color: var(--color-primary-text-colorful);
+    }
+
+    .ref-type {
+        font-size: var(--font-size-1);
+        color: var(--color-text-softer);
+    }
+
+    .ref-default {
+        font-size: var(--font-size-1);
+        color: var(--color-text-softer);
+        font-style: italic;
+
+        &::before {
+            content: "= ";
+            font-style: normal;
+            opacity: 0.5;
         }
     }
 </style>

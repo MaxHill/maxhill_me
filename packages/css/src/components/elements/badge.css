@@ -8,7 +8,7 @@
     border: var(--border-width) solid var(--_color-border);
     color: var(--_color-text);
     padding-inline: var(--size-2);
-    border-radius: 99999px;
+    border-radius: 0;
     font: var(--p2);
 
     &[data-variant="danger"] {

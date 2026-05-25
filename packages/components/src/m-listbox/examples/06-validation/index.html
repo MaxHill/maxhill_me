@@ -1,0 +1,17 @@
+<form id="validation-form" class="form">
+  <label for="required-listbox">Country (required)</label>
+  <m-listbox id="required-listbox" name="country" required>
+    <m-option value="us">United States</m-option>
+    <m-option value="uk">United Kingdom</m-option>
+    <m-option value="ca">Canada</m-option>
+    <m-option value="au">Australia</m-option>
+  </m-listbox>
+  
+  <div id="validation-output" class="box" data-variant="surface" data-span="2">
+    <strong>Validation Status:</strong>
+    <pre id="validation-text" style="margin: 0.5rem 0 0 0;">Not yet validated</pre>
+  </div>
+  
+  <button type="submit">Submit</button>
+  <button type="reset">Reset</button>
+</form>

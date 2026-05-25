@@ -1,0 +1,27 @@
+<form class="form" id="feedback-form">
+  <m-input 
+      label="Name" 
+      name="name" 
+      required
+  ></m-input>
+
+  <m-input 
+      label="Email" 
+      name="email" 
+      type="email"
+      required
+  ></m-input>
+
+  <m-textarea 
+      label="Message" 
+      name="message" 
+      required
+      minlength="20"
+      rows="6"
+      placeholder="Tell us what you think..."
+      clearable
+  ></m-textarea>
+
+  <button type="submit">Send Feedback</button>
+</form>
+<pre id="feedback-output"></pre>

@@ -51,6 +51,9 @@ export default {
       tsx: false,
       target: 'auto',
       tsconfig: './tsconfig.json',
+      define: {
+        'import.meta.env': JSON.stringify({}),
+      },
     }),
     cssInlinePlugin(),
   ],

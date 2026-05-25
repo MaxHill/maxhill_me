@@ -56,19 +56,31 @@ export function registerCommand(createCommandDefinition: CreateCommandDefinition
 }
 
 /**
- * A webcomponent used to add commands like focus naivgate open or other custom ones that can be triggered using javascript or keyboard shortcuts
+ * A web component for declarative commands — focus, navigate, open dialogs/popovers, or custom actions — triggered via JavaScript or keyboard shortcuts.
  * 
  * @customElement
  * @tagname m-command
  * 
- * @slot - Default slot for component content
+ * @slot - Default slot for label content (shown in command palette)
  * 
- * @attr {string} example - An example property
+ * @attr {string} keys - Keyboard shortcut in vim notation (e.g. "<Space>o", "<C-b>x")
+ * @attr {"navigate"|"show-modal"|"close"|"request-close"|"show-popover"|"hide-popover"|"toggle-popover"|"focus"|"custom"} command - The action type to perform
+ * @attr {string} commandfor - Target element selector (URL for navigate, CSS selector for others)
+ * @attr {boolean} preventdefault - Whether to call preventDefault on the keyboard event
  * 
- * @prop {string} example - An example property
- * 
- * @fires m-command-change - Fired when the example changes (detail: { example: string })
+ * @fires m-command-trigger - Fired when the command is triggered (detail: { command: CommandDefinition })
+ * @fires m-command-register - Fired when the command registers its keyboard shortcut (detail: { command: CommandDefinition })
+ * @fires m-command-unregister - Fired when the command unregisters its keyboard shortcut (detail: { command: CommandDefinition })
  */
+const COMMAND_ACTIONS: Record<string, string> = {
+    "show-modal": "showModal",
+    "close": "close",
+    "request-close": "close",
+    "show-popover": "showPopover",
+    "hide-popover": "hidePopover",
+    "toggle-popover": "togglePopover"
+};
+
 export class MCommand extends MElement {
     static tagName = 'm-command';
 
@@ -79,7 +91,7 @@ export class MCommand extends MElement {
         this._customCommand = command;
         this.command = "custom"
     }
-    get customCommandse() {
+    get customCommand(): ((e: KeyboardEvent) => void) | undefined {
         return this._customCommand;
     }
 
@@ -135,7 +147,7 @@ export class MCommand extends MElement {
         }
     }
     disconnectedCallback() {
-        if (this.unregister) { this.unregister(); }
+        if (this.unregister) { this.unregister(); this.unregister = undefined; }
     }
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
@@ -185,8 +197,10 @@ export class MCommand extends MElement {
         if (this.command === "custom") {
             if (!this.customCommand) {
                 console.error(`Action ${this.id} does not have a custom command registered: ${this.customCommand}`);
+                return;
             }
             this.customCommand(e);
+            return;
         }
 
         if (this.command === "navigate") {
@@ -218,16 +232,7 @@ export class MCommand extends MElement {
             return;
         }
 
-        const actions: Record<string, keyof HTMLDialogElement | keyof HTMLElement> = {
-            "show-modal": "showModal",
-            "close": "close",
-            "request-close": "close",
-            "show-popover": "showPopover",
-            "hide-popover": "hidePopover",
-            "toggle-popover": "togglePopover"
-        };
-
-        const method = actions[this.command];
+        const method = COMMAND_ACTIONS[this.command];
         if (method && typeof (target as any)[method] === 'function') {
             (target as any)[method]();
         } else if (method) {

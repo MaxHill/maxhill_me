@@ -2,7 +2,7 @@
     --_padding-inline: var(--size-fluid-1);
     --_padding-block: var(--size-2);
     --margin: 0 0 -2px 0;
-    --border-width: 0 0 2px 0;
+    --_tab-border-width: 0 0 2px 0;
     display: grid;
     grid-template-rows: max-content;
     overflow: clip;
@@ -10,7 +10,7 @@
     [part="tab"] {
         border-style: solid;
         border-color: var(--color-stroke);
-        border-width: var(--border-width);
+        border-width: var(--_tab-border-width);
         background: var(--color-surface);
         display: flex;
         overflow-x: auto;
@@ -20,7 +20,7 @@
 }
 
 :host([position="bottom"]) {
-    --border-width: 2px 0 0 0;
+    --_tab-border-width: 2px 0 0 0;
     --margin: -2px 0 0 0;
     grid-template-areas: 
         "panel"
@@ -31,9 +31,10 @@
 }
 
 :host([position="start"]) {
-    --border-width: 0 2px 0 0;
+    --_tab-border-width: 0 2px 0 0;
     --margin: 0 -2px 0 0;
     grid-template-columns: auto 1fr;
+    grid-template-rows: 1fr;
     [part="tab"] {
         flex-direction: column;
         overflow-x: clip;
@@ -41,9 +42,10 @@
     }
 }
 :host([position="end"]) {
-    --border-width: 0  0 0 2px;
+    --_tab-border-width: 0 0 0 2px;
     --margin: 0 0 0 -2px ;
     grid-template-columns: 1fr auto;
+    grid-template-rows: 1fr;
     grid-template-areas: "panel tab";
     [part="tab"] {
         grid-area: tab;

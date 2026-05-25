@@ -66,7 +66,7 @@
                 @media (width > 900px) { left: 0; }
 
                 >.nav-link {
-                    padding: var(--size-fluid-1);
+                    padding: var(--size-2) var(--size-fluid-1);
                     text-decoration: none;
                     color: var(--color-text);
                 }
@@ -81,7 +81,7 @@
 
                 >.nav-folder {
                     summary {
-                        padding: var(--size-fluid-1);
+                        padding: var(--size-2) var(--size-fluid-1);
                         cursor: pointer;
                         list-style: none;
                         user-select: none;
@@ -111,7 +111,7 @@
                         li {
                             .nav-link {
                                 display: block;
-                                padding: var(--size-fluid-1);
+                                padding: var(--size-2) var(--size-fluid-1);
                                 padding-inline-start: var(--size-fluid-3);
                                 text-decoration: none;
                                 color: var(--color-text);

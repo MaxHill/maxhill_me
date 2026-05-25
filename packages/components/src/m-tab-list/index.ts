@@ -9,26 +9,40 @@ const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
 /**
- * A tab list container that manages tabs and their associated panels with full keyboard navigation.
- * Supports horizontal (arrow left/right, h/l) and vertical (arrow up/down, j/k) navigation depending on position.
- * Home/End keys work in both orientations.
- * 
+ * Container component that manages a set of tabs and their associated panels,
+ * providing keyboard navigation and ARIA tab pattern support.
+ *
+ * Full ARIA support with proper roles and states. Focus management follows
+ * the ARIA tabs pattern. Disabled tabs are properly announced to screen readers.
+ *
+ * ## Keyboard Navigation
+ *
+ * **Horizontal (top/bottom position):**
+ * - Arrow Left/Right or h/l: Navigate between tabs
+ * - Home/End: Jump to first/last tab
+ *
+ * **Vertical (start/end position):**
+ * - Arrow Up/Down or j/k: Navigate between tabs
+ * - Home/End: Jump to first/last tab
+ *
  * @customElement
  * @tagname m-tab-list
- * 
+ *
  * @slot tab - Slot for m-tab elements (auto-assigned)
  * @slot tab-panel - Slot for m-tab-panel elements (auto-assigned)
- * 
+ *
  * @attr {string} tab - The currently active tab panel name
  * @attr {string} label - Accessible label for the tab list (sets aria-label)
  * @attr {"top"|"bottom"|"start"|"end"} position - Tab list orientation: top/bottom for horizontal, start/end for vertical
- * 
+ * @attr {"none"|"terminal-wipe"} transition - Panel entry transition style. Default: "none". Respects prefers-reduced-motion.
+ *
  * @prop {string} tab - The currently active tab panel name
  * @prop {string} label - Accessible label for the tab list
  * @prop {"top"|"bottom"|"start"|"end"} position - Tab list orientation
- * 
+ * @prop {"none"|"terminal-wipe"} transition - Panel entry transition style
+ *
  * @csspart tab - Container wrapping the tab buttons
- * 
+ *
  * @event m-tab-show - Fired when a tab panel becomes visible. Detail: MTabChangeEventDetail { tab: MTab, panel: MTabPanel }
  * @event m-tab-hide - Fired when a tab panel becomes hidden. Detail: MTabChangeEventDetail { tab: MTab, panel: MTabPanel }
  */
@@ -43,6 +57,9 @@ export class MTabList extends MElement {
 
     @BindAttribute()
     position: "start"|"end"|"top"|"bottom" = 'top';
+
+    @BindAttribute()
+    transition: "none"|"terminal-wipe" = 'none';
 
     @query("slot[name='tab']")
     private tabSlot!: HTMLSlotElement;
@@ -109,9 +126,13 @@ export class MTabList extends MElement {
         const target = event.target as HTMLElement;
         const tab = target.closest<MTab>('m-tab');
 
-        if (tab?.panel && !tab.disabled) {
-            this.tab = tab.panel || '';
-        }
+        if (!tab || !tab.panel || tab.disabled) return;
+
+        // Only handle tabs that belong to this tab-list (are slotted to it)
+        const myTabs = this.getTabs({ includeDisabled: true });
+        if (!myTabs.includes(tab)) return;
+
+        this.tab = tab.panel || '';
     }
 
     private handleTabsKeyDown(event: KeyboardEvent) {

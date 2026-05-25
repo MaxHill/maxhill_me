@@ -1,0 +1,19 @@
+<form class="form" id="clearable-form">
+  <m-input 
+    label="Default button" 
+    name="default-clear"
+    value="Clear me"
+    clearable
+  ></m-input>
+  
+  <m-input 
+    label="Custom button" 
+    name="custom-clear"
+    value="Custom clear"
+    clearable
+  >
+    <button slot="clear" style="padding: 0 0.5rem;">✕</button>
+  </m-input>
+  
+  <button type="reset" data-span="2">Reset</button>
+</form>

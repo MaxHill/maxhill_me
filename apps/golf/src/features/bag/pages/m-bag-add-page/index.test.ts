@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { expect } from '@open-wc/testing';
 import { MBagAddPage } from './index';
 
 describe('MBagAddPage', () => {
   it('should be defined', () => {
-    expect(MBagAddPage).toBeDefined();
+    expect(MBagAddPage).to.exist;
   });
 
   it('should have the correct tag name', () => {
-    expect(MBagAddPage.tagName).toBe('m-bag-add-page');
+    expect(MBagAddPage.tagName).to.equal('m-bag-add-page');
   });
 });

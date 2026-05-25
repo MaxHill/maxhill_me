@@ -1,0 +1,44 @@
+<style>
+  .styled-input::part(input) {
+    font-family: var(--ff-display);
+  }
+  
+  .styled-input::part(input-wrapper) {
+    border-radius: 20px;
+    color: var(--color-primary-fill-mid);
+  }
+  
+  .styled-input::part(label) {
+    color: var(--color-primary-fill-mid);
+  }
+  
+  .styled-input::part(error) {
+    background: var(--color-neutral-fill-mid);
+    border-color: var(--color-neutral-stroke-mid);
+  }
+  
+  .styled-input::part(clear-button) {
+    color: var(--color-primary-fill-mid);
+  }
+  
+  .styled-input::part(clear-button):hover {
+    color: var(--color-destructive-fill-mid);
+  }
+</style>
+
+<div class="form">
+  <m-input 
+    class="styled-input" 
+    label="Styled input" 
+    placeholder="Custom styled..." 
+    clearable
+  ></m-input>
+  
+  <m-input 
+    class="styled-input" 
+    label="With validation" 
+    placeholder="Type at least 3 chars..." 
+    minlength="3"
+    clearable
+  ></m-input>
+</div>
