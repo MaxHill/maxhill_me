@@ -148,13 +148,8 @@ const { title, bodyClass } = Astro.props;
                 themeLabel.textContent = `Theme: ${themeName}`;
             }
             
-            // Update on load
-            updateThemeLabel();
-            
-            // Listen for theme change events
-            document.addEventListener('themechange', () => {
-                updateThemeLabel();
-            });
+            document.addEventListener('astro:page-load', updateThemeLabel);
+            document.addEventListener('themechange', updateThemeLabel);
         </script>
     </body>
 </html>

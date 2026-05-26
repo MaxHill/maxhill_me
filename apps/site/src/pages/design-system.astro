@@ -133,143 +133,144 @@ const navHierarchy = buildNavHierarchy(sortedDocs);
 </PageLayout>
 
 <script>
-    const parent = document.querySelector(".main");
-    if (!parent) throw new Error("Parent element .main not found");
+    function init() {
+        const parent = document.querySelector(".main");
+        if (!parent) return;
 
-    const children = document.querySelectorAll(".document, .hero");
-    if (children.length === 0)
-        throw new Error("No document or hero elements found");
+        const children = document.querySelectorAll(".document, .hero");
+        if (children.length === 0) return;
 
-    const toggleMenuButton = document.querySelector("#toggle-menu-button");
-    if (!toggleMenuButton)
-        throw new Error("No toggle-menu-button found");
+        const toggleMenuButton = document.querySelector("#toggle-menu-button");
+        if (!toggleMenuButton) return;
 
-    const anchorMenu = document.querySelector("#anchor-menu");
-    if (!anchorMenu)
-        throw new Error("No anchor-menu found");
+        const anchorMenu = document.querySelector("#anchor-menu");
+        if (!anchorMenu) return;
 
-    const navLinks = document.querySelectorAll(".nav-link");
+        const navLinks = document.querySelectorAll(".nav-link");
 
-    document.addEventListener("click", (e) => {
-        if(toggleMenuButton.contains(e.target as Node)) {
-            anchorMenu.classList.toggle("open");
-        } else if (e.target && (e.target as Element).matches(".nav-link") || !anchorMenu.contains(e.target as Node)) {
-            anchorMenu.classList.remove("open");
-        }
-    });
-
-    const observerOptions = {
-        root: parent,
-        rootMargin: "0px",
-        threshold: [0.5, 0.75, 0.99, 1.0],
-    };
-
-    const observer = new IntersectionObserver((_entries) => {
-        const fullyVisibleElements = Array.from(children)
-            .map((child) => {
-                const rect = child.getBoundingClientRect();
-                const rootRect = parent.getBoundingClientRect();
-                const visibleWidth =
-                    Math.min(rect.right, rootRect.right) -
-                    Math.max(rect.left, rootRect.left);
-                const ratio = visibleWidth / rect.width;
-                return { element: child, ratio };
-            })
-            .filter(({ ratio }) => ratio >= 0.99);
-
-        if (fullyVisibleElements.length === 0) return;
-
-        children.forEach((child) => child.classList.remove("visible"));
-        fullyVisibleElements.forEach(({ element }) => {
-            element.classList.add("visible");
+        document.addEventListener("click", (e) => {
+            if(toggleMenuButton.contains(e.target as Node)) {
+                anchorMenu.classList.toggle("open");
+            } else if (e.target && (e.target as Element).matches(".nav-link") || !anchorMenu.contains(e.target as Node)) {
+                anchorMenu.classList.remove("open");
+            }
         });
 
-        const rightmostElement =
-            fullyVisibleElements[fullyVisibleElements.length - 1].element;
+        const observerOptions = {
+            root: parent,
+            rootMargin: "0px",
+            threshold: [0.5, 0.75, 0.99, 1.0],
+        };
 
-        children.forEach((child) => child.classList.remove("active"));
-        navLinks.forEach((link) => link.classList.remove("active"));
+        const observer = new IntersectionObserver((_entries) => {
+            const fullyVisibleElements = Array.from(children)
+                .map((child) => {
+                    const rect = child.getBoundingClientRect();
+                    const rootRect = parent.getBoundingClientRect();
+                    const visibleWidth =
+                        Math.min(rect.right, rootRect.right) -
+                        Math.max(rect.left, rootRect.left);
+                    const ratio = visibleWidth / rect.width;
+                    return { element: child, ratio };
+                })
+                .filter(({ ratio }) => ratio >= 0.99);
 
-        rightmostElement.classList.add("active");
-        const targetId = rightmostElement.id;
-        if (!targetId) return;
+            if (fullyVisibleElements.length === 0) return;
 
-        const correspondingLink = document.querySelector(
-            `a[href="#${targetId}"]`,
-        );
-        if (correspondingLink) {
-            correspondingLink.classList.add("active");
-        }
+            children.forEach((child) => child.classList.remove("visible"));
+            fullyVisibleElements.forEach(({ element }) => {
+                element.classList.add("visible");
+            });
 
-        history.replaceState(null, "", `#${targetId}`);
-    }, observerOptions);
+            const rightmostElement =
+                fullyVisibleElements[fullyVisibleElements.length - 1].element;
 
-    children.forEach((child) => observer.observe(child));
+            children.forEach((child) => child.classList.remove("active"));
+            navLinks.forEach((link) => link.classList.remove("active"));
 
-    document.addEventListener("keydown", (e) => {
-        if (!e.target) return;
+            rightmostElement.classList.add("active");
+            const targetId = rightmostElement.id;
+            if (!targetId) return;
 
-        if (
-            e.target instanceof HTMLInputElement ||
-            e.target instanceof HTMLTextAreaElement
-        ) {
-            return;
-        }
-
-        const activeDocument = document.querySelector(".document.active");
-
-        if (e.key === "ArrowDown" || e.key === "j") {
-            e.preventDefault();
-            if (activeDocument) {
-                activeDocument.scrollBy({
-                    top: 30,
-                    behavior: "instant",
-                });
+            const correspondingLink = document.querySelector(
+                `a[href="#${targetId}"]`,
+            );
+            if (correspondingLink) {
+                correspondingLink.classList.add("active");
             }
-        } else if (e.key === "ArrowUp" || e.key === "k") {
-            e.preventDefault();
-            if (activeDocument) {
-                activeDocument.scrollBy({
-                    top: -30,
-                    behavior: "instant",
-                });
+
+            history.replaceState(null, "", `#${targetId}`);
+        }, observerOptions);
+
+        children.forEach((child) => observer.observe(child));
+
+        document.addEventListener("keydown", (e) => {
+            if (!e.target) return;
+
+            if (
+                e.target instanceof HTMLInputElement ||
+                e.target instanceof HTMLTextAreaElement
+            ) {
+                return;
             }
-        }
 
-        const currentHash = window.location.hash.substring(1);
-        const currentElement = currentHash
-            ? document.getElementById(currentHash)
-            : null;
+            const activeDocument = document.querySelector(".document.active");
 
-        if (!currentElement) return;
-
-        const childrenArray = Array.from(children);
-        const currentIndex = childrenArray.indexOf(currentElement);
-        if (currentIndex === -1) return;
-
-        if ((e.key === "ArrowLeft" || e.key === "h") && currentIndex > 0) {
-            e.preventDefault();
-            const targetElement = childrenArray[currentIndex - 1];
-            if (targetElement) {
-                targetElement.scrollIntoView({
-                    behavior: "smooth",
-                    inline: "end",
-                    block: "nearest",
-                });
+            if (e.key === "ArrowDown" || e.key === "j") {
+                e.preventDefault();
+                if (activeDocument) {
+                    activeDocument.scrollBy({
+                        top: 30,
+                        behavior: "instant",
+                    });
+                }
+            } else if (e.key === "ArrowUp" || e.key === "k") {
+                e.preventDefault();
+                if (activeDocument) {
+                    activeDocument.scrollBy({
+                        top: -30,
+                        behavior: "instant",
+                    });
+                }
             }
-        } else if (
-            (e.key === "ArrowRight" || e.key === "l") &&
-            currentIndex < childrenArray.length - 1
-        ) {
-            e.preventDefault();
-            const targetElement = childrenArray[currentIndex + 1];
-            if (targetElement) {
-                targetElement.scrollIntoView({
-                    behavior: "smooth",
-                    inline: "end",
-                    block: "nearest",
-                });
+
+            const currentHash = window.location.hash.substring(1);
+            const currentElement = currentHash
+                ? document.getElementById(currentHash)
+                : null;
+
+            if (!currentElement) return;
+
+            const childrenArray = Array.from(children);
+            const currentIndex = childrenArray.indexOf(currentElement);
+            if (currentIndex === -1) return;
+
+            if ((e.key === "ArrowLeft" || e.key === "h") && currentIndex > 0) {
+                e.preventDefault();
+                const targetElement = childrenArray[currentIndex - 1];
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: "smooth",
+                        inline: "end",
+                        block: "nearest",
+                    });
+                }
+            } else if (
+                (e.key === "ArrowRight" || e.key === "l") &&
+                currentIndex < childrenArray.length - 1
+            ) {
+                e.preventDefault();
+                const targetElement = childrenArray[currentIndex + 1];
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: "smooth",
+                        inline: "end",
+                        block: "nearest",
+                    });
+                }
             }
-        }
-    });
+        });
+    }
+
+    document.addEventListener('astro:page-load', init);
 </script>

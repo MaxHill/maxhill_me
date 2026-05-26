@@ -297,72 +297,76 @@ const allComponents = getAllComponentTagNames();
     import { registerCommand } from "@maxhill/components/m-command";
     import { SECTIONS } from "./sections";
 
-    // ═══════════════════════════════════════
-    // MOBILE SIDEBAR
-    // ═══════════════════════════════════════
-    const toggle = document.getElementById('sidebar-toggle');
-    const overlay = document.getElementById('sidebar-overlay');
+    function init() {
+        // ═══════════════════════════════════════
+        // MOBILE SIDEBAR
+        // ═══════════════════════════════════════
+        const toggle = document.getElementById('sidebar-toggle');
+        const overlay = document.getElementById('sidebar-overlay');
 
-    toggle?.addEventListener('click', () => {
-        document.body.classList.toggle('sidebar-open');
-    });
+        toggle?.addEventListener('click', () => {
+            document.body.classList.toggle('sidebar-open');
+        });
 
-    overlay?.addEventListener('click', () => {
-        document.body.classList.remove('sidebar-open');
-    });
+        overlay?.addEventListener('click', () => {
+            document.body.classList.remove('sidebar-open');
+        });
 
-    // ═══════════════════════════════════════
-    // COMMAND PALETTE
-    // ═══════════════════════════════════════
-    const paletteDialog = document.getElementById('palette-dialog') as HTMLDialogElement;
+        // ═══════════════════════════════════════
+        // COMMAND PALETTE
+        // ═══════════════════════════════════════
+        const paletteDialog = document.getElementById('palette-dialog') as HTMLDialogElement;
 
-    // Force palette to re-render when opened (ensures all commands are listed)
-    const paletteCommand = document.getElementById('command_open-palette');
-    paletteCommand?.addEventListener('m-command-trigger', () => {
-        document.dispatchEvent(new CustomEvent('m-command-register', { bubbles: true, composed: true }));
-    });
+        // Force palette to re-render when opened (ensures all commands are listed)
+        const paletteCommand = document.getElementById('command_open-palette');
+        paletteCommand?.addEventListener('m-command-trigger', () => {
+            document.dispatchEvent(new CustomEvent('m-command-register', { bubbles: true, composed: true }));
+        });
 
-    document.addEventListener('m-command-trigger', (e) => {
-        // Close palette when a command is triggered from within it, not when opening it
-        const target = e.target as HTMLElement;
-        if (paletteDialog?.open && target.id !== 'command_open-palette') {
-            paletteDialog.close();
-        }
-    });
-
-    // Register component navigation commands
-    const sidebarLinks = document.querySelectorAll('.sidebar-item');
-    sidebarLinks.forEach((link) => {
-        const href = link.getAttribute('href');
-        const tagName = href?.split('/').pop();
-        if (tagName) {
-            registerCommand({
-                id: `go-to-${tagName}`,
-                command: "navigate",
-                commandfor: href!,
-            });
-            const el = document.getElementById(`command_go-to-${tagName}`);
-            if (el) el.dataset.label = `Navigate to ${tagName}`;
-        }
-    });
-
-    // Register section commands
-    SECTIONS.forEach(({ id, key, label }) => {
-        registerCommand({
-            id: `section-${id}`,
-            keys: `<Space>${key}`,
-            preventDefault: true,
-            customCommand: () => {
-                const tabList = document.querySelector('m-tab-list.section-tabs');
-                if (tabList) {
-                    const tab = tabList.querySelector(`m-tab[panel="${id}"]`) as HTMLElement;
-                    if (tab && !tab.hasAttribute('disabled')) {
-                        tab.click();
-                    }
-                }
+        document.addEventListener('m-command-trigger', (e) => {
+            // Close palette when a command is triggered from within it, not when opening it
+            const target = e.target as HTMLElement;
+            if (paletteDialog?.open && target.id !== 'command_open-palette') {
+                paletteDialog.close();
             }
         });
-        const el = document.getElementById(`command_section-${id}`);
-        if (el) el.dataset.label = `Show ${label}`;
-    });
+
+        // Register component navigation commands
+        const sidebarLinks = document.querySelectorAll('.sidebar-item');
+        sidebarLinks.forEach((link) => {
+            const href = link.getAttribute('href');
+            const tagName = href?.split('/').pop();
+            if (tagName) {
+                registerCommand({
+                    id: `go-to-${tagName}`,
+                    command: "navigate",
+                    commandfor: href!,
+                });
+                const el = document.getElementById(`command_go-to-${tagName}`);
+                if (el) el.dataset.label = `Navigate to ${tagName}`;
+            }
+        });
+
+        // Register section commands
+        SECTIONS.forEach(({ id, key, label }) => {
+            registerCommand({
+                id: `section-${id}`,
+                keys: `<Space>${key}`,
+                preventDefault: true,
+                customCommand: () => {
+                    const tabList = document.querySelector('m-tab-list.section-tabs');
+                    if (tabList) {
+                        const tab = tabList.querySelector(`m-tab[panel="${id}"]`) as HTMLElement;
+                        if (tab && !tab.hasAttribute('disabled')) {
+                            tab.click();
+                        }
+                    }
+                }
+            });
+            const el = document.getElementById(`command_section-${id}`);
+            if (el) el.dataset.label = `Show ${label}`;
+        });
+    }
+
+    document.addEventListener('astro:page-load', init);
 </script>

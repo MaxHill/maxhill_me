@@ -34,10 +34,14 @@ const { target = "html", persist = false, unsetOption = "system", ...attrs } = A
 </form>
 
 <script>
-    try {
+    function initThemeSwitchers() {
         const forms = document.querySelectorAll(".theme-switcher");
         
         forms.forEach((form) => {
+            // Skip if already initialized
+            if (form.hasAttribute("data-theme-init")) return;
+            form.setAttribute("data-theme-init", "true");
+
             const targetSelector = form.getAttribute("data-target") || "html";
             const shouldPersist = form.getAttribute("data-persist") === "true";
             const unsetOption = form.getAttribute("data-unset-option") || "system";
@@ -101,7 +105,6 @@ const { target = "html", persist = false, unsetOption = "system", ...attrs } = A
                     targetElement.setAttribute("data-theme", theme);
                 }
                 
-                // Dispatch custom event after theme change
                 document.dispatchEvent(new CustomEvent('themechange', { 
                     detail: { theme } 
                 }));
@@ -129,7 +132,7 @@ const { target = "html", persist = false, unsetOption = "system", ...attrs } = A
                 }
             });
         });
-    } catch (error) {
-        console.error("ThemeSwitcher: initialization failed", error);
     }
+
+    document.addEventListener('astro:page-load', initThemeSwitchers);
 </script>
