@@ -15,7 +15,7 @@ const allComponents = getAllComponentTagNames();
                 <p>{allComponents.length} components available</p>
                 <p class="hint">Select a component from the sidebar, or press <kbd>space</kbd> <kbd>space</kbd> to open the command palette.</p>
                 <p class="hint-mobile">
-                    <button class="open-sidebar-btn" type="button">Browse components</button>
+                    <button class="open-sidebar-btn button" data-variant="secondary" type="button">Browse components</button>
                 </p>
             </div>
         </div>
@@ -61,16 +61,6 @@ const allComponents = getAllComponentTagNames();
         .hint-mobile {
             display: block;
         }
-    }
-
-    .open-sidebar-btn {
-        font-family: var(--ff-display);
-        font-size: var(--font-size-0);
-        padding: var(--size-1) var(--size-2);
-        border: var(--border-width) solid var(--color-stroke);
-        background: var(--color-surface);
-        color: var(--color-text);
-        cursor: pointer;
     }
 
     kbd {

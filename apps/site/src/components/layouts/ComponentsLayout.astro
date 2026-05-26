@@ -52,7 +52,7 @@ const allComponents = getAllComponentTagNames();
 </m-command>
 
 <!-- Mobile sidebar toggle -->
-<button class="sidebar-toggle" id="sidebar-toggle" aria-label="Show component list">
+<button class="sidebar-toggle button" id="sidebar-toggle" aria-label="Show component list">
     Components
 </button>
 <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
@@ -213,13 +213,6 @@ const allComponents = getAllComponentTagNames();
         bottom: var(--size-7);
         right: var(--size-2);
         z-index: 100;
-        background: var(--color-surface);
-        border: var(--border-width) solid var(--color-stroke);
-        color: var(--color-text);
-        font-family: var(--ff-display);
-        font-size: var(--font-size-0);
-        padding: var(--size-1) var(--size-2);
-        cursor: pointer;
     }
 
     .sidebar-overlay {
