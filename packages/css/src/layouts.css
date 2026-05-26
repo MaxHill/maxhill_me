@@ -7,21 +7,21 @@
         display: grid;
         grid-template-rows: auto;
 
-        >.toggle-menu {
+        >.sidebar-toggle {
+            display: none;
             position: fixed;
-            top: 20%;
-            left: 0;
-            width: var(--size-fluid-4);
-            height: var(--size-fluid-5);
+            bottom: var(--size-7);
+            right: var(--size-2);
             z-index: var(--layer-2);
-            background: var(--color-background);
-            border: var(--border);
-            border-inline-start-width: 0;
-
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background: var(--color-surface);
+            border: var(--border-width) solid var(--color-stroke);
+            color: var(--color-text);
+            font-family: var(--ff-display);
+            font-size: var(--font-size-0);
+            padding: var(--size-1) var(--size-2);
             cursor: pointer;
+
+            @media (width <= 900px) { display: block; }
         }
 
         >.main {

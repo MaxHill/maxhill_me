@@ -2,7 +2,7 @@
 import PageLayout from "../components/layouts/PageLayout.astro";
 import Document from "../components/sections/Document.astro";
 import { getCollection } from "astro:content";
-import { PanelLeftOpenIcon } from '@lucide/astro';
+
 
 const title = "Design System";
 const docs = await getCollection("documentation");
@@ -87,7 +87,7 @@ const navHierarchy = buildNavHierarchy(sortedDocs);
 ---
 
 <PageLayout title={title} bodyClass="design-system-page">
-    <button id="toggle-menu-button" class="toggle-menu"><PanelLeftOpenIcon/></button>
+    <button class="sidebar-toggle" id="toggle-menu-button" aria-label="Show sections">Sections</button>
     <div class="main exposed-grid">
         <div id="hero" class="hero">
             <m-fit-text font-display>Design<br />system</m-fit-text>
