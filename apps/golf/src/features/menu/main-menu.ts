@@ -111,17 +111,7 @@ function initThemeSwitcher(form: HTMLFormElement) {
   form.addEventListener("change", (e) => {
     const target = e.target;
     if (target instanceof HTMLInputElement && target.name === "theme") {
-      const theme = target.value;
-      const startVT = (
-        document as Document & {
-          startViewTransition?: (cb: () => void) => unknown;
-        }
-      ).startViewTransition;
-      if (typeof startVT === "function") {
-        startVT.call(document, () => updateTheme(theme));
-      } else {
-        updateTheme(theme);
-      }
+      updateTheme(target.value);
     }
   });
 }

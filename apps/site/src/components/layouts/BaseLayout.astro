@@ -1,5 +1,6 @@
 ---
 import "@maxhill/css";
+import { ClientRouter } from "astro:transitions";
 
 interface Props {
     title: string;
@@ -61,21 +62,27 @@ const { title, bodyClass } = Astro.props;
             crossorigin
         />
 
-        <script>
+        <ClientRouter />
+
+        <script is:inline>
             (function () {
-                const theme = localStorage.getItem("theme");
-                if (theme) {
-                    document.documentElement.setAttribute("data-theme", theme);
-                } else if (
-                    window.matchMedia("(prefers-color-scheme: dark)").matches
-                ) {
-                    document.documentElement.setAttribute("data-theme", "dark");
-                } else {
-                    document.documentElement.setAttribute(
-                        "data-theme",
-                        "light",
-                    );
+                function applyTheme() {
+                    const theme = localStorage.getItem("theme");
+                    if (theme) {
+                        document.documentElement.setAttribute("data-theme", theme);
+                    } else if (
+                        window.matchMedia("(prefers-color-scheme: dark)").matches
+                    ) {
+                        document.documentElement.setAttribute("data-theme", "dark");
+                    } else {
+                        document.documentElement.setAttribute(
+                            "data-theme",
+                            "light",
+                        );
+                    }
                 }
+                applyTheme();
+                document.addEventListener("astro:after-swap", applyTheme);
             })();
         </script>
     </head>

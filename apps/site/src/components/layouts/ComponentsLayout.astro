@@ -58,6 +58,10 @@ const allComponents = getAllComponentTagNames();
 <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
 
 <style>
+    :global([data-match="false"]) {
+        display: none;
+    }
+
     :global(.component-page) {
         padding-top: var(--menu-height);
     }

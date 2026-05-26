@@ -125,13 +125,7 @@ const { target = "html", persist = false, unsetOption = "system", ...attrs } = A
             form.addEventListener("change", (e) => {
                 const target = e.target;
                 if (target instanceof HTMLInputElement && target.name === "theme") {
-                    const theme = target.value;
-
-                    if (document.startViewTransition) {
-                        document.startViewTransition(() => updateTheme(theme));
-                    } else {
-                        updateTheme(theme);
-                    }
+                    updateTheme(target.value);
                 }
             });
         });
