@@ -14,6 +14,9 @@ const allComponents = getAllComponentTagNames();
                 <h1 class="h5">Components</h1>
                 <p>{allComponents.length} components available</p>
                 <p class="hint">Select a component from the sidebar, or press <kbd>space</kbd> <kbd>space</kbd> to open the command palette.</p>
+                <p class="hint-mobile">
+                    <button class="open-sidebar-btn" type="button">Browse components</button>
+                </p>
             </div>
         </div>
     </ComponentsLayout>
@@ -25,6 +28,7 @@ const allComponents = getAllComponentTagNames();
         display: grid;
         place-items: center;
         height: 100%;
+        width: 100%;
         padding: var(--size-fluid-3);
     }
 
@@ -45,6 +49,30 @@ const allComponents = getAllComponentTagNames();
         max-width: var(--size-content-2);
     }
 
+    .hint-mobile {
+        display: none;
+    }
+
+    @media (width <= 768px) {
+        .hint {
+            display: none;
+        }
+
+        .hint-mobile {
+            display: block;
+        }
+    }
+
+    .open-sidebar-btn {
+        font-family: var(--ff-display);
+        font-size: var(--font-size-0);
+        padding: var(--size-1) var(--size-2);
+        border: var(--border-width) solid var(--color-stroke);
+        background: var(--color-surface);
+        color: var(--color-text);
+        cursor: pointer;
+    }
+
     kbd {
         font-family: var(--ff-display);
         font-size: var(--font-size-0);
@@ -53,3 +81,9 @@ const allComponents = getAllComponentTagNames();
         background: var(--color-surface);
     }
 </style>
+
+<script>
+    document.querySelector('.open-sidebar-btn')?.addEventListener('click', () => {
+        document.body.classList.toggle('sidebar-open');
+    });
+</script>
