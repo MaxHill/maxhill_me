@@ -1,0 +1,9 @@
+{
+  "name": "sync",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "mise exec -- opam exec --switch=. -- dune build",
+    "dev": "mise exec -- opam exec --switch=. -- dune exec ./bin/main.exe"
+  }
+}

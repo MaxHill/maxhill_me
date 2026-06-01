@@ -1,0 +1,26 @@
+(lang dune 3.16)
+(name sync)
+(generate_opam_files true)
+
+(source (uri "git+https://example.invalid/sync.git"))
+(authors "maxhill")
+(maintainers "maxhill")
+(license "UNLICENSED")
+
+(package
+ (name sync)
+ (synopsis "OCaml port of the sync server")
+ (description "CRDT sync server. OCaml port of the Go sync server in apps/sync_go/.")
+ (depends
+  (ocaml (>= 5.2.0))
+  dune
+  eio_main
+  piaf
+  caqti
+  caqti-driver-sqlite3
+  caqti-eio
+  yojson
+  ppx_yojson_conv
+  jose
+  logs
+  fmt))
