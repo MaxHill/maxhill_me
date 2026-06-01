@@ -13,9 +13,9 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
-	"sync/internal/repository"
-	"sync/internal/server"
-	"sync/internal/sync_engine"
+	"sync_go/internal/repository"
+	"sync_go/internal/server"
+	"sync_go/internal/sync_engine"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"

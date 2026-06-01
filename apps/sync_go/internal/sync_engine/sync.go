@@ -3,7 +3,7 @@ package sync_engine
 import (
 	"context"
 	"database/sql"
-	"sync/internal/repository"
+	"sync_go/internal/repository"
 )
 
 type SyncService struct {

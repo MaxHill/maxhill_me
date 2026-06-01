@@ -5,7 +5,7 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"sync/internal/sync_engine"
+	"sync_go/internal/sync_engine"
 
 	// TODO: remove dependency
 	"github.com/google/uuid"

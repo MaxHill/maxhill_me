@@ -1,5 +1,5 @@
 {
-  "name": "sync",
+  "name": "sync_go",
   "version": "0.0.1",
   "private": true,
   "scripts": {

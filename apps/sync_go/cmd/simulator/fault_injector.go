@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"math/rand"
-	"sync/internal/sync_engine"
+	"sync_go/internal/sync_engine"
 )
 
 type FaultConfig struct {

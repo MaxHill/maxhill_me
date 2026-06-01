@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sync/internal/repository"
+	"sync_go/internal/repository"
 )
 
 type Dot struct {

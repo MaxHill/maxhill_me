@@ -47,7 +47,7 @@ mprocs.log
 # Go binaries
 apps/account/main
 apps/golf/main
-apps/sync/main
+apps/sync_go/main
 
 # SQLite databases
 *.db

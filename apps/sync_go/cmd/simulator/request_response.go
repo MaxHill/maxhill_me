@@ -1,6 +1,6 @@
 package main
 
-import "sync/internal/sync_engine"
+import "sync_go/internal/sync_engine"
 
 // HTTPRequest represents an HTTP request from client to server
 type HTTPRequest struct {
