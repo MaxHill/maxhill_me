@@ -1,0 +1,21 @@
+# Dune / OCaml build artifacts
+_build/
+*.cmi
+*.cmo
+*.cmx
+*.cmxa
+*.cmxs
+*.cmt
+*.cmti
+*.o
+*.a
+
+# Local opam switch
+_opam/
+
+# Merlin / OCaml tooling
+.merlin
+.ocamlformat
+
+# REPL history
+.utop-history
