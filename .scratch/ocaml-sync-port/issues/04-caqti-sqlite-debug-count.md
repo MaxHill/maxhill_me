@@ -1,5 +1,5 @@
 ---
-Status: ready-for-agent
+Status: done
 ---
 
 # Caqti SQLite wiring: schema init + `GET /debug/count`

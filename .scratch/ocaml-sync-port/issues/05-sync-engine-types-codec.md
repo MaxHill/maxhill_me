@@ -1,5 +1,5 @@
 ---
-Status: ready-for-agent
+Status: done
 ---
 
 # Sync_engine types + sum-type JSON codec + `POST /sync` echo

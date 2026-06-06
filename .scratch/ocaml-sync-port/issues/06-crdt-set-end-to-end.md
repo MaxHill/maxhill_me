@@ -1,5 +1,5 @@
 ---
-Status: ready-for-agent
+Status: done
 ---
 
 # First end-to-end CRDT path: `Set` variant round-trips through `process_sync_request`

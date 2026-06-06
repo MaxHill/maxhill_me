@@ -1,5 +1,5 @@
 ---
-Status: ready-for-agent
+Status: done
 ---
 
 # Tracer bullet: Piaf server with `GET /health` and Logs setup

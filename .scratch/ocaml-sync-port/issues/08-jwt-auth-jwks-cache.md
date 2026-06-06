@@ -1,5 +1,5 @@
 ---
-Status: ready-for-agent
+Status: done
 ---
 
 # JWT auth: `Auth` module with `jose` + JWKS cache + background refresh
