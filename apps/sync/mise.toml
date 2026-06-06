@@ -1,0 +1,13 @@
+[tools]
+opam = "2.5.1"
+
+[env]
+OPENSSL_DIR = "/opt/homebrew/opt/openssl@3"
+CPATH = "/opt/homebrew/opt/openssl@3/include"
+LIBRARY_PATH = "/opt/homebrew/opt/openssl@3/lib"
+PKG_CONFIG_PATH = "/opt/homebrew/opt/openssl@3/lib/pkgconfig"
+
+[tasks]
+build = "mise exec -- opam exec --switch=. -- dune build"
+run = "mise exec -- opam exec --switch=. -- dune exec ./bin/main.exe -- --auth-issuer-url http://localhost:3002 --auth-audience golf-app"
+test = "mise exec -- opam exec --switch=. -- dune runtest"

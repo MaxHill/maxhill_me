@@ -1,3 +1,4 @@
 (executable
  (name main)
- (public_name sync))
+ (public_name sync)
+ (libraries sync eio_main logs logs.fmt fmt caqti caqti-eio caqti-eio.unix caqti-driver-sqlite3 uri))

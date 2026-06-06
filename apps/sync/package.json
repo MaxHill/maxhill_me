@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "mise exec -- opam exec --switch=. -- dune build",
-    "dev": "mise exec -- opam exec --switch=. -- dune exec ./bin/main.exe"
+    "dev": "mise exec -- opam exec --switch=. -- dune exec ./bin/main.exe -- --auth-issuer-url http://localhost:3002 --auth-audience golf-app",
+    "test": "mise exec -- opam exec --switch=. -- dune runtest"
   }
 }

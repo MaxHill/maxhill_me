@@ -1,0 +1,11 @@
+(include_subdirs unqualified)
+
+(library
+ (name sync)
+ (private_modules
+  sync_engine_core
+  sync_engine_codec
+  sync_engine_hash
+  sync_engine_persistence
+  sync_engine_validation)
+ (libraries eio eio_main piaf httpun httpun-eio logs caqti caqti-eio caqti-eio.unix caqti-driver-sqlite3 uri fmt gluten yojson bigstringaf digestif jose unix ptime.clock))
