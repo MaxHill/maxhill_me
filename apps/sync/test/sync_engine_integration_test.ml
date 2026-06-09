@@ -148,9 +148,25 @@ let assert_reject_remove_context_unseen_dot () =
   | Ok _ -> failwith "expected unseen-dot rejection"
   | Error _ -> ()
 
+let assert_reject_invalid_request_hash () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error err -> failwith (Sync.Repository.error_to_string err)
+  | Ok () -> ());
+  let request =
+    decode_or_fail
+      "{\"clientId\":\"client-1\",\"operations\":[],\"lastSeenServerVersion\":0,\"requestHash\":\"wrong\"}"
+  in
+  match Sync.Sync_engine.process_sync_request_with_connection conn request with
+  | Error Sync.Sync_engine.Request_integrity_failed -> ()
+  | Error err ->
+      fail_with_sync_error "expected request integrity failure, got: " err
+  | Ok _ -> failwith "expected invalid request hash rejection"
+
 let () =
   assert_set_roundtrip_and_fetch_for_second_client ();
   assert_set_row_roundtrip_and_fetch_for_second_client ();
   assert_remove_roundtrip_and_fetch_for_second_client ();
   assert_reject_non_contiguous_versions ();
-  assert_reject_remove_context_unseen_dot ()
+  assert_reject_remove_context_unseen_dot ();
+  assert_reject_invalid_request_hash ()

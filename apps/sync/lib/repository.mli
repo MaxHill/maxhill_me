@@ -39,7 +39,11 @@ val get_operations_since
 val get_max_server_version : connection -> (int64, error) result
 val has_operation_dot : connection -> client_id:string -> version:int64 -> (bool, error) result
 
-val with_transaction : connection -> (connection -> ('a, 'e) result) -> ('a, 'e) result
+val with_transaction
+  :  connection
+  -> map_tx_error:(error -> 'e)
+  -> (connection -> ('a, 'e) result)
+  -> ('a, 'e) result
 
 val init_schema_with_pool : pool -> (unit, error) result
 val count_operations_with_pool : pool -> (int, error) result

@@ -65,18 +65,6 @@ let init_schema_query =
   let open Caqti_request.Infix in
   (Caqti_type.unit ->. Caqti_type.unit) schema_sql
 
-let begin_query =
-  let open Caqti_request.Infix in
-  (Caqti_type.unit ->. Caqti_type.unit) "BEGIN"
-
-let commit_query =
-  let open Caqti_request.Infix in
-  (Caqti_type.unit ->. Caqti_type.unit) "COMMIT"
-
-let rollback_query =
-  let open Caqti_request.Infix in
-  (Caqti_type.unit ->. Caqti_type.unit) "ROLLBACK"
-
 let count_operations_query =
   let open Caqti_request.Infix in
   (Caqti_type.unit ->! Caqti_type.int) "SELECT COUNT(*) FROM crdt_operations"
@@ -190,27 +178,25 @@ let has_operation_dot (module Db : Caqti_eio.CONNECTION) ~client_id ~version =
   | Ok None -> Ok false
   | Error err -> Error (Database (Caqti_error.show err))
 
-let with_transaction (module Db : Caqti_eio.CONNECTION) f =
+let with_transaction (module Db : Caqti_eio.CONNECTION) ~map_tx_error f =
   let conn = (module Db : Caqti_eio.CONNECTION) in
-  let rollback_safely () = ignore (Db.exec rollback_query ()) in
-  match Db.exec begin_query () with
-  | Error err -> failwith ("BEGIN failed: " ^ Caqti_error.show err)
-  | Ok () ->
-      (try
-         match f conn with
-         | Ok value -> (
-             match Db.exec commit_query () with
-             | Ok () -> Ok value
-             | Error err ->
-                 rollback_safely ();
-                 failwith ("COMMIT failed: " ^ Caqti_error.show err))
-         | Error err_value ->
-             rollback_safely ();
-             Error err_value
-       with
-       | exn ->
-           rollback_safely ();
-           raise exn)
+  Db.with_transaction (fun () ->
+      try
+        match f conn with
+        | Ok value -> Ok (Ok value)
+        | Error err -> Ok (Error err)
+      with
+      | exn ->
+          Ok
+            (Error
+               (map_tx_error
+                  (Database
+                     ("transaction callback raised: "
+                    ^ Printexc.to_string exn)))))
+  |> function
+  | Error err -> Error (map_tx_error (Database (Caqti_error.show err)))
+  | Ok (Error err) -> Error err
+  | Ok (Ok value) -> Ok value
 
 let init_schema_with_pool pool =
   match Caqti_eio.Pool.use (fun conn -> Ok (init_schema conn)) pool with
