@@ -1,10 +1,8 @@
 type response = { status : Httpun.Status.t; body : string }
 type response_format = [ `Text | `Json ]
+type context = { db_pool : Repository.pool; auth : Auth.t }
 
-type context = {
-  db_pool : Repository.pool;
-  auth : Auth.t;
-}
+let ( let* ) = Result.bind
 
 let src = Logs.Src.create "sync.server"
 
@@ -73,8 +71,7 @@ let request_handler (context : context) _client_addr reqd =
           respond_json reqd { status = `OK; body }
       | Error err ->
           Log.err (fun m ->
-              m "count_operations failed: %s"
-                (Repository.error_to_string err));
+              m "count_operations failed: %s" (Repository.error_to_string err));
           respond_text reqd
             { status = `Internal_server_error; body = "internal server error" })
   | `POST, "/sync" -> (
@@ -86,38 +83,44 @@ let request_handler (context : context) _client_addr reqd =
           respond_text reqd { status = `Unauthorized; body = msg }
       | Ok _user ->
           read_request_body reqd (fun body ->
-              match Sync_engine.decode_sync_request body with
-              | Error msg ->
+              let result =
+                let* request =
+                  Sync_engine.decode_sync_request body
+                  |> Result.map_error (fun msg -> `Decode msg)
+                in
+                let* response_or_error =
+                  Caqti_eio.Pool.use
+                    (fun conn ->
+                      Ok
+                        (Sync_engine.process_sync_request_with_connection conn
+                           request))
+                    context.db_pool
+                  |> Result.map_error (fun err -> `Db err)
+                in
+                response_or_error |> Result.map_error (fun err -> `Sync err)
+              in
+              match result with
+              | Error (`Decode msg) ->
                   Log.err (fun m -> m "sync decode error: %s" msg);
                   respond_text reqd { status = `Bad_request; body = msg }
-              | Ok request -> (
-                  match
-                    Caqti_eio.Pool.use
-                      (fun conn ->
-                        Ok
-                          (Sync_engine.process_sync_request_with_connection conn
-                             request))
-                      context.db_pool
-                  with
-                  | Error err ->
-                      Log.err (fun m ->
-                          m "sync db error: %s" (Caqti_error.show err));
-                      respond_text reqd
-                        {
-                          status = `Internal_server_error;
-                          body = "internal server error";
-                        }
-                  | Ok (Error err) ->
-                      let msg = Sync_engine.sync_error_to_string err in
-                      Log.err (fun m -> m "sync process error: %s" msg);
-                      respond_text reqd
-                        { status = status_of_sync_error err; body = msg }
-                  | Ok (Ok response) ->
-                      respond_json reqd
-                        {
-                          status = `OK;
-                          body = Sync_engine.encode_sync_response response;
-                        })))
+              | Error (`Db err) ->
+                  Log.err (fun m -> m "sync db error: %s" (Caqti_error.show err));
+                  respond_text reqd
+                    {
+                      status = `Internal_server_error;
+                      body = "internal server error";
+                    }
+              | Error (`Sync err) ->
+                  let msg = Sync_engine.sync_error_to_string err in
+                  Log.err (fun m -> m "sync process error: %s" msg);
+                  respond_text reqd
+                    { status = status_of_sync_error err; body = msg }
+              | Ok response ->
+                  respond_json reqd
+                    {
+                      status = `OK;
+                      body = Sync_engine.encode_sync_response response;
+                    }))
   | _ -> respond_by_format reqd (route ~meth ~target)
 
 let error_handler _client_addr ?request:_ error handle =
@@ -146,8 +149,7 @@ let start env ~sw ~port ~context =
   Log.info (fun m -> m "listening on :%d" port);
   let connection_handler =
     Httpun_eio.Server.create_connection_handler ~sw
-      ~request_handler:(request_handler context)
-      ~error_handler
+      ~request_handler:(request_handler context) ~error_handler
   in
   Eio.Net.run_server socket ~on_error:raise (fun flow client_addr ->
       connection_handler client_addr flow)

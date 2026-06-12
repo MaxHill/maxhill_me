@@ -1,2 +1,3 @@
 (library
- (name sync_simulator))
+ (name sync_simulator)
+ (libraries unix logs))

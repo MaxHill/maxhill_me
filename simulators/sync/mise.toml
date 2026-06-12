@@ -5,8 +5,7 @@ opam = "2.5.1"
 
 [tasks]
 build = "mise exec -- opam exec --switch=. -- dune build"
-run = "mise exec -- opam exec --switch=. -- dune exec ./bin/main.exe -- greet \"Max Hill\" --greeting=Howdy"
-run2 = "mise exec -- opam exec --switch=. -- dune exec ./bin/main.exe -- --help"
+run = "mise exec -- opam exec --switch=. -- dune exec ./bin/main.exe --"
 test = "mise exec -- opam exec --switch=. -- dune runtest"
 setup = "opam switch create . ocaml-base-compiler.5.2.0 --yes && opam install --switch=. . --deps-only -y && opam install --switch=. ocaml-lsp-server ocamlformat merlin -y"
 

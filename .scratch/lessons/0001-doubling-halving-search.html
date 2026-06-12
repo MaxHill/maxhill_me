@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lesson 1 — The Doubling/Halving Search</title>
+<style>
+  :root {
+    --fg: #1a1a1a;
+    --muted: #666;
+    --bg: #fdfdfb;
+    --accent: #b91c1c;
+    --rule: #e5e5e2;
+    --code-bg: #f4f3ee;
+    --code-fg: #1a1a1a;
+    --pass: #15803d;
+    --fail: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+  }
+  body {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 17px;
+    line-height: 1.6;
+    max-width: 720px;
+    margin: 4rem auto;
+    padding: 0 1.5rem 6rem;
+  }
+  header {
+    border-bottom: 2px solid var(--fg);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+  header .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: -apple-system, "Helvetica Neue", sans-serif;
+    font-weight: 600;
+  }
+  header h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    margin: 0.5rem 0 0.5rem;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+  header .subtitle {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 1.05rem;
+  }
+  h2 {
+    font-size: 1.4rem;
+    margin-top: 3rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.4rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-size: 1.1rem;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+  p { margin: 0.8rem 0; }
+  code, pre {
+    font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.88em;
+  }
+  code {
+    background: var(--code-bg);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 4px;
+    border-left: 3px solid var(--fg);
+    overflow-x: auto;
+    line-height: 1.5;
+    font-size: 0.82em;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 1em;
+  }
+  blockquote {
+    border-left: 3px solid var(--accent);
+    margin: 1.5rem 0;
+    padding: 0.2rem 1.2rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+  blockquote strong {
+    color: var(--fg);
+    font-style: normal;
+  }
+  ul, ol { padding-left: 1.5rem; }
+  li { margin: 0.3rem 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+    font-size: 0.78rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  th {
+    border-bottom: 2px solid var(--fg);
+    font-weight: 600;
+    background: var(--code-bg);
+  }
+  td.pass { color: var(--pass); font-weight: 600; }
+  td.fail { color: var(--fail); font-weight: 600; }
+  .task {
+    background: #fff8e7;
+    border: 1px solid #e8d5a0;
+    border-radius: 4px;
+    padding: 1rem 1.4rem;
+    margin: 2rem 0;
+  }
+  .task h3 {
+    margin-top: 0.2rem;
+    color: #92400e;
+    font-family: -apple-system, "Helvetica Neue", sans-serif;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+  }
+  .followup {
+    border-top: 1px solid var(--rule);
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    color: var(--muted);
+    font-size: 0.92rem;
+    font-style: italic;
+    text-align: center;
+  }
+  a { color: var(--accent); }
+
+  @media print {
+    body {
+      max-width: none;
+      margin: 0;
+      padding: 1.5cm;
+      font-size: 11pt;
+    }
+    pre { font-size: 8.5pt; page-break-inside: avoid; }
+    table { page-break-inside: avoid; }
+    .task { background: none; border: 1px solid #999; }
+    h2 { page-break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Lesson 01 · OCaml + FRNG · The Searcher</div>
+  <h1>The Doubling / Halving Search</h1>
+  <div class="subtitle">Finding the smallest entropy size that still crashes the SUT.</div>
+</header>
+
+<h2>Why not literal binary search?</h2>
+
+<p>
+You don't know the upper bound up front. Binary search requires <code>[lo, hi]</code>
+with <code>hi</code> known to fail and <code>lo</code> known to pass. We start with
+neither.
+</p>
+
+<p>The article's algorithm has two phases:</p>
+
+<ol>
+  <li>
+    <strong>Doubling phase (climb).</strong> Start small. While we keep passing,
+    double the step and grow <code>size</code>. We're hunting for <em>any</em>
+    failure. Each pass-pass means "we're climbing too slowly" → double the step.
+  </li>
+  <li>
+    <strong>Halving phase (descend).</strong> Once we hit a failure, flip
+    direction: subtract the step from <code>size</code> to try smaller. While
+    shrinking <em>still</em> fails, keep the same step. The moment we cross back
+    into passing, halve the step (we overshot) and stay at the last failing size.
+    Repeat until step reaches 0.
+  </li>
+</ol>
+
+<p>The result is the smallest failing size we encountered.</p>
+
+<h2>State</h2>
+
+<p>Five variables. Yes, that's a lot — write them out.</p>
+
+<pre><code>size       : current "settled" size (the last one we accept as a baseline)
+step       : how far the next attempt jumps from `size`
+pass       : did the last attempt at `size` pass? (initially: assume yes)
+found_size : smallest failing size seen so far (option)
+found_seed : the seed that triggered that failure</code></pre>
+
+<h2>The loop, in plain English</h2>
+
+<p>Each iteration:</p>
+
+<ol>
+  <li>
+    <strong>Compute <code>size_next</code>:</strong>
+    <ul>
+      <li>if <code>pass</code>: <code>size + step</code> (climbing — try bigger)</li>
+      <li>if not <code>pass</code>: <code>max 0 (size - step)</code> (descending — try smaller, clamped at 0)</li>
+    </ul>
+  </li>
+  <li>
+    <strong>Stop conditions:</strong> <code>step = 0</code>, or
+    <code>size_next &gt; size_max</code>, or safety counter exhausted.
+  </li>
+  <li>
+    <strong>Run</strong> <code>run_multiple ~size:size_next ~attempts</code>.
+    Get outcome → <code>pass_next</code>.
+  </li>
+  <li>
+    <strong>If <code>pass_next</code> is <code>Found_fail</code>,</strong>
+    record <code>(size_next, seed)</code> as the new best <code>found_*</code>.
+  </li>
+  <li>
+    <strong>Update <code>step</code>:</strong>
+    <ul>
+      <li>both <code>pass &amp;&amp; pass_next</code>: still climbing comfortably → <code>step *= 2</code></li>
+      <li>both <code>(not pass) &amp;&amp; (not pass_next)</code>: still shrinking and still failing → keep <code>step</code></li>
+      <li>mixed (we just crossed the boundary): we overshot → <code>step / 2</code></li>
+    </ul>
+  </li>
+  <li>
+    <strong>Update <code>size</code> and <code>pass</code>:</strong>
+    <ul>
+      <li>if <code>pass || not pass_next</code>: adopt <code>size_next</code>. (We were climbing, OR the new attempt also failed — both cases extend our knowledge.)</li>
+      <li>else (<code>not pass &amp;&amp; pass_next</code>): <strong>don't adopt</strong>. We were at a failing size and a smaller probe just passed — keep our failing baseline, just shrink the step.</li>
+    </ul>
+  </li>
+</ol>
+
+<blockquote>
+  <strong>Key insight.</strong> The asymmetry in step 6 is the heart of the
+  algorithm: once we've seen a failure, we never voluntarily walk back to a
+  passing size. We only narrow our step down toward it.
+</blockquote>
+
+<h2>Worked example</h2>
+
+<p>Imagine the true smallest-failing size is somewhere in the 90s. Watch the search converge:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>iter</th><th>size</th><th>step</th><th>pass</th>
+      <th>size_next</th><th>outcome</th><th>next step</th><th>next size</th>
+      <th>next pass</th><th>found</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>0</td><td>16</td><td>16</td><td>✓</td><td>32</td><td class="pass">pass</td><td>32</td><td>32</td><td>✓</td><td>—</td></tr>
+    <tr><td>1</td><td>32</td><td>32</td><td>✓</td><td>64</td><td class="pass">pass</td><td>64</td><td>64</td><td>✓</td><td>—</td></tr>
+    <tr><td>2</td><td>64</td><td>64</td><td>✓</td><td>128</td><td class="fail">fail</td><td>32</td><td>128</td><td>✗</td><td>128</td></tr>
+    <tr><td>3</td><td>128</td><td>32</td><td>✗</td><td>96</td><td class="fail">fail</td><td>32 (kept)</td><td>96</td><td>✗</td><td>96</td></tr>
+    <tr><td>4</td><td>96</td><td>32</td><td>✗</td><td>64</td><td class="pass">pass</td><td>16</td><td>96 (keep)</td><td>✗</td><td>96</td></tr>
+    <tr><td>5</td><td>96</td><td>16</td><td>✗</td><td>80</td><td class="pass">pass</td><td>8</td><td>96 (keep)</td><td>✗</td><td>96</td></tr>
+    <tr><td>6</td><td>96</td><td>8</td><td>✗</td><td>88</td><td class="pass">pass</td><td>4</td><td>96 (keep)</td><td>✗</td><td>96</td></tr>
+    <tr><td>7</td><td>96</td><td>4</td><td>✗</td><td>92</td><td class="fail">fail</td><td>4 (kept)</td><td>92</td><td>✗</td><td>92</td></tr>
+    <tr><td>8</td><td>92</td><td>4</td><td>✗</td><td>88</td><td class="pass">pass</td><td>2</td><td>92 (keep)</td><td>✗</td><td>92</td></tr>
+    <tr><td>…</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td></td><td></td><td>0</td><td></td><td></td><td></td><td><strong>stop</strong></td><td></td><td></td><td>92</td></tr>
+  </tbody>
+</table>
+
+<p>
+Notice: <code>step</code> doubles in the climb, halves on each "boundary cross,"
+and <code>found</code> only ever shrinks.
+</p>
+
+<h2>OCaml shape</h2>
+
+<p>
+OCaml doesn't have mutable locals by default, so the natural shape is
+<strong>recursion with state as parameters</strong>.
+</p>
+
+<pre><code>type search_outcome =
+  | Search_pass
+  | Search_fail of { size : int; seed : int }
+
+let search ~sut_path ~attempts ~size_max : search_outcome =
+  let rec loop ~iter ~size ~step ~pass ~found =
+    if iter &gt;= 1024 then failwith "safety counter"
+    else if step = 0 then found
+    else
+      let size_next =
+        if pass then size + step
+        else max 0 (size - step)
+      in
+      if size_next &gt; size_max then found
+      else
+        let outcome = run_multiple ~sut_path ~size:size_next ~attempts in
+        let pass_next, found =
+          match outcome with
+          | All_pass -&gt;
+              Logs.info (fun m -&gt; m "pass size=%d" size_next);
+              true, found
+          | Found_fail seed -&gt;
+              Logs.err (fun m -&gt; m "fail size=%d seed=%d" size_next seed);
+              false, Some (size_next, seed)
+        in
+        let step_next =
+          if pass = pass_next then
+            (if pass then step * 2 else step)
+          else
+            step / 2
+        in
+        let size_new, pass_new =
+          if pass || not pass_next then size_next, pass_next
+          else size, pass
+        in
+        loop ~iter:(iter+1) ~size:size_new ~step:step_next
+             ~pass:pass_new ~found
+  in
+  let result =
+    loop ~iter:0 ~size:16 ~step:16 ~pass:true ~found:None
+  in
+  match result with
+  | None -&gt; Search_pass
+  | Some (size, seed) -&gt; Search_fail { size; seed }</code></pre>
+
+<h3>Things worth noticing</h3>
+
+<ul>
+  <li>
+    <strong>Initial <code>pass = true</code>.</strong> We haven't actually run
+    anything yet. Assuming "pass" means the first iteration goes into the
+    climbing branch and tries <code>size_next = 16 + 16 = 32</code>. Size 16
+    itself is never directly tested — fine, the algorithm finds it later if it
+    matters.
+  </li>
+  <li>
+    <strong><code>max 0 (size - step)</code>.</strong> OCaml ints don't saturate
+    on underflow; they go negative. Clamp manually.
+  </li>
+  <li>
+    <strong>Condensed step update.</strong> <code>if pass = pass_next then …</code>
+    covers both same-direction cases. The else branch is the boundary cross.
+  </li>
+  <li>
+    <strong>Logs.</strong> <code>Logs.info</code> for passes, <code>Logs.err</code>
+    for fails. Set the log level to <code>Info</code> in main and watch the search
+    run live — very satisfying.
+  </li>
+</ul>
+
+<div class="task">
+  <h3>Your task</h3>
+  <ol>
+    <li>Add <code>search_outcome</code> and <code>search</code> to <code>lib/Driver.ml</code>. Type it in — finger memory matters.</li>
+    <li>Add a <code>search</code> subcommand to <code>bin/main.ml</code>. Reasonable defaults: <code>attempts = 100</code>, <code>size_max = 4096</code>. On result, log either <code>ok</code> or <code>minimized size=N seed=N</code>.</li>
+    <li><strong>Sanity test</strong> with the always-passing stub SUT: search should walk up to <code>size_max</code> and exit with <code>Search_pass</code>. Expect a stream of <code>pass size=…</code> log lines, no fails.</li>
+    <li>
+      <strong>The fun part.</strong> Temporarily patch <code>bin/sut.ml</code> to fail conditionally:
+      <pre><code>let () =
+  let entropy = In_channel.input_all stdin in
+  if String.length entropy &gt;= 50 then exit 1;
+  Printf.eprintf "sut: pass at %d\n" (String.length entropy);
+  exit 0</code></pre>
+      Run the search. Watch it climb (16, 32, 64 — fail!), shrink toward 50, narrow in. Minimized size should be 50 or close. The algorithm doesn't always hit the exact minimum — <code>step</code> halving can skip past it. Revert <code>sut.ml</code> after.
+    </li>
+  </ol>
+</div>
+
+<div class="followup">
+  Stuck? Confused? Curious? Ask your agent — that's what they're here for.
+</div>
+
+</body>
+</html>

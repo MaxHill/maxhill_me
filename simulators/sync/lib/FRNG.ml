@@ -12,33 +12,28 @@ let take_bytes t ~size =
     t.pos <- t.pos + size;
     Ok out
 
-let take_int64 t =
+let take_int t =
   if remaining t < 8 then Error Out_of_entropy
   else
-    let out = Bytes.get_int64_le t.entropy t.pos in
+    let out =
+      Bytes.get_int64_le t.entropy t.pos
+      |> Int64.logand 0x3FFF_FFFF_FFFF_FFFFL
+      |> Int64.to_int
+    in
     t.pos <- t.pos + 8;
-    Ok out
-
-let take_int t =
-  if remaining t < 1 then Error Out_of_entropy
-  else
-    let out = Bytes.get_uint8 t.entropy t.pos in
-    t.pos <- t.pos + 1;
     Ok out
 
 let take_bool t =
   take_int t
-  (* Take first bit *)
-  |> Result.map (fun byte -> byte land 1)
-  (* Is first bit 1 return true 0 return false*)
-  |> Result.map (fun bit0 -> bit0 = 1)
+  |> Result.map (fun number -> number land 1)
+  |> Result.map (fun number -> number = 1)
 
 let take_int_inclusive t ~max =
-  assert (max >= 0 && max <= 255);
-  if max = 255 then take_int t
+  assert (max >= 0);
+  if max = Int.max_int then take_int t
   else
     let bound = max + 1 in
-    let limit = 256 / bound * bound in
+    let limit = Int.max_int - (Int.max_int mod bound) in
     let rec loop () =
       let* x = take_int t in
       if x < limit then Ok (x mod bound) else loop ()
@@ -47,7 +42,6 @@ let take_int_inclusive t ~max =
 
 let take_range_inclusive t ~min ~max =
   assert (min <= max);
-  assert (max - min <= 255);
 
   take_int_inclusive t ~max:(max - min) |> Result.map (fun value -> value + min)
 
@@ -67,18 +61,18 @@ let weighted_pick t (weights : ('a * int) list) : ('a, frng_error) result =
   in
   assert (weights <> []);
   assert (total > 0);
-  (* because take_int_inclusive currently maxes at 255 *)
-  assert (total <= 256);
+  assert (total <= Int.max_int);
 
   let* pick_initial = take_int_inclusive t ~max:(total - 1) in
 
-  let rec go pick = function
+  let rec loop pick = function
     | [] ->
         (* unreachable if total > 0 and list unchanged *)
         failwith "weighted: unreachable"
-    | (choice, w) :: rest -> if pick < w then Ok choice else go (pick - w) rest
+    | (choice, w) :: rest ->
+        if pick < w then Ok choice else loop (pick - w) rest
   in
-  go pick_initial weights
+  loop pick_initial weights
 
 let swarm_weight_pick t (options : 'a list) =
   let rec build_weights acc = function
