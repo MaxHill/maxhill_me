@@ -2,12 +2,6 @@ let ( let* ) = Result.bind
 
 type t = { mutable a : int; mutable b : int; frng : FRNG.t }
 
-type action_weights = {
-  transfer_a_to_b : int;
-  transfer_b_to_a : int;
-  inquiry : int;
-}
-
 let init frng = Ok { a = 5; b = 5; frng }
 
 let check_invariants w =
@@ -16,6 +10,10 @@ let check_invariants w =
   assert (w.b >= 0)
 
 let step w =
+  (* let* action2 = *)
+  (*   FRNG.weighted_pick w.frng *)
+  (*     [ (`Transfer_a_to_b, 10); (`Transfer_b_to_a, 20); (`Inquiry, 30) ] *)
+  (* in *)
   let* action =
     FRNG.swarm_weight_pick w.frng
       [ `Transfer_a_to_b; `Transfer_b_to_a; `Inquiry ]

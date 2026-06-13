@@ -272,15 +272,15 @@ found_seed : the seed that triggered that failure</code></pre>
     </tr>
   </thead>
   <tbody>
-    <tr><td>0</td><td>16</td><td>16</td><td>✓</td><td>32</td><td class="pass">pass</td><td>32</td><td>32</td><td>✓</td><td>—</td></tr>
-    <tr><td>1</td><td>32</td><td>32</td><td>✓</td><td>64</td><td class="pass">pass</td><td>64</td><td>64</td><td>✓</td><td>—</td></tr>
-    <tr><td>2</td><td>64</td><td>64</td><td>✓</td><td>128</td><td class="fail">fail</td><td>32</td><td>128</td><td>✗</td><td>128</td></tr>
-    <tr><td>3</td><td>128</td><td>32</td><td>✗</td><td>96</td><td class="fail">fail</td><td>32 (kept)</td><td>96</td><td>✗</td><td>96</td></tr>
-    <tr><td>4</td><td>96</td><td>32</td><td>✗</td><td>64</td><td class="pass">pass</td><td>16</td><td>96 (keep)</td><td>✗</td><td>96</td></tr>
-    <tr><td>5</td><td>96</td><td>16</td><td>✗</td><td>80</td><td class="pass">pass</td><td>8</td><td>96 (keep)</td><td>✗</td><td>96</td></tr>
-    <tr><td>6</td><td>96</td><td>8</td><td>✗</td><td>88</td><td class="pass">pass</td><td>4</td><td>96 (keep)</td><td>✗</td><td>96</td></tr>
-    <tr><td>7</td><td>96</td><td>4</td><td>✗</td><td>92</td><td class="fail">fail</td><td>4 (kept)</td><td>92</td><td>✗</td><td>92</td></tr>
-    <tr><td>8</td><td>92</td><td>4</td><td>✗</td><td>88</td><td class="pass">pass</td><td>2</td><td>92 (keep)</td><td>✗</td><td>92</td></tr>
+    <tr><td>0</td><td>16</td><td>16</td><td>yes</td><td>32</td><td class="pass">pass</td><td>32</td><td>32</td><td>yes</td><td>—</td></tr>
+    <tr><td>1</td><td>32</td><td>32</td><td>yes</td><td>64</td><td class="pass">pass</td><td>64</td><td>64</td><td>yes</td><td>—</td></tr>
+    <tr><td>2</td><td>64</td><td>64</td><td>yes</td><td>128</td><td class="fail">fail</td><td>32</td><td>128</td><td>no</td><td>128</td></tr>
+    <tr><td>3</td><td>128</td><td>32</td><td>no</td><td>96</td><td class="fail">fail</td><td>32 (kept)</td><td>96</td><td>no</td><td>96</td></tr>
+    <tr><td>4</td><td>96</td><td>32</td><td>no</td><td>64</td><td class="pass">pass</td><td>16</td><td>96 (keep)</td><td>no</td><td>96</td></tr>
+    <tr><td>5</td><td>96</td><td>16</td><td>no</td><td>80</td><td class="pass">pass</td><td>8</td><td>96 (keep)</td><td>no</td><td>96</td></tr>
+    <tr><td>6</td><td>96</td><td>8</td><td>no</td><td>88</td><td class="pass">pass</td><td>4</td><td>96 (keep)</td><td>no</td><td>96</td></tr>
+    <tr><td>7</td><td>96</td><td>4</td><td>no</td><td>92</td><td class="fail">fail</td><td>4 (kept)</td><td>92</td><td>no</td><td>92</td></tr>
+    <tr><td>8</td><td>92</td><td>4</td><td>no</td><td>88</td><td class="pass">pass</td><td>2</td><td>92 (keep)</td><td>no</td><td>92</td></tr>
     <tr><td>…</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
     <tr><td></td><td></td><td>0</td><td></td><td></td><td></td><td><strong>stop</strong></td><td></td><td></td><td>92</td></tr>
   </tbody>
