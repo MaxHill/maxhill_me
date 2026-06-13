@@ -24,7 +24,9 @@
   dune
   cmdliner
   logs
-  fmt)
+  fmt
+  hegel
+  ppx_hegel_test)
  (tags
   ("sync" "simulator" "cli")))
 

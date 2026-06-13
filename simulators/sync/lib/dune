@@ -1,3 +1,5 @@
 (library
  (name sync_simulator)
- (libraries unix logs))
+ (libraries unix logs hegel)
+ (inline_tests (backend ppx_hegel_test))
+ (preprocess (pps ppx_hegel_test)))

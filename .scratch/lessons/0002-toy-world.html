@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lesson 2 — The Toy World</title>
+<style>
+  :root {
+    --fg: #1a1a1a;
+    --muted: #666;
+    --bg: #fdfdfb;
+    --accent: #b91c1c;
+    --rule: #e5e5e2;
+    --code-bg: #f4f3ee;
+    --code-fg: #1a1a1a;
+    --pass: #15803d;
+    --fail: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+  }
+  body {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 17px;
+    line-height: 1.6;
+    max-width: 720px;
+    margin: 4rem auto;
+    padding: 0 1.5rem 6rem;
+  }
+  header {
+    border-bottom: 2px solid var(--fg);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+  header .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: -apple-system, "Helvetica Neue", sans-serif;
+    font-weight: 600;
+  }
+  header h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    margin: 0.5rem 0 0.5rem;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+  header .subtitle {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 1.05rem;
+  }
+  h2 {
+    font-size: 1.4rem;
+    margin-top: 3rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.4rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-size: 1.1rem;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+  p { margin: 0.8rem 0; }
+  code, pre {
+    font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.88em;
+  }
+  code {
+    background: var(--code-bg);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 4px;
+    border-left: 3px solid var(--fg);
+    overflow-x: auto;
+    line-height: 1.5;
+    font-size: 0.82em;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 1em;
+  }
+  blockquote {
+    border-left: 3px solid var(--accent);
+    margin: 1.5rem 0;
+    padding: 0.2rem 1.2rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+  blockquote strong {
+    color: var(--fg);
+    font-style: normal;
+  }
+  ul, ol { padding-left: 1.5rem; }
+  li { margin: 0.3rem 0; }
+  .task {
+    background: #fff8e7;
+    border: 1px solid #e8d5a0;
+    border-radius: 4px;
+    padding: 1rem 1.4rem;
+    margin: 2rem 0;
+  }
+  .task h3 {
+    margin-top: 0.2rem;
+    color: #92400e;
+    font-family: -apple-system, "Helvetica Neue", sans-serif;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+  }
+  .followup {
+    border-top: 1px solid var(--rule);
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    color: var(--muted);
+    font-size: 0.92rem;
+    font-style: italic;
+    text-align: center;
+  }
+  a { color: var(--accent); }
+
+  @media print {
+    body {
+      max-width: none;
+      margin: 0;
+      padding: 1.5cm;
+      font-size: 11pt;
+    }
+    pre { font-size: 8.5pt; page-break-inside: avoid; }
+    .task { background: none; border: 1px solid #999; }
+    h2 { page-break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Lesson 02 · OCaml + FRNG · The Payoff</div>
+  <h1>The Toy World</h1>
+  <div class="subtitle">A tiny ledger, a planted bug, and an automated minimizer that finds the smallest failing scenario.</div>
+</header>
+
+<h2>The point</h2>
+
+<p>
+So far your SUT is hard-coded to fail at <code>entropy &gt;= 50</code>. The searcher
+works, but there's nothing <em>interesting</em> to minimize. A real World has:
+</p>
+
+<ul>
+  <li><strong>Internal state</strong> that evolves over time.</li>
+  <li><strong>Multiple actions</strong> chosen randomly via <code>weighted_pick</code>.</li>
+  <li><strong>An invariant</strong> asserted after every step.</li>
+  <li><strong>A bug</strong> that requires a <em>specific sequence</em> of choices to expose.</li>
+</ul>
+
+<p>
+When you wire that into the searcher, the minimum size becomes "the entropy
+needed to make the bug trigger reliably enough that 100 attempts find it."
+That's the article's whole vibe.
+</p>
+
+<h2>Design: the two-account ledger</h2>
+
+<p>Small enough to fit in your head, big enough to make minimization meaningful.</p>
+
+<pre><code>type world = {
+  mutable a : int;
+  mutable b : int;
+  frng      : FRNG.t;
+}
+
+init: a = 5, b = 5
+
+actions (weighted):
+  | Transfer_a_to_b   (* pick amount 1..3, a -= amt, b += amt *)
+  | Transfer_b_to_a   (* pick amount 1..3, b -= amt, a += amt *)
+  | Inquiry           (* no-op, just consumes a tiny bit of entropy *)
+
+invariants (asserted every step):
+  a + b = 10
+  a &gt;= 0
+  b &gt;= 0
+
+planted bug:
+  the transfer functions don't check that the source has enough balance.
+  enough one-direction transfers will drive a (or b) negative.</code></pre>
+
+<h3>Why this is good for the searcher</h3>
+
+<ul>
+  <li>The total invariant <code>a + b = 10</code> always holds (transfers conserve mass), so no false positives there.</li>
+  <li>The <code>&gt;= 0</code> invariant <em>can</em> break, but only after at least 2-3 transfers in one direction without offsetting transfers.</li>
+  <li>A single action isn't enough → the minimum size is meaningfully &gt; 0.</li>
+  <li>With balanced weights, ~half of transfers go each way, so getting a streak takes many attempts at small sizes — exactly what <code>run_multiple</code> is designed for.</li>
+</ul>
+
+<h3>Each step's entropy budget</h3>
+
+<p>Roughly per step:</p>
+
+<ul>
+  <li><code>weighted_pick</code> over 3 actions → 8 bytes (one <code>take_int</code> for the bound)</li>
+  <li>amount draw <code>1..3</code> → 8 bytes (another <code>take_int</code>)</li>
+  <li><strong>~16 bytes per step</strong></li>
+</ul>
+
+<p>
+So 3 transfers in a row ≈ 48 bytes. Plus <code>swarm_weights</code> setup costs
+a few more upfront. Expect the searcher to converge to a minimum around
+<strong>80-150 bytes</strong>.
+</p>
+
+<h2>Code shape</h2>
+
+<p>A new module <code>lib/World.ml</code>:</p>
+
+<pre><code>module FRNG = FRNG
+
+let ( let* ) = Result.bind
+
+type t = {
+  mutable a : int;
+  mutable b : int;
+  frng : FRNG.t;
+}
+
+type action_weights = {
+  transfer_a_to_b : int;
+  transfer_b_to_a : int;
+  inquiry         : int;
+}
+
+(* Pick random weights at the start so different runs explore
+   different action distributions. *)
+let init_weights frng =
+  let* transfer_a_to_b = FRNG.take_range_inclusive frng ~min:1 ~max:100 in
+  let* transfer_b_to_a = FRNG.take_range_inclusive frng ~min:1 ~max:100 in
+  let* inquiry         = FRNG.take_range_inclusive frng ~min:1 ~max:100 in
+  Ok { transfer_a_to_b; transfer_b_to_a; inquiry }
+
+let init frng =
+  let* _weights = init_weights frng in
+  (* For now we ignore weights — could thread them through if you want. *)
+  Ok { a = 5; b = 5; frng }
+
+let check_invariants w =
+  assert (w.a + w.b = 10);
+  assert (w.a &gt;= 0);
+  assert (w.b &gt;= 0)
+
+let step w =
+  let* action =
+    FRNG.weighted_pick w.frng [
+      `Transfer_a_to_b, 10;
+      `Transfer_b_to_a, 10;
+      `Inquiry,          1;
+    ]
+  in
+  let* () =
+    match action with
+    | `Transfer_a_to_b -&gt;
+        let* amt = FRNG.take_range_inclusive w.frng ~min:1 ~max:3 in
+        w.a &lt;- w.a - amt;
+        w.b &lt;- w.b + amt;
+        Ok ()
+    | `Transfer_b_to_a -&gt;
+        let* amt = FRNG.take_range_inclusive w.frng ~min:1 ~max:3 in
+        w.b &lt;- w.b - amt;
+        w.a &lt;- w.a + amt;
+        Ok ()
+    | `Inquiry -&gt;
+        Ok ()
+  in
+  check_invariants w;
+  Ok ()
+
+let run w =
+  let rec loop () =
+    match step w with
+    | Ok () -&gt; loop ()
+    | Error FRNG.Out_of_entropy -&gt; ()
+  in
+  loop ()</code></pre>
+
+<h3>Notes</h3>
+
+<ul>
+  <li>
+    <strong>The bug is implicit, not explicit</strong> — <code>Transfer_a_to_b</code>
+    doesn't check <code>w.a &gt;= amt</code>. That's the bug. It blindly subtracts.
+    The invariant <code>a &gt;= 0</code> will catch it via <code>assert</code>.
+  </li>
+  <li>
+    <strong><code>assert</code> is what crashes the SUT.</strong> When the
+    assertion fails, OCaml raises <code>Assert_failure</code>, the program
+    exits nonzero, and the Driver counts it as <code>Fail</code>. The searcher
+    minimizes from there.
+  </li>
+  <li>
+    <strong>The <code>let* () = ... in</code> pattern</strong> threads results
+    through unit-returning operations. Common OCaml idiom for "do this
+    side-effecting thing, but propagate any error."
+  </li>
+  <li>
+    <strong>Module aliases.</strong> <code>module FRNG = FRNG</code> at the top
+    is stylistic — makes <code>FRNG.foo</code> references explicit even within
+    <code>Sync_simulator</code>. Skip if you prefer.
+  </li>
+</ul>
+
+<h2>Wiring into the SUT</h2>
+
+<p><code>bin/sut.ml</code> becomes:</p>
+
+<pre><code>let () =
+  let entropy = In_channel.input_all stdin in
+  let frng = Sync_simulator.FRNG.init entropy in
+  match Sync_simulator.World.init frng with
+  | Error Sync_simulator.FRNG.Out_of_entropy -&gt;
+      (* not enough entropy to even start the world — innocent *)
+      exit 0
+  | Ok w -&gt;
+      Sync_simulator.World.run w;
+      exit 0</code></pre>
+
+<blockquote>
+  <strong>Innocent until proven guilty.</strong> If entropy runs out during init
+  or during a step, that's not a bug — it's just a too-short input. Exit 0. Only
+  an <code>assert</code> failure (which exits nonzero via uncaught exception)
+  signals "found a bug."
+</blockquote>
+
+<div class="task">
+  <h3>Your task</h3>
+  <ol>
+    <li>Create <code>lib/World.ml</code> with the structure above.</li>
+    <li>Rewrite <code>bin/sut.ml</code> to drive it.</li>
+    <li>
+      Build and sanity-check with a tiny <code>replay</code>:
+      <pre><code>mise run replay -- --seed 42 --size 64</code></pre>
+      Should pass or fail depending on the seed/size.
+    </li>
+    <li>
+      <strong>Run the search.</strong>
+      <pre><code>mise run search -- --attempts 100 --size_max 4096</code></pre>
+      Watch it climb, find a fail, then minimize. Expect convergence to something
+      in the 50-200 byte range. Some <code>pass size=N</code> log lines, then
+      <code>fail size=M seed=K</code> as it homes in.
+    </li>
+    <li>
+      <strong>Reproduce the minimum.</strong> The searcher prints
+      <code>minimized size=N seed=K</code>. Plug those into <code>replay</code>:
+      <pre><code>mise run replay -- --seed K --size N</code></pre>
+      Should fail deterministically — that's your minimal counter-example.
+    </li>
+  </ol>
+</div>
+
+<p>
+This is the moment the entire 4-lesson arc pays off: a tiny ledger, a planted
+bug, and an automated tool that finds the smallest failing scenario for you.
+</p>
+
+<div class="followup">
+  Stuck? Confused? Curious? Ask your agent — that's what they're here for.
+</div>
+
+</body>
+</html>

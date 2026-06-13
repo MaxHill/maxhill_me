@@ -7,7 +7,7 @@ opam = "2.5.1"
 build = "mise exec -- opam exec --switch=. -- dune build"
 run = "mise exec -- opam exec --switch=. -- dune exec ./bin/main.exe --"
 test = "mise exec -- opam exec --switch=. -- dune runtest"
-setup = "opam switch create . ocaml-base-compiler.5.2.0 --yes && opam install --switch=. . --deps-only -y && opam install --switch=. ocaml-lsp-server ocamlformat merlin -y"
+setup = "opam switch create . ocaml-base-compiler.5.2.0 --yes && opam pin add --switch=. hegel git+https://github.com/hegeldev/hegel-ocaml.git#main -y && HEGEL_SRC=$(opam var --switch=. hegel:source-dir) && dune build --root \"$HEGEL_SRC\" ppx_hegel_compat.opam ppx_hegel_test.opam && opam pin add --switch=. ppx_hegel_compat \"$HEGEL_SRC\" -y && opam pin add --switch=. ppx_hegel_test \"$HEGEL_SRC\" -y && opam install --switch=. . --deps-only -y && opam install --switch=. ocaml-lsp-server ocamlformat merlin -y"
 
 
 
