@@ -5,6 +5,9 @@
   "scripts": {
     "build": "mise exec -- opam exec --switch=. -- dune build",
     "dev": "mise exec -- opam exec --switch=. -- dune exec ./bin/main.exe -- --auth-issuer-url http://localhost:3002 --auth-audience golf-app",
-    "test": "mise exec -- opam exec --switch=. -- dune runtest"
+    "test": "mise exec -- opam exec --switch=. -- dune runtest",
+    "sim:search": "mise exec -- opam exec --switch=. -- dune build ./sim_bin/simulator_sut.exe && mise exec -- opam exec --switch=. -- dune exec ./sim_bin/simulator.exe -- search",
+    "sim:replay": "mise exec -- opam exec --switch=. -- dune build ./sim_bin/simulator_sut.exe && mise exec -- opam exec --switch=. -- dune exec ./sim_bin/simulator.exe -- replay",
+    "sim:sut": "mise exec -- opam exec --switch=. -- dune exec ./sim_bin/simulator_sut.exe --"
   }
 }

@@ -23,4 +23,7 @@
   ppx_yojson_conv
   jose
   logs
-  fmt))
+  fmt
+  cmdliner
+  hegel
+  ppx_hegel_test))

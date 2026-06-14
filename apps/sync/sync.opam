@@ -19,6 +19,9 @@ depends: [
   "jose"
   "logs"
   "fmt"
+  "cmdliner"
+  "hegel"
+  "ppx_hegel_test"
   "odoc" {with-doc}
 ]
 build: [

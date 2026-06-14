@@ -1,0 +1,64 @@
+open Cmdliner
+
+(*  ------------------------------------------------------------------------ *)
+(* Run once                                                                  *)
+(* ------------------------------------------------------------------------  *)
+let replay_handler seed size =
+  let entropy = Sync_simulator.Driver.entropy_of_seed ~seed ~size in
+  let result =
+    Sync_simulator.Driver.run_once
+      ~sut_path:"./_build/default/sim_bin/simulator_sut.exe" ~entropy
+  in
+  match result with
+  | Sync_simulator.Driver.Fail ->
+      Logs.app (fun m -> m "Fail size=%d seed=%d" size seed)
+  | Sync_simulator.Driver.Pass ->
+      Logs.app (fun m -> m "Pass size=%d seed=%d" size seed)
+
+let replay_cmd =
+  let seed_arg =
+    let doc = "Seed to replay." in
+    Arg.(required & opt (some int) None & info [ "seed" ] ~docv:"SEED" ~doc)
+  in
+  let size_arg =
+    let doc = "Size to replay." in
+    Arg.(value & opt int 4096 & info [ "size" ] ~docv:"SIZE" ~doc)
+  in
+
+  let info = Cmd.info "replay" ~doc:"Replay a known seed" in
+  Cmd.v info Term.(const replay_handler $ seed_arg $ size_arg)
+
+(*  ------------------------------------------------------------------------ *)
+(*  Run search                                                             *)
+(* ------------------------------------------------------------------------  *)
+let search_handler attempts size_max =
+  let result =
+    Sync_simulator.Driver.search
+      ~sut_path:"./_build/default/sim_bin/simulator_sut.exe" ~size_max
+      ~attempts
+  in
+  match result with
+  | Search_fail r ->
+      Logs.app (fun m -> m "minimized size=%d seed=%d" r.size r.seed)
+  | Search_pass -> Logs.app (fun m -> m "ok (%d attempts per size)" attempts)
+
+let search_cmd =
+  let attempts_arg =
+    let doc = "How many attempts." in
+    Arg.(value & opt int 100 & info [ "attempts" ] ~docv:"ATTEMPTS" ~doc)
+  in
+  let size_max_arg =
+    let doc = "Biggest entropy to test." in
+    Arg.(value & opt int 4096 & info [ "size_max" ] ~docv:"SIZE_MAX" ~doc)
+  in
+  let info = Cmd.info "search" ~doc:"Run simulator in search mode" in
+  Cmd.v info Term.(const search_handler $ attempts_arg $ size_max_arg)
+
+(*  ------------------------------------------------------------------------ *)
+(*  init                                                                     *)
+(* ------------------------------------------------------------------------  *)
+let () =
+  let main_info = Cmd.info "prg" ~version:"0.1.0" ~doc:"Example CLI" in
+  Logs.set_reporter (Logs_fmt.reporter ());
+  Logs.set_level (Some Logs.Info);
+  exit (Cmd.eval (Cmd.group main_info [ replay_cmd; search_cmd ]))

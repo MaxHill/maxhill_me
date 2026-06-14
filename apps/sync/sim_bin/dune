@@ -1,0 +1,3 @@
+(executables
+ (names simulator simulator_sut)
+ (libraries sync_simulator cmdliner logs logs.fmt))
