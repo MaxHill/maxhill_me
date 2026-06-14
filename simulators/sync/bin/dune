@@ -1,5 +1,0 @@
-(executables
- (public_names sync_simulator sut)
- (names main sut)
- (libraries sync_simulator cmdliner logs logs.fmt))
-
