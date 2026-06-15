@@ -1,3 +1,17 @@
-(executables
- (names simulator simulator_sut)
+(executable
+ (name simulator)
  (libraries sync_simulator cmdliner logs logs.fmt))
+
+(executable
+ (name simulator_sut)
+ (libraries
+  sync_simulator
+  eio_main
+  eio
+  logs
+  caqti
+  caqti-eio
+  caqti-eio.unix
+  caqti-driver-sqlite3
+  uri
+  yojson))

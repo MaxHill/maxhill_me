@@ -8,6 +8,10 @@
     "test": "opam exec --switch=. -- dune runtest",
     "sim:search": "opam exec --switch=. -- dune build ./sim_bin/simulator_sut.exe && opam exec --switch=. -- dune exec ./sim_bin/simulator.exe -- search",
     "sim:replay": "opam exec --switch=. -- dune build ./sim_bin/simulator_sut.exe && opam exec --switch=. -- dune exec ./sim_bin/simulator.exe -- replay",
-    "sim:sut": "opam exec --switch=. -- dune exec ./sim_bin/simulator_sut.exe --"
+    "sim:sut": "opam exec --switch=. -- dune exec ./sim_bin/simulator_sut.exe --",
+    "sim:client": "node ./sim/test_client.js"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6"
   }
 }

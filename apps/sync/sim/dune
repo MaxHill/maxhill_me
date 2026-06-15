@@ -1,5 +1,7 @@
+(include_subdirs unqualified)
+
 (library
  (name sync_simulator)
- (libraries unix logs hegel)
+ (libraries eio eio_main unix logs hegel yojson ppx_yojson_conv_lib)
  (inline_tests (backend ppx_hegel_test))
- (preprocess (pps ppx_hegel_test)))
+ (preprocess (pps ppx_hegel_test ppx_yojson_conv)))
