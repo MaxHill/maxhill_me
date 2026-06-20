@@ -1,14 +1,17 @@
 (executable
  (name simulator)
+ (modules simulator)
  (libraries sync_simulator cmdliner logs logs.fmt))
 
 (executable
  (name simulator_sut)
+ (modules simulator_sut)
  (libraries
   sync_simulator
   eio_main
   eio
   logs
+  logs.fmt
   caqti
   caqti-eio
   caqti-eio.unix

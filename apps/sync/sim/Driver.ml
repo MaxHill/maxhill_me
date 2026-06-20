@@ -3,12 +3,13 @@ let () = Random.self_init ()
 type outcome = Pass | Fail
 type multi_outcome = All_pass | Found_fail of int (* the failing seed *)
 
-let run_once ~sut_path ~entropy : outcome =
+let rec run_once ~sut_path ~entropy ~log_level : outcome =
   let stdin_read, stdin_write = Unix.pipe () in
   Unix.set_close_on_exec stdin_write;
+  let argv = [| sut_path |] in
+  let env = env_with_log_level ~log_level in
   let pid =
-    Unix.create_process sut_path [| sut_path |] stdin_read Unix.stdout
-      Unix.stderr
+    Unix.create_process_env sut_path argv env stdin_read Unix.stdout Unix.stderr
   in
   Unix.close stdin_read;
   let n = String.length entropy in
@@ -16,6 +17,20 @@ let run_once ~sut_path ~entropy : outcome =
   Unix.close stdin_write;
   let _, status = Unix.waitpid [] pid in
   match status with Unix.WEXITED 0 -> Pass | _ -> Fail
+
+and env_with_log_level ~log_level =
+  let base = Array.to_list (Unix.environment ()) in
+  let base =
+    List.filter
+      (fun entry -> not (String.starts_with ~prefix:"SIM_LOG_LEVEL=" entry))
+      base
+  in
+  let with_level =
+    match log_level with
+    | None -> base
+    | Some level -> ("SIM_LOG_LEVEL=" ^ level) :: base
+  in
+  Array.of_list with_level
 
 let entropy_of_seed ~seed ~size =
   let state = Random.State.make [| seed |] in
@@ -27,13 +42,13 @@ let entropy_of_seed ~seed ~size =
 
 let fresh_seed = Random.bits
 
-let run_multiple ~sut_path ~size ~attempts : multi_outcome =
+let run_multiple ~sut_path ~size ~attempts ~log_level : multi_outcome =
   let rec loop = function
     | attempt when attempt = attempts -> All_pass
     | attempt -> (
         let seed = fresh_seed () in
         let entropy = entropy_of_seed ~seed ~size in
-        match run_once ~sut_path ~entropy with
+        match run_once ~sut_path ~entropy ~log_level with
         | Pass -> loop (attempt + 1)
         | Fail -> Found_fail seed)
   in
@@ -45,7 +60,7 @@ let run_multiple ~sut_path ~size ~attempts : multi_outcome =
 
 type search_outcome = Search_pass | Search_fail of { size : int; seed : int }
 
-let search ~sut_path ~attempts ~size_max : search_outcome =
+let search ~sut_path ~attempts ~size_max ~log_level : search_outcome =
   let rec loop ~iter ~size ~step ~pass ~found =
     if iter >= 1024 then failwith "safety counter"
     else if step = 0 then found
@@ -53,7 +68,9 @@ let search ~sut_path ~attempts ~size_max : search_outcome =
       let size_next = if pass then size + step else max 0 (size - step) in
       if size_next > size_max then found
       else
-        let outcome = run_multiple ~sut_path ~size:size_next ~attempts in
+        let outcome =
+          run_multiple ~sut_path ~size:size_next ~attempts ~log_level
+        in
         let pass_next, found =
           match outcome with
           | All_pass ->

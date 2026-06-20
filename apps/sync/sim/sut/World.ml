@@ -1,4 +1,7 @@
 let ( let* ) = Result.bind
+let src = Logs.Src.create "simulator.world"
+
+module Log = (val Logs.src_log src : Logs.LOG)
 
 type t = { client : Client.t; frng : FRNG.t; mutable step_n : int }
 
@@ -22,18 +25,24 @@ let step world : (unit, FRNG.frng_error) result =
   in
 
   world.step_n <- world.step_n + 1;
-  Eio.Std.traceln " step: %d" world.step_n;
+  Log.debug (fun m -> m " step: %d" world.step_n);
   check_properties world;
   Ok ()
 
 let run w =
-  Eio.Std.traceln "new run";
+  Log.info (fun m -> m "new run");
   let rec loop () =
+    Printf.eprintf "\r%-50s"
+      (Printf.sprintf "Progress: %.1f%%" (FRNG.progress w.frng *. 100.0));
+    flush stderr;
     match step w with Ok () -> loop () | Error FRNG.Out_of_entropy -> ()
   in
   loop ();
 
-  Eio.Std.traceln " Run complete, cleaning up";
+  Printf.eprintf "\n";
+  flush stderr;
+
+  Log.debug (fun m -> m "Run complete, cleaning up");
   w.client.send Client.Close;
   let _ = w.client.wait_for_exit () in
   ()

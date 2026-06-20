@@ -5,6 +5,10 @@ let ( let* ) = Result.bind
 let init entropy = { entropy = Bytes.of_string entropy; pos = 0 }
 let remaining t = Bytes.length t.entropy - t.pos
 
+let progress t =
+  try float_of_int t.pos /. float_of_int (Bytes.length t.entropy)
+  with Division_by_zero -> 0.
+
 let take_bytes t ~size =
   if remaining t < size then Error Out_of_entropy
   else
