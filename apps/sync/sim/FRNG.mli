@@ -11,3 +11,4 @@ val take_int_inclusive : t -> max:int -> (int, frng_error) result
 val take_index : t -> 'a list -> (int, frng_error) result
 val weighted_pick : t -> ('a * int) list -> ('a, frng_error) result
 val swarm_weight_pick : t -> 'a list -> ('a, frng_error) result
+val take_string : t -> size:int -> (string, frng_error) result

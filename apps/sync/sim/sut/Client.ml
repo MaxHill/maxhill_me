@@ -2,11 +2,17 @@ open Eio.Std
 open Ppx_yojson_conv_lib.Yojson_conv.Primitives
 
 let src = Logs.Src.create "simulator.client"
+let incoming_size = 100
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
-type outgoing = Ping of { step : int } | Close [@@deriving yojson]
-type incoming = Pong [@@deriving yojson]
+type outgoing =
+  | Create_user of { key : string; name : string }
+  | Create_post of { key : string; title : string }
+  | Close
+[@@deriving yojson]
+
+type incoming = Pong | Sync_request of { title : string } [@@deriving yojson]
 
 type t = {
   inbox : incoming Eio.Stream.t;
@@ -19,7 +25,7 @@ let rec spawn ~sw ~env ~cmd : t =
 
   (* OCaml writes to TS stdin *)
   let stdin_r, stdin_w = Eio.Process.pipe ~sw mgr in
-  (* OCaml reads TS stdout (requests) *)
+  (* OCaml reads TS stdout (messages) *)
   let stdout_r, stdout_w = Eio.Process.pipe ~sw mgr in
   (* OCaml reads TS stderr (logs) *)
   let stderr_r, stderr_w = Eio.Process.pipe ~sw mgr in
@@ -34,7 +40,7 @@ let rec spawn ~sw ~env ~cmd : t =
   Eio.Flow.close stdout_w;
   Eio.Flow.close stderr_w;
 
-  let inbox = Eio.Stream.create 100 in
+  let inbox = Eio.Stream.create incoming_size in
   let exit_p, exit_r = Eio.Promise.create () in
 
   Fiber.fork ~sw (handle_stdout stdout_r inbox);
@@ -69,17 +75,18 @@ and handle_stderr stderr_r () =
     done
   with End_of_file -> ()
 
-and handle_stdout stdout_r requests () =
+and handle_stdout stdout_r messages () =
   let buf = Eio.Buf_read.of_flow stdout_r ~max_size:max_int in
   try
     while true do
       let incoming =
         Eio.Buf_read.line buf |> Yojson.Safe.from_string |> incoming_of_yojson
       in
+      assert (Eio.Stream.length messages < incoming_size);
       Log.debug (fun m ->
           m " TS->OCAML: %s"
             (Yojson.Safe.pretty_to_string (yojson_of_incoming incoming)));
-      Eio.Stream.add requests incoming
+      Eio.Stream.add messages incoming
     done
   with
   | End_of_file -> Log.debug (fun m -> m " TS STDOUT: closed")

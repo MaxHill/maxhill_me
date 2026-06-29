@@ -9,7 +9,7 @@ import { OperationLog } from "../indexeddb/operationLog.ts";
 import { RowStore } from "../indexeddb/rowStore.ts";
 import { LWWField, ROW_KEY } from "../crdt.ts";
 import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
-import { Sync } from "../sync/index.ts";
+import { Sync, SyncResponse } from "../sync/index.ts";
 import { SyncErrorCode } from "../sync/errors.ts";
 import { promisifyIDBRequest } from "../utils.ts";
 import { Table } from "../table.ts";
@@ -117,12 +117,15 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
     return result;
   }
 
-  async sync(): Promise<void> {
+  async sync(response?: SyncResponse): Promise<void> {
     try {
-      const tx = this.lifecycle.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE]);
-      const syncRequest = await this.syncManager.createSyncRequest(tx);
+      // To be able to more easily test this method we take an optional response
+      if (!response) {
+        const tx = this.lifecycle.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE]);
+        const syncRequest = await this.syncManager.createSyncRequest(tx);
 
-      const response = await this.syncManager.sendSyncRequest(this.syncRemote, syncRequest);
+        response = await this.syncManager.sendSyncRequest(this.syncRemote, syncRequest);
+      }
 
       const writeTx = this.lifecycle.transaction([
         CLIENT_STATE_STORE,

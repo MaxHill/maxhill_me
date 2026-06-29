@@ -87,3 +87,187 @@ let swarm_weight_pick t (options : 'a list) =
   in
   let* weights = build_weights [] options in
   weighted_pick t weights
+
+let rec take_string t ~size =
+  if remaining t < size then Error Out_of_entropy
+  else
+    let available_chars =
+      Array.concat
+        [
+          lowercase;
+          lowercase;
+          lowercase;
+          uppercase;
+          uppercase;
+          digits;
+          digits;
+          symbols;
+          symbols;
+          accents;
+        ]
+    in
+
+    let all_results array_of_result =
+      Array.fold_right
+        (fun x acc ->
+          match (x, acc) with
+          | Error e, _ -> Error e
+          | Ok v, Ok vs -> Ok (v :: vs)
+          | _, Error e -> Error e)
+        array_of_result (Ok [])
+    in
+
+    Array.make size ""
+    |> Array.map (fun _ ->
+        let* byte = take_bytes t ~size:1 in
+        let index = Bytes.get_uint8 byte 0 in
+        Ok available_chars.(index))
+    |> all_results
+    |> Result.map (fun r -> String.concat "" r)
+
+and uppercase =
+  [|
+    "A";
+    "B";
+    "C";
+    "D";
+    "E";
+    "F";
+    "G";
+    "H";
+    "I";
+    "J";
+    "K";
+    "L";
+    "M";
+    "N";
+    "O";
+    "P";
+    "Q";
+    "R";
+    "S";
+    "T";
+    "U";
+    "V";
+    "W";
+    "X";
+    "Y";
+    "Z";
+  |]
+
+and lowercase =
+  [|
+    "a";
+    "b";
+    "c";
+    "d";
+    "e";
+    "f";
+    "g";
+    "h";
+    "i";
+    "j";
+    "k";
+    "l";
+    "m";
+    "n";
+    "o";
+    "p";
+    "q";
+    "r";
+    "s";
+    "t";
+    "u";
+    "v";
+    "w";
+    "x";
+    "y";
+    "z";
+  |]
+
+and digits = [| "0"; "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8"; "9" |]
+
+and symbols =
+  [|
+    "!";
+    "#";
+    "$";
+    "%";
+    "&";
+    "\"";
+    "(";
+    ")";
+    "*";
+    "+";
+    ",";
+    "-";
+    ".";
+    "/";
+    ":";
+    ";";
+    "<";
+    "=";
+    ">";
+    "?";
+    "@";
+    "[";
+    "]";
+    "^";
+    "_";
+    "`";
+    "{";
+    "|";
+    "}";
+    "~";
+  |]
+
+and accents =
+  [|
+    "å";
+    "ä";
+    "ö";
+    "Å";
+    "Ä";
+    "Ö";
+    "Ø";
+    "é";
+    "è";
+    "ê";
+    "ë";
+    "á";
+    "à";
+    "â";
+    "ã";
+    "í";
+    "ì";
+    "î";
+    "ï";
+    "ó";
+    "ò";
+    "ô";
+    "õ";
+    "ú";
+    "ù";
+    "û";
+    "ü";
+    "ñ";
+    "ç";
+    "æ";
+    "ø";
+    "ß";
+    "œ";
+    "Œ";
+    "š";
+    "Š";
+    "ž";
+    "Ž";
+    "ý";
+    "ÿ";
+    "ğ";
+    "ş";
+    "ł";
+    "đ";
+    "þ";
+    "ð";
+    "¿";
+  |]

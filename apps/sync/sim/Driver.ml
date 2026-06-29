@@ -1,3 +1,7 @@
+let src = Logs.Src.create "simulator.main"
+
+module Log = (val Logs.src_log src : Logs.LOG)
+
 let () = Random.self_init ()
 
 type outcome = Pass | Fail
@@ -48,6 +52,7 @@ let run_multiple ~sut_path ~size ~attempts ~log_level : multi_outcome =
     | attempt -> (
         let seed = fresh_seed () in
         let entropy = entropy_of_seed ~seed ~size in
+        Log.info (fun m -> m "size=%d seed=%d attempt=%d" size seed attempt);
         match run_once ~sut_path ~entropy ~log_level with
         | Pass -> loop (attempt + 1)
         | Fail -> Found_fail seed)
