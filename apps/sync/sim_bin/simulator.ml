@@ -5,7 +5,7 @@ let src = Logs.Src.create "simulator.main"
 module Log = (val Logs.src_log src : Logs.LOG)
 
 let parse_log_level = function
-  | None -> Some Logs.Info
+  | None -> Some Logs.Error
   | Some value -> (
       match Logs.level_of_string (String.lowercase_ascii value) with
       | Ok level -> level

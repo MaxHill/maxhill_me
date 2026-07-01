@@ -36,13 +36,10 @@ type sync_error =
   | Decode_error of string
 
 val sync_error_to_string : sync_error -> string
-
 val decode_sync_request : string -> (sync_request, string) result
 val encode_sync_response : sync_response -> string
 val hash_sync_request : sync_request -> string
 val hash_sync_response : sync_response -> string
 
-val process_sync_request_with_connection
-  :  Repository.connection
-  -> sync_request
-  -> (sync_response, sync_error) result
+val process_sync_request_with_connection :
+  Repository.connection -> sync_request -> (sync_response, sync_error) result

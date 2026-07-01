@@ -12,7 +12,20 @@ type outgoing =
   | Close
 [@@deriving yojson]
 
-type incoming = Pong | Sync_request of { title : string } [@@deriving yojson]
+type incoming = Pong | Sync_request of Sync.Sync_engine.sync_request
+
+let incoming_of_yojson = function
+  | `List [ `String "Pong" ] -> Pong
+  | `List [ `String "SyncRequest"; payload ] -> (
+      match
+        Sync.Sync_engine.decode_sync_request (Yojson.Safe.to_string payload)
+      with
+      | Ok req -> Sync_request req
+      | Error msg ->
+          Ppx_yojson_conv_lib.Yojson_conv.of_yojson_error "incoming_of_yojson"
+            (`String msg))
+  | json ->
+      Ppx_yojson_conv_lib.Yojson_conv.of_yojson_error "incoming_of_yojson" json
 
 type t = {
   inbox : incoming Eio.Stream.t;
@@ -79,13 +92,10 @@ and handle_stdout stdout_r messages () =
   let buf = Eio.Buf_read.of_flow stdout_r ~max_size:max_int in
   try
     while true do
-      let incoming =
-        Eio.Buf_read.line buf |> Yojson.Safe.from_string |> incoming_of_yojson
-      in
+      let line = Eio.Buf_read.line buf in
+      let incoming = line |> Yojson.Safe.from_string |> incoming_of_yojson in
       assert (Eio.Stream.length messages < incoming_size);
-      Log.debug (fun m ->
-          m " TS->OCAML: %s"
-            (Yojson.Safe.pretty_to_string (yojson_of_incoming incoming)));
+      Log.debug (fun m -> m " TS->OCAML: %s" line);
       Eio.Stream.add messages incoming
     done
   with
