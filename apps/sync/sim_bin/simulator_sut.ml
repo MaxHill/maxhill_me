@@ -35,21 +35,13 @@ let () =
   Log.debug (fun m -> m "Setting up in-memory database");
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
-  (* NOTE: sqlite3 :memory: is per-connection. If pool has >1 connection,
-     some connections won't see schema created on another connection,
-     causing intermittent "no such table: crdt_operations" failures.
-     Keep pool at 1 connection in simulator for deterministic behavior. *)
-  let pool_config = Caqti_pool_config.create ~max_size:1 () in
-  let db_pool =
-    Caqti_eio_unix.connect_pool ~sw
-      ~stdenv:(env :> Caqti_eio.stdenv)
-      ~pool_config db_uri
-    |> fail_on_caqti_error "connect_pool"
+  let db_conn =
+    Caqti_eio_unix.connect ~sw ~stdenv:(env :> Caqti_eio.stdenv) db_uri
+    |> fail_on_caqti_error "connect"
   in
-  Sync.Repository.init_schema_with_pool db_pool
-  |> fail_on_repository_error "init_schema";
+  Sync.Repository.init_schema db_conn |> fail_on_repository_error "init_schema";
 
-  match Sync_simulator.World.init ~sw ~env frng db_pool with
+  match Sync_simulator.World.init ~sw ~env frng db_conn with
   | Error Sync_simulator.FRNG.Out_of_entropy ->
       (* not enough entropy to even start the world — innocent *)
       ()

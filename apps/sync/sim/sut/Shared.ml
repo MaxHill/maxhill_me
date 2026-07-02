@@ -2,13 +2,12 @@
 (* Types *)
 (* ------------------------------------------------------------------------  *)
 type connection = (module Caqti_eio.CONNECTION)
-type pool = (connection, Caqti_error.t) Caqti_eio.Pool.t
 
 type world = {
   client : Client.t;
   frng : FRNG.t;
   mutable step_n : int;
-  db_pool : pool;
+  db_conn : connection;
   clock : [ `Clock of float ] Eio.Resource.t;
   action_timeout : float;
 }

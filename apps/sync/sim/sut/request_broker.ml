@@ -15,17 +15,10 @@ let delay_response_queue : Sync.Sync_engine.sync_response Queue.t =
       - Maybe corrupt response
       *)
 let handle_sync_request ~(world : world) request =
-  let response_or_error =
-    Caqti_eio.Pool.use
-      (fun conn ->
-        Ok (Sync.Sync_engine.process_sync_request_with_connection conn request))
-      world.db_pool
-  in
   let response =
-    match response_or_error with
-    | Error err -> failwith (Caqti_error.show err)
-    | Ok (Error err) -> failwith (Sync.Sync_engine.sync_error_to_string err)
-    | Ok (Ok response) -> response
+    match Sync.Sync_engine.process_sync_request_with_connection world.db_conn request with
+    | Error err -> failwith (Sync.Sync_engine.sync_error_to_string err)
+    | Ok response -> response
   in
   world.client.send
     (Receive_sync_response_msg (Sync.Sync_engine.encode_sync_response response));

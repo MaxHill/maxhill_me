@@ -5,7 +5,7 @@ let src = Logs.Src.create "simulator.world"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
-let init ~sw ~env (frng : FRNG.t) (db_pool : pool) :
+let init ~sw ~env (frng : FRNG.t) (db_conn : connection) :
     (world, FRNG.frng_error) result =
   let* db_name = FRNG.take_range_inclusive frng ~min:1 ~max:100_000 in
   let client =
@@ -13,7 +13,7 @@ let init ~sw ~env (frng : FRNG.t) (db_pool : pool) :
       ~cmd:[ "node"; "./sim/sut/test_client.js"; Int.to_string db_name ]
   in
   let clock = Eio.Stdenv.clock env in
-  Ok { client; frng; step_n = 0; db_pool; clock; action_timeout = 5.0 }
+  Ok { client; frng; step_n = 0; db_conn; clock; action_timeout = 5.0 }
 
 let check_properties _world = assert true
 
