@@ -32,10 +32,14 @@ let () =
   let frng = Sync_simulator.FRNG.init entropy in
   let db_uri = Uri.make ~scheme:"sqlite3" ~path:":memory:" () in
 
-  Log.debug (fun m -> m "Setting up database");
+  Log.debug (fun m -> m "Setting up in-memory database");
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
-  let pool_config = Caqti_pool_config.create ~max_size:20 () in
+  (* NOTE: sqlite3 :memory: is per-connection. If pool has >1 connection,
+     some connections won't see schema created on another connection,
+     causing intermittent "no such table: crdt_operations" failures.
+     Keep pool at 1 connection in simulator for deterministic behavior. *)
+  let pool_config = Caqti_pool_config.create ~max_size:1 () in
   let db_pool =
     Caqti_eio_unix.connect_pool ~sw
       ~stdenv:(env :> Caqti_eio.stdenv)

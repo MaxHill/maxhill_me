@@ -7,6 +7,17 @@ let () = Random.self_init ()
 type outcome = Pass | Fail
 type multi_outcome = All_pass | Found_fail of int (* the failing seed *)
 
+let write_all fd s =
+  let len = String.length s in
+  let rec loop off =
+    if off >= len then ()
+    else
+      let wrote = Unix.write_substring fd s off (len - off) in
+      if wrote = 0 then failwith "write_all: wrote 0 bytes"
+      else loop (off + wrote)
+  in
+  loop 0
+
 let rec run_once ~sut_path ~entropy ~log_level : outcome =
   let stdin_read, stdin_write = Unix.pipe () in
   Unix.set_close_on_exec stdin_write;
@@ -16,8 +27,7 @@ let rec run_once ~sut_path ~entropy ~log_level : outcome =
     Unix.create_process_env sut_path argv env stdin_read Unix.stdout Unix.stderr
   in
   Unix.close stdin_read;
-  let n = String.length entropy in
-  let _ = Unix.write_substring stdin_write entropy 0 n in
+  write_all stdin_write entropy;
   Unix.close stdin_write;
   let _, status = Unix.waitpid [] pid in
   match status with Unix.WEXITED 0 -> Pass | _ -> Fail
@@ -52,7 +62,8 @@ let run_multiple ~sut_path ~size ~attempts ~log_level : multi_outcome =
     | attempt -> (
         let seed = fresh_seed () in
         let entropy = entropy_of_seed ~seed ~size in
-        Log.info (fun m -> m "size=%d seed=%d attempt=%d" size seed attempt);
+        Printf.eprintf "size=%d seed=%d attempt=%d\n" size seed attempt;
+        flush stderr;
         match run_once ~sut_path ~entropy ~log_level with
         | Pass -> loop (attempt + 1)
         | Fail -> Found_fail seed)

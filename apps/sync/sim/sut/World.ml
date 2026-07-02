@@ -1,52 +1,24 @@
+open Shared
+
 let ( let* ) = Result.bind
 let src = Logs.Src.create "simulator.world"
-let request_queue = Queue.create ()
-(* let response_queue = Queue.create () *)
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
-type connection = (module Caqti_eio.CONNECTION)
-type pool = (connection, Caqti_error.t) Caqti_eio.Pool.t
-
-type t = {
-  client : Client.t;
-  frng : FRNG.t;
-  mutable step_n : int;
-  db_pool : pool;
-}
-
-let init ~sw ~env (frng : FRNG.t) (db_pool : pool) =
+let init ~sw ~env (frng : FRNG.t) (db_pool : pool) :
+    (world, FRNG.frng_error) result =
   let* db_name = FRNG.take_range_inclusive frng ~min:1 ~max:100_000 in
   let client =
     Client.spawn ~sw ~env
       ~cmd:[ "node"; "./sim/sut/test_client.js"; Int.to_string db_name ]
   in
-  Ok { client; frng; step_n = 0; db_pool }
+  let clock = Eio.Stdenv.clock env in
+  Ok { client; frng; step_n = 0; db_pool; clock; action_timeout = 5.0 }
 
 let check_properties _world = assert true
 
 let step world : (unit, FRNG.frng_error) result =
   (* Send a request to the sync engine *)
-  (* todo:
-      - Maybe drop request
-      - Maybe drop response
-      - Maybe delay request
-      - Maybe delay response
-      - Maybe corrupt request
-      - Maybe corrupt response
-      *)
-  let _ =
-    match Queue.take_opt request_queue with
-    | Some request ->
-        ignore
-          (Caqti_eio.Pool.use
-             (fun conn ->
-               Ok
-                 (Sync.Sync_engine.process_sync_request_with_connection conn
-                    request))
-             world.db_pool)
-    | None -> ()
-  in
 
   (* Take actions on clients.
    TODO:
@@ -55,30 +27,15 @@ let step world : (unit, FRNG.frng_error) result =
        Read user/post
        Read from index user/post
        *)
-  let* action = FRNG.swarm_weight_pick world.frng [ `Create_user ] in
-  let* _ =
-    match action with
-    | `Create_user ->
-        let* name = FRNG.take_string world.frng ~size:10 in
-        let* key = FRNG.take_string world.frng ~size:10 in
-        let user = Client.Create_user { key; name } in
-        world.client.send user;
-        Ok ()
-    | `Create_post ->
-        let* title = FRNG.take_string world.frng ~size:10 in
-        let* key = FRNG.take_string world.frng ~size:10 in
-        let post = Client.Create_post { key; title } in
-        world.client.send post;
-        Ok ()
-  in
+  let* action = FRNG.swarm_weight_pick world.frng Client.actions in
+  let* outgoing = Client.outgoing_of_action world.frng action in
+  world.client.send outgoing;
 
-  (* TODO: Needs to check if  there actually is a message otherwise we could get stuck here *)
-  let msg = Eio.Stream.take world.client.inbox in
-  let _ =
-    match msg with
-    | Pong -> ()
-    | Sync_request req -> Queue.add req request_queue
-  in
+  wait_for_response ~world ~action:(Client.action_to_string action)
+  |> Result.iter (function
+    | Client.Ack -> ()
+    | Client.Sync_request request ->
+        Request_broker.handle_sync_request ~world request |> ignore);
 
   world.step_n <- world.step_n + 1;
   check_properties world;
@@ -98,6 +55,18 @@ let run w =
   flush stderr;
 
   Log.info (fun m -> m "Run complete, cleaning up");
-  w.client.send Client.Close;
-  let _ = w.client.wait_for_exit () in
+  w.client.send Client.Close_msg;
+  let close_result =
+    Eio.Time.with_timeout w.clock w.action_timeout (fun () ->
+        ignore (w.client.wait_for_exit ());
+        Ok ())
+  in
+  (match close_result with
+  | Ok () -> ()
+  | Error `Timeout ->
+      Log.warn (fun m ->
+          m "Graceful close timed out after %.3fs; force-closing TS client"
+            w.action_timeout);
+      w.client.force_close ();
+      ignore (w.client.wait_for_exit ()));
   ()

@@ -49,6 +49,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
     this.operationLog = new OperationLog();
     this.syncManager = sync;
     this.logicalClock = new PersistedLogicalClock(this.clientState);
+    // TODO: don't pass a generator just pass the id
     this.clientId = generateId();
   }
 
