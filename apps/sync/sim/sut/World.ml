@@ -13,9 +13,17 @@ let init ~sw ~env (frng : FRNG.t) (db_conn : connection) :
       ~cmd:[ "node"; "./sim/sut/test_client.js"; Int.to_string db_name ]
   in
   let clock = Eio.Stdenv.clock env in
-  Ok { client; frng; step_n = 0; db_conn; clock; action_timeout = 5.0 }
-
-let check_properties _world = assert true
+  Ok
+    {
+      client;
+      frng;
+      step_n = 0;
+      db_conn;
+      clock;
+      action_timeout = 5.0;
+      last_count_operations = None;
+      last_max_server_version = None;
+    }
 
 let step world : (unit, FRNG.frng_error) result =
   (* Send a request to the sync engine *)
@@ -24,7 +32,6 @@ let step world : (unit, FRNG.frng_error) result =
    TODO:
        Delete user/post
        Update user/post
-       Read user/post
        Read from index user/post
        *)
   let* action = FRNG.swarm_weight_pick world.frng Client.actions in
@@ -38,7 +45,7 @@ let step world : (unit, FRNG.frng_error) result =
         Request_broker.handle_sync_request ~world request |> ignore);
 
   world.step_n <- world.step_n + 1;
-  check_properties world;
+  Property_validators.check_properties world;
   Ok ()
 
 let run w =

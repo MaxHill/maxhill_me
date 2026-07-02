@@ -15,7 +15,7 @@ const CLIENT_STATE_STORE = "clientState";
 
 if (!process.argv[0]) throw new Error("No database name provided");
 process.stderr.write(`DB_name: ${process.argv[2]}\n`);
-let testLifecycle = new Lifecycle([]);
+let testLifecycle = new Lifecycle([{ table: "users", name: "user_age_index", keys: ["age"] }]);
 const clientState = new ClientState();
 const rowStore = new RowStore(testLifecycle.indexes);
 const operationLog = new OperationLog();
@@ -35,7 +35,7 @@ const db = await newDatabase(dbName)
   .withCustomSync(syncManager)
   .withCustomIdGenerator(() => deterministicClientId)
   .addTable("posts", {})
-  .addTable("users", {})
+  .addTable("users", { user_age_index: ["age"] })
   .build()
   .open();
 
@@ -56,15 +56,20 @@ async function handleLine(line) {
   const [type, data] = JSON.parse(line);
 
   switch (type) {
-    case "Query_user_msg": {
-      let it = db.table("users").query();
-      for await (const _ of it) {}
-      send("Ack");
-      return;
-    }
-    case "Query_post_msg": {
-      let it = db.table("posts").query();
-      for await (const _ of it) {}
+    case "Query_msg": {
+      const target = typeof data === "string" ? data.toLowerCase() : String(data).toLowerCase();
+      if (target === "users") {
+        const it = db.table("users").query();
+        for await (const _ of it) {}
+      } else if (target === "posts") {
+        const it = db.table("posts").query();
+        for await (const _ of it) {}
+      } else if (target === "user_age_index") {
+        const it = db.table("users").index("user_age_index").query();
+        for await (const _ of it) {}
+      } else {
+        throw new Error(`Unknown Query_msg target: ${data}`);
+      }
       send("Ack");
       return;
     }
@@ -77,7 +82,15 @@ async function handleLine(line) {
         typeof data.key === "string",
         "Create_user data.key is not a string: " + data.key,
       );
-      await db.table("users").setRow(data.key, { key: data.key, name: data.name });
+      assert(
+        typeof data.age === "number" && Number.isInteger(data.age),
+        "Create_user data.age is not an integer: " + data.age,
+      );
+      await db.table("users").setRow(data.key, {
+        key: data.key,
+        name: data.name,
+        age: data.age,
+      });
       send("Ack");
       return;
     }

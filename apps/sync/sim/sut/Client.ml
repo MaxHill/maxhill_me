@@ -8,11 +8,12 @@ module Log = (val Logs.src_log src : Logs.LOG)
 
 let ( let* ) = Result.bind
 
+type query_target = [ `users | `posts | `user_age_index ] [@@deriving yojson]
+
 type outgoing =
-  | Create_user_msg of { key : string; name : string }
-  | Query_user_msg
+  | Create_user_msg of { key : string; name : string; age : int }
+  | Query_msg of query_target
   | Create_post_msg of { key : string; title : string }
-  | Query_post_msg
   | Send_sync_request_msg
   | Receive_sync_response_msg of string
   | Close_msg
@@ -20,25 +21,28 @@ type outgoing =
 
 type random_actions =
   | Create_user_action
-  | Query_user_action
+  | Query_users_action
   | Create_post_action
-  | Query_post_action
+  | Query_posts_action
+  | Query_user_age_index_action
   | Send_sync_request_action
 
 let actions : random_actions list =
   [
     Create_user_action;
     Send_sync_request_action;
-    Query_user_action;
-    Query_post_action;
+    Query_users_action;
+    Query_posts_action;
+    Query_user_age_index_action;
     Create_post_action;
   ]
 
 let action_to_string : random_actions -> string = function
   | Create_user_action -> "Create_user"
-  | Query_user_action -> "Query_user"
+  | Query_users_action -> "Query_users"
   | Create_post_action -> "Create_post"
-  | Query_post_action -> "Query_post"
+  | Query_posts_action -> "Query_posts"
+  | Query_user_age_index_action -> "Query_user_age_index"
   | Send_sync_request_action -> "Send_sync_request"
 
 let outgoing_of_action frng (action : random_actions) =
@@ -46,13 +50,15 @@ let outgoing_of_action frng (action : random_actions) =
   | Create_user_action ->
       let* name = FRNG.take_string frng ~size:10 in
       let* key = FRNG.take_string frng ~size:10 in
-      Ok (Create_user_msg { key; name })
-  | Query_user_action -> Ok Query_user_msg
+      let* age = FRNG.take_range_inclusive frng ~min:0 ~max:120 in
+      Ok (Create_user_msg { key; name; age })
+  | Query_users_action -> Ok (Query_msg `users)
   | Create_post_action ->
       let* title = FRNG.take_string frng ~size:10 in
       let* key = FRNG.take_string frng ~size:10 in
       Ok (Create_post_msg { key; title })
-  | Query_post_action -> Ok Query_post_msg
+  | Query_posts_action -> Ok (Query_msg `posts)
+  | Query_user_age_index_action -> Ok (Query_msg `user_age_index)
   | Send_sync_request_action -> Ok Send_sync_request_msg
 
 type incoming = Ack | Sync_request of Sync.Sync_engine.sync_request
