@@ -128,6 +128,8 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
         response = await this.syncManager.sendSyncRequest(this.syncRemote, syncRequest);
       }
 
+      await this.syncManager.validateResponseHash(response);
+
       const writeTx = this.lifecycle.transaction([
         CLIENT_STATE_STORE,
         OPERATIONS_STORE,

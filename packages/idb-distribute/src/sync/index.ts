@@ -228,15 +228,7 @@ export class Sync {
   ): Promise<void> {
     validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE], "readwrite");
 
-    // Start IDB requests FIRST to keep transaction alive
-    // Get client state synchronously
-    const clientStatePromise = this.clientState.getClientState(tx);
-
-    // Now we can safely await non-IDB operations (hash validation)
-    await this.validateResponseHash(response);
-
-    // Now await the client state
-    const { clientId, lastSeenServerVersion } = await clientStatePromise;
+    const { clientId, lastSeenServerVersion } = await this.clientState.getClientState(tx);
 
     const firstSyncedOperation = response.syncedOperations[0];
     if (firstSyncedOperation && firstSyncedOperation.clientId !== clientId) {
@@ -472,7 +464,7 @@ export class Sync {
     return this.sha256Array(parts);
   }
 
-  private async validateResponseHash(response: SyncResponse): Promise<SyncResponse> {
+  async validateResponseHash(response: SyncResponse): Promise<void> {
     const localHash = await this.createResponseHash(response);
     if (localHash !== response.responseHash) {
       const debugInfo = {
@@ -484,11 +476,8 @@ export class Sync {
         syncedOperationCount: response.syncedOperations.length,
       };
       console.error("Sync response failed integrity check", debugInfo);
-      return Promise.reject(
-        new Error(`Sync response failed integrity check: ${JSON.stringify(debugInfo)}`),
-      );
+      throw new Error(`Sync response failed integrity check: ${JSON.stringify(debugInfo)}`);
     }
-    return response;
   }
 
   /**
