@@ -4,7 +4,7 @@
 type connection = (module Caqti_eio.CONNECTION)
 
 type world = {
-  client : Client.t;
+  mutable client : Client.t;
   frng : FRNG.t;
   mutable step_n : int;
   db_conn : connection;

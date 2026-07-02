@@ -107,6 +107,61 @@ async function handleLine(line) {
       send("Ack");
       return;
     }
+    case "Delete_row_msg": {
+      const table = typeof data.table === "string" ? data.table.toLowerCase() : String(data.table).toLowerCase();
+      assert(typeof data.key === "string", "Delete_row data.key is not a string: " + data.key);
+      if (table !== "users" && table !== "posts") {
+        throw new Error(`Delete_row_msg unknown table: ${data.table}`);
+      }
+      await db.table(table).deleteRow(data.key);
+      send("Ack");
+      return;
+    }
+    case "Update_user_row_msg": {
+      assert(typeof data.key === "string", "Update_user_row data.key is not a string: " + data.key);
+      assert(typeof data.name === "string", "Update_user_row data.name is not a string: " + data.name);
+      assert(
+        typeof data.age === "number" && Number.isInteger(data.age),
+        "Update_user_row data.age is not an integer: " + data.age,
+      );
+      await db.table("users").setRow(data.key, { key: data.key, name: data.name, age: data.age });
+      send("Ack");
+      return;
+    }
+    case "Update_post_row_msg": {
+      assert(typeof data.key === "string", "Update_post_row data.key is not a string: " + data.key);
+      assert(typeof data.title === "string", "Update_post_row data.title is not a string: " + data.title);
+      await db.table("posts").setRow(data.key, { key: data.key, title: data.title });
+      send("Ack");
+      return;
+    }
+    case "Update_user_name_field_msg": {
+      assert(typeof data.key === "string", "Update_user_name_field data.key is not a string: " + data.key);
+      assert(typeof data.name === "string", "Update_user_name_field data.name is not a string: " + data.name);
+      await db.table("users").setField(data.key, "name", data.name);
+      send("Ack");
+      return;
+    }
+    case "Update_user_age_field_msg": {
+      assert(typeof data.key === "string", "Update_user_age_field data.key is not a string: " + data.key);
+      assert(
+        typeof data.age === "number" && Number.isInteger(data.age),
+        "Update_user_age_field data.age is not an integer: " + data.age,
+      );
+      await db.table("users").setField(data.key, "age", data.age);
+      send("Ack");
+      return;
+    }
+    case "Update_post_title_field_msg": {
+      assert(typeof data.key === "string", "Update_post_title_field data.key is not a string: " + data.key);
+      assert(
+        typeof data.title === "string",
+        "Update_post_title_field data.title is not a string: " + data.title,
+      );
+      await db.table("posts").setField(data.key, "title", data.title);
+      send("Ack");
+      return;
+    }
     case "Send_sync_request_msg": {
       const tx = testLifecycle.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE]);
       const syncRequest = await syncManager.createSyncRequest(tx);

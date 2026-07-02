@@ -55,6 +55,15 @@ let entropy_of_seed ~seed ~size =
   Bytes.unsafe_to_string buf
 
 let fresh_seed = Random.bits
+let stderr_is_tty = Unix.isatty (Unix.descr_of_out_channel stderr)
+
+let print_run_header ~size ~seed ~attempt =
+  if stderr_is_tty then (
+    (* Replace previous run's 2 lines: header + progress line. *)
+    if attempt > 0 then Printf.eprintf "\027[2A\027[2K\027[1B\027[2K\027[1A";
+    Printf.eprintf "size=%d seed=%d attempt=%d\n" size seed (attempt + 1))
+  else Printf.eprintf "size=%d seed=%d attempt=%d\n" size seed attempt;
+  flush stderr
 
 let run_multiple ~sut_path ~size ~attempts ~log_level : multi_outcome =
   let rec loop = function
@@ -62,8 +71,7 @@ let run_multiple ~sut_path ~size ~attempts ~log_level : multi_outcome =
     | attempt -> (
         let seed = fresh_seed () in
         let entropy = entropy_of_seed ~seed ~size in
-        Printf.eprintf "size=%d seed=%d attempt=%d\n" size seed attempt;
-        flush stderr;
+        print_run_header ~size ~seed ~attempt;
         match run_once ~sut_path ~entropy ~log_level with
         | Pass -> loop (attempt + 1)
         | Fail -> Found_fail seed)

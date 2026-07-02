@@ -35,7 +35,7 @@ let step world : (unit, FRNG.frng_error) result =
        Read from index user/post
        *)
   let* action = FRNG.swarm_weight_pick world.frng Client.actions in
-  let* outgoing = Client.outgoing_of_action world.frng action in
+  let* outgoing = Client.outgoing_of_action world.frng world.client action in
   world.client.send outgoing;
 
   wait_for_response ~world ~action:(Client.action_to_string action)

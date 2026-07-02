@@ -8,16 +8,35 @@ module Log = (val Logs.src_log src : Logs.LOG)
 
 let ( let* ) = Result.bind
 
+type incoming = Ack | Sync_request of Sync.Sync_engine.sync_request
 type query_target = [ `users | `posts | `user_age_index ] [@@deriving yojson]
+
+type table_target = [ `users | `posts ] [@@deriving yojson]
 
 type outgoing =
   | Create_user_msg of { key : string; name : string; age : int }
   | Query_msg of query_target
   | Create_post_msg of { key : string; title : string }
+  | Delete_row_msg of { table : table_target; key : string }
+  | Update_user_row_msg of { key : string; name : string; age : int }
+  | Update_post_row_msg of { key : string; title : string }
+  | Update_user_name_field_msg of { key : string; name : string }
+  | Update_user_age_field_msg of { key : string; age : int }
+  | Update_post_title_field_msg of { key : string; title : string }
   | Send_sync_request_msg
   | Receive_sync_response_msg of string
   | Close_msg
 [@@deriving yojson]
+
+type operation_record = { key : string; table : string }
+
+type t = {
+  inbox : incoming Eio.Stream.t;
+  send : outgoing -> unit;
+  wait_for_exit : unit -> [ `Exited of int | `Signaled of int ];
+  force_close : unit -> unit;
+  mutable seen_operations : operation_record list;
+}
 
 type random_actions =
   | Create_user_action
@@ -25,8 +44,12 @@ type random_actions =
   | Create_post_action
   | Query_posts_action
   | Query_user_age_index_action
+  | Delete_row_action
+  | Update_row_action
+  | Update_field_action
   | Send_sync_request_action
 
+(* Take actions on clients. *)
 let actions : random_actions list =
   [
     Create_user_action;
@@ -35,6 +58,9 @@ let actions : random_actions list =
     Query_posts_action;
     Query_user_age_index_action;
     Create_post_action;
+    Delete_row_action;
+    Update_row_action;
+    Update_field_action;
   ]
 
 let action_to_string : random_actions -> string = function
@@ -43,25 +69,82 @@ let action_to_string : random_actions -> string = function
   | Create_post_action -> "Create_post"
   | Query_posts_action -> "Query_posts"
   | Query_user_age_index_action -> "Query_user_age_index"
+  | Delete_row_action -> "Delete_row"
+  | Update_row_action -> "Update_row"
+  | Update_field_action -> "Update_field"
   | Send_sync_request_action -> "Send_sync_request"
 
-let outgoing_of_action frng (action : random_actions) =
+let pick_seen_operation frng (client : t) ~(tables : string list) =
+  let candidates =
+    List.filter
+      (fun (op : operation_record) -> List.mem op.table tables)
+      client.seen_operations
+  in
+  match candidates with
+  | [] -> Ok None
+  | _ ->
+      let* idx = FRNG.take_index frng candidates in
+      Ok (Some (List.nth candidates idx))
+
+let outgoing_of_action frng (client : t) (action : random_actions) =
   match action with
   | Create_user_action ->
       let* name = FRNG.take_string frng ~size:10 in
       let* key = FRNG.take_string frng ~size:10 in
       let* age = FRNG.take_range_inclusive frng ~min:0 ~max:120 in
+      client.seen_operations <-
+        { key; table = "users" } :: client.seen_operations;
       Ok (Create_user_msg { key; name; age })
   | Query_users_action -> Ok (Query_msg `users)
   | Create_post_action ->
       let* title = FRNG.take_string frng ~size:10 in
       let* key = FRNG.take_string frng ~size:10 in
+      client.seen_operations <-
+        { key; table = "posts" } :: client.seen_operations;
       Ok (Create_post_msg { key; title })
   | Query_posts_action -> Ok (Query_msg `posts)
   | Query_user_age_index_action -> Ok (Query_msg `user_age_index)
+  | Delete_row_action ->
+      let* selected =
+        pick_seen_operation frng client ~tables:[ "users"; "posts" ]
+      in
+      (match selected with
+      | None -> Ok Send_sync_request_msg
+      | Some op ->
+          if op.table = "users" then
+            Ok (Delete_row_msg { table = `users; key = op.key })
+          else Ok (Delete_row_msg { table = `posts; key = op.key }))
+  | Update_row_action ->
+      let* selected =
+        pick_seen_operation frng client ~tables:[ "users"; "posts" ]
+      in
+      (match selected with
+      | None -> Ok Send_sync_request_msg
+      | Some op when op.table = "users" ->
+          let* name = FRNG.take_string frng ~size:10 in
+          let* age = FRNG.take_range_inclusive frng ~min:0 ~max:120 in
+          Ok (Update_user_row_msg { key = op.key; name; age })
+      | Some op ->
+          let* title = FRNG.take_string frng ~size:10 in
+          Ok (Update_post_row_msg { key = op.key; title }))
+  | Update_field_action ->
+      let* selected =
+        pick_seen_operation frng client ~tables:[ "users"; "posts" ]
+      in
+      (match selected with
+      | None -> Ok Send_sync_request_msg
+      | Some op when op.table = "users" ->
+          let* update_age = FRNG.take_bool frng in
+          if update_age then
+            let* age = FRNG.take_range_inclusive frng ~min:0 ~max:120 in
+            Ok (Update_user_age_field_msg { key = op.key; age })
+          else
+            let* name = FRNG.take_string frng ~size:10 in
+            Ok (Update_user_name_field_msg { key = op.key; name })
+      | Some op ->
+          let* title = FRNG.take_string frng ~size:10 in
+          Ok (Update_post_title_field_msg { key = op.key; title }))
   | Send_sync_request_action -> Ok Send_sync_request_msg
-
-type incoming = Ack | Sync_request of Sync.Sync_engine.sync_request
 
 let incoming_of_yojson = function
   | `List [ `String "Ack" ] -> Ack
@@ -75,13 +158,6 @@ let incoming_of_yojson = function
             (`String msg))
   | json ->
       Ppx_yojson_conv_lib.Yojson_conv.of_yojson_error "incoming_of_yojson" json
-
-type t = {
-  inbox : incoming Eio.Stream.t;
-  send : outgoing -> unit;
-  wait_for_exit : unit -> [ `Exited of int | `Signaled of int ];
-  force_close : unit -> unit;
-}
 
 let rec spawn ~sw ~env ~cmd : t =
   let mgr = Eio.Stdenv.process_mgr env in
@@ -136,7 +212,13 @@ let rec spawn ~sw ~env ~cmd : t =
   let wait_for_exit () = Eio.Promise.await exit_p in
   let force_close () = Eio.Process.signal proc Sys.sigkill in
 
-  { inbox; send = send stdin_w; wait_for_exit; force_close }
+  {
+    inbox;
+    send = send stdin_w;
+    wait_for_exit;
+    force_close;
+    seen_operations = [];
+  }
 
 and send stdin_w msg =
   let out = Yojson.Safe.to_string (yojson_of_outgoing msg) in

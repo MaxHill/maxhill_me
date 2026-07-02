@@ -16,12 +16,27 @@ let delay_response_queue : Sync.Sync_engine.sync_response Queue.t =
       *)
 let handle_sync_request ~(world : world) request =
   let response =
-    match Sync.Sync_engine.process_sync_request_with_connection world.db_conn request with
+    match
+      Sync.Sync_engine.process_sync_request_with_connection world.db_conn
+        request
+    with
     | Error err -> failwith (Sync.Sync_engine.sync_error_to_string err)
     | Ok response -> response
   in
+
+  let seen_from_response : Client.operation_record list =
+    List.map
+      (fun (op : Sync.Sync_engine.crdt_operation) ->
+        ({ Client.key = op.row_key; Client.table = op.table }
+          : Client.operation_record))
+      response.operations
+  in
+  world.client.seen_operations <-
+    world.client.seen_operations @ seen_from_response;
+
   world.client.send
-    (Receive_sync_response_msg (Sync.Sync_engine.encode_sync_response response));
+    (Client.Receive_sync_response_msg
+       (Sync.Sync_engine.encode_sync_response response));
 
   wait_for_response ~world ~action:"Receive_sync_response"
   |> Result.map (function

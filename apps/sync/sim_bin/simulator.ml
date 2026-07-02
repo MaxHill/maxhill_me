@@ -64,10 +64,10 @@ let search_handler log_level attempts size_max =
   in
   match result with
   | Search_fail r ->
-      Logs.err (fun m -> m "search fail=size=%d seed=%d" r.size r.seed);
+      Logs.err (fun m -> m "search fail size=%d seed=%d" r.size r.seed);
       exit 1
   | Search_pass ->
-      Logs.app (fun m -> m "search pass=attempts=%d" attempts)
+      Logs.app (fun m -> m "search pass attempts=%d" attempts)
 
 let search_cmd =
   let attempts_arg =
