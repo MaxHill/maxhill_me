@@ -1,5 +1,7 @@
 open Sync_engine_core
 
+let ( let* ) = Result.bind
+
 let decode_dot json =
   let open Yojson.Safe.Util in
   let client_id = json |> member "clientId" |> to_string in
@@ -52,6 +54,7 @@ let decode_sync_request raw =
   try
     let json = Yojson.Safe.from_string raw in
     let client_id = json |> member "clientId" |> to_string in
+    let db_name = json |> member "dbName" |> to_string in
     let operations_json = json |> member "operations" |> to_list in
     let rec decode_all acc = function
       | [] -> Ok (List.rev acc)
@@ -67,7 +70,8 @@ let decode_sync_request raw =
           json |> member "lastSeenServerVersion" |> int64_of_json
         in
         let request_hash = json |> member "requestHash" |> to_string in
-        Ok { client_id; operations; last_seen_server_version; request_hash }
+        let* db_name = Db_name.validate db_name in
+        Ok { client_id; db_name; operations; last_seen_server_version; request_hash }
   with
   | Yojson.Json_error msg -> Error ("invalid json: " ^ msg)
   | Yojson.Safe.Util.Type_error (msg, _) ->

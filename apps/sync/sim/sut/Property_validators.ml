@@ -4,8 +4,8 @@ let deep_scan_interval_steps = 100
 
 let list_server_versions_query =
   let open Caqti_request.Infix in
-  (Caqti_type.unit ->* Caqti_type.int64)
-    "SELECT server_version FROM crdt_operations ORDER BY server_version ASC"
+  (Caqti_type.string ->* Caqti_type.int64)
+    "SELECT server_version FROM crdt_operations WHERE db_name = ? ORDER BY server_version ASC"
 
 let fail_property ~step_n fmt =
   Printf.ksprintf
@@ -14,14 +14,19 @@ let fail_property ~step_n fmt =
 
 let read_count_and_max ~(world : world) =
   let count =
-    match Sync.Repository.count_operations world.db_conn with
+    match
+      Sync.Repository.count_operations world.db_conn ~db_name:world.tenant_key
+    with
     | Ok count -> count
     | Error err ->
         fail_property ~step_n:world.step_n "count_operations error=%s"
           (Sync.Repository.error_to_string err)
   in
   let max_server_version =
-    match Sync.Repository.get_max_server_version world.db_conn with
+    match
+      Sync.Repository.get_max_server_version world.db_conn
+        ~db_name:world.tenant_key
+    with
     | Ok max_server_version -> max_server_version
     | Error err ->
         fail_property ~step_n:world.step_n "get_max_server_version error=%s"
@@ -57,7 +62,7 @@ let should_run_deep_scan ~(world : world) =
 
 let read_server_versions ~(world : world) =
   let module Db = (val world.db_conn : Caqti_eio.CONNECTION) in
-  match Db.collect_list list_server_versions_query () with
+  match Db.collect_list list_server_versions_query world.tenant_key with
   | Ok versions -> versions
   | Error err ->
       fail_property ~step_n:world.step_n "list_server_versions error=%s"

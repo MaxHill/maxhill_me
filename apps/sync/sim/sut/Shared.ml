@@ -10,6 +10,7 @@ type world = {
   db_conn : connection;
   clock : [ `Clock of float ] Eio.Resource.t;
   action_timeout : float;
+  tenant_key : string;
   mutable last_count_operations : int option;
   mutable last_max_server_version : int64 option;
 }

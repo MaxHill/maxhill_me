@@ -15,5 +15,6 @@ val ensure_versions_contiguous : crdt_operation list -> (unit, sync_error) resul
 (** Reject tombstones that reference dots we cannot prove are known. *)
 val ensure_remove_context_known
   :  Repository.connection
+  -> db_name:string
   -> crdt_operation list
   -> (unit, sync_error) result

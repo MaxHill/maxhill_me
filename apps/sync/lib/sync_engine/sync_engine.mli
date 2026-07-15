@@ -14,6 +14,7 @@ type crdt_operation = {
 
 type sync_request = {
   client_id : string;
+  db_name : string;
   operations : crdt_operation list;
   last_seen_server_version : int64;
   request_hash : string;
@@ -42,4 +43,4 @@ val hash_sync_request : sync_request -> string
 val hash_sync_response : sync_response -> string
 
 val process_sync_request_with_connection :
-  Repository.connection -> sync_request -> (sync_response, sync_error) result
+  Repository.connection -> db_name:string -> sync_request -> (sync_response, sync_error) result

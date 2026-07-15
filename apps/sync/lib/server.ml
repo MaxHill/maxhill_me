@@ -22,13 +22,21 @@ let route ~meth ~target =
   | `GET, "/health" -> ({ status = `OK; body = "ok" }, `Text)
   | _ -> ({ status = `Not_found; body = "not found" }, `Text)
 
+let cors_headers =
+  [
+    ("access-control-allow-origin", "*");
+    ("access-control-allow-methods", "GET,POST,OPTIONS");
+    ("access-control-allow-headers", "authorization,content-type");
+  ]
+
 let respond_with_content_type reqd ~content_type ({ status; body } : response) =
   let headers =
     Httpun.Headers.of_list
-      [
-        ("content-type", content_type);
-        ("content-length", string_of_int (String.length body));
-      ]
+      (cors_headers
+      @ [
+          ("content-type", content_type);
+          ("content-length", string_of_int (String.length body));
+        ])
   in
   let response = Httpun.Response.create ~headers status in
   Httpun.Reqd.respond_with_string reqd response body
@@ -62,18 +70,12 @@ let request_handler (context : context) _client_addr reqd =
   let request = Httpun.Reqd.request reqd in
   let meth = request.meth in
   let target = request.target in
+  let uri = Uri.of_string target in
+  let path = Uri.path uri in
   Log.info (fun m -> m "%s %s" (Httpun.Method.to_string meth) target);
-  match (meth, target) with
-  | `GET, "/debug/count" -> (
-      match Repository.count_operations_with_pool context.db_pool with
-      | Ok count ->
-          let body = Printf.sprintf "{\"count\": %d}" count in
-          respond_json reqd { status = `OK; body }
-      | Error err ->
-          Log.err (fun m ->
-              m "count_operations failed: %s" (Repository.error_to_string err));
-          respond_text reqd
-            { status = `Internal_server_error; body = "internal server error" })
+  match (meth, path) with
+  | `OPTIONS, "/sync" ->
+      respond_text reqd { status = `No_content; body = "" }
   | `POST, "/sync" -> (
       let authorization = Httpun.Headers.get request.headers "authorization" in
       match Auth.validate_bearer context.auth authorization with
@@ -81,19 +83,20 @@ let request_handler (context : context) _client_addr reqd =
           let msg = Auth.error_to_string err in
           Log.err (fun m -> m "auth error: %s" msg);
           respond_text reqd { status = `Unauthorized; body = msg }
-      | Ok _user ->
+      | Ok user ->
           read_request_body reqd (fun body ->
               let result =
                 let* request =
                   Sync_engine.decode_sync_request body
                   |> Result.map_error (fun msg -> `Decode msg)
                 in
+                let tenant_key = request.db_name ^ ":" ^ user.id in
                 let* response_or_error =
                   Caqti_eio.Pool.use
                     (fun conn ->
                       Ok
                         (Sync_engine.process_sync_request_with_connection conn
-                           request))
+                           ~db_name:tenant_key request))
                     context.db_pool
                   |> Result.map_error (fun err -> `Db err)
                 in
@@ -121,7 +124,7 @@ let request_handler (context : context) _client_addr reqd =
                       status = `OK;
                       body = Sync_engine.encode_sync_response response;
                     }))
-  | _ -> respond_by_format reqd (route ~meth ~target)
+  | _ -> respond_by_format reqd (route ~meth ~target:path)
 
 let error_handler _client_addr ?request:_ error handle =
   let body =
@@ -134,7 +137,8 @@ let error_handler _client_addr ?request:_ error handle =
         "internal server error"
   in
   let headers =
-    Httpun.Headers.of_list [ ("content-type", "text/plain; charset=utf-8") ]
+    Httpun.Headers.of_list
+      (cors_headers @ [ ("content-type", "text/plain; charset=utf-8") ])
   in
   let response_body = handle headers in
   Httpun.Body.Writer.write_string response_body body;

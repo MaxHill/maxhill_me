@@ -15,6 +15,7 @@ import { promisifyIDBRequest } from "../utils.ts";
 import { Table } from "../table.ts";
 import { DatabaseSchema, EmptySchema } from "../types.ts";
 import { TableSubscriptions } from "../tableSubscriptions.ts";
+import { assertValidDbName } from "../dbName.ts";
 
 export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
   clientId: string;
@@ -38,6 +39,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
     storageRepository: Lifecycle,
     generateId: () => string,
   ) {
+    assertValidDbName(dbName);
     this.tables = tables;
     this.dbName = dbName;
     this.syncRemote = syncRemote;
@@ -123,7 +125,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
       // To be able to more easily test this method we take an optional response
       if (!response) {
         const tx = this.lifecycle.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE]);
-        const syncRequest = await this.syncManager.createSyncRequest(tx);
+        const syncRequest = await this.syncManager.createSyncRequest(tx, this.dbName);
 
         response = await this.syncManager.sendSyncRequest(this.syncRemote, syncRequest);
       }

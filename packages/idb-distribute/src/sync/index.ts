@@ -11,9 +11,11 @@ import { ClientState } from "../indexeddb/clientState.ts";
 import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
 import { validateTransactionStores } from "../utils.ts";
 import { isSyncError, SyncErrorCode } from "./errors.ts";
+import { assertValidDbName } from "../dbName.ts";
 
 export interface SyncRequest {
   clientId: string;
+  dbName: string;
 
   /**
    * Local changes that need to be persisted on the server. These operations
@@ -114,7 +116,8 @@ export class Sync {
    * @returns Sync request ready to send to server
    * @throws {Error} If transaction is missing required stores
    */
-  async createSyncRequest(tx: IDBTransaction): Promise<SyncRequest> {
+  async createSyncRequest(tx: IDBTransaction, dbName: string): Promise<SyncRequest> {
+    assertValidDbName(dbName);
     validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE]);
 
     const { clientId, lastSeenServerVersion } = await this.clientState
@@ -126,12 +129,14 @@ export class Sync {
     // create integrity hash
     const requestHash = await this.createRequestHash({
       clientId,
+      dbName,
       lastSeenServerVersion,
       operations,
     });
 
     return {
       clientId,
+      dbName,
       lastSeenServerVersion,
       operations,
       requestHash,
@@ -386,6 +391,7 @@ export class Sync {
   private async createRequestHash(req: Omit<SyncRequest, "requestHash">): Promise<string> {
     const parts: string[] = [
       req.clientId,
+      req.dbName,
       String(req.lastSeenServerVersion),
     ];
 

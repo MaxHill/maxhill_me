@@ -22,7 +22,7 @@ let rec run_once ~sut_path ~entropy ~log_level : outcome =
   let stdin_read, stdin_write = Unix.pipe () in
   Unix.set_close_on_exec stdin_write;
   let argv = [| sut_path |] in
-  let env = env_with_log_level ~log_level in
+  let env = env_with_runtime_config ~log_level in
   let pid =
     Unix.create_process_env sut_path argv env stdin_read Unix.stdout Unix.stderr
   in
@@ -32,7 +32,7 @@ let rec run_once ~sut_path ~entropy ~log_level : outcome =
   let _, status = Unix.waitpid [] pid in
   match status with Unix.WEXITED 0 -> Pass | _ -> Fail
 
-and env_with_log_level ~log_level =
+and env_with_runtime_config ~log_level =
   let base = Array.to_list (Unix.environment ()) in
   let base =
     List.filter

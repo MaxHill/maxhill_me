@@ -1,6 +1,6 @@
 let assert_decode_set_operation_request () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"operations\":[{\"type\":\"set\",\"table\":\"todos\",\"rowKey\":\"r1\",\"field\":\"title\",\"value\":\"Buy milk\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"table\":\"todos\",\"rowKey\":\"r1\",\"field\":\"title\",\"value\":\"Buy milk\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
   in
   match Sync.Sync_engine.decode_sync_request request_json with
   | Error msg -> failwith ("expected decode success, got error: " ^ msg)
@@ -16,7 +16,7 @@ let assert_decode_set_operation_request () =
 
 let assert_decode_set_row_operation_request () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"operations\":[{\"type\":\"setRow\",\"table\":\"todos\",\"rowKey\":\"r1\",\"value\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"table\":\"todos\",\"rowKey\":\"r1\",\"value\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
   in
   match Sync.Sync_engine.decode_sync_request request_json with
   | Error msg -> failwith ("expected decode success, got error: " ^ msg)
@@ -45,7 +45,7 @@ let assert_hash_sync_response_matches_expected_for_empty_case () =
 
 let assert_hash_sync_request_mismatch_detected () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"operations\":[],\"lastSeenServerVersion\":0,\"requestHash\":\"wrong\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[],\"lastSeenServerVersion\":0,\"requestHash\":\"wrong\"}"
   in
   let request =
     match Sync.Sync_engine.decode_sync_request request_json with
@@ -56,7 +56,7 @@ let assert_hash_sync_request_mismatch_detected () =
 
 let assert_decode_remove_operation_request () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"operations\":[{\"type\":\"remove\",\"table\":\"todos\",\"rowKey\":\"r1\",\"context\":{\"client-1\":1,\"client-2\":3},\"dot\":{\"clientId\":\"client-1\",\"version\":2}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"remove\",\"table\":\"todos\",\"rowKey\":\"r1\",\"context\":{\"client-1\":1,\"client-2\":3},\"dot\":{\"clientId\":\"client-1\",\"version\":2}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
   in
   match Sync.Sync_engine.decode_sync_request request_json with
   | Error msg -> failwith ("expected decode success, got error: " ^ msg)
@@ -72,7 +72,7 @@ let assert_decode_remove_operation_request () =
 
 let assert_reject_set_row_with_field () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"operations\":[{\"type\":\"setRow\",\"table\":\"todos\",\"rowKey\":\"r1\",\"field\":\"title\",\"value\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"table\":\"todos\",\"rowKey\":\"r1\",\"field\":\"title\",\"value\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
   in
   match Sync.Sync_engine.decode_sync_request request_json with
   | Ok _ -> failwith "expected mismatch decode error"
@@ -80,15 +80,23 @@ let assert_reject_set_row_with_field () =
 
 let assert_reject_set_with_context () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"operations\":[{\"type\":\"set\",\"table\":\"todos\",\"rowKey\":\"r1\",\"field\":\"title\",\"value\":\"Buy milk\",\"context\":{\"client-1\":1},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"table\":\"todos\",\"rowKey\":\"r1\",\"field\":\"title\",\"value\":\"Buy milk\",\"context\":{\"client-1\":1},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
   in
   match Sync.Sync_engine.decode_sync_request request_json with
   | Ok _ -> failwith "expected mismatch decode error"
   | Error _ -> ()
 
+let assert_reject_invalid_db_name () =
+  let request_json =
+    "{\"clientId\":\"client-1\",\"dbName\":\"bad db\",\"operations\":[],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
+  in
+  match Sync.Sync_engine.decode_sync_request request_json with
+  | Ok _ -> failwith "expected invalid dbName decode error"
+  | Error _ -> ()
+
 let assert_hash_sync_request_matches_expected_for_set () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"operations\":[{\"type\":\"set\",\"table\":\"todos\",\"rowKey\":\"r1\",\"field\":\"title\",\"value\":\"Buy milk\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"59eb008aa90ac3df9ee29576727b68f50a7b59f03515e2039d356ec89f3e04eb\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"table\":\"todos\",\"rowKey\":\"r1\",\"field\":\"title\",\"value\":\"Buy milk\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"3f005d177f08ee8c356fda9a8daff40abd7f38abae391f9e91d671d99d599616\"}"
   in
   let request =
     match Sync.Sync_engine.decode_sync_request request_json with
@@ -97,11 +105,11 @@ let assert_hash_sync_request_matches_expected_for_set () =
   in
   assert
     (Sync.Sync_engine.hash_sync_request request
-    = "59eb008aa90ac3df9ee29576727b68f50a7b59f03515e2039d356ec89f3e04eb")
+    = "3f005d177f08ee8c356fda9a8daff40abd7f38abae391f9e91d671d99d599616")
 
 let assert_hash_sync_request_matches_expected_for_set_row () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"operations\":[{\"type\":\"setRow\",\"table\":\"todos\",\"rowKey\":\"r1\",\"value\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"d74778e6e7aba0c1a5912b863e69e9e063339b44eb4924944acea13833e21d5d\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"table\":\"todos\",\"rowKey\":\"r1\",\"value\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"3bb9f2e08c455c6da0664d246563b8fd2aa6ca4daf31f2eecc18f8b60d3b3605\"}"
   in
   let request =
     match Sync.Sync_engine.decode_sync_request request_json with
@@ -110,11 +118,11 @@ let assert_hash_sync_request_matches_expected_for_set_row () =
   in
   assert
     (Sync.Sync_engine.hash_sync_request request
-    = "d74778e6e7aba0c1a5912b863e69e9e063339b44eb4924944acea13833e21d5d")
+    = "3bb9f2e08c455c6da0664d246563b8fd2aa6ca4daf31f2eecc18f8b60d3b3605")
 
 let assert_hash_sync_request_matches_expected_for_remove () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"operations\":[{\"type\":\"remove\",\"table\":\"todos\",\"rowKey\":\"r1\",\"context\":{\"client-1\":1,\"client-2\":3},\"dot\":{\"clientId\":\"client-1\",\"version\":2}}],\"lastSeenServerVersion\":0,\"requestHash\":\"e8b7d69fad754ea30b921fd736c378314854ae7656a7a9bd70d530122d8c14e0\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"remove\",\"table\":\"todos\",\"rowKey\":\"r1\",\"context\":{\"client-1\":1,\"client-2\":3},\"dot\":{\"clientId\":\"client-1\",\"version\":2}}],\"lastSeenServerVersion\":0,\"requestHash\":\"a81af44882b465fcb9d8b124b678133bce038b4cc3c6db632bafd3d1baf8f338\"}"
   in
   let request =
     match Sync.Sync_engine.decode_sync_request request_json with
@@ -123,11 +131,11 @@ let assert_hash_sync_request_matches_expected_for_remove () =
   in
   assert
     (Sync.Sync_engine.hash_sync_request request
-    = "e8b7d69fad754ea30b921fd736c378314854ae7656a7a9bd70d530122d8c14e0")
+    = "a81af44882b465fcb9d8b124b678133bce038b4cc3c6db632bafd3d1baf8f338")
 
 let assert_hash_sync_request_matches_expected_for_multi_operation () =
   let request_json =
-    "{\"clientId\":\"client-abc\",\"operations\":[{\"type\":\"set\",\"table\":\"posts\",\"rowKey\":\"p1\",\"field\":\"title\",\"value\":\"Hello\",\"dot\":{\"clientId\":\"client-abc\",\"version\":6}},{\"type\":\"remove\",\"table\":\"posts\",\"rowKey\":\"p2\",\"context\":{\"client-abc\":7},\"dot\":{\"clientId\":\"client-abc\",\"version\":7}}],\"lastSeenServerVersion\":5,\"requestHash\":\"ce35804f2597ec30774dd6caf6f7be600d9127c0ab90a5846749c642f486d173\"}"
+    "{\"clientId\":\"client-abc\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"table\":\"posts\",\"rowKey\":\"p1\",\"field\":\"title\",\"value\":\"Hello\",\"dot\":{\"clientId\":\"client-abc\",\"version\":6}},{\"type\":\"remove\",\"table\":\"posts\",\"rowKey\":\"p2\",\"context\":{\"client-abc\":7},\"dot\":{\"clientId\":\"client-abc\",\"version\":7}}],\"lastSeenServerVersion\":5,\"requestHash\":\"eb6eaaaff4162c85883b8bd0552915acf7b114313c002e46f6c7ed9d0b12470a\"}"
   in
   let request =
     match Sync.Sync_engine.decode_sync_request request_json with
@@ -136,7 +144,7 @@ let assert_hash_sync_request_matches_expected_for_multi_operation () =
   in
   assert
     (Sync.Sync_engine.hash_sync_request request
-    = "ce35804f2597ec30774dd6caf6f7be600d9127c0ab90a5846749c642f486d173")
+    = "eb6eaaaff4162c85883b8bd0552915acf7b114313c002e46f6c7ed9d0b12470a")
 
 let assert_encode_sync_response_matches_go_bytes_for_empty_case () =
   let response =
@@ -190,6 +198,7 @@ let () =
   assert_decode_remove_operation_request ();
   assert_reject_set_row_with_field ();
   assert_reject_set_with_context ();
+  assert_reject_invalid_db_name ();
   assert_hash_sync_response_matches_expected_for_empty_case ();
   assert_hash_sync_request_mismatch_detected ();
   assert_hash_sync_request_matches_expected_for_set ();

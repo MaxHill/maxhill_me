@@ -7,6 +7,7 @@ import { IndexDefinition } from "../indexes.ts";
 import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
 import { OnUnauthorizedHandler, Sync, SyncHeadersProvider } from "../sync/index.ts";
 import { DatabaseSchema, EmptySchema, MergeSchema } from "../types.ts";
+import { assertValidDbName } from "../dbName.ts";
 
 export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
   dbName: string;
@@ -22,6 +23,7 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
   private onUnauthorized?: OnUnauthorizedHandler;
 
   constructor(dbName: string) {
+    assertValidDbName(dbName);
     this.dbName = dbName;
   }
 

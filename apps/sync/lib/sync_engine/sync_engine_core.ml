@@ -14,6 +14,7 @@ type crdt_operation = {
 
 type sync_request = {
   client_id : string;
+  db_name : string;
   operations : crdt_operation list;
   (*TODO: rename last_seen_server_version to pull_cursor*)
   last_seen_server_version : int64;

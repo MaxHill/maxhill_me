@@ -42,6 +42,7 @@ describe("Sync headers provider", () => {
 
     const request = {
       clientId: "client-1",
+      dbName: "test-db",
       operations: [],
       lastSeenServerVersion: 0,
       requestHash: "hash",
@@ -77,6 +78,7 @@ describe("Sync headers provider", () => {
 
     const request = {
       clientId: "client-1",
+      dbName: "test-db",
       operations: [],
       lastSeenServerVersion: 0,
       requestHash: "hash",

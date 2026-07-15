@@ -164,7 +164,7 @@ async function handleLine(line) {
     }
     case "Send_sync_request_msg": {
       const tx = testLifecycle.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE]);
-      const syncRequest = await syncManager.createSyncRequest(tx);
+      const syncRequest = await syncManager.createSyncRequest(tx, dbName);
       send("SyncRequest", syncRequest);
       return;
     }

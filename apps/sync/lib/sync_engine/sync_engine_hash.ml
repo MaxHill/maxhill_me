@@ -25,6 +25,7 @@ let hash_sync_request request =
     push operation.dot.client_id
   in
   push request.client_id;
+  push request.db_name;
   push (Int64.to_string request.last_seen_server_version);
   List.iter push_operation request.operations;
   hash_parts (List.rev !parts_rev)

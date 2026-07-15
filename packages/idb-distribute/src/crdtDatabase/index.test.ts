@@ -159,6 +159,14 @@ describe("CRDTDatabase", () => {
     });
   });
 
+  describe("dbName validation", () => {
+    it("should reject invalid dbName at builder construction", () => {
+      expect(() => newDatabase("bad db name")).toThrow(
+        "Invalid dbName: must match ^[A-Za-z0-9_-]{1,64}$",
+      );
+    });
+  });
+
   describe("subscriptions", () => {
     it("should notify subscribers when setRow is called", async () => {
       const users = db.table("users");

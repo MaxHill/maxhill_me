@@ -24,7 +24,7 @@ export async function get_DB(): Promise<DBInterface> {
   if (window.__appDB) return window.__appDB;
   if (window.__appDBPromise) return window.__appDBPromise;
 
-  window.__appDBPromise = newDatabase("user::testdb")
+  window.__appDBPromise = newDatabase("golf")
     .addTable("shot_types", {})
     .addTable("clubs", {})
     .addTable("shot_log", {})

@@ -1,10 +1,7 @@
 open Shared
 
-let delay_request_queue : Sync.Sync_engine.sync_request Queue.t =
-  Queue.create ()
-
-let delay_response_queue : Sync.Sync_engine.sync_response Queue.t =
-  Queue.create ()
+let delay_request_queue : Sync.Sync_engine.sync_request list = []
+let delay_response_queue : Sync.Sync_engine.sync_response list = []
 
 (* Todo:
       - Maybe drop request
@@ -18,7 +15,7 @@ let handle_sync_request ~(world : world) request =
   let response =
     match
       Sync.Sync_engine.process_sync_request_with_connection world.db_conn
-        request
+        ~db_name:world.tenant_key request
     with
     | Error err -> failwith (Sync.Sync_engine.sync_error_to_string err)
     | Ok response -> response

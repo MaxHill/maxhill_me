@@ -7,11 +7,13 @@ module Log = (val Logs.src_log src : Logs.LOG)
 
 let init ~sw ~env (frng : FRNG.t) (db_conn : connection) :
     (world, FRNG.frng_error) result =
-  let* db_name = FRNG.take_range_inclusive frng ~min:1 ~max:100_000 in
+  let db_name_max = 2 in
+  let* db_name = FRNG.take_range_inclusive frng ~min:1 ~max:db_name_max in
+  let db_name = Int.to_string db_name in
   let client =
-    Client.spawn ~sw ~env
-      ~cmd:[ "node"; "./sim/sut/test_client.js"; Int.to_string db_name ]
+    Client.spawn ~sw ~env ~cmd:[ "node"; "./sim/sut/test_client.js"; db_name ]
   in
+  let tenant_key = db_name ^ ":sim-user" in
   let clock = Eio.Stdenv.clock env in
   Ok
     {
@@ -21,6 +23,7 @@ let init ~sw ~env (frng : FRNG.t) (db_conn : connection) :
       db_conn;
       clock;
       action_timeout = 5.0;
+      tenant_key;
       last_count_operations = None;
       last_max_server_version = None;
     }
