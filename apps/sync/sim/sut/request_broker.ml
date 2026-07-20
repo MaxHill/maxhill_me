@@ -11,7 +11,8 @@ let delay_response_queue : Sync.Sync_engine.sync_response list = []
       - Maybe corrupt request
       - Maybe corrupt response
       *)
-let handle_sync_request ~(world : world) request =
+let handle_sync_request ~(client : Client.t) ~(world : world)
+    (request : Sync.Sync_engine.sync_request) =
   let response =
     match
       Sync.Sync_engine.process_sync_request_with_connection world.db_conn
@@ -28,14 +29,13 @@ let handle_sync_request ~(world : world) request =
           : Client.operation_record))
       response.operations
   in
-  world.client.seen_operations <-
-    world.client.seen_operations @ seen_from_response;
+  client.seen_operations <- client.seen_operations @ seen_from_response;
 
-  world.client.send
+  client.send
     (Client.Receive_sync_response_msg
        (Sync.Sync_engine.encode_sync_response response));
 
-  wait_for_response ~world ~action:"Receive_sync_response"
+  wait_for_response ~client ~world ~action:"Receive_sync_response"
   |> Result.map (function
     | Client.Ack -> ()
     | Client.Sync_request _ ->

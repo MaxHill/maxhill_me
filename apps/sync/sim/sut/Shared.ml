@@ -4,7 +4,7 @@
 type connection = (module Caqti_eio.CONNECTION)
 
 type world = {
-  mutable client : Client.t;
+  mutable clients : Client.t list;
   frng : FRNG.t;
   mutable step_n : int;
   db_conn : connection;
@@ -20,9 +20,9 @@ type world = {
 (* ------------------------------------------------------------------------  *)
 let ( let* ) = Result.bind
 
-let wait_for_response ~world ~action =
+let wait_for_response ~(client : Client.t) ~world ~action =
   Eio.Time.with_timeout world.clock world.action_timeout (fun () ->
-      Eio.Stream.take world.client.inbox |> fun msg -> Result.Ok msg)
+      Eio.Stream.take client.inbox |> fun msg -> Result.Ok msg)
   |> Result.map_error (fun _e ->
       failwith
         (Printf.sprintf

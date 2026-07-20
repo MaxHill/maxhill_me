@@ -28,7 +28,8 @@ const syncManager = new Sync(
 );
 
 const dbName = process.argv[2];
-const deterministicClientId = `sim-client-${dbName}`;
+const clientSuffix = process.argv[3] || dbName;
+const deterministicClientId = `sim-client-${clientSuffix}`;
 
 const db = await newDatabase(dbName)
   .withCustomStorageRepository(testLifecycle)

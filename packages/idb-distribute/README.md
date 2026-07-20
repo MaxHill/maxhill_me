@@ -1,5 +1,44 @@
 k CRDT Database — IndexedDB Storage Layout
 
+## Invariants and known limitations
+
+### Client IDs MUST be globally unique per tenant
+
+**In normal use you do not need to think about this.** The library mints a
+fresh `clientId` via `crypto.randomUUID` the first time a database is
+opened and persists it in IndexedDB. This section only applies if you
+override identity generation — e.g. by passing `withCustomIdGenerator(...)`
+on the builder or by constructing the underlying classes manually (as the
+simulator and tests do).
+
+The sync protocol identifies each operation by a `dot = (clientId, version)`.
+The server enforces per-tenant uniqueness: within the same tenant
+(`dbName + userId` on the server), any two operations with the same
+`(clientId, version)` **must** have identical payloads. Any divergence is
+treated as a CRDT consistency violation and the server rejects the request
+(currently: process crash / 500 in dev).
+
+Implications callers must respect:
+
+- Do not reuse a `clientId` across independent replicas that write into the
+  same tenant. Two browser tabs, two devices, two simulator instances, etc.
+  must each have a distinct `clientId`.
+- Do not seed `clientId` deterministically from `dbName` alone. If two
+  replicas ever share a `dbName` (and a user), they will collide.
+- Do not "reset local state" by wiping IndexedDB and keeping the old
+  `clientId`. Treat client identity as tied to the local persistent store;
+  wiping state should mint a new `clientId`.
+- `withCustomIdGenerator(...)` exists for tests only. In production, let
+  the default (`crypto.randomUUID`) run so identity is unique by
+  construction.
+
+Design note: the server intentionally fails loud on `clientId` reuse. This
+downgrades what would otherwise be a silent **correctness** bug
+(different operations sharing a dot, converging incorrectly across
+replicas) into a visible **availability** bug (sync request rejected).
+That trade-off is deliberate — do not "fix" it by making the server
+tolerant of colliding dots.
+
 ## Implementation Status
 
 ### ✅ Completed
