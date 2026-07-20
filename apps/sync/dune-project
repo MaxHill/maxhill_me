@@ -10,7 +10,7 @@
 (package
  (name sync)
  (synopsis "OCaml port of the sync server")
- (description "CRDT sync server. OCaml port of the Go sync server in apps/sync_go/.")
+ (description "CRDT sync server.")
  (depends
   (ocaml (>= 5.2.0))
   dune
