@@ -1,0 +1,5 @@
+{
+  "_placeholder": "Produce a real file with: sops -e --input-type json --output-type json sync.prod.json > sync.prod.enc.json",
+  "DATABASE_URL": "ENC[...]",
+  "RESEND_API_KEY": "ENC[...]"
+}

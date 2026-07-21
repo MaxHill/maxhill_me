@@ -1,3 +1,31 @@
 [tools]
 opam = "2.5.1"
 1password = "latest"
+
+[env]
+# The VPS. App subdomains (sync.maxhill.me, auth.maxhill.me, …) all
+# resolve here; every deploy targets the same box.
+VPS_HOST = "maxhill.me"
+
+[tasks.bootstrap]
+description = "Provision (or re-provision) the VPS from /vps/. Runs as root."
+run = """
+rsync -a --delete vps/ root@$VPS_HOST:/opt/bootstrap/vps/
+ssh root@$VPS_HOST 'bash /opt/bootstrap/vps/bootstrap.sh'
+"""
+
+[tasks."deploy:sync"]
+description = "Deploy sync (OCaml service)."
+run = "bash vps/sync/deploy.sh"
+
+[tasks."deploy:auth"]
+description = "Deploy auth (Bun-compiled service)."
+run = "bash vps/auth/deploy.sh"
+
+[tasks."deploy:site"]
+description = "Deploy site (Astro static)."
+run = "bash vps/site/deploy.sh"
+
+[tasks."deploy:golf"]
+description = "Deploy golf (PWA static)."
+run = "bash vps/golf/deploy.sh"

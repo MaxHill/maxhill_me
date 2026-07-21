@@ -1,0 +1,5 @@
+maxhill.me {
+    root * /opt/site/current
+    file_server
+    encode zstd gzip
+}

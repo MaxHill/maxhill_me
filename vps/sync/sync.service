@@ -1,0 +1,16 @@
+[Unit]
+Description=sync service
+After=network.target
+
+[Service]
+DynamicUser=yes
+ProtectSystem=strict
+PrivateTmp=yes
+StateDirectory=sync
+ExecStart=/opt/sync/current/sync-exe /etc/sync/sync.prod.json
+Restart=on-failure
+MemoryMax=512M
+OnFailure=alert-on-failure@%n.service
+
+[Install]
+WantedBy=multi-user.target

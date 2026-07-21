@@ -1,0 +1,6 @@
+{
+  "_placeholder": "Produce a real file with: sops -e --input-type json --output-type json alert-on-failure.prod.json > alert-on-failure.prod.enc.json (encrypted against both laptop and VPS recipients in .sops.yaml).",
+  "RESEND_API_KEY": "ENC[AES256_GCM,data:...,iv:...,tag:...,type:str]",
+  "ALERT_EMAIL_FROM": "ENC[AES256_GCM,data:...,iv:...,tag:...,type:str]",
+  "ALERT_EMAIL_TO": "ENC[AES256_GCM,data:...,iv:...,tag:...,type:str]"
+}

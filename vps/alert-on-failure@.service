@@ -1,0 +1,6 @@
+[Unit]
+Description=Send failure alert email for %i
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/alert-on-failure.sh /etc/alert-on-failure/alert-on-failure.prod.json %i

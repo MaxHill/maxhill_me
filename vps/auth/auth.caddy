@@ -1,0 +1,3 @@
+auth.maxhill.me {
+    reverse_proxy localhost:8081
+}

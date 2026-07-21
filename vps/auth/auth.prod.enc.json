@@ -1,0 +1,5 @@
+{
+  "_placeholder": "Produce a real file with: sops -e --input-type json --output-type json auth.prod.json > auth.prod.enc.json",
+  "DATABASE_URL": "ENC[...]",
+  "SESSION_SECRET": "ENC[...]"
+}

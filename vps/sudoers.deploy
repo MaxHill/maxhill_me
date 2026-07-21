@@ -1,0 +1,3 @@
+deploy ALL=(root) NOPASSWD: /bin/systemctl restart sync.service
+deploy ALL=(root) NOPASSWD: /bin/systemctl restart auth.service
+deploy ALL=(root) NOPASSWD: /bin/systemctl reload caddy
