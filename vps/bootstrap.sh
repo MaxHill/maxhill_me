@@ -7,10 +7,20 @@
 # `mise run bootstrap` task does that before invoking this script).
 set -euo pipefail
 V=/opt/bootstrap/vps
+export SOPS_AGE_KEY_FILE=/etc/sops/key.txt
 
 # ---------- packages ----------
 apt-get update
-apt-get install -y sqlite3 caddy age sops jq ufw
+apt-get install -y sqlite3 caddy age jq ufw curl ca-certificates
+
+# sops isn't in Ubuntu's apt repos — pin a version, install from GitHub.
+SOPS_VERSION=3.9.4
+if ! command -v sops >/dev/null || [ "$(sops --version | awk '{print $2; exit}')" != "$SOPS_VERSION" ]; then
+  ARCH=$(dpkg --print-architecture)
+  curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.${ARCH}" \
+    -o /usr/local/bin/sops
+  chmod +x /usr/local/bin/sops
+fi
 
 # ---------- deploy user ----------
 id deploy &>/dev/null || useradd -m -s /bin/bash deploy

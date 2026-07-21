@@ -18,6 +18,7 @@ rsync vps/auth/auth.prod.enc.json "deploy@$VPS_HOST:/tmp/auth.prod.enc.json"
 # 3. release (on box)
 ssh "deploy@$VPS_HOST" bash -s <<EOF
   set -euo pipefail
+  export SOPS_AGE_KEY_FILE=/etc/sops/key.txt
   chmod +x $REL/auth-exe
   ln -sfn $REL /opt/auth/current.tmp
   mv -Tf /opt/auth/current.tmp /opt/auth/current

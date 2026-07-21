@@ -1,0 +1,13 @@
+# sops configuration.
+#
+# Which files are encrypted, and which age public keys can decrypt them.
+# Every recipient listed under `age:` can decrypt; sops wraps the file's
+# data key once per recipient.
+#
+# To add or rotate a recipient, see
+# docs/runbooks/edit-alert-on-failure-secrets.md.
+
+creation_rules:
+  - path_regex: \.enc\.json$
+    age: >-
+      age1fzjqfezgzhjlsejldsujzgtaj9qx23kh46un6jmupwmuwdsczq4qgvp54j

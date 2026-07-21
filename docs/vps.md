@@ -47,12 +47,14 @@ under `/opt/<app>/`, done by the deploy script).
 
 ## Commands
 
-| Action                           | Command                    |
-| -------------------------------- | -------------------------- |
-| First-ever provision, or re-run  | `mise run bootstrap`       |
-| Deploy one app                   | `mise run deploy:<app>`    |
-| Rollback (by hand)               | `ssh` + re-point symlink   |
-| Add / remove an app              | See runbooks below         |
+| Action                           | Command                             |
+| -------------------------------- | ----------------------------------- |
+| First-ever provision, or re-run  | `mise run bootstrap`                |
+| Deploy one app                   | `mise run deploy:<app>`             |
+| Rollback (by hand)               | `ssh` + re-point symlink            |
+| Add an app                       | `docs/runbooks/add-app.md`          |
+| Remove an app                    | `docs/runbooks/remove-app.md`       |
+| Edit alert-on-failure secrets    | `docs/runbooks/edit-alert-on-failure-secrets.md` |
 
 There is no `deploy:all` — you rarely want it. Chain them if you do:
 `mise run deploy:sync && mise run deploy:auth`.
@@ -109,126 +111,6 @@ Two setup steps that live outside this repo:
 - **Resend account** — sending domain verified, SPF/DKIM DNS records in
   place, API key issued. The key + `from` and `to` addresses go into
   `vps/alert-on-failure.prod.enc.json` before the first bootstrap run.
-
----
-
-## Runbook — Adding an app
-
-Adding an app is deliberately manual: touch five files, run two
-commands. At N=4 the boilerplate is trivial; if it starts to hurt at
-N=8+, consider whether the new app really deserves the box.
-
-### 1. Product code
-
-Create `apps/<name>/` with whatever the app's own tooling wants
-(package.json, dune-project, etc.). Nothing here knows about the VPS.
-
-### 2. `vps/<name>/`
-
-Copy the nearest sibling as a template.
-
-**Service app** (long-running, has a port):
-
-- `<name>.service` — systemd unit. `ExecStart=` runs the binary with
-  its config path. Include `OnFailure=alert-on-failure@%n.service`.
-- `<name>.caddy` — a `reverse_proxy` block pointing at the app's
-  localhost port. Pick a port nothing else on the box uses.
-- `<name>.prod.enc.json` — sops-encrypted. Create the plaintext,
-  encrypt it against both recipients, commit only the encrypted file.
-- `deploy.sh` — hand-write it (or copy `vps/sync/deploy.sh` and
-  s/sync/name/g, plus swap the build command and artifact path).
-
-**Static app**:
-
-- `<name>.caddy` — `file_server` from `/opt/<name>/current`.
-- `deploy.sh` — copy `vps/site/deploy.sh` and s/site/name/g, plus swap
-  the build command and dist path.
-
-### 3. `vps/bootstrap.sh`
-
-Add the install lines for the new app (near the existing `sync`/`auth`
-or `site`/`golf` blocks):
-
-```bash
-install -m 644 "$V/<name>/<name>.service" /etc/systemd/system/<name>.service   # service only
-install -m 644 "$V/<name>/<name>.caddy"   /etc/caddy/sites/<name>.caddy
-```
-
-Add `<name>` to the per-app `for app in ...` loop that creates
-`/opt/<app>/` and `/etc/<app>/`.
-
-### 4. `vps/sudoers.deploy`
-
-**Service apps only.** Add:
-
-```
-deploy ALL=(root) NOPASSWD: /bin/systemctl restart <name>.service
-```
-
-### 5. `mise.toml`
-
-Add a task:
-
-```toml
-[tasks."deploy:<name>"]
-description = "Deploy <name>."
-run = "bash vps/<name>/deploy.sh"
-```
-
-### 6. DNS
-
-Point `<name>.maxhill.me` (or whatever hostname is in the caddy file)
-at the VPS's IP.
-
-### 7. Run it
-
-```bash
-mise run bootstrap        # installs the new unit / caddy site, chowns dirs
-mise run deploy:<name>    # ships the first release
-```
-
-For a service app the first deploy is what actually starts it —
-bootstrap installs the unit but there's no binary yet, so
-`systemctl start <name>` would fail. The deploy fixes that.
-
----
-
-## Runbook — Removing an app
-
-There is no `decommission.sh`. You delete an app maybe twice in your
-life; type the commands. SQLite state under `/var/lib/<app>/` is
-preserved unless you explicitly `rm` it.
-
-### 1. On the box (as root)
-
-```bash
-systemctl stop <name>.service     # service apps only
-systemctl disable <name>.service  # service apps only
-rm -f /etc/systemd/system/<name>.service
-rm -f /etc/caddy/sites/<name>.caddy
-rm -rf /opt/<name>
-rm -rf /etc/<name>
-systemctl daemon-reload
-systemctl reload caddy
-# /var/lib/<name>/ is the SQLite state — leave it, or rm it if you're sure.
-```
-
-### 2. In the repo
-
-- Delete `vps/<name>/`.
-- Remove the app's `install` lines from `vps/bootstrap.sh`.
-- Remove `<name>` from the `for app in ...` loop in `bootstrap.sh`.
-- Remove the app's line from `vps/sudoers.deploy` (service apps only).
-- Remove the app's task from `mise.toml`.
-- Optionally delete `apps/<name>/` if the product code is also going
-  away.
-- Remove the DNS record.
-
-### 3. Confirm
-
-```bash
-mise run bootstrap    # regenerates sudoers cleanly, confirms nothing references the removed app
-```
 
 ---
 

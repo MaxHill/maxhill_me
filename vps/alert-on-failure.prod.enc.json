@@ -1,6 +1,17 @@
 {
-  "_placeholder": "Produce a real file with: sops -e --input-type json --output-type json alert-on-failure.prod.json > alert-on-failure.prod.enc.json (encrypted against both laptop and VPS recipients in .sops.yaml).",
-  "RESEND_API_KEY": "ENC[AES256_GCM,data:...,iv:...,tag:...,type:str]",
-  "ALERT_EMAIL_FROM": "ENC[AES256_GCM,data:...,iv:...,tag:...,type:str]",
-  "ALERT_EMAIL_TO": "ENC[AES256_GCM,data:...,iv:...,tag:...,type:str]"
+	"RESEND_API_KEY": "ENC[AES256_GCM,data:Hh1yjW5hkVl02c/DxnHvqxseoH1LIeyFlToq9QOCtF+5R+YD,iv:grwwhqPEpbJxdEsM8pDajb+pWk8LsizT0Ydg5RVC9vU=,tag:k7/Kr1f7nHvLcvU6xWHj/A==,type:str]",
+	"ALERT_EMAIL_FROM": "ENC[AES256_GCM,data:W3CYWseNvw3TjdaHDR8n00M=,iv:YfWLXlMtgWwVIn5tQdjAL8Whdy67QT3fAlrVgKXfM3g=,tag:H2S4GhICZmVH92jVrcpqbw==,type:str]",
+	"ALERT_EMAIL_TO": "ENC[AES256_GCM,data:GGiT+8KI5JV1924poH2GVoKLJQSMu9Vm,iv:gBIVwGHA/lN7zfFILv3NMfvhbcuKbU+48GjQ1K4mTA8=,tag:5c1M7VWv6ZdCSO5hTlk5aw==,type:str]",
+	"sops": {
+		"age": [
+			{
+				"enc": "-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBCZzY2UC84STAzRHVYWlhX\nVU1PcFNBTFFRd0JDbU9YcHBQc0hZN1hxUmxZCmJ2aW5kMGJWOXQydUV4L3VvOTd5\nTE13UVRYSVA5dFN4WmkwVTl0bm9NSk0KLS0tIC9pSU4zNWtDU2djNVBuU1hmL2Zh\nMG5QL291TDBlOU9FREFHU1dKR21mUzAKg18p0/XDHUVIZgHuhzyaAJGyPvglV4We\naH2funpzy8gpJJEPl+kD1BE5wgI3MyMztj2a9x6d7QAFv/lPUx7/2A==\n-----END AGE ENCRYPTED FILE-----\n",
+				"recipient": "age1fzjqfezgzhjlsejldsujzgtaj9qx23kh46un6jmupwmuwdsczq4qgvp54j"
+			}
+		],
+		"lastmodified": "2026-07-21T21:55:27Z",
+		"mac": "ENC[AES256_GCM,data:SCtOh+uUbgpZ+/yKtjVA5OGhqCIYB6CCmW6AcE7HeivT1l3EZTKB7D4e19qik5bVc/cMfyPUxZyWCRWe9yVPkC44K0yFcMCQ/zfO0v4NZmlyS+PJBwCLbpIKPHey5Ju+WiEtwJFFlD8Sa62InTE3YojXoqoVK0G7BKPJ+mKy1iw=,iv:Q6U+hQHzsrfBOVUqlTx0mtqrraYd08xTVZCFfNMdttA=,tag:FyTz15mCHkMp9dLhVpOsgA==,type:str]",
+		"unencrypted_suffix": "_unencrypted",
+		"version": "3.13.2"
+	}
 }

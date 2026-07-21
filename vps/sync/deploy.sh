@@ -18,6 +18,7 @@ rsync vps/sync/sync.prod.enc.json           "deploy@$VPS_HOST:/tmp/sync.prod.enc
 # 3. release (on box)
 ssh "deploy@$VPS_HOST" bash -s <<EOF
   set -euo pipefail
+  export SOPS_AGE_KEY_FILE=/etc/sops/key.txt
   chmod +x $REL/sync-exe
   ln -sfn $REL /opt/sync/current.tmp
   mv -Tf /opt/sync/current.tmp /opt/sync/current
