@@ -67,6 +67,22 @@ Every binary and script that has secrets takes exactly **one argument:
 the path to its JSON config file**, and reads that file itself at
 startup. No `EnvironmentFile=`, no env vars.
 
+For service apps (`sync`, `auth`) that run under `DynamicUser=yes`, the
+service unit uses `LoadCredential=config:/etc/<app>/<app>.prod.json` and
+the `ExecStart=` line passes `${CREDENTIALS_DIRECTORY}/config`. systemd
+reads the file as root before dropping to the transient uid, so the
+app's contract stays "one path arg" — the *path* just happens to be a
+systemd-managed credential store, not `/etc/<app>/` directly. This
+avoids having to grant the transient uid read on the deploy-owned
+config file.
+
+> **Smoke-test note.** LoadCredential's credential-mount setup uses
+> `MS_MOVE` on `/dev/shm`, which does not survive Docker Desktop's
+> nested mount namespaces even with `--privileged --tmpfs /dev/shm`.
+> Services that use `LoadCredential=` therefore can't be validated
+> end-to-end in the Docker rig; treat first-boot on the real Hetzner
+> box as the verification step for the credential path.
+
 Two files per app that has secrets:
 
 - `<app>.prod.enc.json` — committed, sops-encrypted against both the
@@ -125,8 +141,13 @@ Two setup steps that live outside this repo:
 ### Alarms
 
 - **Service-level**: `OnFailure=alert-on-failure@%n.service` on every
-  service unit → email via Resend. Same Resend account as product
-  email, no separate webhook service.
+  service unit — email via Resend. Same Resend account as product
+  email, no separate webhook service. Note: on a crash-loop, systemd
+  triggers `OnFailure=` once per restart cycle within
+  `StartLimitBurst=` (default 5), so a hard-failing service produces
+  up to 5 emails before systemd gives up on it. Left as-is: the
+  redundancy is cheap and email is not perfectly reliable. Revisit if
+  it becomes noisy in practice.
 - **Box-level** (deferred): external dead-man's-switch
   (healthchecks.io) — a down box can't alert on itself. Add when the
   box has been live long enough to warrant it.

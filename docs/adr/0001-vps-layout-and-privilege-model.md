@@ -89,3 +89,28 @@ discovery loop, no manifest, no dispatch.
 - If N grows meaningfully (~8+ apps, or a fourth genuinely different
   execution model), revisit the manifest abstraction. Until then,
   duplication is cheaper than the abstraction.
+
+## Amendments
+
+**2026-07-21 (post-smoke-test).** Three concrete adjustments after
+end-to-end testing in Docker (including the OnFailure alert path
+against real Resend):
+
+- `/etc/sops/key.txt` is owned `root:sops-readers` mode 640, with
+  `deploy` in the `sops-readers` group. `sops -d` at deploy time is
+  run as `deploy`, so the key has to be readable by that user. Kept
+  the ownership as `root:` so the key itself still requires root to
+  modify.
+- `OnFailure=` sits in `[Unit]`, not `[Service]`. systemd silently
+  ignores it in the wrong section; without this, no alert would
+  ever fire in prod.
+- Service units use `LoadCredential=config:/etc/<app>/<app>.prod.json`
+  + `${CREDENTIALS_DIRECTORY}/config` in `ExecStart=`, so the app's
+  "one path arg" contract holds under `DynamicUser=yes`. The
+  transient uid never needs read on the deploy-owned config file;
+  systemd (as root) reads it once at start and hands the app a copy
+  under its private credential dir. A fixed-user alternative
+  (`User=sync`, per-app system user, `/etc/<app>` group-readable)
+  was prototyped and rejected as more moving parts than the problem
+  warrants at N=2 service apps — despite being easier to smoke-test
+  in Docker (see the LoadCredential caveat in `docs/vps.md`).

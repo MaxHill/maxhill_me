@@ -22,8 +22,10 @@ if ! command -v sops >/dev/null || [ "$(sops --version | awk '{print $2; exit}')
   chmod +x /usr/local/bin/sops
 fi
 
-# ---------- deploy user ----------
+# ---------- deploy user + sops-readers group ----------
 id deploy &>/dev/null || useradd -m -s /bin/bash deploy
+getent group sops-readers >/dev/null || groupadd -r sops-readers
+usermod -aG sops-readers deploy
 
 # ---------- firewall ----------
 ufw default deny incoming
@@ -35,7 +37,11 @@ ufw --force enable
 # ---------- VPS age keypair ----------
 mkdir -p /etc/sops
 [ -f /etc/sops/key.txt ] || age-keygen -o /etc/sops/key.txt
-chmod 600 /etc/sops/key.txt
+# Root owns the key; sops-readers (deploy) can read it for deploy-time
+# sops-decrypt. /etc/sops itself stays 755 so group members can traverse.
+chown root:sops-readers /etc/sops/key.txt
+chmod 640 /etc/sops/key.txt
+chmod 755 /etc/sops
 
 # ---------- system config ----------
 install -m 644 "$V/Caddyfile" /etc/caddy/Caddyfile

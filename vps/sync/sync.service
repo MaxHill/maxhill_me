@@ -1,16 +1,17 @@
 [Unit]
 Description=sync service
 After=network.target
+OnFailure=alert-on-failure@%n.service
 
 [Service]
 DynamicUser=yes
 ProtectSystem=strict
 PrivateTmp=yes
 StateDirectory=sync
-ExecStart=/opt/sync/current/sync-exe /etc/sync/sync.prod.json
+LoadCredential=config:/etc/sync/sync.prod.json
+ExecStart=/opt/sync/current/sync-exe ${CREDENTIALS_DIRECTORY}/config
 Restart=on-failure
 MemoryMax=512M
-OnFailure=alert-on-failure@%n.service
 
 [Install]
 WantedBy=multi-user.target
