@@ -6,7 +6,7 @@ import { subjects } from "./subjects"
 import { loadConfig, type Config } from "./config"
 import { openDatabase, SqliteStorage, sweepExpired } from "./sqlite-storage"
 
-const PORT = 8081
+const PORT = 3002
 const EMAIL_FROM = "auth@maxhill.me"
 
 async function sendVerificationEmail(config: Config, email: string, code: string) {
@@ -65,15 +65,15 @@ function buildIssuer(config: Config, db: Database) {
 }
 
 function usage(): never {
-  console.error("usage: auth-exe <run|sweep> <config-path>")
+  console.error("usage: auth-exe <run|sweep>")
   process.exit(2)
 }
 
 async function main() {
-  const [subcommand, configPath] = process.argv.slice(2)
-  if (!subcommand || !configPath) usage()
+  const [subcommand] = process.argv.slice(2)
+  if (!subcommand) usage()
 
-  const config = loadConfig(configPath)
+  const config = loadConfig()
   const db = openDatabase(config.dbPath)
 
   if (subcommand === "sweep") {

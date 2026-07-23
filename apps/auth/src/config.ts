@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs"
 import { object, string, url, pipe, parse, minLength } from "valibot"
 
 const ConfigSchema = object({
@@ -9,14 +8,17 @@ const ConfigSchema = object({
 
 export type Config = ReturnType<typeof parseConfig>
 
-export function loadConfig(path: string) {
-  let raw: unknown
-  try {
-    raw = JSON.parse(readFileSync(path, "utf8"))
-  } catch (err) {
-    throw new Error(`failed to read/parse config at ${path}: ${(err as Error).message}`)
-  }
-  return parseConfig(raw)
+/**
+ * Read config from process.env. Prod: systemd's EnvironmentFile= populates
+ * these before ExecStart=. Dev: source vps/auth/auth.dev.env, or run via
+ * `bun --env-file=...`.
+ */
+export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
+  return parseConfig({
+    issuer: env.ISSUER,
+    dbPath: env.DB_PATH,
+    resendApiKey: env.RESEND_API_KEY,
+  })
 }
 
 function parseConfig(raw: unknown) {

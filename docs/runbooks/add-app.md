@@ -34,14 +34,15 @@ Four files:
       reverse_proxy localhost:<port>
   }
   ```
-- **`<name>.prod.enc.json`** — sops-encrypted config. Create it
+- **`<name>.prod.enc.env`** — sops-encrypted dotenv config. Create it
   directly with:
   ```bash
-  sops edit vps/<name>/<name>.prod.enc.json
+  sops edit vps/<name>/<name>.prod.enc.env
   ```
-  sops opens `$EDITOR` with an empty JSON skeleton and encrypts on
-  save against the recipients in `.sops.yaml`. Fill in the keys the
-  app expects. Plaintext never lands on disk.
+  sops opens `$EDITOR` with an empty dotenv skeleton and encrypts on
+  save against the recipients in `.sops.yaml`. Fill in `KEY=value`
+  lines for whatever the app reads from `process.env` / `Sys.getenv`.
+  Plaintext never lands on disk.
 - **`deploy.sh`** — copy `vps/sync/deploy.sh`, `s/sync/<name>/g`, swap
   the build command and artifact path.
 

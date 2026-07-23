@@ -11,4 +11,8 @@ type t = {
   auth : auth;
 }
 
-val init : ?argv:string array -> unit -> t
+(** [init ?getenv ()] reads config from environment variables via [getenv]
+    (default: {!Sys.getenv_opt}). Tests pass a lookup function; prod relies on
+    systemd's [EnvironmentFile=]. Raises {!Failure} on missing required vars
+    or invalid values. *)
+val init : ?getenv:(string -> string option) -> unit -> t

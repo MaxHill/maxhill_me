@@ -8,8 +8,8 @@ DynamicUser=yes
 ProtectSystem=strict
 PrivateTmp=yes
 StateDirectory=sync
-LoadCredential=config:/etc/sync/sync.prod.json
-ExecStart=/opt/sync/current/sync-exe ${CREDENTIALS_DIRECTORY}/config
+EnvironmentFile=/etc/sync/sync.prod.env
+ExecStart=/opt/sync/current/sync-exe
 Restart=on-failure
 MemoryMax=512M
 

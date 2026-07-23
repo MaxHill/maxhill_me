@@ -28,7 +28,7 @@ kinds** — each app has its own hand-written `deploy.sh`.
   <app>/                           one dir per app; contents vary by app
     <app>.service                  (service apps)
     <app>.caddy                    (all apps)
-    <app>.prod.enc.json            (apps with secrets)
+    <app>.prod.enc.env             (apps with secrets)
     deploy.sh                      always present, hand-written
 ```
 
@@ -104,13 +104,30 @@ against real Resend):
 - `OnFailure=` sits in `[Unit]`, not `[Service]`. systemd silently
   ignores it in the wrong section; without this, no alert would
   ever fire in prod.
-- Service units use `LoadCredential=config:/etc/<app>/<app>.prod.json`
-  + `${CREDENTIALS_DIRECTORY}/config` in `ExecStart=`, so the app's
-  "one path arg" contract holds under `DynamicUser=yes`. The
-  transient uid never needs read on the deploy-owned config file;
-  systemd (as root) reads it once at start and hands the app a copy
-  under its private credential dir. A fixed-user alternative
-  (`User=sync`, per-app system user, `/etc/<app>` group-readable)
-  was prototyped and rejected as more moving parts than the problem
-  warrants at N=2 service apps — despite being easier to smoke-test
-  in Docker (see the LoadCredential caveat in `docs/vps.md`).
+- Service units use `EnvironmentFile=/etc/<app>/<app>.prod.env` and
+  the `ExecStart=` line is just the binary — no config-path arg. See
+  the "Config convention" section of `docs/vps.md` for why this
+  replaces the earlier `LoadCredential=` + JSON-arg design.
+
+## Amendment: 2026-07-23 — config JSON → env
+
+The earlier convention was "one binary, one JSON config-file path
+argument", threaded to `DynamicUser=` services via `LoadCredential=`.
+Retired for `EnvironmentFile=` + dotenv:
+
+- Each service reimplementing a JSON parser at startup was pure
+  overhead. Env vars are the standard 12-factor interface, and both
+  Bun and OCaml read them trivially.
+- The `LoadCredential=`/`${CREDENTIALS_DIRECTORY}/config` indirection
+  existed only so a `DynamicUser=` uid could reach a deploy-owned file.
+  `EnvironmentFile=` is read by PID 1 before privilege drop, achieving
+  the same result with less machinery. The Docker smoke-test caveat
+  around `LoadCredential=` (MS_MOVE on `/dev/shm` failing under Docker
+  Desktop's mount namespaces) also goes away.
+- One-shot migration: `bash vps/migrate-config-json-to-env.sh` +
+  `docs/runbooks/migrate-config-json-to-env.md`.
+
+At N=2 service apps + 1 alert helper, the JSON convention was already
+the minority pattern next to "just read env vars". The migration cost
+(a few hundred lines) is a one-off; the new shape is 3–4 lines lighter
+per service unit + one fewer parser per app forever after.

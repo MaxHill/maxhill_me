@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/index.ts run ../../vps/auth/auth.dev.json",
     "build": "bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile=./dist/auth-exe",
     "check": "tsc --noEmit"
   },

@@ -1,4 +1,6 @@
 [env]
+_.file = "../../vps/sync/sync.dev.env"
+
 OPENSSL_DIR = "/opt/homebrew/opt/openssl@3"
 CPATH = "/opt/homebrew/opt/openssl@3/include"
 LIBRARY_PATH = "/opt/homebrew/opt/openssl@3/lib"
@@ -6,7 +8,7 @@ PKG_CONFIG_PATH = "/opt/homebrew/opt/openssl@3/lib/pkgconfig"
 
 [tasks]
 build = "opam exec --switch=. -- dune build"
-run = "opam exec --switch=. -- dune exec ./bin/main.exe -- --auth-issuer-url http://localhost:3002 --auth-audience golf-app"
+dev = "opam exec --switch=. -- dune exec ./bin/main.exe"
 test = "opam exec --switch=. -- dune runtest"
 sim = "opam exec --switch=. -- dune build ./sim_bin/simulator_sut.exe && opam exec --switch=. -- dune exec ./sim_bin/simulator.exe --"
 setup = "(opam switch show --switch=. >/dev/null 2>&1 || opam switch create . ocaml-base-compiler.5.2.0 --yes) && opam pin add --switch=. hegel git+https://github.com/hegeldev/hegel-ocaml.git#main -y && HEGEL_SRC=\"$(pwd)/_opam/.opam-switch/sources/hegel\" && opam exec --switch=. -- dune build --root \"$HEGEL_SRC\" ppx_hegel_compat.opam ppx_hegel_test.opam && opam pin add --switch=. ppx_hegel_compat \"$HEGEL_SRC\" -y && opam pin add --switch=. ppx_hegel_test \"$HEGEL_SRC\" -y && opam install --switch=. . --deps-only -y && opam install --switch=. ocaml-lsp-server ocamlformat merlin -y"

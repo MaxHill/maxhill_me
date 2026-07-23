@@ -18,9 +18,19 @@ ssh root@$VPS_HOST 'bash /opt/bootstrap/vps/bootstrap.sh'
 description = "Deploy sync (OCaml service)."
 run = "bash vps/sync/deploy.sh"
 
+[tasks."dev:sync"]
+description = "Run sync locally (loads vps/sync/sync.dev.env via mise)."
+dir = "apps/sync"
+run = "mise run dev"
+
 [tasks."deploy:auth"]
 description = "Deploy auth (Bun-compiled service)."
 run = "bash vps/auth/deploy.sh"
+
+[tasks."dev:auth"]
+description = "Run auth locally (loads vps/auth/auth.dev.env via mise)."
+dir = "apps/auth"
+run = "mise run dev"
 
 [tasks."deploy:site"]
 description = "Deploy site (Astro static)."

@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "build": "opam exec --switch=. -- dune build",
-    "dev": "opam exec --switch=. -- dune exec ./bin/main.exe -- --auth-issuer-url http://localhost:3002 --auth-audience golf-app",
     "test": "opam exec --switch=. -- dune runtest",
     "sim:search": "opam exec --switch=. -- dune build ./sim_bin/simulator_sut.exe && opam exec --switch=. -- dune exec ./sim_bin/simulator.exe -- search",
     "sim:replay": "opam exec --switch=. -- dune build ./sim_bin/simulator_sut.exe && opam exec --switch=. -- dune exec ./sim_bin/simulator.exe -- replay",

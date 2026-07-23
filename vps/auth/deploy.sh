@@ -13,7 +13,7 @@ REL="/opt/auth/releases/$SHA"
 # 2. ship
 ssh "deploy@$VPS_HOST" "mkdir -p $REL"
 rsync apps/auth/dist/auth-exe     "deploy@$VPS_HOST:$REL/auth-exe"
-rsync vps/auth/auth.prod.enc.json "deploy@$VPS_HOST:/tmp/auth.prod.enc.json"
+rsync vps/auth/auth.prod.enc.env  "deploy@$VPS_HOST:/tmp/auth.prod.enc.env"
 
 # 3. release (on box)
 ssh "deploy@$VPS_HOST" bash -s <<EOF
@@ -22,10 +22,10 @@ ssh "deploy@$VPS_HOST" bash -s <<EOF
   chmod +x $REL/auth-exe
   ln -sfn $REL /opt/auth/current.tmp
   mv -Tf /opt/auth/current.tmp /opt/auth/current
-  sops -d --input-type json --output-type json \
-    /tmp/auth.prod.enc.json > /etc/auth/auth.prod.json
-  chmod 600 /etc/auth/auth.prod.json
-  rm /tmp/auth.prod.enc.json
+  sops -d --input-type dotenv --output-type dotenv \
+    /tmp/auth.prod.enc.env > /etc/auth/auth.prod.env
+  chmod 600 /etc/auth/auth.prod.env
+  rm /tmp/auth.prod.enc.env
   sudo /bin/systemctl restart auth.service
   sleep 1
   systemctl is-active --quiet auth.service || {

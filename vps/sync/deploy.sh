@@ -13,7 +13,7 @@ REL="/opt/sync/releases/$SHA"
 # 2. ship
 ssh "deploy@$VPS_HOST" "mkdir -p $REL"
 rsync apps/sync/_build/default/bin/main.exe "deploy@$VPS_HOST:$REL/sync-exe"
-rsync vps/sync/sync.prod.enc.json           "deploy@$VPS_HOST:/tmp/sync.prod.enc.json"
+rsync vps/sync/sync.prod.enc.env            "deploy@$VPS_HOST:/tmp/sync.prod.enc.env"
 
 # 3. release (on box)
 ssh "deploy@$VPS_HOST" bash -s <<EOF
@@ -22,10 +22,10 @@ ssh "deploy@$VPS_HOST" bash -s <<EOF
   chmod +x $REL/sync-exe
   ln -sfn $REL /opt/sync/current.tmp
   mv -Tf /opt/sync/current.tmp /opt/sync/current
-  sops -d --input-type json --output-type json \
-    /tmp/sync.prod.enc.json > /etc/sync/sync.prod.json
-  chmod 600 /etc/sync/sync.prod.json
-  rm /tmp/sync.prod.enc.json
+  sops -d --input-type dotenv --output-type dotenv \
+    /tmp/sync.prod.enc.env > /etc/sync/sync.prod.env
+  chmod 600 /etc/sync/sync.prod.env
+  rm /tmp/sync.prod.enc.env
   sudo /bin/systemctl restart sync.service
   sleep 1
   systemctl is-active --quiet sync.service || {

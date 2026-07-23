@@ -4,8 +4,9 @@ OpenAuth-based authentication service for maxhill.me.
 
 Runs as a long-running Bun-compiled binary on the VPS. Storage is
 SQLite; email delivery is Resend. Follows the standard on-box config
-convention (see [`docs/vps.md`](../../docs/vps.md)): one JSON config
-path passed as an argument, no environment variables.
+convention (see [`docs/vps.md`](../../docs/vps.md)): systemd loads a
+dotenv file with `EnvironmentFile=` and the binary reads
+`process.env`.
 
 ## Layout
 
@@ -13,7 +14,7 @@ path passed as an argument, no environment variables.
 apps/auth/
 ├── src/
 │   ├── index.ts           entry point + subcommands
-│   ├── config.ts          JSON config parser (valibot)
+│   ├── config.ts          env-var parser (valibot)
 │   ├── sqlite-storage.ts  StorageAdapter over bun:sqlite
 │   └── subjects.ts        JWT subject definitions (exportable)
 └── package.json
@@ -28,76 +29,66 @@ Systemd units live under `vps/auth/`:
 ## CLI
 
 ```
-auth-exe run   <config-path>   # start the HTTP server on :8081
-auth-exe sweep <config-path>   # DELETE expired rows, exit 0
+auth-exe run     # start the HTTP server on :3002
+auth-exe sweep   # DELETE expired rows, exit 0
 ```
 
-Both subcommands read the same config file. The `sweep` subcommand is
-invoked by `auth-sweep.timer`; `run` is invoked by `auth.service`.
+Both subcommands read the same env vars. `sweep` is invoked by
+`auth-sweep.timer`; `run` is invoked by `auth.service`.
 
 ## Config
 
-```json
-{
-  "issuer": "https://auth.maxhill.me",
-  "dbPath": "/var/lib/auth/auth.db",
-  "resendApiKey": "re_…"
-}
-```
+Read from `process.env`:
 
-- **`issuer`** — public URL announced in OAuth discovery and baked
+- **`ISSUER`** — public URL announced in OAuth discovery and baked
   into issued tokens.
-- **`dbPath`** — SQLite file. On prod this is under the systemd
+- **`DB_PATH`** — SQLite file. On prod this is under the systemd
   `StateDirectory=auth`, i.e. `/var/lib/auth/`.
-- **`resendApiKey`** — Resend API key used to send verification codes.
+- **`RESEND_API_KEY`** — Resend API key used to send verification codes.
   `from` address is hardcoded to `auth@maxhill.me`.
 
-Port (8081), email `from` address, and the schema itself are code-side
+Port (3002), email `from` address, and the schema itself are code-side
 constants. If any of them need to vary per environment, promote them
-into the config schema — don't reach for env vars.
+into the env schema.
 
 ## Local development
 
-Create `vps/auth/auth.dev.json` (gitignored — see the root
-`.gitignore`) with a real Resend API key. Use `:memory:` for the DB so
-state resets on every restart:
+Create `vps/auth/auth.dev.env` (gitignored) with a real Resend API
+key. Use `:memory:` for the DB so state resets on every restart:
 
-```json
-{
-  "issuer": "http://localhost:8081",
-  "dbPath": ":memory:",
-  "resendApiKey": "re_…"
-}
+```
+ISSUER=http://localhost:3002
+DB_PATH=:memory:
+RESEND_API_KEY=re_…
 ```
 
 Swap in a file path (e.g. `./auth.dev.db`) if you want state to
 survive restarts.
 
-Then:
+`apps/auth/mise.toml` loads that file via `[env]._.file`. Run
+dev from anywhere:
 
 ```bash
-cd apps/auth
-pnpm install
-pnpm dev
+mise run dev:auth
 ```
 
-`pnpm dev` runs `bun --watch src/index.ts run
-../../vps/auth/auth.dev.json` — same code path as production, only the
-config path differs.
+(Or `cd apps/auth && mise run dev` — same thing.) Same code path as
+production, only the env source differs.
 
-Discovery endpoint: <http://localhost:8081/.well-known/oauth-authorization-server>.
+Discovery endpoint: <http://localhost:3002/.well-known/oauth-authorization-server>.
 
 ## Production deploy
 
 `mise run deploy:auth` from the repo root. See `vps/auth/deploy.sh`:
 it builds the binary with `bun build --compile
 --target=bun-linux-x64`, rsyncs the artifact plus
-`vps/auth/auth.prod.enc.json`, decrypts the config on the box via
-sops, atomically swaps the `/opt/auth/current` symlink, and restarts
-`auth.service`.
+`vps/auth/auth.prod.enc.env`, decrypts to `/etc/auth/auth.prod.env` on
+the box via sops, atomically swaps the `/opt/auth/current` symlink,
+and restarts `auth.service`.
 
-Rotating `resendApiKey` (or any prod config key): edit the plaintext,
-re-encrypt with sops, commit, redeploy. Full flow in `docs/vps.md`.
+Rotating `RESEND_API_KEY` (or any prod env var): `sops edit
+vps/auth/auth.prod.enc.env`, commit, redeploy. Full flow in
+`docs/vps.md`.
 
 ## Storage schema
 

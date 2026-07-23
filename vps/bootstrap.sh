@@ -66,10 +66,10 @@ install -m 644 "$V/alert-on-failure@.service" /etc/systemd/system/alert-on-failu
 install -m 755 "$V/alert-on-failure.sh"       /usr/local/bin/alert-on-failure.sh
 mkdir -p /etc/alert-on-failure
 chmod 700 /etc/alert-on-failure
-sops -d --input-type json --output-type json \
-  "$V/alert-on-failure.prod.enc.json" \
-  > /etc/alert-on-failure/alert-on-failure.prod.json
-chmod 600 /etc/alert-on-failure/alert-on-failure.prod.json
+sops -d --input-type dotenv --output-type dotenv \
+  "$V/alert-on-failure.prod.enc.env" \
+  > /etc/alert-on-failure/alert-on-failure.prod.env
+chmod 600 /etc/alert-on-failure/alert-on-failure.prod.env
 
 # ---------- per-app dirs owned by deploy ----------
 for app in sync auth site golf; do

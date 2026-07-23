@@ -5,9 +5,10 @@
 # data key once per recipient.
 #
 # To add or rotate a recipient, see
-# docs/runbooks/edit-alert-on-failure-secrets.md.
+# docs/runbooks/edit-secrets.md.
 
 creation_rules:
-  - path_regex: \.enc\.json$
+  - path_regex: \.enc\.env$
+    input_type: dotenv
     age: >-
       age1fzjqfezgzhjlsejldsujzgtaj9qx23kh46un6jmupwmuwdsczq4qgvp54j

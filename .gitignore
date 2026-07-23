@@ -22,7 +22,7 @@ mprocs.log
 .env.production
 
 # vps dev configs (plaintext, per-machine)
-vps/**/*.dev.json
+vps/**/*.dev.env
 
 # macOS-specific files
 .DS_Store

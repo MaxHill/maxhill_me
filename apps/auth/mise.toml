@@ -1,0 +1,14 @@
+[env]
+_.file = "../../vps/auth/auth.dev.env"
+
+[tasks.dev]
+description = "Run auth locally with hot reload."
+run = "bun --watch src/index.ts run"
+
+[tasks.check]
+description = "Type-check without emitting."
+run = "tsc --noEmit"
+
+[tasks.build]
+description = "Compile the linux-x64 binary."
+run = "bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile=./dist/auth-exe"
