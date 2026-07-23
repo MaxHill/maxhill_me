@@ -22,9 +22,3 @@ run = 'echo "no-op" && exit 0'
 [tasks.deploy]
 description = "Deploy auth (Bun-compiled service) to VPS."
 run = "bash ../../vps/auth/deploy.sh"
-
-# Implementation helpers (not part of the canonical interface):
-
-[tasks.build]
-description = "Compile the linux-x64 binary."
-run = "bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile=./dist/auth-exe"

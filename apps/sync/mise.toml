@@ -28,9 +28,3 @@ run = "opam exec --switch=. -- dune build ./sim_bin/simulator_sut.exe && opam ex
 [tasks.deploy]
 description = "Deploy sync (OCaml service) to VPS."
 run = "bash ../../vps/sync/deploy.sh"
-
-# Implementation helpers:
-
-[tasks.build]
-description = "Build the OCaml project."
-run = "opam exec --switch=. -- dune build"

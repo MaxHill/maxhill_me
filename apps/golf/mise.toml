@@ -19,9 +19,3 @@ run = 'echo "no-op" && exit 0'
 [tasks.deploy]
 description = "Deploy golf (PWA static) to VPS."
 run = "bash ../../vps/golf/deploy.sh"
-
-# Implementation helpers:
-
-[tasks.build]
-description = "Build the PWA."
-run = "pnpm exec vite build"

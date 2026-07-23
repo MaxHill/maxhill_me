@@ -1,10 +1,9 @@
 # Canonical verbs (O(1) build interface).
-# Workspace library — consumed via `workspace:*`, never deployed.
+# Workspace library — consumed via `workspace:*`, never published externally.
 #   run    — watch-build so downstream apps pick up changes
 #   test   — bounded automated checks (none)
 #   fuzz   — unbounded checks (none)
-#   deploy — n/a (library)
-# One-shot build lives in package.json (`pnpm -r build`).
+#   deploy — one-shot build (the library's "published" form)
 
 [tasks.run]
 description = "Watch-build the CSS package."
@@ -19,5 +18,5 @@ description = "Unbounded checks (none defined)."
 run = 'echo "no-op" && exit 0'
 
 [tasks.deploy]
-description = "Workspace library — nothing to deploy."
-run = 'echo "no-op" && exit 0'
+description = "One-shot build — produces the artifact consumers use."
+run = "pnpm exec vite build"
