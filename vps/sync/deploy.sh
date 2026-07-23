@@ -2,6 +2,7 @@
 # Deploy sync to the VPS. Runs from the laptop, as the deploy user on
 # the box. VPS_HOST comes from mise.
 set -euo pipefail
+cd "$(dirname "$0")/../.."
 : "${VPS_HOST:?VPS_HOST not set (run via mise run deploy:sync)}"
 
 SHA=$(git rev-parse --short HEAD)

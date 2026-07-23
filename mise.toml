@@ -7,6 +7,11 @@ opam = "2.5.1"
 # resolve here; every deploy targets the same box.
 VPS_HOST = "maxhill.me"
 
+# Every app and package exposes the same four canonical tasks:
+#   run, test, fuzz, deploy
+# See https://matklad.github.io/2023/12/31/O(1)-build-file.html
+# Root-level tasks here delegate to the per-project mise.toml files.
+
 [tasks.bootstrap]
 description = "Provision (or re-provision) the VPS from /vps/. Runs as root."
 run = """
@@ -14,28 +19,36 @@ rsync -a --delete vps/ root@$VPS_HOST:/opt/bootstrap/vps/
 ssh root@$VPS_HOST 'bash /opt/bootstrap/vps/bootstrap.sh'
 """
 
-[tasks."deploy:sync"]
-description = "Deploy sync (OCaml service)."
-run = "bash vps/sync/deploy.sh"
+# --- dev:* — run a single app locally (used by pnpm dev:all/mprocs) ---
 
 [tasks."dev:sync"]
-description = "Run sync locally (loads vps/sync/sync.dev.env via mise)."
+description = "Run sync locally."
 dir = "apps/sync"
-run = "mise run dev"
+run = "mise run run"
+
+[tasks."dev:auth"]
+description = "Run auth locally."
+dir = "apps/auth"
+run = "mise run run"
+
+# --- deploy:* — publish an app to the VPS ---
+
+[tasks."deploy:sync"]
+description = "Deploy sync (OCaml service)."
+dir = "apps/sync"
+run = "mise run deploy"
 
 [tasks."deploy:auth"]
 description = "Deploy auth (Bun-compiled service)."
-run = "bash vps/auth/deploy.sh"
-
-[tasks."dev:auth"]
-description = "Run auth locally (loads vps/auth/auth.dev.env via mise)."
 dir = "apps/auth"
-run = "mise run dev"
+run = "mise run deploy"
 
 [tasks."deploy:site"]
 description = "Deploy site (Astro static)."
-run = "bash vps/site/deploy.sh"
+dir = "apps/site"
+run = "mise run deploy"
 
 [tasks."deploy:golf"]
 description = "Deploy golf (PWA static)."
-run = "bash vps/golf/deploy.sh"
+dir = "apps/golf"
+run = "mise run deploy"

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Deploy golf (PWA static) to the VPS.
 set -euo pipefail
+cd "$(dirname "$0")/../.."
 : "${VPS_HOST:?VPS_HOST not set (run via mise run deploy:golf)}"
 
 SHA=$(git rev-parse --short HEAD)

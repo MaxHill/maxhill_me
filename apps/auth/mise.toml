@@ -1,14 +1,35 @@
 [env]
 _.file = "../../vps/auth/auth.dev.env"
+_.path = ["./node_modules/.bin"]
 
-[tasks.dev]
+# Canonical verbs (O(1) build interface):
+#   run    — start the local built-from-source copy
+#   test   — bounded automated checks
+#   fuzz   — unbounded checks (n/a here)
+#   deploy — publish
+
+[tasks.run]
 description = "Run auth locally with hot reload."
 run = "bun --watch src/index.ts run"
 
-[tasks.check]
-description = "Type-check without emitting."
-run = "tsc --noEmit"
+[tasks.test]
+description = "Bounded checks (none defined)."
+run = 'echo "no-op" && exit 0'
+
+[tasks.fuzz]
+description = "Unbounded checks (none defined)."
+run = 'echo "no-op" && exit 0'
+
+[tasks.deploy]
+description = "Deploy auth (Bun-compiled service) to VPS."
+run = "bash ../../vps/auth/deploy.sh"
+
+# Implementation helpers (not part of the canonical interface):
 
 [tasks.build]
 description = "Compile the linux-x64 binary."
 run = "bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile=./dist/auth-exe"
+
+[tasks.check]
+description = "Type-check without emitting."
+run = "tsc --noEmit"

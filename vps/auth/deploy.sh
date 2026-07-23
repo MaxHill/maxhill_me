@@ -2,6 +2,7 @@
 # Deploy auth to the VPS. Assumes apps/auth has been migrated off
 # Cloudflare Workers to a Bun-compiled binary — see docs/vps.md.
 set -euo pipefail
+cd "$(dirname "$0")/../.."
 : "${VPS_HOST:?VPS_HOST not set (run via mise run deploy:auth)}"
 
 SHA=$(git rev-parse --short HEAD)
