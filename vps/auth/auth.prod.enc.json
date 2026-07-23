@@ -1,5 +1,17 @@
 {
-  "_placeholder": "Produce a real file with: sops -e --input-type json --output-type json auth.prod.json > auth.prod.enc.json",
-  "DATABASE_URL": "ENC[...]",
-  "SESSION_SECRET": "ENC[...]"
+	"dbPath": "ENC[AES256_GCM,data:LTYMqoa7dCu7aDB6doAA3ekx4Bzl,iv:HzKR+CKVFm1NcYjQaFm3mKH8/ewP2HrPJ5pP8RcSLjY=,tag:6YgLPo0V0kgMNW2GGHAyzw==,type:str]",
+	"issuer": "ENC[AES256_GCM,data:qjfsn+E04zUlJRD5NGdcVe+KtJ/IQ4I=,iv:vvnKbrV3ekOf1qwDTcAqyzRVTyz50ktkIpZiEocQFwY=,tag:NiwDXLMyLV0FL12UgSajwg==,type:str]",
+	"resendApiKey": "ENC[AES256_GCM,data:q7Tm6z/zsgNJkbMtMKkc8AJhDFA27jaB8Stqn8Z2lfHKO16+,iv:95+xhiAkeZGAAqjRo34ss9Puzl7UM2RsYHtpCBlpskM=,tag:AJHrbWKrACvRIaockIK7zA==,type:str]",
+	"sops": {
+		"age": [
+			{
+				"enc": "-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBtOUZhbllYTEI1QVlGY3hi\nQWNkdzF4VDc2djJwdW9jNUdtb2VnZzNtcVZ3CldkRGUwMVBZbEpac1J5QXRMUVRE\nakFnK3NiM0tlTkJ6SzFVY0FqOWtRUmsKLS0tIFRlbXFXWXhxSVBobUR0VXNka01Z\naEZwdndQL1gxL1ZoZzFhR1hHcG9aM0UK/tuLYSX06zOsNvqIclVnT/hNYOOkVzcI\nWIfrK9Rxrkx3aR5JB4AvYKbPtfFaH/rXW98pMCvG4y1gYsOuVqz78A==\n-----END AGE ENCRYPTED FILE-----\n",
+				"recipient": "age1fzjqfezgzhjlsejldsujzgtaj9qx23kh46un6jmupwmuwdsczq4qgvp54j"
+			}
+		],
+		"lastmodified": "2026-07-22T21:56:09Z",
+		"mac": "ENC[AES256_GCM,data:9GbApthNw+qbgQeC4aUloISWB3vCA5GTLGcjSTuZvuwaOwUxEIq2YhIJyHshwjSBMpAFCYNM9p+hNBj3f1kse8p8g3eNuuL/sYKISpQ45/L881FT5IyvVe6O/koLymvkCdaW5ZIK9IICofUd/Bhw54yxjn9jO4zdykmRIXjiFes=,iv:Z44wzx2dWrj56fwKpaUJRlq7fsrmpOfgAFysIH4HPwA=,tag:9juPjR/H0v5S6QUG7gGjDQ==,type:str]",
+		"unencrypted_suffix": "_unencrypted",
+		"version": "3.13.2"
+	}
 }

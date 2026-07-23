@@ -1,238 +1,140 @@
 # @maxhill/auth
 
-OpenAuth-based authentication service for maxhill.me
+OpenAuth-based authentication service for maxhill.me.
 
-## Overview
+Runs as a long-running Bun-compiled binary on the VPS. Storage is
+SQLite; email delivery is Resend. Follows the standard on-box config
+convention (see [`docs/vps.md`](../../docs/vps.md)): one JSON config
+path passed as an argument, no environment variables.
 
-This is a standalone OAuth 2.0 authentication server built with OpenAuth.js. It provides username/password authentication with email verification, uses in-memory storage for local development, and Cloudflare KV for production.
+## Layout
 
-### Key Features
-
-- **Username/Password Authentication**: Built-in password provider with email verification
-- **Local Development**: In-memory storage with file persistence, verification codes logged to console
-- **Production Ready**: Configured for Cloudflare Workers with KV storage
-- **Standards-Based**: OAuth 2.0 compliant, works with any OAuth client
-- **Type-Safe**: Full TypeScript support with JWT subject definitions
-- **Hash-Based User IDs**: Deterministic user identification for development (production should connect to user database service)
-
-## Local Development
-
-### Install Dependencies
-
-From the monorepo root:
-
-```bash
-pnpm install
+```
+apps/auth/
+├── src/
+│   ├── index.ts           entry point + subcommands
+│   ├── config.ts          JSON config parser (valibot)
+│   ├── sqlite-storage.ts  StorageAdapter over bun:sqlite
+│   └── subjects.ts        JWT subject definitions (exportable)
+└── package.json
 ```
 
-### Start the Development Server
+Systemd units live under `vps/auth/`:
 
-```bash
-cd apps/auth
-pnpm dev
+- `auth.service` — the long-running server.
+- `auth-sweep.service` + `auth-sweep.timer` — hourly `DELETE` of
+  expired KV rows. Enabled once by `bootstrap.sh`.
+
+## CLI
+
+```
+auth-exe run   <config-path>   # start the HTTP server on :8081
+auth-exe sweep <config-path>   # DELETE expired rows, exit 0
 ```
 
-The auth server will run at `http://localhost:3001`
+Both subcommands read the same config file. The `sweep` subcommand is
+invoked by `auth-sweep.timer`; `run` is invoked by `auth.service`.
 
-### Testing Locally
+## Config
 
-1. **Verify Server**: Visit `http://localhost:3001/.well-known/oauth-authorization-server` to see the OAuth discovery endpoint
-2. **Test Authentication**: Access the password provider UI for registration/login flows
-3. **Check Verification Codes**: Codes are logged to console in this format:
-   ```
-   ================================
-   Verification code for: user@example.com
-   Code: 123456
-   ================================
-   ```
-
-### Type Checking
-
-```bash
-pnpm check
-```
-
-## Production Deployment
-
-### Prerequisites
-
-- Cloudflare account with Workers enabled
-- Wrangler CLI (included in devDependencies)
-- Custom domain configured in Cloudflare
-
-### Deployment Steps
-
-#### 1. Create Cloudflare KV Namespace
-
-```bash
-cd apps/auth
-pnpm wrangler kv:namespace create MAXHILL_AUTH
-```
-
-This will output:
-```
-{ binding = "MAXHILL_AUTH", id = "abc123..." }
-```
-
-#### 2. Configure KV Namespace
-
-Uncomment the KV namespace section in `wrangler.toml` and add your namespace ID:
-
-```toml
-[[kv_namespaces]]
-binding = "MAXHILL_AUTH"
-id = "abc123..."  # from step 1
-```
-
-#### 3. Update Email Sending
-
-Replace the console.log in `src/index.ts` (lines 36-42) with actual email sending:
-
-```typescript
-sendCode: async (email, code) => {
-  // Example with Resend
-  await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      from: 'auth@maxhill.me',
-      to: email,
-      subject: 'Your verification code',
-      text: `Your code is: ${code}`
-    })
-  })
+```json
+{
+  "issuer": "https://auth.maxhill.me",
+  "dbPath": "/var/lib/auth/auth.db",
+  "resendApiKey": "re_…"
 }
 ```
 
-Supported email services:
-- Resend
-- SendGrid
-- AWS SES
-- Mailgun
-- Postmark
+- **`issuer`** — public URL announced in OAuth discovery and baked
+  into issued tokens.
+- **`dbPath`** — SQLite file. On prod this is under the systemd
+  `StateDirectory=auth`, i.e. `/var/lib/auth/`.
+- **`resendApiKey`** — Resend API key used to send verification codes.
+  `from` address is hardcoded to `auth@maxhill.me`.
 
-#### 4. Deploy to Cloudflare
+Port (8081), email `from` address, and the schema itself are code-side
+constants. If any of them need to vary per environment, promote them
+into the config schema — don't reach for env vars.
 
-```bash
-pnpm deploy
+## Local development
+
+Create `vps/auth/auth.dev.json` (gitignored — see the root
+`.gitignore`) with a real Resend API key. Use `:memory:` for the DB so
+state resets on every restart:
+
+```json
+{
+  "issuer": "http://localhost:8081",
+  "dbPath": ":memory:",
+  "resendApiKey": "re_…"
+}
 ```
 
-#### 5. Configure Custom Domain
+Swap in a file path (e.g. `./auth.dev.db`) if you want state to
+survive restarts.
 
-In Cloudflare dashboard:
-1. Navigate to **Workers & Pages**
-2. Select **maxhill_auth**
-3. Go to **Settings > Triggers**
-4. Add custom domain: `auth.maxhill.me`
+Then:
 
-### Production Configuration Checklist
+```bash
+cd apps/auth
+pnpm install
+pnpm dev
+```
 
-- [ ] KV namespace created and configured
-- [ ] Email service integrated
-- [ ] Custom domain configured
-- [ ] User database service connected (update `getOrCreateUser` function)
-- [ ] Environment variables set (if needed for email service)
-- [ ] Test authentication flow on production URL
+`pnpm dev` runs `bun --watch src/index.ts run
+../../vps/auth/auth.dev.json` — same code path as production, only the
+config path differs.
 
-## Usage in Other Apps
+Discovery endpoint: <http://localhost:8081/.well-known/oauth-authorization-server>.
 
-Import the subjects to verify tokens in your applications:
+## Production deploy
 
-```typescript
+`mise run deploy:auth` from the repo root. See `vps/auth/deploy.sh`:
+it builds the binary with `bun build --compile
+--target=bun-linux-x64`, rsyncs the artifact plus
+`vps/auth/auth.prod.enc.json`, decrypts the config on the box via
+sops, atomically swaps the `/opt/auth/current` symlink, and restarts
+`auth.service`.
+
+Rotating `resendApiKey` (or any prod config key): edit the plaintext,
+re-encrypt with sops, commit, redeploy. Full flow in `docs/vps.md`.
+
+## Storage schema
+
+Single table, keyed by OpenAuth's 0x1F-joined string key:
+
+```sql
+CREATE TABLE kv (
+  key    TEXT PRIMARY KEY,
+  value  TEXT NOT NULL,        -- JSON.stringify(value)
+  expiry INTEGER                -- unix ms; NULL means no expiry
+);
+CREATE INDEX kv_expiry ON kv(expiry) WHERE expiry IS NOT NULL;
+```
+
+`get` and `scan` skip expired rows lazily; `auth-exe sweep` reclaims
+their disk hourly. `PRAGMA journal_mode=WAL` is set at open (required
+for the deferred Litestream backup plan in `docs/vps.md`).
+
+## User IDs
+
+`getOrCreateUser` currently returns a deterministic SHA-256 hash of
+the email. This is a placeholder — swap it for a call to a real user
+service when one exists.
+
+## Client usage
+
+```ts
 import { subjects } from "@maxhill/auth/subjects"
 import { createClient } from "@openauthjs/openauth/client"
 
 const client = createClient({
   clientID: "my-app",
-  issuer: "https://auth.maxhill.me" // or http://localhost:3001 for local
+  issuer: "https://auth.maxhill.me",
 })
 
-const verified = await client.verify(subjects, accessToken, {
-  refresh: refreshToken
-})
-
+const verified = await client.verify(subjects, accessToken, { refresh: refreshToken })
 if (!verified.err) {
   console.log(verified.subject) // { type: "user", properties: { userID: "..." } }
 }
 ```
-
-## Architecture
-
-### Project Structure
-
-```
-apps/auth/
-├── src/
-│   ├── index.ts          # OpenAuth issuer with password provider
-│   ├── subjects.ts       # JWT subject definitions (exportable)
-│   └── env.d.ts          # TypeScript types for Cloudflare KV
-├── wrangler.toml         # Cloudflare Workers configuration
-└── package.json          # Dependencies and scripts
-```
-
-### Storage
-
-| Environment | Storage Type | Details |
-|-------------|--------------|---------|
-| **Local Development** | MemoryStorage | File persistence to `.wrangler/state/auth-storage.json` |
-| **Production** | CloudflareStorage | Cloudflare KV namespace (MAXHILL_AUTH) |
-
-### Authentication Flow
-
-1. User navigates to authentication endpoint
-2. User enters email and password in password provider UI
-3. Verification code is sent (console in dev, email in production)
-4. User enters verification code to confirm email
-5. User ID is generated (hash-based in dev, database lookup in production)
-6. Access and refresh tokens are issued with user subject containing `userID`
-
-### User Management
-
-**Development**: Uses SHA-256 hash of email as user ID for testing
-
-**Production**: Update the `getOrCreateUser` function in `src/index.ts` to:
-1. Query your user database service
-2. Create new users if they don't exist
-3. Return the user's ID from your system
-
-Example:
-```typescript
-async function getOrCreateUser(email: string): Promise<string> {
-  const response = await fetch('https://api.maxhill.me/users/find-or-create', {
-    method: 'POST',
-    body: JSON.stringify({ email })
-  })
-  const { userId } = await response.json()
-  return userId
-}
-```
-
-## Available Scripts
-
-| Script | Command | Description |
-|--------|---------|-------------|
-| `dev` | `pnpm dev` | Start local development server on port 3001 |
-| `build` | `pnpm build` | Build for production (dry run deployment) |
-| `deploy` | `pnpm deploy` | Deploy to Cloudflare Workers |
-| `check` | `pnpm check` | Run TypeScript type checking |
-
-## Tech Stack
-
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **OpenAuth** | ^0.4.3 | OAuth 2.0 authentication provider |
-| **Hono** | ^4.6.14 | Web framework (Cloudflare Workers compatible) |
-| **Valibot** | ^1.0.0 | Schema validation (standard-schema compatible) |
-| **Wrangler** | ^4.0.0 | Cloudflare Workers CLI and development server |
-| **TypeScript** | ^5.9.3 | Type safety and development tooling |
-| **Cloudflare Workers** | - | Serverless deployment platform |
-
-## Configuration Files
-
-- **wrangler.toml**: Cloudflare Workers configuration with nodejs_compat enabled
-- **tsconfig.json**: TypeScript compiler options for Workers environment
-- **package.json**: Dependencies and npm scripts
-- **.dev.vars.example**: Example environment variables template

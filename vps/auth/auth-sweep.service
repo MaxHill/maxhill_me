@@ -1,17 +1,14 @@
 [Unit]
-Description=auth service
+Description=auth expired-row sweep
 After=network.target
 OnFailure=alert-on-failure@%n.service
 
 [Service]
+Type=oneshot
 DynamicUser=yes
 ProtectSystem=strict
 PrivateTmp=yes
 StateDirectory=auth
 LoadCredential=config:/etc/auth/auth.prod.json
-ExecStart=/opt/auth/current/auth-exe run ${CREDENTIALS_DIRECTORY}/config
-Restart=on-failure
-MemoryMax=512M
-
-[Install]
-WantedBy=multi-user.target
+ExecStart=/opt/auth/current/auth-exe sweep ${CREDENTIALS_DIRECTORY}/config
+MemoryMax=128M

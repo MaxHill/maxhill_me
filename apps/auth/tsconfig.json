@@ -4,7 +4,7 @@
     "module": "ES2022",
     "lib": ["ES2022"],
     "moduleResolution": "bundler",
-    "types": ["@cloudflare/workers-types/2023-07-01"],
+    "types": ["bun"],
     "resolveJsonModule": true,
     "allowJs": true,
     "checkJs": false,
@@ -20,5 +20,5 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", ".wrangler"]
+  "exclude": ["node_modules", "dist"]
 }

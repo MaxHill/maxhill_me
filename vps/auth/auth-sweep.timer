@@ -1,0 +1,10 @@
+[Unit]
+Description=hourly sweep of auth's expired KV rows
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=auth-sweep.service
+
+[Install]
+WantedBy=timers.target

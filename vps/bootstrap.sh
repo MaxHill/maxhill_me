@@ -54,8 +54,10 @@ visudo -c -f /etc/sudoers.d/deploy   # fail loud if the file is garbage
 mkdir -p /etc/caddy/sites
 install -m 644 "$V/sync/sync.service" /etc/systemd/system/sync.service
 install -m 644 "$V/sync/sync.caddy"   /etc/caddy/sites/sync.caddy
-install -m 644 "$V/auth/auth.service" /etc/systemd/system/auth.service
-install -m 644 "$V/auth/auth.caddy"   /etc/caddy/sites/auth.caddy
+install -m 644 "$V/auth/auth.service"       /etc/systemd/system/auth.service
+install -m 644 "$V/auth/auth-sweep.service" /etc/systemd/system/auth-sweep.service
+install -m 644 "$V/auth/auth-sweep.timer"   /etc/systemd/system/auth-sweep.timer
+install -m 644 "$V/auth/auth.caddy"         /etc/caddy/sites/auth.caddy
 install -m 644 "$V/site/site.caddy"   /etc/caddy/sites/site.caddy
 install -m 644 "$V/golf/golf.caddy"   /etc/caddy/sites/golf.caddy
 
@@ -80,6 +82,8 @@ done
 systemctl daemon-reload
 systemctl enable --now caddy
 systemctl reload caddy
+# auth's hourly kv-sweep timer (once-only enable; idempotent to re-run)
+systemctl enable --now auth-sweep.timer
 # journald retention only bites after a restart, and only if the config actually changed
 systemctl restart systemd-journald
 
