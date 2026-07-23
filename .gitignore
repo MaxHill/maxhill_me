@@ -30,8 +30,6 @@ vps/**/*.dev.env
 # jetbrains setting folder
 .idea/
 
-# turbo
-.turbo/
 
 # Compiled binaries (prevent large files in git)
 **/main

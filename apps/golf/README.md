@@ -80,11 +80,10 @@ Different loader requirements:
 Works seamlessly with pnpm workspaces:
 - No import maps needed (everything bundled)
 - Hot reload watches workspace dependencies
-- Turbo caches builds across packages
 
 ```bash
 # Rebuild on @maxhill/components changes
-pnpm turbo build --filter=golf
+pnpm --filter=golf build
 ```
 
 ## Build Performance

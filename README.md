@@ -21,7 +21,7 @@ Monorepo for Max Hill's personal website and services.
 
 ```bash
 pnpm install          # Install dependencies
-pnpm dev              # Start all apps in dev mode
+pnpm dev:all          # Start all apps in dev mode (mprocs)
 pnpm build            # Build all packages and apps
 pnpm check            # Type check all workspaces
 pnpm lint             # Lint all workspaces
@@ -107,11 +107,6 @@ Check deployment status:
   maxhill-me
 
 ### Troubleshooting
-
-**Build fails with "turbo: command not found":**
-
-- Ensure `turbo` is in devDependencies in root package.json
-- Run `pnpm install` to install dependencies
 
 **Lint fails with "astro: command not found":**
 

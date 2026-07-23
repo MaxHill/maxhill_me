@@ -5,14 +5,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "turbo build",
-    "dev": "turbo dev",
-    "dev:all": "mprocs --names 'idb-distribute,css,web-component-utils,components,auth,golf,site,sync' 'pnpm --filter @maxhill/idb-distribute dev' 'pnpm --filter @maxhill/css dev' 'pnpm --filter @maxhill/web-component-utils dev' 'pnpm --filter @maxhill/components dev' 'mise run dev:auth' 'pnpm --filter golf dev' 'pnpm --filter maxhill-me dev' 'mise run dev:sync'", 
-    "check": "turbo check",
-    "lint": "turbo lint",
-    "test": "turbo test",
-    "clean": "turbo clean",
-    "docs": "turbo docs",
+    "build": "pnpm -r build",
+    "dev:all": "mprocs --names 'idb-distribute,css,web-component-utils,components,auth,golf,site,sync' 'pnpm --filter @maxhill/idb-distribute dev' 'pnpm --filter @maxhill/css dev' 'pnpm --filter @maxhill/web-component-utils dev' 'pnpm --filter @maxhill/components dev' 'mise run dev:auth' 'pnpm --filter golf dev' 'pnpm --filter maxhill-me dev' 'mise run dev:sync'",
+    "check": "pnpm -r check",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "clean": "pnpm -r clean",
     "generate": "plop"
   },
   "keywords": [],
@@ -20,8 +18,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.27.0+sha512.72d699da16b1179c14ba9e64dc71c9a40988cbdc65c264cb0e489db7de917f20dcf4d64d8723625f2969ba52d4b7e2a1170682d9ac2a5dcaeaab732b7e16f04a",
   "devDependencies": {
-    "plop": "^4.0.4",
-    "turbo": "^2.5.8"
+    "plop": "^4.0.4"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.4",
