@@ -26,7 +26,7 @@ run = "pnpm exec plop"
 [tasks.setup]
 description = "One-time local dev setup after clone (Playwright browsers, etc)."
 dir = "packages/web-component-utils"
-run = "pnpm exec playwright install chromium chromium-headless-shell"
+run = "pnpm exec playwright install --only-shell chromium"
 
 # --- test / fuzz — fan out the canonical verbs across every workspace project ---
 
