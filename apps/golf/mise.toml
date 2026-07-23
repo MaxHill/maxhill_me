@@ -1,6 +1,3 @@
-[env]
-_.path = ["./node_modules/.bin"]
-
 # Canonical verbs (O(1) build interface):
 #   run    — start the local built-from-source copy
 #   test   — bounded automated checks (web-test-runner)
@@ -9,11 +6,11 @@ _.path = ["./node_modules/.bin"]
 
 [tasks.run]
 description = "Run the Vite dev server."
-run = "vite"
+run = "pnpm exec vite"
 
 [tasks.test]
 description = "Run web-test-runner suites."
-run = "web-test-runner"
+run = "pnpm exec web-test-runner"
 
 [tasks.fuzz]
 description = "Unbounded checks (none defined)."
@@ -27,4 +24,4 @@ run = "bash ../../vps/golf/deploy.sh"
 
 [tasks.build]
 description = "Build the PWA."
-run = "vite build"
+run = "pnpm exec vite build"

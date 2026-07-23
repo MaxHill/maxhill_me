@@ -1,16 +1,14 @@
-[env]
-_.path = ["./node_modules/.bin"]
-
 # Canonical verbs (O(1) build interface).
 # Workspace library — consumed via `workspace:*`, never deployed.
+# One-shot build lives in package.json (`pnpm -r build`).
 
 [tasks.run]
 description = "Watch-build idb-distribute."
-run = "vite build --watch"
+run = "pnpm exec vite build --watch"
 
 [tasks.test]
 description = "Run vitest (bounded)."
-run = "vitest run"
+run = "pnpm exec vitest run"
 
 [tasks.fuzz]
 description = "Unbounded checks (none defined)."
@@ -19,9 +17,3 @@ run = 'echo "no-op" && exit 0'
 [tasks.deploy]
 description = "Workspace library — nothing to deploy."
 run = 'echo "no-op" && exit 0'
-
-# Implementation helpers:
-
-[tasks.build]
-description = "One-shot build."
-run = "vite build"

@@ -1,19 +1,16 @@
-[env]
-_.path = ["./node_modules/.bin"]
-
 # Canonical verbs (O(1) build interface):
 #   run    — start the local built-from-source copy
-#   test   — bounded automated checks (none)
+#   test   — bounded automated checks
 #   fuzz   — unbounded checks (none)
 #   deploy — publish
 
 [tasks.run]
 description = "Run the Astro dev server."
-run = "astro dev --host"
+run = "pnpm exec astro dev --host"
 
 [tasks.test]
-description = "Bounded checks (none defined)."
-run = 'echo "no-op" && exit 0'
+description = "Astro check + eslint."
+run = "pnpm exec astro check && pnpm exec eslint ."
 
 [tasks.fuzz]
 description = "Unbounded checks (none defined)."
@@ -27,8 +24,4 @@ run = "bash ../../vps/site/deploy.sh"
 
 [tasks.build]
 description = "Build the static site."
-run = "astro build"
-
-[tasks.check]
-description = "Type-check Astro + lint."
-run = "astro check && eslint ."
+run = "pnpm exec astro build"

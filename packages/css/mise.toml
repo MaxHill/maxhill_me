@@ -1,16 +1,14 @@
-[env]
-_.path = ["./node_modules/.bin"]
-
 # Canonical verbs (O(1) build interface).
-# This is a workspace library — consumed via `workspace:*`, never deployed.
-#   run    — build in watch mode so downstream apps pick up changes
+# Workspace library — consumed via `workspace:*`, never deployed.
+#   run    — watch-build so downstream apps pick up changes
 #   test   — bounded automated checks (none)
 #   fuzz   — unbounded checks (none)
 #   deploy — n/a (library)
+# One-shot build lives in package.json (`pnpm -r build`).
 
 [tasks.run]
 description = "Watch-build the CSS package."
-run = "vite build --watch"
+run = "pnpm exec vite build --watch"
 
 [tasks.test]
 description = "Bounded checks (none defined)."
@@ -23,9 +21,3 @@ run = 'echo "no-op" && exit 0'
 [tasks.deploy]
 description = "Workspace library — nothing to deploy."
 run = 'echo "no-op" && exit 0'
-
-# Implementation helpers:
-
-[tasks.build]
-description = "One-shot build."
-run = "vite build"
