@@ -4,14 +4,6 @@
   "type": "module",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "build": "pnpm -r build",
-    "check": "pnpm -r check",
-    "lint": "pnpm -r lint",
-    "test": "pnpm -r test",
-    "clean": "pnpm -r clean",
-    "generate": "plop"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",

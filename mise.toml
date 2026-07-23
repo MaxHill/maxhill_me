@@ -19,6 +19,10 @@ rsync -a --delete vps/ root@$VPS_HOST:/opt/bootstrap/vps/
 ssh root@$VPS_HOST 'bash /opt/bootstrap/vps/bootstrap.sh'
 """
 
+[tasks.generate]
+description = "Run plop code-gen (templates in ./plop)."
+run = "pnpm exec plop"
+
 # --- dev:all — run every workspace project's `run` task in parallel (mprocs) ---
 
 [tasks."dev:all"]

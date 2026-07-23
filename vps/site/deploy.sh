@@ -7,7 +7,7 @@ cd "$(dirname "$0")/../.."
 SHA=$(git rev-parse --short HEAD)
 REL="/opt/site/releases/$SHA"
 
-(cd apps/site && pnpm build)
+(cd apps/site && pnpm exec astro build)
 
 ssh "deploy@$VPS_HOST" "mkdir -p $REL"
 rsync -a --delete apps/site/dist/ "deploy@$VPS_HOST:$REL/"

@@ -7,7 +7,7 @@ cd "$(dirname "$0")/../.."
 SHA=$(git rev-parse --short HEAD)
 REL="/opt/golf/releases/$SHA"
 
-(cd apps/golf && pnpm build)
+(cd apps/golf && pnpm exec vite build)
 
 ssh "deploy@$VPS_HOST" "mkdir -p $REL"
 rsync -a --delete apps/golf/dist/ "deploy@$VPS_HOST:$REL/"

@@ -16,14 +16,6 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "vite build && tsc --emitDeclarationOnly && cem analyze",
-    "dev": "vite build --watch & cem analyze --watch",
-    "clean": "rm -rf dist",
-    "docs": "pnpm run build",
-    "test": "web-test-runner",
-    "test:watch": "web-test-runner --watch"
-  },
   "dependencies": {
     "@maxhill/css": "workspace:*",
     "@maxhill/web-component-utils": "workspace:*",

@@ -5,7 +5,7 @@ This directory contains Plop templates for generating new web components.
 ## Usage
 
 ```bash
-npm run generate
+mise run generate
 ```
 
 ## Features

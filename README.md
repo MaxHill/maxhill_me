@@ -20,24 +20,27 @@ Monorepo for Max Hill's personal website and services.
 ### Commands
 
 ```bash
-pnpm install          # Install dependencies
-pnpm dev:all          # Start all apps in dev mode (mprocs)
-pnpm build            # Build all packages and apps
-pnpm check            # Type check all workspaces
-pnpm lint             # Lint all workspaces
-pnpm test             # Test all workspaces
+pnpm install                # Install dependencies
+mise run dev:all            # Start every workspace project in dev mode (mprocs)
+mise run generate           # Code-gen via plop
+```
+
+Every app and package exposes the same four canonical mise tasks
+(see [O(1) build file](https://matklad.github.io/2023/12/31/O(1)-build-file.html)):
+
+```bash
+cd <apps|packages>/<name>
+mise run run     # start the local built-from-source copy
+mise run test    # bounded automated checks
+mise run fuzz    # unbounded checks (no-op where n/a)
+mise run deploy  # publish (or produce the artifact, for libraries)
 ```
 
 ### Running Individual Apps
 
 ```bash
-# Site
-cd apps/site
-pnpm dev              # http://localhost:4321
-
-# Auth
-cd apps/auth
-pnpm dev              # http://localhost:3001
+cd apps/site && mise run run     # Astro dev server
+cd apps/auth && mise run run     # Bun --watch
 ```
 
 ## CI/CD Pipeline
@@ -70,13 +73,10 @@ Both deployments run in parallel.
 
 ### Local Testing Before Push
 
-Test CI checks locally before pushing:
+Test locally before pushing:
 
 ```bash
-pnpm build     # Should complete without errors
-pnpm check     # Should show no type errors
-pnpm lint      # Should show no linting errors
-pnpm test      # Should show all tests passing
+for d in apps/*/ packages/*/; do (cd "$d" && mise run test) || exit 1; done
 ```
 
 Test deployments locally (requires Cloudflare credentials):

@@ -14,13 +14,6 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch",
-    "clean": "rm -rf dist",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
   "dependencies": {
     "idb": "^8.0.3"
   },

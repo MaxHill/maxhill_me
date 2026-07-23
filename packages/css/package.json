@@ -13,11 +13,6 @@
         "dist",
         "public"
     ],
-    "scripts": {
-        "build": "vite build",
-        "dev": "vite build --watch",
-        "clean": "rm -rf dist"
-    },
     "devDependencies": {
         "vite": "^6.0.11"
     }

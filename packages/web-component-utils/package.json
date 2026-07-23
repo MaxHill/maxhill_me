@@ -19,12 +19,6 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "vite build && tsc --emitDeclarationOnly",
-    "dev": "vite build --watch & tsc --emitDeclarationOnly --watch",
-    "clean": "rm -rf dist",
-    "test": "web-test-runner"
-  },
   "devDependencies": {
     "@esm-bundle/chai": "4.3.4-fix.0",
     "@open-wc/testing": "3.0.0-next.5",

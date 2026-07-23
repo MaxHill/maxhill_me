@@ -2,13 +2,6 @@
   "name": "maxhill-me",
   "type": "module",
   "version": "0.0.1",
-  "scripts": {
-    "dev": "astro dev --host",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro",
-    "check": "astro check && eslint ."
-  },
   "dependencies": {
     "@astrojs/mdx": "^4.3.7",
     "@lucide/astro": "^0.546.0",

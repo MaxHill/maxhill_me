@@ -7,17 +7,10 @@ Pure Go static site generator using esbuild's native Go API - no Node.js subproc
 ## Quick Start
 
 ```bash
-# First time setup: Build the Go binary
-pnpm run build:binary --filter=golf
-
-# Development (with hot reload)
-pnpm dev --filter=golf
-
-# Production build
-pnpm build --filter=golf
-
-# Clean build artifacts
-pnpm clean --filter=golf
+cd apps/golf
+mise run run      # dev server
+mise run test     # web-test-runner
+mise run deploy   # build + ship to VPS
 ```
 
 **Dev server:** http://localhost:8090 (Air proxy with live reload)  
@@ -83,7 +76,7 @@ Works seamlessly with pnpm workspaces:
 
 ```bash
 # Rebuild on @maxhill/components changes
-pnpm --filter=golf build
+cd apps/golf && mise run deploy    # or `pnpm exec vite build`
 ```
 
 ## Build Performance

@@ -2,10 +2,6 @@
   "name": "@maxhill/auth",
   "version": "0.0.1",
   "type": "module",
-  "scripts": {
-    "build": "bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile=./dist/auth-exe",
-    "check": "tsc --noEmit"
-  },
   "dependencies": {
     "@openauthjs/openauth": "^0.4.3",
     "valibot": "^1.0.0"

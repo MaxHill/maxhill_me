@@ -3,14 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "clean": "rm -rf dist",
-    "test": "web-test-runner",
-    "test:watch": "web-test-runner --watch"
-  },
   "dependencies": {
     "@maxhill/components": "workspace:*",
     "@maxhill/css": "workspace:*",
