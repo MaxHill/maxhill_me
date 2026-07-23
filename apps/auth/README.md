@@ -69,11 +69,10 @@ survive restarts.
 dev from anywhere:
 
 ```bash
-mise run dev:auth
+cd apps/auth && mise run run
 ```
 
-(Or `cd apps/auth && mise run dev` — same thing.) Same code path as
-production, only the env source differs.
+Same code path as production, only the env source differs.
 
 Discovery endpoint: <http://localhost:3002/.well-known/oauth-authorization-server>.
 

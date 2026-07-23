@@ -6,7 +6,6 @@
   "main": "index.js",
   "scripts": {
     "build": "pnpm -r build",
-    "dev:all": "mprocs --names 'idb-distribute,css,web-component-utils,components,auth,golf,site,sync' 'pnpm --filter @maxhill/idb-distribute dev' 'pnpm --filter @maxhill/css dev' 'pnpm --filter @maxhill/web-component-utils dev' 'pnpm --filter @maxhill/components dev' 'mise run dev:auth' 'pnpm --filter golf dev' 'pnpm --filter maxhill-me dev' 'mise run dev:sync'",
     "check": "pnpm -r check",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
