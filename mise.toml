@@ -23,9 +23,34 @@ ssh root@$VPS_HOST 'bash /opt/bootstrap/vps/bootstrap.sh'
 description = "Run plop code-gen (templates in ./plop)."
 run = "pnpm exec plop"
 
+[tasks.setup]
+description = "One-time local dev setup after clone (Playwright browsers, etc)."
+dir = "packages/web-component-utils"
+run = "pnpm exec playwright install chromium chromium-headless-shell"
+
+# --- test / fuzz — fan out the canonical verbs across every workspace project ---
+
+[tasks.test]
+description = "Run every workspace project's `test` task (fail-fast)."
+run = """
+for d in apps/*/ packages/*/; do
+  echo "::: $d test :::"
+  (cd "$d" && mise run test) || exit 1
+done
+"""
+
+[tasks.fuzz]
+description = "Run every workspace project's `fuzz` task (fail-fast)."
+run = """
+for d in apps/*/ packages/*/; do
+  echo "::: $d fuzz :::"
+  (cd "$d" && mise run fuzz) || exit 1
+done
+"""
+
 # --- dev:all — run every workspace project's `run` task in parallel (mprocs) ---
 
-[tasks."dev:all"]
+[tasks."run"]
 description = "Run every workspace project's `run` task in parallel (mprocs)."
 run = """
 mprocs --names 'idb-distribute,css,web-component-utils,components,auth,golf,site,sync' \
@@ -40,7 +65,6 @@ mprocs --names 'idb-distribute,css,web-component-utils,components,auth,golf,site
 """
 
 # --- deploy:* — publish an app to the VPS ---
-
 [tasks."deploy:sync"]
 description = "Deploy sync (OCaml service)."
 dir = "apps/sync"
