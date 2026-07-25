@@ -89,6 +89,11 @@ done
 systemctl daemon-reload
 systemctl enable --now caddy
 systemctl reload caddy
+# Enable service units so they survive a reboot. `enable` (without
+# `--now`) just creates the .wants/ symlink; it doesn't try to exec
+# the binary, so this is safe before the first deploy has shipped
+# /opt/<app>/current/. First `mise run deploy:<app>` starts them.
+systemctl enable sync.service auth.service
 # auth's hourly kv-sweep timer (once-only enable; idempotent to re-run)
 systemctl enable --now auth-sweep.timer
 # journald retention only bites after a restart, and only if the config actually changed
