@@ -50,11 +50,11 @@ requests with 401.
 
 ### Modules
 
-1. **Sync Server Auth Middleware** (new, Go) — HTTP middleware that
+1. **Sync Server Auth Middleware** (new, OCaml) — HTTP middleware that
    fetches/caches JWKS from the auth issuer, validates
    `Authorization: Bearer <token>` on every request, returns 401 on
    failure. Passes the `userID` claim to the handler context (unused for
-   scoping now, but available). Uses `github.com/lestrrat-go/jwx`.
+   scoping now, but available). Uses the `jose` OCaml library.
 
 2. **Golf Auth Client** (new, TypeScript, `src/features/auth/`) — Deep
    module with interface: `authorize()`, `handleCallback()`,

@@ -4,4 +4,4 @@ Description=Send failure alert email for %i
 [Service]
 Type=oneshot
 EnvironmentFile=/etc/alert-on-failure/alert-on-failure.prod.env
-ExecStart=/usr/local/bin/alert-on-failure.sh %i
+ExecStart=/opt/alert-on-failure/current/alert-on-failure.sh %i

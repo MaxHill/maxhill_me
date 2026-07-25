@@ -27,6 +27,18 @@ id deploy &>/dev/null || useradd -m -s /bin/bash deploy
 getent group sops-readers >/dev/null || groupadd -r sops-readers
 usermod -aG sops-readers deploy
 
+# Clone root's authorized_keys into deploy's ~/.ssh so the laptop key
+# attached at Hetzner server-creation works for `ssh deploy@$VPS_HOST`
+# too. Idempotent: install(1) overwrites with exact perms every run.
+install -d -o deploy -g deploy -m 700 /home/deploy/.ssh
+install -o deploy -g deploy -m 600 /root/.ssh/authorized_keys /home/deploy/.ssh/authorized_keys
+
+# ---------- sshd hardening ----------
+# Belt-and-braces on top of the Hetzner Ubuntu image defaults.
+install -m 644 "$V/sshd-hardening.conf" /etc/ssh/sshd_config.d/10-maxhill.conf
+sshd -t   # fail loud if the drop-in is garbage
+systemctl reload ssh
+
 # ---------- firewall ----------
 ufw default deny incoming
 ufw allow 22/tcp
@@ -51,6 +63,10 @@ install -m 440 "$V/sudoers.deploy" /etc/sudoers.d/deploy
 visudo -c -f /etc/sudoers.d/deploy   # fail loud if the file is garbage
 
 # ---------- per-app systemd + caddy files ----------
+# Each app's systemd unit(s) and Caddy site config get installed here.
+# The app's binary (or shell script) + secrets are shipped later by
+# `mise run deploy:<app>`. alert-on-failure follows the same shape:
+# @.service template here, script + env via deploy.
 mkdir -p /etc/caddy/sites
 install -m 644 "$V/sync/sync.service" /etc/systemd/system/sync.service
 install -m 644 "$V/sync/sync.caddy"   /etc/caddy/sites/sync.caddy
@@ -60,19 +76,10 @@ install -m 644 "$V/auth/auth-sweep.timer"   /etc/systemd/system/auth-sweep.timer
 install -m 644 "$V/auth/auth.caddy"         /etc/caddy/sites/auth.caddy
 install -m 644 "$V/site/site.caddy"   /etc/caddy/sites/site.caddy
 install -m 644 "$V/golf/golf.caddy"   /etc/caddy/sites/golf.caddy
-
-# ---------- alert-on-failure (oneshot) ----------
-install -m 644 "$V/alert-on-failure@.service" /etc/systemd/system/alert-on-failure@.service
-install -m 755 "$V/alert-on-failure.sh"       /usr/local/bin/alert-on-failure.sh
-mkdir -p /etc/alert-on-failure
-chmod 700 /etc/alert-on-failure
-sops -d --input-type dotenv --output-type dotenv \
-  "$V/alert-on-failure.prod.enc.env" \
-  > /etc/alert-on-failure/alert-on-failure.prod.env
-chmod 600 /etc/alert-on-failure/alert-on-failure.prod.env
+install -m 644 "$V/alert-on-failure/alert-on-failure@.service" /etc/systemd/system/alert-on-failure@.service
 
 # ---------- per-app dirs owned by deploy ----------
-for app in sync auth site golf; do
+for app in sync auth site golf alert-on-failure; do
   mkdir -p "/opt/$app" "/etc/$app"
   chown deploy:deploy "/opt/$app" "/etc/$app"
   chmod 700 "/etc/$app"

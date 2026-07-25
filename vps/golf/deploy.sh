@@ -7,6 +7,13 @@ cd "$(dirname "$0")/../.."
 SHA=$(git rev-parse --short HEAD)
 REL="/opt/golf/releases/$SHA"
 
+# Build-time env for vite (VITE_AUTH_URL, VITE_SYNC_URL). Public
+# URLs only — no secrets — so the file is committed plaintext.
+set -a
+# shellcheck source=./golf.build.env
+. "$(dirname "$0")/golf.build.env"
+set +a
+
 (cd apps/golf && pnpm exec vite build)
 
 ssh "deploy@$VPS_HOST" "mkdir -p $REL"

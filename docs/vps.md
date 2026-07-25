@@ -9,6 +9,8 @@ Everything about how apps get onto the box.
   a PWA).
 - **One helper**, `alert-on-failure` — a systemd `@.service` template
   that emails via Resend when any service enters a failed state.
+  Shaped like every other app: unit installed by bootstrap, script
+  and env shipped by `deploy.sh`.
 - **Two users on the box**: `root` (runs `bootstrap.sh`), and `deploy`
   (runs every deploy, with narrow sudo grants for restarting the two
   services and reloading Caddy — nothing else).
@@ -23,9 +25,11 @@ Everything about how apps get onto the box.
   Caddyfile                        → /etc/caddy/Caddyfile
   journald-retention.conf          → /etc/systemd/journald.conf.d/retention.conf
   sudoers.deploy                   → /etc/sudoers.d/deploy  (hand-written)
-  alert-on-failure@.service        → /etc/systemd/system/
-  alert-on-failure.sh              → /usr/local/bin/
-  alert-on-failure.prod.enc.env    decrypted on box to /etc/alert-on-failure/
+  alert-on-failure/
+    alert-on-failure@.service      → /etc/systemd/system/
+    alert-on-failure.sh            shipped to /opt/alert-on-failure/current/
+    alert-on-failure.prod.enc.env  decrypted on box to /etc/alert-on-failure/
+    deploy.sh                      hand-written, run from laptop
   sync/
     sync.service                   → /etc/systemd/system/
     sync.caddy                     → /etc/caddy/sites/
@@ -36,7 +40,10 @@ Everything about how apps get onto the box.
   site/
     site.caddy                     → /etc/caddy/sites/
     deploy.sh
-  golf/                            same shape as site
+  golf/
+    golf.caddy                     → /etc/caddy/sites/
+    golf.build.env                 build-time VITE_* vars (public URLs, plaintext)
+    deploy.sh
 ```
 
 Every file that ships to a fixed destination is **copied** by
@@ -64,9 +71,9 @@ There is no `deploy:all` — you rarely want it. Chain them if you do:
 ## Config convention
 
 Every service with secrets ships a sops-encrypted **dotenv** file in
-the repo. On the box, the deploy (or bootstrap, for `alert-on-failure`)
-decrypts it to `/etc/<app>/<app>.prod.env`, mode 600. The systemd unit
-loads it with `EnvironmentFile=`, and the binary reads its config from
+the repo. On the box, the deploy script decrypts it to
+`/etc/<app>/<app>.prod.env`, mode 600. The systemd unit loads it with
+`EnvironmentFile=`, and the binary reads its config from
 `process.env` / `Sys.getenv` — no config-path argument, no JSON parser,
 no `LoadCredential=` dance.
 
@@ -79,8 +86,7 @@ Two files per app that has secrets:
 
 - `<app>.prod.enc.env` — committed, sops-encrypted (`input_type: dotenv`)
   against both the laptop and VPS age recipients. Decrypted on the box
-  during deploy (or, for `alert-on-failure`, during bootstrap) to
-  `/etc/<app>/<app>.prod.env`.
+  during deploy to `/etc/<app>/<app>.prod.env`.
 - `<app>.dev.env` — gitignored, plaintext, per-machine. Same keys as
   the encrypted file.
 
@@ -88,6 +94,12 @@ Dev and prod hit the same code path — only the env source differs.
 For dev, `mise` auto-loads `vps/<app>/<app>.dev.env` via
 `[env]._.file` in each app's `mise.toml`. Run `mise run dev:<app>`
 from anywhere in the repo, or `cd apps/<app> && mise run dev`.
+
+**Static apps with build-time env** (`golf`): Vite inlines `VITE_*`
+vars into the built bundle. Prod values live in
+`vps/<app>/<app>.build.env` — plaintext, committed, no secrets
+(build-time env for static apps is public URLs by construction).
+The deploy script sources it before `vite build`.
 
 ---
 
@@ -100,8 +112,7 @@ Two age keypairs, both listed as recipients in `.sops.yaml`:
   never leaves the box. Lets the box decrypt during deploy / bootstrap.
 
 **Rotating a prod secret**: `sops edit vps/<app>/<app>.prod.enc.env`,
-commit, redeploy the affected app (or re-run bootstrap for
-`alert-on-failure`).
+commit, redeploy the affected app.
 
 **Rotating a dev secret**: edit the plaintext `.dev.env`. Done.
 
@@ -113,18 +124,26 @@ key. Add it to `.sops.yaml` recipients and re-encrypt every
 
 ## Prerequisites
 
-Two setup steps that live outside this repo:
+One setup step that lives outside this repo:
 
-- **`apps/auth` migrated off Cloudflare Workers** — currently deploys
-  via `wrangler.toml`; needs to become a `bun build --compile` binary
-  before `vps/auth/deploy.sh` will do anything useful. Separate work.
 - **Resend account** — sending domain verified, SPF/DKIM DNS records in
   place, API key issued. The key + `from` and `to` addresses go into
-  `vps/alert-on-failure.prod.enc.env` before the first bootstrap run.
+  `vps/alert-on-failure/alert-on-failure.prod.enc.env` before the
+  first `mise run deploy:alert-on-failure`.
 
 ---
 
 ## Operational concerns
+
+### SSH
+
+Hetzner installs the SSH key attached at server-creation time into
+`/root/.ssh/authorized_keys` before first boot. `bootstrap.sh` clones
+that file into `/home/deploy/.ssh/authorized_keys` so the same laptop
+key works for both `root` (bootstrap, break-glass) and `deploy`
+(every routine deploy). Bootstrap also installs
+`/etc/ssh/sshd_config.d/10-maxhill.conf` disabling password and
+keyboard-interactive auth, and restricting root to key-only.
 
 ### Logs
 
@@ -136,12 +155,15 @@ Two setup steps that live outside this repo:
 
 - **Service-level**: `OnFailure=alert-on-failure@%n.service` on every
   service unit — email via Resend. Same Resend account as product
-  email, no separate webhook service. Note: on a crash-loop, systemd
-  triggers `OnFailure=` once per restart cycle within
-  `StartLimitBurst=` (default 5), so a hard-failing service produces
-  up to 5 emails before systemd gives up on it. Left as-is: the
-  redundancy is cheap and email is not perfectly reliable. Revisit if
-  it becomes noisy in practice.
+  email, no separate webhook service. `alert-on-failure` follows the
+  standard shape: `bootstrap.sh` installs the `@.service` template;
+  `mise run deploy:alert-on-failure` ships the shell script (to
+  `/opt/alert-on-failure/current/`) and the Resend credentials env
+  file. Note: on a crash-loop, systemd triggers `OnFailure=` once per
+  restart cycle within `StartLimitBurst=` (default 5), so a
+  hard-failing service produces up to 5 emails before systemd gives
+  up on it. Left as-is: the redundancy is cheap and email is not
+  perfectly reliable. Revisit if it becomes noisy in practice.
 - **Box-level** (deferred): external dead-man's-switch
   (healthchecks.io) — a down box can't alert on itself. Add when the
   box has been live long enough to warrant it.

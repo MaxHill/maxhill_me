@@ -5,10 +5,10 @@ Applies to any `<app>.prod.enc.env` under `vps/`.
 
 Pick your app. Examples:
 
-- `vps/alert-on-failure.prod.enc.env` — decrypted during **bootstrap**.
+- `vps/alert-on-failure/alert-on-failure.prod.enc.env` — decrypted during **deploy**.
 - `vps/auth/auth.prod.enc.env` — decrypted during **deploy**.
 
-The pattern is identical; only the "apply" step differs (§3).
+The pattern is identical across every `.prod.enc.env` file.
 
 ## 1. Edit in place
 
@@ -31,21 +31,8 @@ git push
 
 ## 3. Apply
 
-Depends on when the file is decrypted on the box:
-
-**Bootstrap-decrypted apps** (e.g. `alert-on-failure`) — files written
-to `/etc/<app>/` by `bootstrap.sh`:
-
-```bash
-mise run bootstrap
-```
-
-Idempotent. Rewrites the plaintext env under `/etc/<app>/`. No restart
-needed if the helper reads its config each time it fires; otherwise
-restart the relevant unit.
-
-**Deploy-decrypted apps** (e.g. `auth`) — files written during the
-app's normal deploy:
+Redeploy the affected app so its `deploy.sh` re-decrypts the env on
+the box:
 
 ```bash
 mise run deploy:<app>
