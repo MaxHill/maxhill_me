@@ -20,11 +20,12 @@ Prerequisites (do these once, not per-server):
 
 ## 1. Order the box
 
-Hetzner CX22, Ubuntu 24.04, x86_64, region Nuremberg (`nbg1`).
+Hetzner CX22, Ubuntu 24.04, x86_64, region Helsinki (`hel1`).
 Attach the laptop's SSH pubkey (`~/.ssh/id_ed25519.pub`) at
 server-creation — Hetzner plants it in `/root/.ssh/authorized_keys`
 before first boot, which `bootstrap.sh` clones into `deploy`'s home
-directory. Copy the box's IPv4 address from the Hetzner console.
+directory. Copy the box's IPv4 **and** IPv6 addresses from the
+Hetzner console (both are assigned automatically).
 
 ## 2. Point mise at the raw IP
 
@@ -73,24 +74,28 @@ so diffs stay small.
 
 ## 5. Point DNS
 
-At the registrar, two A records:
+At the registrar, four records — apex + wildcard, each in both
+families:
 
-| Name           | Type | Value           |
-| -------------- | ---- | --------------- |
-| `maxhill.me`   | A    | `<IPV4>`        |
-| `*.maxhill.me` | A    | `<IPV4>`        |
+| Name           | Type | Value      |
+| -------------- | ---- | ---------- |
+| `maxhill.me`   | A    | `<IPV4>`   |
+| `maxhill.me`   | AAAA | `<IPV6>`   |
+| `*.maxhill.me` | A    | `<IPV4>`   |
+| `*.maxhill.me` | AAAA | `<IPV6>`   |
 
 The wildcard covers every subdomain the box serves (`auth`, `sync`,
 `golf`, plus any future app added via `docs/runbooks/add-app.md`) —
 no per-app DNS work forever after. The apex needs its own record
 because wildcards don't match the bare domain.
 
-Wait for propagation. Both must return the box's IPv4 before
-continuing:
+Wait for propagation. All four must resolve before continuing:
 
 ```bash
-dig +short maxhill.me
-dig +short auth.maxhill.me
+dig +short A    maxhill.me
+dig +short AAAA maxhill.me
+dig +short A    auth.maxhill.me
+dig +short AAAA auth.maxhill.me
 ```
 
 Caddy has been retrying ACME the whole time — as soon as DNS
