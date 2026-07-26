@@ -52,6 +52,22 @@ under `/opt/<app>/`, done by the deploy script).
 
 ---
 
+## Build paths per app
+
+- **`sync`** (OCaml) — cross-built inside a Docker container
+  pinned to `ocaml/opam:ubuntu-24.04-ocaml-5.2`, targeting
+  linux/amd64. `vps/sync/deploy.sh` builds the image on first run
+  and caches opam state in a named volume
+  (`maxhill-sync-opam-cache`). Requires Docker on the machine
+  running `mise run deploy:sync`; on Apple Silicon the build is
+  emulated. Rationale: ADR 0003.
+- **`auth`** (Bun) — `bun build --compile --target=bun-linux-x64`
+  on the host. No container.
+- **`site`** (Astro) and **`golf`** (Vite/PWA) — static builds
+  on the host, rsync'd.
+
+---
+
 ## Commands
 
 | Action                           | Command                             |
@@ -204,9 +220,12 @@ saturation actually happens.
 - **Owned VPS** is cheapest and gives full control; no multi-region
   need to justify a PaaS.
 - **Caddy** removes the TLS toil without adding an orchestration layer.
-- **No Docker** — OCaml binaries are self-contained, Bun compiles to
-  a self-contained binary, and static sites are just files. Docker
-  would add a build/runtime layer without solving a real problem.
+- **No Docker on the box** — OCaml binaries are self-contained, Bun
+  compiles to a self-contained binary, and static sites are just
+  files. The one exception is *build-time*: `apps/sync` is
+  cross-built via a Docker image (`vps/sync/Dockerfile.builder`)
+  because Mac→Linux OCaml cross-compile isn't viable today (see
+  ADR 0003). The VPS itself still runs plain ELFs under systemd.
 - **No manifest, no `kind` enum, no per-kind dispatch code** — four
   apps means four hand-written `deploy.sh` files. Duplication at N=4
   is cheaper than the abstraction it would take to remove it.

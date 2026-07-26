@@ -8,8 +8,27 @@ cd "$(dirname "$0")/../.."
 SHA=$(git rev-parse --short HEAD)
 REL="/opt/sync/releases/$SHA"
 
-# 1. build
-(cd apps/sync && dune build --profile release)
+# 1. build — cross-compile to Linux/amd64 inside a Docker builder.
+# See docs/adr/0003-docker-for-sync-cross-build.md.
+IMG=sync-builder:ocaml-5.2
+docker image inspect "$IMG" >/dev/null 2>&1 || \
+  docker build --platform linux/amd64 -t "$IMG" -f vps/sync/Dockerfile.builder .
+
+# `_build/` is left in the bind-mounted repo on purpose so step 2's
+# `rsync` sees the ELF. Only opam state is cached in a named volume.
+docker run --rm --platform linux/amd64 \
+  -v "$PWD:/src" \
+  -v maxhill-sync-opam-cache:/home/opam/.opam \
+  -w /src/apps/sync \
+  "$IMG" bash -c '
+    set -euo pipefail
+    # Use the image’s pre-installed OCaml 5.2 switch — no per-project
+    # switch needed. Deps only (no --with-test): hegel/ppx_hegel_test
+    # are {with-test} and only used by apps/sync/sim, which the
+    # release target below does not build.
+    opam install . --deps-only -y
+    opam exec -- dune build ./bin/main.exe --profile release
+  '
 
 # 2. ship
 ssh "deploy@$VPS_HOST" "mkdir -p $REL"

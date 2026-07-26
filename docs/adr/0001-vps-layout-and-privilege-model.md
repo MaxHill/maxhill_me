@@ -131,3 +131,15 @@ At N=2 service apps + 1 alert helper, the JSON convention was already
 the minority pattern next to "just read env vars". The migration cost
 (a few hundred lines) is a one-off; the new shape is 3–4 lines lighter
 per service unit + one fewer parser per app forever after.
+
+## Amendment: 2026-07-26 — Docker at build time for `sync`
+
+The "no Docker" rejection above refers to *runtime* on the box. That
+still holds: nothing on the VPS uses Docker, systemd runs plain
+ELFs. Build-time is now a partial exception for `apps/sync` only:
+the OCaml binary is cross-compiled inside a Docker builder on the
+dev machine, because macOS → Linux OCaml cross-compile is not viable
+today (dune's `-x cross` rebuilds every build-time helper as a Linux
+ELF and tries to run it on the host; systemic, needs upstream
+patches across ~6 packages). Full rationale in ADR 0003. Auth (bun) and site/golf
+(static) still build on the host without a container runtime.
