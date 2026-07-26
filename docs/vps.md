@@ -72,7 +72,8 @@ under `/opt/<app>/`, done by the deploy script).
 
 | Action                           | Command                             |
 | -------------------------------- | ----------------------------------- |
-| First-ever provision, or re-run  | `mise run bootstrap`                |
+| Set up a new box (first-ever)    | `docs/runbooks/setup-a-new-server.md` |
+| Re-provision an existing box     | `mise run bootstrap`                |
 | Deploy one app                   | `mise run deploy:<app>`             |
 | Rollback (by hand)               | `ssh` + re-point symlink            |
 | Add an app                       | `docs/runbooks/add-app.md`          |
