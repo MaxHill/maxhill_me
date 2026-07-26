@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Deploy golf (PWA static) to the VPS.
 set -euo pipefail
-cd "$(dirname "$0")/../.."
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/../.."
 : "${VPS_HOST:?VPS_HOST not set (run via mise run deploy:golf)}"
 
 SHA=$(git rev-parse --short HEAD)
@@ -11,7 +12,7 @@ REL="/opt/golf/releases/$SHA"
 # URLs only — no secrets — so the file is committed plaintext.
 set -a
 # shellcheck source=./golf.build.env
-. "$(dirname "$0")/golf.build.env"
+. "$SCRIPT_DIR/golf.build.env"
 set +a
 
 (cd apps/golf && pnpm exec vite build)
