@@ -20,10 +20,11 @@ Prerequisites (do these once, not per-server):
 
 ## 1. Order the box
 
-Hetzner CX22, Ubuntu 24.04, x86_64. Any region. Attach the laptop's
-SSH pubkey (`~/.ssh/id_ed25519.pub`) at server-creation — Hetzner
-plants it in `/root/.ssh/authorized_keys` before first boot, which
-`bootstrap.sh` clones into `deploy`'s home directory. Note the IPv4.
+Hetzner CX22, Ubuntu 24.04, x86_64, region Nuremberg (`nbg1`).
+Attach the laptop's SSH pubkey (`~/.ssh/id_ed25519.pub`) at
+server-creation — Hetzner plants it in `/root/.ssh/authorized_keys`
+before first boot, which `bootstrap.sh` clones into `deploy`'s home
+directory. Copy the box's IPv4 address from the Hetzner console.
 
 ## 2. Point mise at the raw IP
 
@@ -72,7 +73,7 @@ so diffs stay small.
 
 ## 5. Point DNS
 
-At the registrar, two A records (plus AAAA if you want IPv6):
+At the registrar, two A records:
 
 | Name           | Type | Value           |
 | -------------- | ---- | --------------- |
@@ -84,11 +85,17 @@ The wildcard covers every subdomain the box serves (`auth`, `sync`,
 no per-app DNS work forever after. The apex needs its own record
 because wildcards don't match the bare domain.
 
-Wait for propagation (`dig +short maxhill.me`, `dig +short
-auth.maxhill.me` should both return the IP). Usually seconds to
-minutes on a fresh domain. Caddy has been retrying ACME the whole
-time — as soon as DNS resolves, it obtains real Let's Encrypt certs
-in the background. Watch it succeed:
+Wait for propagation. Both must return the box's IPv4 before
+continuing:
+
+```bash
+dig +short maxhill.me
+dig +short auth.maxhill.me
+```
+
+Caddy has been retrying ACME the whole time — as soon as DNS
+resolves, it obtains Let's Encrypt certs in the background. Watch
+it succeed:
 
 ```bash
 ssh root@$VPS_HOST 'journalctl -u caddy -n 30 --no-pager'
