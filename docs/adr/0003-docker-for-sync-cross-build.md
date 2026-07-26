@@ -87,4 +87,21 @@ in the deploy path *after* rsync, which is the wrong place for them.
 
 ## Amendments
 
-_None yet._
+### Docker 29 / containerd image store + `USER opam` (2026-07)
+
+On a machine running Docker 29+ with the containerd image store as
+default (Docker Desktop, or fresh Ubuntu 26.04 installs), the
+builder image failed to build with:
+
+> unable to find user opam: no matching entries in passwd file
+
+Root cause: the `ocaml/opam` base image sets `USER opam` by name.
+The containerd image store regressed username → UID resolution at
+`RUN` time, so `sudo` (and the shell itself) can't identify the
+current user. Same class of bug as Docker 29's
+`COPY --link --chown=<name>` failing with `invalid user index: -1`
+(see [Tunbury, 2026-06-06](https://www.tunbury.org/2026/06/06/docker-29/)).
+
+Fix in `Dockerfile.builder`: use numeric UIDs instead of names —
+`USER 0` for the apt step, `USER 1000` after — and drop `sudo`.
+Avoid `USER opam` / `USER root` by name in this file.

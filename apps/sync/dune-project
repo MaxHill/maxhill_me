@@ -16,9 +16,9 @@
   dune
   eio_main
   piaf
-  caqti
-  caqti-driver-sqlite3
-  caqti-eio
+  (caqti (< 3.0))
+  (caqti-driver-sqlite3 (< 3.0))
+  (caqti-eio (< 3.0))
   yojson
   ppx_yojson_conv
   jose
