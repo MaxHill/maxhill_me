@@ -50,15 +50,14 @@ apt packages, sops install, `deploy` user, sshd hardening, systemd
 units, Caddy site configs, `/opt/<app>/` + `/etc/<app>/` skeletons.
 Idempotent — re-run any time.
 
-Then extract the box's age pubkey (bootstrap generates one at
-`/etc/sops/key.txt`) and add it to the sops recipients:
+The last line of the output is the box's freshly-generated age
+pubkey. Copy it.
+
+## 4. Add the VPS as a sops recipient
 
 ```bash
-NEW_KEY=$(ssh root@$VPS_HOST 'age-keygen -y /etc/sops/key.txt')
-echo "$NEW_KEY"
-
-# Append to the age: list in .sops.yaml (comma-separated after the
-# existing laptop key).
+# Append the box's pubkey to the age: list in .sops.yaml
+# (comma-separated after the existing laptop key).
 $EDITOR .sops.yaml
 
 # Re-wrap every encrypted file against the new recipient set.
@@ -68,13 +67,10 @@ git add .sops.yaml vps/**/*.prod.enc.env
 git commit -m "sops: add new VPS as recipient"
 ```
 
-Re-run bootstrap to prove idempotency and pick up the new keys:
+Only the wrapped data keys change; the encrypted payload doesn't,
+so diffs stay small.
 
-```bash
-mise run bootstrap
-```
-
-## 4. Point DNS
+## 5. Point DNS
 
 At the registrar, two A records (plus AAAA if you want IPv6):
 
@@ -100,7 +96,7 @@ ssh root@$VPS_HOST 'journalctl -u caddy -n 30 --no-pager'
 
 Look for `certificate obtained successfully` lines per hostname.
 
-## 5. Flip mise back to the hostname
+## 6. Flip mise back to the hostname
 
 ```bash
 rm mise.local.toml
@@ -109,7 +105,7 @@ rm mise.local.toml
 `VPS_HOST=maxhill.me` (from the root `mise.toml`) now resolves to the
 box. From here on out every deploy uses the friendly name.
 
-## 6. First deploys
+## 7. First deploys
 
 Run in this order — cheapest and lowest-risk first, so a broken TLS
 setup surfaces before you're deep into an OCaml container build:
@@ -139,7 +135,7 @@ ssh deploy@$VPS_HOST 'file /opt/sync/current/sync-exe'
 ssh deploy@$VPS_HOST systemctl is-active sync.service
 ```
 
-## 7. Verify
+## 8. Verify
 
 Belt-and-braces sweep:
 
@@ -161,18 +157,17 @@ ssh deploy@$VPS_HOST 'sudo /bin/systemctl restart caddy'          # → succeeds
 ssh deploy@$VPS_HOST 'sudo apt-get update'                        # → refused
 ```
 
-## 8. Commit the new-recipient state
+## 9. Confirm the sops-recipient commit is pushed
 
-If not already done in step 3:
+Step 4 committed `.sops.yaml` + re-wrapped enc files. Push it now if
+you haven't:
 
 ```bash
-git status                          # expect .sops.yaml + vps/**/*.prod.enc.env
-git commit -m "sops: add <box-name-or-date> as recipient"
 git push
 ```
 
-Anyone else cloning the repo now inherits an env where every enc file
-can be decrypted by the VPS during deploy.
+Anyone else cloning the repo now inherits an env where every enc
+file can be decrypted by the VPS during deploy.
 
 ---
 
@@ -181,10 +176,10 @@ can be decrypted by the VPS during deploy.
 - **`ssh root@$VPS_HOST` refuses** — SSH key wasn't attached at
   server-creation. Fix via Hetzner console (rescue mode or reset root
   pw), rerun step 1.
-- **Bootstrap fails on the sops-decrypt step** — either the VPS age
-  key isn't a recipient in `.sops.yaml` (step 3 missed), or
-  `SOPS_AGE_KEY_FILE=/etc/sops/key.txt` isn't set inside
-  bootstrap.sh's env. Fix, `mise run bootstrap` again.
+- **Bootstrap fails on the sops-decrypt step** — the VPS age key
+  isn't a recipient in `.sops.yaml` (step 4 missed). Wait — bootstrap
+  itself doesn't decrypt anything, so this failure comes from a
+  deploy. Fix: `sops updatekeys` + redeploy the affected app.
 - **`caddy` unit is `activating (auto-restart)` for a long time** —
   ACME can't reach the box on port 80/443. Check DNS resolves
   (`dig +short <host>`), then `ssh root@$VPS_HOST 'ufw status'` —
