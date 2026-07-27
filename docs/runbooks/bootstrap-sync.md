@@ -1,8 +1,8 @@
 # Runbook — Bootstrap the sync opam switch
 
-One-time setup for `apps/sync` — creates a project-local opam switch
-and pins the internal `hegel` toolchain. Run this after cloning
-before the first `mise run run`, or when the switch gets nuked.
+One-time setup for `apps/sync`. Creates a project-local opam switch and
+pins the internal `hegel` toolchain. Run this after you clone the repo and
+before the first `mise run run`. Run it again if the switch is deleted.
 
 ## Prereqs
 
@@ -14,7 +14,7 @@ before the first `mise run run`, or when the switch gets nuked.
 From `apps/sync/`:
 
 ```sh
-# 1. Create the local switch if it doesn't exist.
+# 1. Create the local switch if it does not exist.
 opam switch show --switch=. >/dev/null 2>&1 \
   || opam switch create . ocaml-base-compiler.5.2.0 --yes
 
@@ -28,7 +28,7 @@ opam exec --switch=. -- dune build --root "$HEGEL_SRC" \
 opam pin add --switch=. ppx_hegel_compat "$HEGEL_SRC" -y
 opam pin add --switch=. ppx_hegel_test "$HEGEL_SRC" -y
 
-# 4. Install project deps + dev tooling.
+# 4. Install project deps and dev tooling.
 opam install --switch=. . --deps-only -y
 opam install --switch=. ocaml-lsp-server ocamlformat merlin -y
 ```
@@ -40,7 +40,7 @@ mise run run     # boots the sync service against sync.dev.env
 mise run test    # dune runtest
 ```
 
-## Nuke and retry
+## Delete and retry
 
 ```sh
 rm -rf _opam _build

@@ -1,10 +1,10 @@
 # Runbook — Remove an app
 
-No `decommission.sh`. You'll remove an app maybe twice in your life —
-type the commands.
+There is no `decommission.sh`. You will remove an app maybe twice in your
+life. Type the commands.
 
-SQLite state at `/var/lib/<app>/` is preserved unless you explicitly
-delete it. Everything else is regeneratable from git.
+SQLite state at `/var/lib/<app>/` stays in place unless you delete it. Git
+regenerates everything else.
 
 ---
 
@@ -29,8 +29,8 @@ systemctl daemon-reload
 systemctl reload caddy
 ```
 
-**SQLite state.** `/var/lib/<name>/` (systemd's `StateDirectory=`)
-is left in place. Delete it only if you're sure:
+**SQLite state.** `/var/lib/<name>/` (the systemd `StateDirectory=`) stays
+in place. Delete it only if you are sure:
 
 ```bash
 rm -rf /var/lib/<name>    # irrecoverable
@@ -39,13 +39,12 @@ rm -rf /var/lib/<name>    # irrecoverable
 ## 2. In the repo
 
 - Delete `vps/<name>/`.
-- Remove the app's `install` lines from `vps/bootstrap.sh`.
+- Remove the app `install` lines from `vps/bootstrap.sh`.
 - Remove `<name>` from the `for app in sync auth site golf; do` loop in
   `bootstrap.sh`.
-- Remove the app's line from `vps/sudoers.deploy` (service apps only).
-- Remove the app's task from `mise.toml`.
-- Optionally delete `apps/<name>/` if the product code is also going
-  away.
+- Remove the app line from `vps/sudoers.deploy` (service apps only).
+- Remove the app task from `mise.toml`.
+- Delete `apps/<name>/` if the product code is also going away.
 
 ## 3. DNS
 
@@ -54,12 +53,12 @@ Remove the `<name>.maxhill.me` record.
 ## 4. Confirm
 
 ```bash
-mise run bootstrap    # regenerates sudoers cleanly; nothing should reference <name>
+mise run bootstrap    # regenerates sudoers cleanly. Nothing should reference <name>.
 ```
 
 ## 5. Sanity check
 
 ```bash
 ssh root@$VPS_HOST "ls /etc/systemd/system/ /etc/caddy/sites/ /opt/ /etc/ | grep <name>"
-# → no output means clean
+# no output means clean
 ```
