@@ -17,8 +17,9 @@ VPS_HOST = "maxhill.me"
 [tasks.bootstrap]
 description = "Provision (or re-provision) the VPS from /vps/. Runs as root."
 run = """
-rsync -a --delete vps/ root@$VPS_HOST:/opt/bootstrap/vps/
-ssh root@$VPS_HOST 'bash /opt/bootstrap/vps/bootstrap.sh'
+ssh ubuntu@$VPS_HOST 'sudo mkdir -p /opt/bootstrap/vps'
+rsync -a --delete vps/ ubuntu@$VPS_HOST:/tmp/bootstrap-vps/
+ssh ubuntu@$VPS_HOST 'sudo rsync -a --delete /tmp/bootstrap-vps/ /opt/bootstrap/vps/ && sudo bash /opt/bootstrap/vps/bootstrap.sh'
 """
 
 [tasks.generate]

@@ -16,6 +16,7 @@ Prerequisites (do these once, not per-server):
   `vps/alert-on-failure/alert-on-failure.prod.enc.env`.
 - Docker Desktop is installed and running on the laptop. `deploy:sync`
   needs it. See ADR 0003.
+- SSH access as `ubuntu` user is configured (Hetzner default).
 
 ---
 
@@ -23,9 +24,9 @@ Prerequisites (do these once, not per-server):
 
 Order a Hetzner CX22. Ubuntu 24.04. x86_64. Region Helsinki (`hel1`).
 Attach the laptop SSH pubkey (`~/.ssh/id_ed25519.pub`) at server-creation.
-Hetzner plants the key in `/root/.ssh/authorized_keys` before first boot.
-`bootstrap.sh` clones the key into the `deploy` user home directory. Copy
-the box IPv4 **and** IPv6 addresses from the Hetzner console. Hetzner
+Hetzner plants the key in `/home/ubuntu/.ssh/authorized_keys` before first
+boot. `bootstrap.sh` clones the key into the `deploy` user home directory.
+Copy the box IPv4 **and** IPv6 addresses from the Hetzner console. Hetzner
 assigns both automatically.
 
 ## 2. Point mise at the raw IP
@@ -40,7 +41,7 @@ VPS_HOST = "<IPV4>"
 EOF
 ```
 
-Sanity check: `ssh root@$VPS_HOST 'uname -a'` should print the box kernel.
+Sanity check: `ssh ubuntu@$VPS_HOST 'uname -a'` should print the box kernel.
 
 ## 3. Bootstrap
 
@@ -104,7 +105,7 @@ Caddy has retried ACME the whole time. As soon as DNS resolves, Caddy
 obtains Let's Encrypt certs in the background. Watch it succeed:
 
 ```bash
-ssh root@$VPS_HOST 'journalctl -u caddy -n 30 --no-pager'
+ssh ubuntu@$VPS_HOST 'journalctl -u caddy -n 30 --no-pager'
 ```
 
 Look for `certificate obtained successfully` lines per hostname.
@@ -128,7 +129,7 @@ mise run deploy:site               # static, fastest smoke test
 curl -I https://maxhill.me         # expect 200 and an LE cert
 
 mise run deploy:alert-on-failure   # install the failure hook and creds
-ssh root@$VPS_HOST \
+ssh ubuntu@$VPS_HOST \
   'systemd-run --unit=alert-smoketest-$$ /bin/false'
 # expect an email within a minute
 
@@ -185,7 +186,7 @@ decrypt every enc file during deploy.
 
 ## If it goes wrong
 
-- **`ssh root@$VPS_HOST` refuses** — the SSH key was not attached at
+- **`ssh ubuntu@$VPS_HOST` refuses** — the SSH key was not attached at
   server-creation. Fix it via the Hetzner console (rescue mode or reset the
   root password). Rerun step 1.
 - **Bootstrap fails on the sops-decrypt step** — the VPS age key is not a
@@ -194,7 +195,7 @@ decrypt every enc file during deploy.
   `sops updatekeys`. Redeploy the affected app.
 - **The `caddy` unit is `activating (auto-restart)` for a long time** —
   ACME cannot reach the box on port 80 or 443. Check that DNS resolves
-  (`dig +short <host>`). Then run `ssh root@$VPS_HOST 'ufw status'`.
+  (`dig +short <host>`). Then run `ssh ubuntu@$VPS_HOST 'ufw status'`.
   Bootstrap opens 80 and 443. Check anyway. The journals under
   `journalctl -u caddy` show the ACME error verbatim.
 - **`deploy:sync` fails inside the container** — Docker is not running, or

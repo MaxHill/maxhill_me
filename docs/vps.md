@@ -10,9 +10,9 @@ How apps get onto the box.
   emails via Resend when any service enters a failed state. It has the same
   shape as every other app: the unit is installed by bootstrap. The script
   and env are shipped by `deploy.sh`.
-- **Two users on the box**: `root` (runs `bootstrap.sh`), and `deploy`
-  (runs every deploy, with narrow sudo grants to restart the two services
-  and reload Caddy — nothing else).
+- **Three users on the box**: `ubuntu` (SSH access, runs `bootstrap.sh`),
+  `root` (bootstrap), and `deploy` (runs every deploy, with narrow sudo
+  grants to restart the two services and reload Caddy — nothing else).
 
 ---
 
@@ -153,9 +153,9 @@ One setup step lives outside this repo:
 ### SSH
 
 Hetzner installs the SSH key attached at server-creation time into
-`/root/.ssh/authorized_keys` before first boot. `bootstrap.sh` clones that
-file into `/home/deploy/.ssh/authorized_keys`. The same laptop key works
-for both `root` (bootstrap, break-glass) and `deploy` (every routine
+`/home/ubuntu/.ssh/authorized_keys` before first boot. `bootstrap.sh` clones
+that file into `/home/deploy/.ssh/authorized_keys`. The same laptop key works
+for `ubuntu` (SSH access, bootstrap, break-glass) and `deploy` (every routine
 deploy). Bootstrap also installs `/etc/ssh/sshd_config.d/10-maxhill.conf`.
 That disables password auth and keyboard-interactive auth, and restricts
 root to key-only.

@@ -44,7 +44,7 @@ The check is app-specific. Examples:
 
 - `alert-on-failure` — trigger a failure. Confirm the email lands:
   ```bash
-  ssh root@$VPS_HOST 'systemd-run --unit=alert-smoketest-$$ /bin/false'
+  ssh ubuntu@$VPS_HOST 'sudo systemd-run --unit=alert-smoketest-$$ /bin/false'
   ```
   The unit exits non-zero. `OnFailure=` fires. Email arrives.
 - Any HTTP app — hit its health endpoint. Then tail `journalctl -u <app>`

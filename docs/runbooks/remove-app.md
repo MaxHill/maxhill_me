@@ -8,32 +8,32 @@ regenerates everything else.
 
 ---
 
-## 1. On the box (as root)
+## 1. On the box (as ubuntu)
 
 ```bash
-ssh root@$VPS_HOST
+ssh ubuntu@$VPS_HOST
 ```
 
 ```bash
 # service apps only
-systemctl stop <name>.service
-systemctl disable <name>.service
-rm -f /etc/systemd/system/<name>.service
+sudo systemctl stop <name>.service
+sudo systemctl disable <name>.service
+sudo rm -f /etc/systemd/system/<name>.service
 
 # all apps
-rm -f /etc/caddy/sites/<name>.caddy
-rm -rf /opt/<name>
-rm -rf /etc/<name>
+sudo rm -f /etc/caddy/sites/<name>.caddy
+sudo rm -rf /opt/<name>
+sudo rm -rf /etc/<name>
 
-systemctl daemon-reload
-systemctl reload caddy
+sudo systemctl daemon-reload
+sudo systemctl reload caddy
 ```
 
 **SQLite state.** `/var/lib/<name>/` (the systemd `StateDirectory=`) stays
 in place. Delete it only if you are sure:
 
 ```bash
-rm -rf /var/lib/<name>    # irrecoverable
+sudo rm -rf /var/lib/<name>    # irrecoverable
 ```
 
 ## 2. In the repo
@@ -59,6 +59,6 @@ mise run bootstrap    # regenerates sudoers cleanly. Nothing should reference <n
 ## 5. Sanity check
 
 ```bash
-ssh root@$VPS_HOST "ls /etc/systemd/system/ /etc/caddy/sites/ /opt/ /etc/ | grep <name>"
+ssh ubuntu@$VPS_HOST "sudo ls /etc/systemd/system/ /etc/caddy/sites/ /opt/ /etc/ | grep <name>"
 # no output means clean
 ```

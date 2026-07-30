@@ -10,5 +10,7 @@
 creation_rules:
   - path_regex: \.enc\.env$
     input_type: dotenv
-    age: >-
-      age1fzjqfezgzhjlsejldsujzgtaj9qx23kh46un6jmupwmuwdsczq4qgvp54j
+    age:
+      - age1fzjqfezgzhjlsejldsujzgtaj9qx23kh46un6jmupwmuwdsczq4qgvp54j
+      - age1qsxv8kur5ta38thpkr8z7pfv566pfkd2g29xqn0makdgrtcsu3tq5xekun
+

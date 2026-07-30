@@ -27,11 +27,11 @@ id deploy &>/dev/null || useradd -m -s /bin/bash deploy
 getent group sops-readers >/dev/null || groupadd -r sops-readers
 usermod -aG sops-readers deploy
 
-# Clone root's authorized_keys into deploy's ~/.ssh so the laptop key
+# Clone ubuntu's authorized_keys into deploy's ~/.ssh so the laptop key
 # attached at Hetzner server-creation works for `ssh deploy@$VPS_HOST`
 # too. Idempotent: install(1) overwrites with exact perms every run.
 install -d -o deploy -g deploy -m 700 /home/deploy/.ssh
-install -o deploy -g deploy -m 600 /root/.ssh/authorized_keys /home/deploy/.ssh/authorized_keys
+install -o deploy -g deploy -m 600 /home/ubuntu/.ssh/authorized_keys /home/deploy/.ssh/authorized_keys
 
 # ---------- sshd hardening ----------
 # Belt-and-braces on top of the Hetzner Ubuntu image defaults.
