@@ -1,8 +1,11 @@
 golf.maxhill.me {
     root * /opt/golf/current
+    try_files {path} /index.html
     file_server
     encode zstd gzip
-    # PWA: never cache the service worker or the manifest
-    @nocache path /sw.js /manifest.webmanifest
-    header @nocache Cache-Control "no-cache"
+    # PWA: never cache the service worker or the manifest.
+    # `sw.js` is kept for backward compatibility; current builds emit
+    # `service-worker.js`.
+    @nocache path /sw.js /service-worker.js /manifest.webmanifest
+    header @nocache Cache-Control "no-store, no-cache, must-revalidate"
 }

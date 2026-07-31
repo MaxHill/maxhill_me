@@ -11,6 +11,7 @@ const CLIENT_ID = "golf-app";
 const REDIRECT_URI = `${window.location.origin}/callback`;
 
 const DB_NAME = "golf-auth";
+const DB_VERSION = 2;
 const STORE_NAME = "tokens";
 
 type AuthChangeCallback = (authenticated: boolean) => void;
@@ -44,9 +45,11 @@ export class AuthClient {
 
   private openDb(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, 1);
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
       req.onupgradeneeded = () => {
-        req.result.createObjectStore(STORE_NAME);
+        if (!req.result.objectStoreNames.contains(STORE_NAME)) {
+          req.result.createObjectStore(STORE_NAME);
+        }
       };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
