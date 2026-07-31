@@ -33,11 +33,6 @@ export function SqliteStorage(db: Database): StorageAdapter {
   )
   const removeStmt = db.query<never, [string]>("DELETE FROM kv WHERE key = ?")
   const removeExpiredOne = db.query<never, [string]>("DELETE FROM kv WHERE key = ?")
-  const scanStmt = db.query<
-    { key: string; value: string; expiry: number | null },
-    [string, string]
-  >("SELECT key, value, expiry FROM kv WHERE key >= ? AND key < ? ORDER BY key")
-
   return {
     async get(key: string[]) {
       const k = joinKey(key)
@@ -62,7 +57,13 @@ export function SqliteStorage(db: Database): StorageAdapter {
       const start = joinKey(prefix)
       const end = prefixUpperBound(start)
       const now = Date.now()
-      for (const row of scanStmt.iterate(start, end)) {
+      const rows = db
+        .query<
+          { key: string; value: string; expiry: number | null },
+          [string, string]
+        >("SELECT key, value, expiry FROM kv WHERE key >= ? AND key < ? ORDER BY key")
+        .all(start, end)
+      for (const row of rows) {
         if (row.expiry !== null && now >= row.expiry) continue
         yield [splitKey(row.key), JSON.parse(row.value)] as [string[], unknown]
       }
