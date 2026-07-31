@@ -37,7 +37,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
     syncRemote: string,
     sync: Sync,
     storageRepository: Lifecycle,
-    generateId: () => string,
+    clientId: string,
   ) {
     assertValidDbName(dbName);
     this.tables = tables;
@@ -51,8 +51,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
     this.operationLog = new OperationLog();
     this.syncManager = sync;
     this.logicalClock = new PersistedLogicalClock(this.clientState);
-    // TODO: don't pass a generator just pass the id
-    this.clientId = generateId();
+    this.clientId = clientId;
   }
 
   async open(): Promise<CRDTDatabase<TSchema>> {
@@ -62,7 +61,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
   }
 
   private async loadClientState(): Promise<void> {
-    const tx = this.lifecycle.transaction(["clientState"], "readwrite");
+    const tx = this.lifecycle.transaction([CLIENT_STATE_STORE], "readwrite");
     const state = await this.clientState.getClientState(tx);
     if (state.clientId) {
       this.clientId = state.clientId;

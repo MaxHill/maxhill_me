@@ -29,10 +29,10 @@ describe("CRDTDatabase sync transaction liveness", () => {
     const lifecycle = new Lifecycle([]);
     const sync = new Sync(new ClientState(), new RowStore([]), new OperationLog());
 
-    const db = await newDatabase(dbName)
+    const db = await newDatabase(dbName, () => "")
       .withCustomStorageRepository(lifecycle)
       .withCustomSync(sync)
-      .withCustomIdGenerator(() => "client-1")
+      .withClientId("client-1")
       .addTable("users", {})
       .build()
       .open();

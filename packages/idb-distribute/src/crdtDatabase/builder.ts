@@ -11,6 +11,7 @@ import { assertValidDbName } from "../dbName.ts";
 
 export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
   dbName: string;
+  clientId: string;
   syncRemote?: string;
   private tables: Map<string, Map<string, string[]>> = new Map();
 
@@ -18,13 +19,13 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
   lifecycle?: Lifecycle;
   logicalClock?: PersistedLogicalClock;
   syncManager?: Sync;
-  generateId?: () => string;
   private headersProvider?: SyncHeadersProvider;
   private onUnauthorized?: OnUnauthorizedHandler;
 
-  constructor(dbName: string) {
+  constructor(dbName: string, clientIdGenerator?: () => string) {
     assertValidDbName(dbName);
     this.dbName = dbName;
+    this.clientId = clientIdGenerator ? clientIdGenerator() : crypto.randomUUID();
   }
 
   withSyncRemote(remoteUrl: string): CRDTDatabaseBuilder<TSchema> {
@@ -57,8 +58,8 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
     return this;
   }
 
-  withCustomIdGenerator(generator: () => string): CRDTDatabaseBuilder<TSchema> {
-    this.generateId = generator;
+  withClientId(clientId: string): CRDTDatabaseBuilder<TSchema> {
+    this.clientId = clientId;
     return this;
   }
 
@@ -85,9 +86,9 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
     const clientState = new ClientState();
     const rowStore = new RowStore(lifecycle.indexes);
     const operationLog = new OperationLog();
-    const syncManager = this.syncManager || new Sync(clientState, rowStore, operationLog, this.headersProvider, this.onUnauthorized);
+    const syncManager = this.syncManager ||
+      new Sync(clientState, rowStore, operationLog, this.headersProvider, this.onUnauthorized);
     const syncRemote = this.syncRemote || "";
-    const generateId = this.generateId || crypto.randomUUID.bind(crypto);
 
     return new CRDTDatabase<TSchema>(
       this.dbName,
@@ -95,7 +96,7 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
       syncRemote,
       syncManager,
       lifecycle,
-      generateId,
+      this.clientId,
     );
   }
 }

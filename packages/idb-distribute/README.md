@@ -7,7 +7,7 @@ k CRDT Database — IndexedDB Storage Layout
 **In normal use you do not need to think about this.** The library mints a
 fresh `clientId` via `crypto.randomUUID` the first time a database is
 opened and persists it in IndexedDB. This section only applies if you
-override identity generation — e.g. by passing `withCustomIdGenerator(...)`
+override client identity — e.g. by passing `withClientId(...)`
 on the builder or by constructing the underlying classes manually (as the
 simulator and tests do).
 
@@ -28,7 +28,7 @@ Implications callers must respect:
 - Do not "reset local state" by wiping IndexedDB and keeping the old
   `clientId`. Treat client identity as tied to the local persistent store;
   wiping state should mint a new `clientId`.
-- `withCustomIdGenerator(...)` exists for tests only. In production, let
+- `withClientId(...)` exists for tests/simulators only. In production, let
   the default (`crypto.randomUUID`) run so identity is unique by
   construction.
 

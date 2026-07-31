@@ -34,7 +34,7 @@ const deterministicClientId = `sim-client-${clientSuffix}`;
 const db = await newDatabase(dbName)
   .withCustomStorageRepository(testLifecycle)
   .withCustomSync(syncManager)
-  .withCustomIdGenerator(() => deterministicClientId)
+  .withClientId(deterministicClientId)
   .addTable("posts", {})
   .addTable("users", { user_age_index: ["age"] })
   .build()
@@ -109,7 +109,9 @@ async function handleLine(line) {
       return;
     }
     case "Delete_row_msg": {
-      const table = typeof data.table === "string" ? data.table.toLowerCase() : String(data.table).toLowerCase();
+      const table = typeof data.table === "string"
+        ? data.table.toLowerCase()
+        : String(data.table).toLowerCase();
       assert(typeof data.key === "string", "Delete_row data.key is not a string: " + data.key);
       if (table !== "users" && table !== "posts") {
         throw new Error(`Delete_row_msg unknown table: ${data.table}`);
@@ -120,7 +122,10 @@ async function handleLine(line) {
     }
     case "Update_user_row_msg": {
       assert(typeof data.key === "string", "Update_user_row data.key is not a string: " + data.key);
-      assert(typeof data.name === "string", "Update_user_row data.name is not a string: " + data.name);
+      assert(
+        typeof data.name === "string",
+        "Update_user_row data.name is not a string: " + data.name,
+      );
       assert(
         typeof data.age === "number" && Number.isInteger(data.age),
         "Update_user_row data.age is not an integer: " + data.age,
@@ -131,20 +136,32 @@ async function handleLine(line) {
     }
     case "Update_post_row_msg": {
       assert(typeof data.key === "string", "Update_post_row data.key is not a string: " + data.key);
-      assert(typeof data.title === "string", "Update_post_row data.title is not a string: " + data.title);
+      assert(
+        typeof data.title === "string",
+        "Update_post_row data.title is not a string: " + data.title,
+      );
       await db.table("posts").setRow(data.key, { key: data.key, title: data.title });
       send("Ack");
       return;
     }
     case "Update_user_name_field_msg": {
-      assert(typeof data.key === "string", "Update_user_name_field data.key is not a string: " + data.key);
-      assert(typeof data.name === "string", "Update_user_name_field data.name is not a string: " + data.name);
+      assert(
+        typeof data.key === "string",
+        "Update_user_name_field data.key is not a string: " + data.key,
+      );
+      assert(
+        typeof data.name === "string",
+        "Update_user_name_field data.name is not a string: " + data.name,
+      );
       await db.table("users").setField(data.key, "name", data.name);
       send("Ack");
       return;
     }
     case "Update_user_age_field_msg": {
-      assert(typeof data.key === "string", "Update_user_age_field data.key is not a string: " + data.key);
+      assert(
+        typeof data.key === "string",
+        "Update_user_age_field data.key is not a string: " + data.key,
+      );
       assert(
         typeof data.age === "number" && Number.isInteger(data.age),
         "Update_user_age_field data.age is not an integer: " + data.age,
@@ -154,7 +171,10 @@ async function handleLine(line) {
       return;
     }
     case "Update_post_title_field_msg": {
-      assert(typeof data.key === "string", "Update_post_title_field data.key is not a string: " + data.key);
+      assert(
+        typeof data.key === "string",
+        "Update_post_title_field data.key is not a string: " + data.key,
+      );
       assert(
         typeof data.title === "string",
         "Update_post_title_field data.title is not a string: " + data.title,
