@@ -124,6 +124,16 @@ export class AuthClient {
    */
   async handleCallback(): Promise<void> {
     const params = new URLSearchParams(window.location.search);
+    const authError = params.get("error");
+    if (authError) {
+      const description = params.get("error_description");
+      throw new Error(
+        description
+          ? `Authorization failed: ${authError} (${description})`
+          : `Authorization failed: ${authError}`,
+      );
+    }
+
     const code = params.get("code");
     const codeVerifier = sessionStorage.getItem("auth_code_verifier");
 
@@ -146,7 +156,8 @@ export class AuthClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Token exchange failed: ${response.status}`);
+      const body = await response.text().catch(() => "");
+      throw new Error(`Token exchange failed: ${response.status}${body ? ` ${body}` : ""}`);
     }
 
     const data = await response.json();

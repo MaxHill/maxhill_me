@@ -11,7 +11,11 @@ const routes = [
   {
     path: "/callback",
     action: async () => {
-      await authClient.handleCallback();
+      try {
+        await authClient.handleCallback();
+      } catch (err) {
+        console.error("Auth callback failed:", err);
+      }
       window.history.replaceState({}, "", "/");
       resolve("/");
       return html``;

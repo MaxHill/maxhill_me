@@ -33,6 +33,14 @@ sw.addEventListener("activate", (event) => {
 });
 
 sw.addEventListener("fetch", (event) => {
+  const requestUrl = new URL(event.request.url);
+
+  // Only handle same-origin GET requests. Let the browser handle
+  // cross-origin and non-GET requests (e.g. auth token POST).
+  if (event.request.method !== "GET" || requestUrl.origin !== sw.location.origin) {
+    return;
+  }
+
   // Skip service worker for dev endpoints (like SSE live reload)
   if (event.request.url.includes('/dev/')) {
     return;
