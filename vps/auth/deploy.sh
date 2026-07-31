@@ -1,23 +1,27 @@
 #!/usr/bin/env bash
-# Deploy auth to the VPS. Assumes apps/auth has been migrated off
-# Cloudflare Workers to a Bun-compiled binary — see docs/vps.md.
+
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 : "${VPS_HOST:?VPS_HOST not set (run via mise run deploy:auth)}"
+SSH_OPTS='-o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=5 -o ServerAliveCountMax=3'
+RSYNC_SSH="ssh $SSH_OPTS"
 
 SHA=$(git rev-parse --short HEAD)
 REL="/opt/auth/releases/$SHA"
 
 # 1. build (bun --compile, cross-compiled for linux-x64)
+echo "building"
 (cd apps/auth && bun build --compile --target=bun-linux-x64 ./src/index.ts --outfile=./dist/auth-exe)
 
 # 2. ship
-ssh "deploy@$VPS_HOST" "mkdir -p $REL"
-rsync apps/auth/dist/auth-exe     "deploy@$VPS_HOST:$REL/auth-exe"
-rsync vps/auth/auth.prod.enc.env  "deploy@$VPS_HOST:/tmp/auth.prod.enc.env"
+echo "deploying"
+ssh $SSH_OPTS "deploy@$VPS_HOST" "mkdir -p $REL"
+rsync -avP --stats --timeout=30 -e "$RSYNC_SSH" apps/auth/dist/auth-exe    "deploy@$VPS_HOST:$REL/auth-exe"
+rsync -avP --stats --timeout=30 -e "$RSYNC_SSH" vps/auth/auth.prod.enc.env "deploy@$VPS_HOST:/tmp/auth.prod.enc.env"
 
 # 3. release (on box)
-ssh "deploy@$VPS_HOST" bash -s <<EOF
+echo "releasing"
+ssh $SSH_OPTS "deploy@$VPS_HOST" bash -s <<EOF
   set -euo pipefail
   export SOPS_AGE_KEY_FILE=/etc/sops/key.txt
   chmod +x $REL/auth-exe
