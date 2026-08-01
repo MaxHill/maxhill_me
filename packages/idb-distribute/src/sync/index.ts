@@ -1,7 +1,6 @@
 import { applyOperationToRow, CRDTOperation, Dot } from "../crdt.ts";
 import {
   CLIENT_STATE_STORE,
-  Lifecycle,
   OPERATIONS_STORE,
   ROWS_STORE,
 } from "../indexeddb/lifecycle.ts";
