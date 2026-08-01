@@ -28,7 +28,7 @@ describe("AuthClient", () => {
     expect(sessionStorage.getItem("auth_challenge")).to.equal(null);
   });
 
-  it("getCurrentUserID reads userID from verified subject", async () => {
+  it("getUserSubjects returns userID from verified subject", async () => {
     await seedTokens({ access: "a1", refresh: "r1", expiresIn: 3600 });
     const client = new AuthClient({
       refresh: async () => ({ err: false }),
@@ -37,8 +37,8 @@ describe("AuthClient", () => {
       }),
     } as any);
 
-    const userID = await client.getCurrentUserID();
-    expect(userID).to.equal("user-123");
+    const subjects = await client.getUserSubjects();
+    expect(subjects).to.deep.equal({ userID: "user-123" });
   });
 
   it("getToken returns null and emits unauthenticated when refresh fails near expiry", async () => {

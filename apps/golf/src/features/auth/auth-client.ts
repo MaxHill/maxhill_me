@@ -49,6 +49,9 @@ const subjects = createSubjects({
 });
 
 type AuthChangeCallback = (authenticated: boolean) => void;
+export type UserSubjects = {
+  userID: string;
+};
 
 export class AuthClient {
   private listeners: Set<AuthChangeCallback> = new Set();
@@ -214,9 +217,9 @@ export class AuthClient {
   }
 
   /**
-   * Resolves the current app identity as authenticated `userID` or guest `null`.
+   * Resolves verified user subject properties or returns null for guest.
    */
-  async getCurrentUserID(): Promise<string | null> {
+  async getUserSubjects(): Promise<UserSubjects | null> {
     const access = await this.getToken();
     if (!access) {
       return null;
@@ -242,7 +245,10 @@ export class AuthClient {
       }
 
       const userID = extractUserID(verified.subject);
-      return typeof userID === "string" && userID.length > 0 ? userID : null;
+      if (typeof userID === "string" && userID.length > 0) {
+        return { userID };
+      }
+      return null;
     } catch {
       await this.setUnauthenticated();
       return null;
