@@ -119,10 +119,12 @@ export class MClubList extends MElement {
                 </div>
               `
             : html`
-                <div class="empty-state">
-                  <p class="empty-message">No clubs in your bag yet.</p>
-                  <a href="/bag/add" class="empty-cta-button">+ Add club</a>
-                </div>
+                <m-empty-state
+                  title="$ club --list"
+                  message="No clubs configured. Add clubs to build your bag and assign shot types."
+                >
+                  <a slot="action" href="/bag/add">+ Add Club</a>
+                </m-empty-state>
               `}
         </div>
       `,

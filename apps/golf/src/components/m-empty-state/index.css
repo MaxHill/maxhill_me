@@ -1,0 +1,29 @@
+:host {
+  display: block;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-3);
+  padding: var(--size-6) 0;
+}
+
+.title {
+  font: var(--p);
+  font-family: var(--ff-display);
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-primary-text-on-soft);
+}
+
+.message {
+  font: var(--p);
+  color: var(--color-text-weak);
+  max-width: 65ch;
+  margin: 0;
+}
+
+.action {
+  align-self: flex-start;
+}

@@ -91,34 +91,3 @@ m-card .card-content {
 .add-club-content .label {
   font: var(--p2);
 }
-
-.empty-state {
-  display: grid;
-  place-items: center;
-  gap: var(--size-4);
-  padding: var(--size-fluid-6);
-  text-align: center;
-}
-
-.empty-message {
-  font: var(--p);
-  color: var(--color-text-muted);
-  font-style: italic;
-  margin: 0;
-}
-
-.empty-cta-button {
-  padding: var(--size-3) var(--size-6);
-  font: var(--h2);
-  border: 2px dashed var(--border-color, currentColor);
-  background: transparent;
-  color: var(--color-text);
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-}
-
-.empty-cta-button:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}

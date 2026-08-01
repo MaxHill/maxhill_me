@@ -86,13 +86,12 @@ export class MShotTypeList extends MElement {
             ` : null}
           </div>
         ` : html`
-          <div class="empty-state">
-            <p class="empty-title">$ shottype --list</p>
-            <p class="empty-message">
-              No shot types configured. Add shot types to categorize different ways you can hit each club.
-            </p>
-            <a href="/bag/shot-type/add" class="button empty-cta-button">+ Add Shot Type</a>
-          </div>
+          <m-empty-state
+            title="$ shottype --list"
+            message="No shot types configured. Add shot types to categorize different ways you can hit each club."
+          >
+            <a slot="action" href="/bag/shot-type/add">+ Add Shot Type</a>
+          </m-empty-state>
         `}
       </div>
     `, this.shadowRoot!);

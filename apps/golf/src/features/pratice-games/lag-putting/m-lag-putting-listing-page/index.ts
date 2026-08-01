@@ -25,6 +25,7 @@ export class MLagPuttingListingPage extends MElement {
 
   lagPuttingGameService!: LagPuttingGameService;
   private unsubscribe!: () => void;
+  private hasGames = false;
 
   constructor() {
     super();
@@ -35,10 +36,21 @@ export class MLagPuttingListingPage extends MElement {
   async connectedCallback() {
     const db = await get_DB();
     this.lagPuttingGameService = new LagPuttingGameService(db);
+    await this.refreshHasGames();
     this.unsubscribe = this.lagPuttingGameService.subscribe((_: TableChangeEvent) => {
-      this.render();
+      this.handleGamesChanged();
     });
     this.render();
+  }
+
+  private handleGamesChanged = async () => {
+    await this.refreshHasGames();
+    this.render();
+  };
+
+  private async refreshHasGames() {
+    const games = await this.lagPuttingGameService.listGames();
+    this.hasGames = games.length > 0;
   }
 
   disconnectedCallback() {
@@ -99,32 +111,45 @@ export class MLagPuttingListingPage extends MElement {
           ></m-create-lag-putting-game-form>
         </dialog>
 
-        <div class="game-list">
-          ${asyncAppend(games, (g) => {
-            const game = g as LagPuttingGame;
-            const totalScore = this.lagPuttingGameService.calculateTotalScore(game.putts);
-            const completed = game.putts.filter((p) => p.result !== null).length;
-            const isComplete = completed === 18;
+        ${this.hasGames
+          ? html`
+              <div class="game-list">
+                ${asyncAppend(games, (g) => {
+                  const game = g as LagPuttingGame;
+                  const totalScore = this.lagPuttingGameService.calculateTotalScore(game.putts);
+                  const completed = game.putts.filter((p) => p.result !== null).length;
+                  const isComplete = completed === 18;
 
-            return html`
-              <a class="game-row" href="${"/lag-putting/" + game._key}">
-                <div class="game-meta">
-                  <span class="game-date">${this.formatDate(game.createdAt)}</span>
-                  <span class="game-details">${game.playerName} · ${game.courseName}</span>
-                </div>
-                <span
-                  class="game-progress"
-                  ?data-incomplete="${!isComplete}"
-                >${completed}/18</span>
-                <span
-                  class="game-score"
-                  ?data-negative="${totalScore < 0}"
-                  ?data-positive="${totalScore > 0}"
-                >${this.formatScore(totalScore)}</span>
-              </a>
-            `;
-          })}
-        </div>
+                  return html`
+                    <a class="game-row" href="${"/lag-putting/" + game._key}">
+                      <div class="game-meta">
+                        <span class="game-date">${this.formatDate(game.createdAt)}</span>
+                        <span class="game-details">${game.playerName} · ${game.courseName}</span>
+                      </div>
+                      <span
+                        class="game-progress"
+                        ?data-incomplete="${!isComplete}"
+                      >${completed}/18</span>
+                      <span
+                        class="game-score"
+                        ?data-negative="${totalScore < 0}"
+                        ?data-positive="${totalScore > 0}"
+                      >${this.formatScore(totalScore)}</span>
+                    </a>
+                  `;
+                })}
+              </div>
+            `
+          : html`
+              <m-empty-state
+                title="$ lag-putting --list"
+                message="No rounds yet. Start your first lag putting round to track progress over time."
+              >
+                <button slot="action" type="button" class="button" @click=${this.handleOpenDialog}>
+                  New round
+                </button>
+              </m-empty-state>
+            `}
       `,
       this.shadowRoot!,
     );

@@ -95,20 +95,6 @@
   color: var(--color-primary-text-colorful);
 }
 
-/* ---- Empty state ---- */
-
-.empty-state {
-  padding: var(--size-fluid-4) var(--body-margin);
-  text-align: center;
-  color: var(--color-text-softer);
-}
-
-.empty-state p {
-  font: var(--p);
-  max-width: var(--size-content-2);
-  margin-inline: auto;
-}
-
 /* ---- Dialog ---- */
 
 .new-game-dialog {
