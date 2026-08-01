@@ -7,8 +7,8 @@
  * (shared IndexedDB, single set of listeners).
  */
 
-import type { Challenge, Client as OpenAuthClient, Tokens } from "@openauthjs/openauth/client";
 import { createSubjects } from "@openauthjs/openauth/subject";
+import type { Challenge, Client as OpenAuthClient, Tokens } from "@openauthjs/openauth/client";
 
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:3002";
 const CLIENT_ID = "golf-app";
@@ -56,7 +56,6 @@ export type UserSubjects = {
 export class AuthClient {
   private listeners: Set<AuthChangeCallback> = new Set();
   private openAuthClient: OpenAuthClient | null;
-  private openAuthPromise: Promise<OpenAuthClient> | null = null;
 
   constructor(openAuthClient?: OpenAuthClient) {
     this.openAuthClient = openAuthClient ?? null;
@@ -260,23 +259,13 @@ export class AuthClient {
       return this.openAuthClient;
     }
 
-    if (!this.openAuthPromise) {
-      this.openAuthPromise = import("@openauthjs/openauth/client")
-        .then((module) => {
-          const client = module.createClient({
-            clientID: CLIENT_ID,
-            issuer: AUTH_URL,
-          });
-          this.openAuthClient = client;
-          return client;
-        })
-        .catch((error) => {
-          this.openAuthPromise = null;
-          throw error;
-        });
-    }
+    const module = await import("@openauthjs/openauth/client");
+    this.openAuthClient = module.createClient({
+      clientID: CLIENT_ID,
+      issuer: AUTH_URL,
+    });
 
-    return this.openAuthPromise;
+    return this.openAuthClient;
   }
 
   private async saveTokens(tokens: Tokens): Promise<void> {

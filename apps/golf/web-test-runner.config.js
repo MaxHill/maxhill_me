@@ -43,7 +43,7 @@ const cssInlinePlugin = () => ({
 });
 
 export default {
-  files: 'src/**/*.test.ts',
+  files: ['src/**/*.test.ts', '!src/**/*.unit.test.ts'],
   nodeResolve: true,
   plugins: [
     esbuildPlugin({ 

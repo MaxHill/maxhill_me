@@ -1,4 +1,4 @@
-import { expect } from "@open-wc/testing";
+import { expect, describe, it, afterEach } from "vitest";
 import { AuthClient } from "./auth-client";
 
 describe("AuthClient", () => {
