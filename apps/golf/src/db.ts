@@ -39,6 +39,8 @@ export async function get_DB(): Promise<DBInterface> {
   try {
     const db = await currentPromise;
 
+    // This guard is to protect against the db
+    // being reset while the promise is in flight.
     if (window.__appDBPromise !== currentPromise) {
       await db.close().catch((error) => {
         console.warn("Failed to close stale DB instance after auth transition", error);
@@ -51,9 +53,7 @@ export async function get_DB(): Promise<DBInterface> {
     // Start auto-sync interval (only syncs when authenticated)
     window.__appDBSyncIntervalId = window.setInterval(async () => {
       const token = await authClient.getToken();
-      if (!token) {
-        return;
-      }
+      if (!token) return;
       try {
         await db.sync();
       } catch (error) {
