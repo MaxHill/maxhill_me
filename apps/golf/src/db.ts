@@ -28,7 +28,7 @@ declare global {
 let authResetHookRegistered = false;
 
 export async function get_DB(): Promise<DBInterface> {
-  ensureAuthChangeResetsDBSingleton();
+  resetDbSingletonOnAuthChange();
 
   if (window.__appDB) return window.__appDB;
   if (window.__appDBPromise) return window.__appDBPromise;
@@ -139,7 +139,7 @@ async function deleteLocalDatabase(name: string): Promise<void> {
   });
 }
 
-function ensureAuthChangeResetsDBSingleton(): void {
+function resetDbSingletonOnAuthChange(): void {
   if (authResetHookRegistered) return;
   authResetHookRegistered = true;
 
