@@ -195,14 +195,6 @@ export class AuthClient {
     }
   }
 
-  /**
-   * Resolves the current app identity as authenticated `userID` or guest `null`.
-   */
-  async getCurrentUserID(): Promise<string | null> {
-    const userSubjects = await this.getUserSubjects();
-    return userSubjects?.userID ?? null;
-  }
-
   private async saveTokens(tokens: Tokens): Promise<void> {
     await this.dbSet("access_token", tokens.access);
     await this.dbSet("refresh_token", tokens.refresh);

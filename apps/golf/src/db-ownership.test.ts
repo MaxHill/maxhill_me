@@ -17,7 +17,7 @@ describe("reconcileDatabaseOwnership", () => {
     const result = await reconcileDatabaseOwnership({
       context,
       currentUserID: null,
-      getStoredOwnerUserID: async (ctx) => ctx.owner,
+      storedOwnerUserID: context.owner,
       claimOwnerUserID: async (ctx, userID) => {
         ctx.owner = userID;
         ctx.claims.push(userID);
@@ -40,7 +40,7 @@ describe("reconcileDatabaseOwnership", () => {
     const result = await reconcileDatabaseOwnership({
       context,
       currentUserID: "user-a",
-      getStoredOwnerUserID: async (ctx) => ctx.owner,
+      storedOwnerUserID: context.owner,
       claimOwnerUserID: async (ctx, userID) => {
         ctx.owner = userID;
         ctx.claims.push(userID);
@@ -63,7 +63,7 @@ describe("reconcileDatabaseOwnership", () => {
     const result = await reconcileDatabaseOwnership({
       context,
       currentUserID: "user-a",
-      getStoredOwnerUserID: async (ctx) => ctx.owner,
+      storedOwnerUserID: context.owner,
       claimOwnerUserID: async (ctx, userID) => {
         ctx.owner = userID;
         ctx.claims.push(userID);
@@ -85,7 +85,7 @@ describe("reconcileDatabaseOwnership", () => {
     const result = await reconcileDatabaseOwnership({
       context,
       currentUserID: "user-b",
-      getStoredOwnerUserID: async (ctx) => ctx.owner,
+      storedOwnerUserID: context.owner,
       claimOwnerUserID: async (ctx, userID) => {
         ctx.owner = userID;
         ctx.claims.push(userID);
@@ -110,7 +110,7 @@ describe("reconcileDatabaseOwnership", () => {
       await reconcileDatabaseOwnership({
         context,
         currentUserID: "user-b",
-        getStoredOwnerUserID: async (ctx) => ctx.owner,
+        storedOwnerUserID: context.owner,
         claimOwnerUserID: async () => {
         },
         resetForNewOwner: async () => {

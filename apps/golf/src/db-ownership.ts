@@ -7,7 +7,7 @@ export type OwnershipReconciliationOutcome =
 export type OwnershipReconciliationContext<TContext> = {
   context: TContext;
   currentUserID: string | null;
-  getStoredOwnerUserID: (context: TContext) => Promise<string | null | undefined>;
+  storedOwnerUserID: string | null;
   claimOwnerUserID: (context: TContext, userID: string) => Promise<void>;
   resetForNewOwner: (context: TContext, userID: string) => Promise<TContext>;
 };
@@ -27,23 +27,23 @@ export async function reconcileDatabaseOwnership<TContext>(
   const {
     context,
     currentUserID,
-    getStoredOwnerUserID,
+    storedOwnerUserID,
     claimOwnerUserID,
     resetForNewOwner,
   } = params;
 
-  const storedOwnerUserID = normalizeOwner(await getStoredOwnerUserID(context));
+  const normalizedStoredOwnerUserID = normalizeOwner(storedOwnerUserID);
 
   if (currentUserID === null) {
     return { context, outcome: "guest-noop" };
   }
 
-  if (storedOwnerUserID === null) {
+  if (normalizedStoredOwnerUserID === null) {
     await claimOwnerUserID(context, currentUserID);
     return { context, outcome: "claimed" };
   }
 
-  if (storedOwnerUserID === currentUserID) {
+  if (normalizedStoredOwnerUserID === currentUserID) {
     return { context, outcome: "authenticated-match" };
   }
 

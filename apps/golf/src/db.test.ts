@@ -1,6 +1,7 @@
 import { expect } from "@open-wc/testing";
 import { get_DB } from "./db";
 import { authClient } from "./features/auth/auth-client";
+import type { UserSubjects } from "./features/auth/auth-client";
 
 describe("get_DB ownership bootstrap integration", () => {
   afterEach(async () => {
@@ -84,8 +85,8 @@ describe("get_DB ownership bootstrap integration", () => {
 });
 
 function mockCurrentUser(userID: string | null): void {
-  (authClient as unknown as { getCurrentUserID: () => Promise<string | null> }).getCurrentUserID =
-    async () => userID;
+  (authClient as unknown as { getUserSubjects: () => Promise<UserSubjects | null> }).getUserSubjects =
+    async () => (userID ? { userID } : null);
   (authClient as unknown as { getToken: () => Promise<string | null> }).getToken = async () => null;
 }
 

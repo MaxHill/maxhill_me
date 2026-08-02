@@ -36,7 +36,7 @@ export async function get_DB(): Promise<DBInterface> {
   if (window.__appDB) return window.__appDB;
   if (window.__appDBPromise) return window.__appDBPromise;
 
-  window.__appDBPromise = openDBWithOwnershipEnforcement();
+  window.__appDBPromise = buildAndOpenDatabase().then((db) => withOwnershipEnforcement(db));
   const promiseVersion = dbSessionVersion;
   const currentPromise = window.__appDBPromise;
 
@@ -75,17 +75,16 @@ export async function get_DB(): Promise<DBInterface> {
   }
 }
 
-async function openDBWithOwnershipEnforcement(): Promise<DBInterface> {
-  let db = await buildAndOpenDatabase();
-  const currentUserID = await authClient.getCurrentUserID();
+async function withOwnershipEnforcement(db: DBInterface): Promise<DBInterface> {
+  const subjects = await authClient.getUserSubjects();
+  const currentUserID = subjects?.userID ?? null;
+  const settings = new UserSettingsService(db);
+  const storedOwnerUserID = await settings.getDatabaseOwnerUserID();
 
   const result = await reconcileDatabaseOwnership({
     context: db,
     currentUserID,
-    getStoredOwnerUserID: async (candidateDb) => {
-      const settings = new UserSettingsService(candidateDb);
-      return settings.getDatabaseOwnerUserID();
-    },
+    storedOwnerUserID,
     claimOwnerUserID: async (candidateDb, userID) => {
       const settings = new UserSettingsService(candidateDb);
       await settings.setDatabaseOwnerUserID(userID);
@@ -132,7 +131,11 @@ async function resetLocalDatabase(name: string): Promise<void> {
     const request = indexedDB.deleteDatabase(name);
 
     request.onblocked = () => {
-      reject(new Error(`Failed to reset local database '${name}': delete blocked by another open connection`));
+      reject(
+        new Error(
+          `Failed to reset local database '${name}': delete blocked by another open connection`,
+        ),
+      );
     };
     request.onerror = () => {
       reject(request.error ?? new Error(`Failed to reset local database '${name}'`));
