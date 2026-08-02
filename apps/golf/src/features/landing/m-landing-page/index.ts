@@ -74,10 +74,43 @@ export class MLandingPage extends MElement {
             onSignIn: () => authClient.authorize(),
             onDismiss: () => this.dismiss(),
           })}
-          <m-fit-text font-display class="title">Max Hill</m-fit-text>
-          <p class="intro">
-            Practice tools for the range and the green.
-          </p>
+
+          <section class="hero">
+            <p class="eyebrow">Golf practice workspace</p>
+            <m-fit-text font-display class="title">Train with intent</m-fit-text>
+            <p class="intro">
+              Start a round, tune your bag, and keep your sessions moving forward.
+            </p>
+          </section>
+
+          <section class="actions" aria-label="Next actions">
+            <a class="action-card box" href="/lag-putting">
+              <div>
+                <p class="action-kicker">Practice game</p>
+                <h2>Lag Putting</h2>
+                <p>Start a round, score each putt, and track consistency over 18 holes.</p>
+              </div>
+              <span class="action-link">Open game</span>
+            </a>
+
+            <a class="action-card box" href="/bag">
+              <div>
+                <p class="action-kicker">Equipment</p>
+                <h2>Manage bag</h2>
+                <p>Update clubs and shot types so your practice data stays useful.</p>
+              </div>
+              <span class="action-link">View bag</span>
+            </a>
+
+            <a class="action-card box" href="/bag/add">
+              <div>
+                <p class="action-kicker">Quick setup</p>
+                <h2>Add a club</h2>
+                <p>Capture a new club now and use it in your next range or green session.</p>
+              </div>
+              <span class="action-link">Add club</span>
+            </a>
+          </section>
         </div>
       `,
       this.shadowRoot!,
