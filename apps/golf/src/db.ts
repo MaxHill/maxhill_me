@@ -25,31 +25,24 @@ declare global {
   }
 }
 
-let authInvalidationHookRegistered = false;
-let pendingInvalidation: Promise<void> | null = null;
-let dbSessionVersion = 0;
+let authResetHookRegistered = false;
 
 export async function get_DB(): Promise<DBInterface> {
-  ensureAuthChangeInvalidatesDBSingleton();
-  await waitForPendingInvalidation();
+  ensureAuthChangeResetsDBSingleton();
 
   if (window.__appDB) return window.__appDB;
   if (window.__appDBPromise) return window.__appDBPromise;
 
   window.__appDBPromise = buildAndOpenDatabase().then((db) => withOwnershipEnforcement(db));
-  const promiseVersion = dbSessionVersion;
   const currentPromise = window.__appDBPromise;
 
   try {
     const db = await currentPromise;
 
-    if (promiseVersion !== dbSessionVersion) {
+    if (window.__appDBPromise !== currentPromise) {
       await db.close().catch((error) => {
         console.warn("Failed to close stale DB instance after auth transition", error);
       });
-      if (window.__appDBPromise === currentPromise) {
-        delete window.__appDBPromise;
-      }
       return get_DB();
     }
 
@@ -91,7 +84,7 @@ async function withOwnershipEnforcement(db: DBInterface): Promise<DBInterface> {
     },
     resetForNewOwner: async (candidateDb, userID) => {
       await candidateDb.close();
-      await resetLocalDatabase(DB_NAME);
+      await deleteLocalDatabase(DB_NAME);
       const replacementDb = await buildAndOpenDatabase();
       const replacementSettings = new UserSettingsService(replacementDb);
       await replacementSettings.setDatabaseOwnerUserID(userID);
@@ -126,7 +119,7 @@ function buildAndOpenDatabase(): Promise<DBInterface> {
     .open();
 }
 
-async function resetLocalDatabase(name: string): Promise<void> {
+async function deleteLocalDatabase(name: string): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const request = indexedDB.deleteDatabase(name);
 
@@ -146,30 +139,18 @@ async function resetLocalDatabase(name: string): Promise<void> {
   });
 }
 
-function ensureAuthChangeInvalidatesDBSingleton(): void {
-  if (authInvalidationHookRegistered) return;
-  authInvalidationHookRegistered = true;
+function ensureAuthChangeResetsDBSingleton(): void {
+  if (authResetHookRegistered) return;
+  authResetHookRegistered = true;
 
   authClient.onAuthChange(() => {
-    pendingInvalidation = invalidateDBSingleton()
-      .catch((error) => {
-        console.warn("Failed to invalidate DB singleton after auth change", error);
-      })
-      .finally(() => {
-        pendingInvalidation = null;
-      });
+    void resetDBSingleton().catch((error) => {
+      console.warn("Failed to reset DB singleton after auth change", error);
+    });
   });
 }
 
-async function waitForPendingInvalidation(): Promise<void> {
-  if (pendingInvalidation) {
-    await pendingInvalidation;
-  }
-}
-
-async function invalidateDBSingleton(): Promise<void> {
-  dbSessionVersion += 1;
-
+async function resetDBSingleton(): Promise<void> {
   if (window.__appDBSyncIntervalId !== undefined) {
     clearInterval(window.__appDBSyncIntervalId);
     delete window.__appDBSyncIntervalId;
