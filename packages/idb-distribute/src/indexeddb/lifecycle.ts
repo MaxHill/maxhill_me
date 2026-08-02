@@ -16,6 +16,7 @@ export const CLIENT_STATE_STORE = "clientState";
 export const BY_TABLE_INDEX = "by-table";
 const BY_SYNCED_INDEX = "by-synced";
 const BY_CLIENT_SYNCED_INDEX = "by-client-synced";
+const REQUIRED_STORES = [ROWS_STORE, OPERATIONS_STORE, CLIENT_STATE_STORE] as const;
 
 // Client state keys
 const LOGICAL_CLOCK = "logicalClock";
@@ -80,6 +81,18 @@ export class Lifecycle {
       request.onerror = () => reject(request.error);
       request.onsuccess = async () => {
         var db = request.result;
+
+        const missingStores = REQUIRED_STORES.filter((store) => !db.objectStoreNames.contains(store));
+        if (missingStores.length > 0 && version) {
+          db.close();
+          throw new Error(
+            `Database is missing required object stores [${missingStores.join(", ")}]. ` +
+              `Open with explicit version ${version} cannot auto-upgrade.`,
+          );
+        } else if (missingStores.length > 0) {
+          db.close();
+          db = await self.open(dbName, db.version + 1);
+        }
 
         const tx = db.transaction([CLIENT_STATE_STORE], "readonly");
         const upgradeNeeded = await needIndexUpdate(tx, this.indexes);

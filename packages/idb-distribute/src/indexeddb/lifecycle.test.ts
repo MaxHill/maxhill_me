@@ -101,4 +101,30 @@ describe("Lifecycle", () => {
       "Index names must be unique per table",
     );
   });
+
+  it("repairs missing required stores by forcing a version upgrade", async () => {
+    await new Promise<void>((resolve, reject) => {
+      const req = indexedDB.open(dbName, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains("rows")) {
+          db.createObjectStore("rows", { keyPath: ["table", "id"] });
+        }
+      };
+      req.onsuccess = () => {
+        req.result.close();
+        resolve();
+      };
+      req.onerror = () => reject(req.error);
+    });
+
+    lifecycle = new Lifecycle();
+    await lifecycle.open(dbName);
+
+    const storeNames = [...lifecycle.db!.objectStoreNames];
+    expect(storeNames).toContain(ROWS_STORE);
+    expect(storeNames).toContain(OPERATIONS_STORE);
+    expect(storeNames).toContain(CLIENT_STATE_STORE);
+    expect(lifecycle.db!.version).toBe(2);
+  });
 });
