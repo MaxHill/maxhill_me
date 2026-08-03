@@ -36,7 +36,6 @@ export class MCreateLagPuttingGameForm extends MElement {
     this.dispatchEvent(
       new CreateLagPuttingSubmitEventEvent({
         value: {
-          playerName: formData.get("playerName")?.toString() || "",
           courseName: formData.get("courseName")?.toString() || "",
           practiceAreaName: formData.get("practiceAreaName")?.toString() || "",
         },
@@ -53,11 +52,6 @@ export class MCreateLagPuttingGameForm extends MElement {
           @submit="${this.handleSubmit.bind(this)}"
         >
           <h2>Start a new game</h2>
-          <m-input
-            name="playerName"
-            label="Player name"
-            required
-          ></m-input>
           <m-input
             name="courseName"
             label="Course name"

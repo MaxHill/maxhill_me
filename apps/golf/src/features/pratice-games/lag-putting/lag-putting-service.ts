@@ -95,7 +95,6 @@ function createPuttSequence(): Array<{ distance: PuttDistance; result: PuttResul
 }
 
 export interface CreateLagPuttingGameInput {
-  playerName: string;
   courseName: string;
   practiceAreaName: string;
 }

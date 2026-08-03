@@ -124,7 +124,7 @@ export class MLagPuttingListingPage extends MElement {
                     <a class="game-row" href="${"/lag-putting/" + game._key}">
                       <div class="game-meta">
                         <span class="game-date">${this.formatDate(game.createdAt)}</span>
-                        <span class="game-details">${game.playerName} · ${game.courseName}</span>
+                        <span class="game-details">${game.courseName}</span>
                       </div>
                       <span
                         class="game-progress"

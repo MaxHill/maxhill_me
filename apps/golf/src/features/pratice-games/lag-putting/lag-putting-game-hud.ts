@@ -13,9 +13,6 @@ export const lagPuttingHud = (game: LagPuttingGame, gameService: LagPuttingGameS
       <dt>Created</dt>
       <dd>${game.createdAt || "-"}</dd>
 
-      <dt>Player</dt>
-      <dd>${game?.playerName}</dd>
-
       <dt>Course</dt>
       <dd>${game?.courseName}</dd>
 
