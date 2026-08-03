@@ -167,6 +167,10 @@ export class LagPuttingGameService {
     await this.table.setRow(game._key, game);
   }
 
+  async deleteGame(gameKey: GameKey): Promise<void> {
+    await this.table.deleteRow(gameKey);
+  }
+
   async recordPuttResult(
     gameKey: GameKey,
     puttIndex: number,

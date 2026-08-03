@@ -33,23 +33,34 @@
 }
 
 .game-row {
+  display: flex;
+  align-items: stretch;
+  border-block-end: 1px solid var(--color-stroke);
+}
+
+.game-row-link {
   display: grid;
   grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: var(--size-3);
   padding: var(--size-3) var(--body-margin);
-  border-block-end: 1px solid var(--color-stroke);
   text-decoration: none;
   color: inherit;
+  flex: 1;
 }
 
-.game-row:hover {
+.game-row-link:hover {
   background: var(--color-neutral-fill-softer);
 }
 
-.game-row:focus-visible {
+.game-row-link:focus-visible {
   outline: var(--outline);
   outline-offset: -2px;
+}
+
+.game-edit-button {
+  margin: auto var(--body-margin) auto 0;
+  align-self: center;
 }
 
 .game-meta {
@@ -106,6 +117,50 @@
   width: 100%;
 }
 
+.edit-game-dialog {
+  background: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-stroke);
+  padding: var(--size-4);
+  max-width: min(32rem, calc(100vw - var(--size-4) * 2));
+  width: 100%;
+}
+
+.danger-zone {
+  margin-block-start: var(--size-4);
+  padding: var(--size-3);
+  border: 1px solid var(--color-stroke);
+  border-radius: var(--radius-box);
+  background: var(--color-neutral-fill-softer);
+}
+
+.danger-zone summary {
+  cursor: pointer;
+  font: var(--p2);
+  font-family: var(--ff-display);
+  color: var(--color-text-softer);
+}
+
+.danger-zone-delete {
+  margin-block-start: var(--size-3);
+  color: var(--color-destructive-text-colorful);
+}
+
 .new-game-dialog::backdrop {
   background: oklch(0% 0 0 / 0.5);
+}
+
+.edit-game-dialog::backdrop {
+  background: oklch(0% 0 0 / 0.5);
+}
+
+@media (max-width: 640px) {
+  .game-row-link {
+    gap: var(--size-2);
+    padding-inline-end: var(--size-2);
+  }
+
+  .game-edit-button {
+    margin-inline-end: var(--size-2);
+  }
 }

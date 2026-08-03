@@ -1,4 +1,4 @@
-import { MElement } from "@maxhill/web-component-utils";
+import { BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
 import { ref, createRef } from "lit-html/directives/ref.js";
@@ -17,6 +17,15 @@ baseStyleSheet.replaceSync(styles);
 export class MCreateLagPuttingGameForm extends MElement {
   static tagName = "m-create-lag-putting-game-form";
 
+  @BindAttribute()
+  mode: "create" | "edit" = "create";
+
+  @BindAttribute({ attribute: "course-name" })
+  courseName: string = "";
+
+  @BindAttribute({ attribute: "practice-area-name" })
+  practiceAreaName: string = "";
+
   private formRef = createRef<HTMLFormElement>();
 
   constructor() {
@@ -27,6 +36,14 @@ export class MCreateLagPuttingGameForm extends MElement {
 
   connectedCallback() {
     this.render();
+  }
+
+  attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
+    super.attributeChangedCallback(name, oldValue, newValue);
+    if (oldValue === newValue) return;
+    if (name === "mode" || name === "course-name" || name === "practice-area-name") {
+      this.render();
+    }
   }
 
   handleSubmit(e: SubmitEvent) {
@@ -44,6 +61,10 @@ export class MCreateLagPuttingGameForm extends MElement {
   }
 
   private render() {
+    const isEditMode = this.mode === "edit";
+    const title = isEditMode ? "Edit round" : "Start a new game";
+    const submitLabel = isEditMode ? "Save changes" : "Start Game";
+
     render(
       html`
         <form
@@ -51,20 +72,22 @@ export class MCreateLagPuttingGameForm extends MElement {
           class="form"
           @submit="${this.handleSubmit.bind(this)}"
         >
-          <h2>Start a new game</h2>
+          <h2>${title}</h2>
           <m-input
             name="courseName"
             label="Course name"
+            value="${this.courseName}"
             required
           ></m-input>
           <m-input
             name="practiceAreaName"
             label="Practice area name"
+            value="${this.practiceAreaName}"
             required
           ></m-input>
 
           <div class="form-actions stack" data-direction="row" data-justify="content-between">
-            <button class="button" value="yes">Start Game</button>
+            <button class="button" value="yes">${submitLabel}</button>
             <button
               @click="${() => {
                 this.dispatchEvent(new CreateLagPuttCancelEvent({}));
