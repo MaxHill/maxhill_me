@@ -1,7 +1,5 @@
 import { MElement, BindAttribute, query } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
-import { html, render } from "lit-html";
-import { globalStyleSheet } from "../../styles/global-styles";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -35,13 +33,17 @@ export class MEmptyState extends MElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this.shadowRoot!.adoptedStyleSheets = [globalStyleSheet, baseStyleSheet];
+    this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
   }
 
   connectedCallback() {
     this.render();
     this.updateActionPresence();
     this.warnIfMissingContent();
+  }
+
+  disconnectedCallback() {
+    this.actionSlot?.removeEventListener("slotchange", this.handleActionSlotChange);
   }
 
   attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
@@ -82,23 +84,24 @@ export class MEmptyState extends MElement {
   }
 
   private render() {
-    render(
-      html`
-        <div class="empty-state">
-          <p class="title">${this.title}</p>
-          <p class="message">${this.message}</p>
-          ${this.hasAction
-            ? html`
-                <div class="action">
-                  <slot name="action" @slotchange=${this.handleActionSlotChange}></slot>
-                </div>
-              `
-            : html`<slot name="action" @slotchange=${this.handleActionSlotChange}></slot>`}
+    if (!this.shadowRoot) return;
+
+    this.shadowRoot.innerHTML = `
+      <div class="empty-state">
+        <p class="title">${this.title}</p>
+        <p class="message">${this.message}</p>
+        <div class="action" ${this.hasAction ? "" : "hidden"}>
+          <slot name="action"></slot>
         </div>
-      `,
-      this.shadowRoot!,
-    );
+      </div>
+    `;
+
+    this.actionSlot?.removeEventListener("slotchange", this.handleActionSlotChange);
+    this.actionSlot?.addEventListener("slotchange", this.handleActionSlotChange);
   }
 }
+
+// Auto-define when using default import
+MEmptyState.define();
 
 export default MEmptyState;

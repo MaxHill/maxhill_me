@@ -6,7 +6,7 @@ import "@maxhill/components/register-all";
 
 import "./features/router/router.ts";
 import "./features/menu/main-menu.ts";
-import { MEmptyState } from "./components/m-empty-state";
+import "@maxhill/components/m-empty-state";
 import { MShotTypeList } from "./features/bag/components/m-shot-type-list";
 import { MAddShotTypeForm } from "./features/bag/components/m-add-shot-type-form";
 import { MShotTypeForm } from "./features/bag/components/m-shot-type-form";
@@ -21,7 +21,6 @@ import { MCreateLagPuttingGameForm } from "./features/pratice-games/lag-putting/
 
 
 // Register app components
-MEmptyState.define();
 MShotTypeList.define();
 MAddShotTypeForm.define();
 MShotTypeForm.define();
