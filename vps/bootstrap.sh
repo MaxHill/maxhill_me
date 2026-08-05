@@ -13,6 +13,24 @@ export SOPS_AGE_KEY_FILE=/etc/sops/key.txt
 apt-get update
 apt-get install -y sqlite3 caddy age jq ufw curl ca-certificates
 
+# Litestream isn't in Ubuntu apt repos — pin and install .deb (includes systemd unit).
+LITESTREAM_VERSION=0.5.14
+if ! command -v litestream >/dev/null || [ "$(litestream version | awk '{print $2; exit}')" != "$LITESTREAM_VERSION" ]; then
+  ARCH=$(dpkg --print-architecture)
+  case "$ARCH" in
+    amd64) LITESTREAM_ARCH=x86_64 ;;
+    arm64) LITESTREAM_ARCH=arm64 ;;
+    *) echo "Unsupported arch for litestream: $ARCH" >&2; exit 1 ;;
+  esac
+  TMP_DEB=$(mktemp --suffix=.deb)
+  curl -fsSL "https://github.com/benbjohnson/litestream/releases/download/v${LITESTREAM_VERSION}/litestream-${LITESTREAM_VERSION}-linux-${LITESTREAM_ARCH}.deb" \
+    -o "$TMP_DEB"
+  dpkg -i "$TMP_DEB"
+  apt-get install -f -y
+  rm -f "$TMP_DEB"
+fi
+
+
 # sops isn't in Ubuntu's apt repos — pin a version, install from GitHub.
 SOPS_VERSION=3.9.4
 if ! command -v sops >/dev/null || [ "$(sops --version | awk '{print $2; exit}')" != "$SOPS_VERSION" ]; then
@@ -55,8 +73,13 @@ chown root:sops-readers /etc/sops/key.txt
 chmod 640 /etc/sops/key.txt
 chmod 755 /etc/sops
 
+
+
 # ---------- system config ----------
 install -m 644 "$V/Caddyfile" /etc/caddy/Caddyfile
+install -d -m 700 -o deploy -g deploy /etc/litestream
+install -m 644 "$V/litestream/litestream.yml" /etc/litestream.yml
+chown deploy:deploy /etc/litestream.yml
 mkdir -p /etc/systemd/journald.conf.d
 install -m 644 "$V/journald-retention.conf" /etc/systemd/journald.conf.d/retention.conf
 install -m 440 "$V/sudoers.deploy" /etc/sudoers.d/deploy
@@ -70,6 +93,8 @@ visudo -c -f /etc/sudoers.d/deploy   # fail loud if the file is garbage
 mkdir -p /etc/caddy/sites
 install -m 644 "$V/sync/sync.service" /etc/systemd/system/sync.service
 install -m 644 "$V/sync/sync.caddy"   /etc/caddy/sites/sync.caddy
+
+
 install -m 644 "$V/auth/auth.service"       /etc/systemd/system/auth.service
 install -m 644 "$V/auth/auth-sweep.service" /etc/systemd/system/auth-sweep.service
 install -m 644 "$V/auth/auth-sweep.timer"   /etc/systemd/system/auth-sweep.timer
@@ -77,6 +102,7 @@ install -m 644 "$V/auth/auth.caddy"         /etc/caddy/sites/auth.caddy
 install -m 644 "$V/site/site.caddy"   /etc/caddy/sites/site.caddy
 install -m 644 "$V/golf/golf.caddy"   /etc/caddy/sites/golf.caddy
 install -m 644 "$V/alert-on-failure/alert-on-failure@.service" /etc/systemd/system/alert-on-failure@.service
+install -D -m 644 "$V/litestream/litestream.override.service" /etc/systemd/system/litestream.service.d/override.conf
 
 # ---------- per-app dirs owned by deploy ----------
 for app in sync auth site golf alert-on-failure; do
@@ -89,6 +115,9 @@ done
 systemctl daemon-reload
 systemctl enable --now caddy
 systemctl reload caddy
+# litestream is managed by deploy:litestream after secrets land.
+# Avoid touching it in bootstrap to keep first-provision idempotent.
+
 # Enable service units so they survive a reboot. `enable` (without
 # `--now`) just creates the .wants/ symlink; it doesn't try to exec
 # the binary, so this is safe before the first deploy has shipped

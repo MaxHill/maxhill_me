@@ -147,6 +147,11 @@ mise run deploy:sync               # slow the first time (about 5 to 10
 ssh deploy@$VPS_HOST 'file /opt/sync/current/sync-exe'
 # expect: ELF 64-bit LSB ... x86-64 ...
 ssh deploy@$VPS_HOST systemctl is-active sync.service
+
+mise run deploy:litestream         # ships /etc/litestream.yml + R2 creds
+ssh deploy@$VPS_HOST 'systemctl is-active litestream.service'
+ssh deploy@$VPS_HOST 'journalctl -u litestream -n 30 --no-pager'
+# expect recurring "replica sync" lines for auth.db + sync.db
 ```
 
 ## 8. Verify
@@ -155,7 +160,7 @@ Full sweep:
 
 ```bash
 ssh deploy@$VPS_HOST 'systemctl --failed --no-legend'   # expect empty
-ssh deploy@$VPS_HOST 'systemctl is-active caddy sync.service auth.service auth-sweep.timer'
+ssh deploy@$VPS_HOST 'systemctl is-active caddy litestream.service sync.service auth.service auth-sweep.timer'
 ```
 
 Confirm each subdomain serves over HTTPS with a **Let's Encrypt** cert (not
@@ -205,6 +210,13 @@ decrypt every enc file during deploy.
   `journalctl -u sync.service -n 50` on the box. The cause is usually a bad
   env value in `vps/sync/sync.prod.enc.env`. Run `sops edit` to fix it.
   Then run `mise run deploy:sync` again.
+- **`deploy:litestream` fails with permission errors under `/etc`** —
+  bootstrap likely did not run after a script change. Re-run
+  `mise run bootstrap`, then `mise run deploy:litestream`.
+- **`litestream.service` starts but no `replica sync` logs appear** — check
+  `/etc/litestream/litestream.prod.env` contains valid
+  `CF_ACCOUNT_ID`, `R2_ACCESS_KEY`, and `R2_SECRET_KEY`. Then restart:
+  `sudo systemctl restart litestream.service`.
 - **An HTTP endpoint returns 502** — Caddy is up but the upstream is not.
   Run `systemctl status <app>.service` on the box. Check that the
   configured port matches the `reverse_proxy localhost:<port>` line in
@@ -216,7 +228,7 @@ decrypt every enc file during deploy.
 
 - Rebuilding an existing box in place after config drift — re-run
   `mise run bootstrap`. It is idempotent.
-- Migrating to a new box (rotate the IP, keep the data) — a future runbook,
-  once Litestream backups exist. Today: back up `/opt/sync/*.db` by hand,
-  follow this runbook against the new box, restore the DB, redeploy.
+- Migrating to a new box (rotate the IP, keep the data) — follow this
+  runbook for bootstrap/deploy, then restore DBs with
+  `docs/runbooks/restore-databases.md`.
 - Rolling back a bad deploy — see `docs/vps.md` § Rollback.

@@ -1,0 +1,21 @@
+dbs:
+    - path: /var/lib/sync/sync.db
+      replica:
+        type: s3
+        bucket: db-backups
+        path: sync-db
+        endpoint: ${CF_ACCOUNT_ID}.r2.cloudflarestorage.com
+        region: auto
+        access-key-id: ${R2_ACCESS_KEY}
+        secret-access-key: ${R2_SECRET_KEY}
+
+    - path: /var/lib/auth/auth.db
+      replica:
+        type: s3
+        bucket: db-backups
+        path: auth-db
+        endpoint: ${CF_ACCOUNT_ID}.r2.cloudflarestorage.com
+        region: auto
+        access-key-id: ${R2_ACCESS_KEY}
+        secret-access-key: ${R2_SECRET_KEY}
+

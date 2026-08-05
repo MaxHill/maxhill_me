@@ -183,17 +183,17 @@ at 500M.
   A down box cannot alert on itself. Add it when the box has been live long
   enough to warrant it.
 
-### Backups (deferred)
+### Backups
 
-Litestream streams the WAL of each SQLite DB to Backblaze B2. Add it when
-there is data on the box worth losing sleep over. Sketch:
+Litestream is live. It replicates both production SQLite databases
+(`/var/lib/sync/sync.db` and `/var/lib/auth/auth.db`) to Cloudflare R2.
 
-- `apt-get install litestream` step in `bootstrap.sh`.
-- One `<app>-litestream.service` per DB, under the `vps/<app>/` dir of the
-  app. Same install pattern.
-- B2 credentials go into the `.prod.enc.env` of the relevant app.
-- Confirm that each service app opens SQLite with
-  `PRAGMA journal_mode=WAL`.
+- `bootstrap.sh` installs Litestream and the systemd drop-in.
+- `mise run deploy:litestream` ships `/etc/litestream.yml` and encrypted R2
+  credentials (`/etc/litestream/litestream.prod.env`).
+- `litestream.service` runs continuously and logs periodic `replica sync`
+  lines for both DBs.
+- Recovery procedure lives in `docs/runbooks/restore-databases.md`.
 
 ### Rollback
 

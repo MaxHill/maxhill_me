@@ -1,0 +1,5 @@
+[Unit]
+OnFailure=alert-on-failure@%n.service
+
+[Service]
+EnvironmentFile=/etc/litestream/litestream.prod.env
