@@ -91,3 +91,7 @@ run = "mise run deploy"
 [tasks."deploy:alert-on-failure"]
 description = "Deploy alert-on-failure Resend env to VPS (no service restart)."
 run = "bash vps/alert-on-failure/deploy.sh"
+
+[tasks."deploy:litestream"]
+description = "Deploy litestream config + env to VPS."
+run = "bash vps/litestream/deploy.sh"
