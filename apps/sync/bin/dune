@@ -1,4 +1,26 @@
 (executable
  (name main)
  (public_name sync)
+ (modules main)
  (libraries sync eio_main logs logs.fmt fmt caqti caqti-eio caqti-eio.unix caqti-driver-sqlite3 uri))
+
+(executable
+ (name simulator)
+ (modules simulator)
+ (libraries sync_simulator cmdliner logs logs.fmt))
+
+(executable
+ (name simulator_sut)
+ (modules simulator_sut)
+ (libraries
+  sync_simulator
+  eio_main
+  eio
+  logs
+  logs.fmt
+  caqti
+  caqti-eio
+  caqti-eio.unix
+  caqti-driver-sqlite3
+  uri
+  yojson))

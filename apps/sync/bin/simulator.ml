@@ -31,7 +31,7 @@ let replay_handler log_level seed size =
   let entropy = Sync_simulator.Driver.entropy_of_seed ~seed ~size in
   let result =
     Sync_simulator.Driver.run_once
-      ~sut_path:"./_build/default/sim_bin/simulator_sut.exe" ~entropy ~log_level
+      ~sut_path:"./_build/default/bin/simulator_sut.exe" ~entropy ~log_level
   in
   match result with
   | Sync_simulator.Driver.Fail ->
@@ -59,7 +59,7 @@ let search_handler log_level attempts size_max =
   configure_logs log_level;
   let result =
     Sync_simulator.Driver.search
-      ~sut_path:"./_build/default/sim_bin/simulator_sut.exe" ~size_max ~attempts
+      ~sut_path:"./_build/default/bin/simulator_sut.exe" ~size_max ~attempts
       ~log_level
   in
   match result with

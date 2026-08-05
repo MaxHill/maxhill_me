@@ -23,7 +23,7 @@ run = "opam exec --switch=. -- dune runtest"
 
 [tasks.fuzz]
 description = "Unbounded simulator search."
-run = "opam exec --switch=. -- dune build ./sim_bin/simulator_sut.exe && opam exec --switch=. -- dune exec ./sim_bin/simulator.exe -- search"
+run = "opam exec --switch=. -- dune build ./bin/simulator_sut.exe && opam exec --switch=. -- dune exec ./bin/simulator.exe -- search"
 
 [tasks.deploy]
 description = "Deploy sync (OCaml service) to VPS."
