@@ -47,37 +47,19 @@ echo "[4/6] remove legacy runtime/config paths"
 sudo rm -rf /opt/sync
 sudo rm -rf /etc/sync
 
-echo "[5/6] ensure new DB path exists (restore from Litestream if needed)"
-if [ ! -f /var/lib/syncdb-server/syncdb-server.db ]; then
-  echo "no migrated DB found; attempting Litestream restore to new path"
-  sudo rm -f /var/lib/syncdb-server/syncdb-server.db \
-    /var/lib/syncdb-server/syncdb-server.db-wal \
-    /var/lib/syncdb-server/syncdb-server.db-shm
-
-  if ! sudo litestream restore -config /etc/litestream.yml /var/lib/syncdb-server/syncdb-server.db; then
-    echo "new-path restore failed; trying legacy restore path then move"
-    sudo install -d /var/lib/sync
-    sudo rm -f /var/lib/sync/sync.db /var/lib/sync/sync.db-wal /var/lib/sync/sync.db-shm
-
-    if ! sudo litestream restore -config /etc/litestream.yml /var/lib/sync/sync.db; then
-      echo "failed to restore from Litestream using both new and legacy DB paths" >&2
-      exit 1
-    fi
-
-    sudo install -d /var/lib/syncdb-server
-    sudo mv /var/lib/sync/sync.db /var/lib/syncdb-server/syncdb-server.db
-    [ -f /var/lib/sync/sync.db-wal ] && sudo mv /var/lib/sync/sync.db-wal /var/lib/syncdb-server/syncdb-server.db-wal || true
-    [ -f /var/lib/sync/sync.db-shm ] && sudo mv /var/lib/sync/sync.db-shm /var/lib/syncdb-server/syncdb-server.db-shm || true
-  fi
+echo "[5/6] verify DB migration result"
+if [ -f /var/lib/syncdb-server/syncdb-server.db ]; then
+  echo "found migrated DB at /var/lib/syncdb-server/syncdb-server.db"
+else
+  echo "no legacy DB found to migrate; continuing with fresh DB on first service start"
 fi
 
-if [ ! -f /var/lib/syncdb-server/syncdb-server.db ]; then
-  echo "missing /var/lib/syncdb-server/syncdb-server.db after migration/restore" >&2
-  exit 1
+echo "[6/6] handle litestream (syncdb-server stays stopped until deploy)"
+if [ -f /var/lib/syncdb-server/syncdb-server.db ]; then
+  sudo systemctl start litestream.service
+else
+  echo "skipping litestream start until DB is created by syncdb-server"
 fi
-
-echo "[6/6] restart litestream (syncdb-server stays stopped until deploy)"
-sudo systemctl start litestream.service
 
 echo "legacy sync cleanup + DB path migration complete"
 EOF
