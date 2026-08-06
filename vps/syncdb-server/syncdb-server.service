@@ -7,9 +7,9 @@ OnFailure=alert-on-failure@%n.service
 DynamicUser=yes
 ProtectSystem=strict
 PrivateTmp=yes
-StateDirectory=sync
-EnvironmentFile=/etc/sync/sync.prod.env
-ExecStart=/opt/sync/current/sync-exe
+StateDirectory=syncdb-server
+EnvironmentFile=/etc/syncdb-server/syncdb-server.prod.env
+ExecStart=/opt/syncdb-server/current/syncdb-server-exe
 Restart=on-failure
 MemoryMax=512M
 

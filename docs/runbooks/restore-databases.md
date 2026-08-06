@@ -14,7 +14,7 @@ This runbook restores one DB at a time to keep blast radius small.
 
 DB paths in this repo:
 
-- `sync` → `/var/lib/sync/sync.db`
+- `syncdb-server` → `/var/lib/syncdb-server/syncdb-server.db`
 - `auth` → `/var/lib/auth/auth.db`
 
 ---
@@ -47,7 +47,7 @@ ssh ubuntu@$VPS_HOST 'sudo systemctl stop auth.service; sudo systemctl stop lite
 ### Sync DB
 
 ```bash
-ssh ubuntu@$VPS_HOST 'sudo litestream restore -config /etc/litestream.yml -dry-run /var/lib/sync/sync.db'
+ssh ubuntu@$VPS_HOST 'sudo litestream restore -config /etc/litestream.yml -dry-run /var/lib/syncdb-server/syncdb-server.db'
 ```
 
 ### Auth DB
@@ -67,7 +67,7 @@ Take a timestamped local backup copy before overwrite.
 ```bash
 ssh ubuntu@$VPS_HOST 'bash -s' <<'EOF'
 set -euo pipefail
-DB=/var/lib/sync/sync.db
+DB=/var/lib/syncdb-server/syncdb-server.db
 TS=$(date -u +%Y%m%dT%H%M%SZ)
 
 sudo test -f "$DB" && sudo cp -a "$DB" "${DB}.bak.${TS}" || true

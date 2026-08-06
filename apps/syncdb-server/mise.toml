@@ -1,5 +1,5 @@
 [env]
-_.file = "../../vps/syncdb-server/sync.dev.env"
+_.file = "../../vps/syncdb-server/syncdb-server.dev.env"
 
 OPENSSL_DIR = "/opt/homebrew/opt/openssl@3"
 CPATH = "/opt/homebrew/opt/openssl@3/include"

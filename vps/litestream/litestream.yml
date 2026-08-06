@@ -1,9 +1,9 @@
 dbs:
-    - path: /var/lib/sync/sync.db
+    - path: /var/lib/syncdb-server/syncdb-server.db
       replica:
         type: s3
         bucket: db-backups
-        path: sync-db
+        path: syncdb-server-db
         endpoint: ${CF_ACCOUNT_ID}.r2.cloudflarestorage.com
         region: auto
         access-key-id: ${R2_ACCESS_KEY}

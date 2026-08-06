@@ -32,8 +32,8 @@ How apps get onto the box.
   sync/
     syncdb-server.service                   → /etc/systemd/system/
     sync.caddy                     → /etc/caddy/sites/
-    sync.prod.enc.env              decrypted to /etc/sync/sync.prod.env
-    (sync.dev.env — gitignored, plaintext)
+    syncdb-server.prod.enc.env     decrypted to /etc/syncdb-server/syncdb-server.prod.env
+    (syncdb-server.dev.env — gitignored, plaintext)
     deploy.sh                      hand-written, run from laptop
   auth/                            same shape as sync
   site/
@@ -186,7 +186,7 @@ at 500M.
 ### Backups
 
 Litestream is live. It replicates both production SQLite databases
-(`/var/lib/sync/sync.db` and `/var/lib/auth/auth.db`) to Cloudflare R2.
+(`/var/lib/syncdb-server/syncdb-server.db` and `/var/lib/auth/auth.db`) to Cloudflare R2.
 
 - `bootstrap.sh` installs Litestream and the systemd drop-in.
 - `mise run deploy:litestream` ships `/etc/litestream.yml` and encrypted R2

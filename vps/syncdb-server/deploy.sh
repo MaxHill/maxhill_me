@@ -6,10 +6,10 @@ cd "$(dirname "$0")/../.."
 : "${VPS_HOST:?VPS_HOST not set (run via mise run deploy:sync)}"
 
 SHA=$(git rev-parse --short HEAD)
-REL="/opt/sync/releases/$SHA"
+REL="/opt/syncdb-server/releases/$SHA"
 
 # 1. build — cross-compile to Linux/amd64 inside Docker builder.
-# NOTE: run ./vps/syncdb-server/migrate.sh once per server first.
+# Run remove-sync-legacy.sh once before first deploy on existing boxes.
 # See docs/adr/0003-docker-for-sync-cross-build.md.
 IMG=sync-builder:ocaml-5.2
 docker image inspect "$IMG" >/dev/null 2>&1 || \
@@ -31,20 +31,23 @@ docker run --rm --platform linux/amd64 \
 
 # 2. ship
 ssh "deploy@$VPS_HOST" "mkdir -p $REL"
-rsync apps/syncdb-server/_build/default/bin/main.exe "deploy@$VPS_HOST:$REL/sync-exe"
-rsync vps/syncdb-server/sync.prod.enc.env "deploy@$VPS_HOST:/tmp/sync.prod.enc.env"
+rsync apps/syncdb-server/_build/default/bin/main.exe "deploy@$VPS_HOST:$REL/syncdb-server-exe"
+rsync vps/syncdb-server/syncdb-server.prod.enc.env "deploy@$VPS_HOST:/tmp/syncdb-server.prod.enc.env"
 
 # 3. release (on box)
 ssh "deploy@$VPS_HOST" bash -s <<EOF
   set -euo pipefail
   export SOPS_AGE_KEY_FILE=/etc/sops/key.txt
-  chmod +x $REL/sync-exe
-  ln -sfn $REL /opt/sync/current.tmp
-  mv -Tf /opt/sync/current.tmp /opt/sync/current
+
+  chmod +x $REL/syncdb-server-exe
+  ln -sfn $REL /opt/syncdb-server/current.tmp
+  mv -Tf /opt/syncdb-server/current.tmp /opt/syncdb-server/current
+
+  sudo install -d -m 700 /etc/syncdb-server
   sops -d --input-type dotenv --output-type dotenv \
-    /tmp/sync.prod.enc.env > /etc/sync/sync.prod.env
-  chmod 600 /etc/sync/sync.prod.env
-  rm /tmp/sync.prod.enc.env
+    /tmp/syncdb-server.prod.enc.env > /etc/syncdb-server/syncdb-server.prod.env
+  chmod 600 /etc/syncdb-server/syncdb-server.prod.env
+  rm /tmp/syncdb-server.prod.enc.env
 
   sudo /bin/systemctl restart syncdb-server.service
   sleep 1

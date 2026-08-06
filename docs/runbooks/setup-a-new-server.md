@@ -144,7 +144,7 @@ mise run deploy:sync               # slow the first time (about 5 to 10
                                    # minutes on Apple Silicon: Docker
                                    # builder image, amd64 emulation, and
                                    # opam deps install). See ADR 0003.
-ssh deploy@$VPS_HOST 'file /opt/sync/current/sync-exe'
+ssh deploy@$VPS_HOST 'file /opt/syncdb-server/current/syncdb-server-exe'
 # expect: ELF 64-bit LSB ... x86-64 ...
 ssh deploy@$VPS_HOST systemctl is-active syncdb-server.service
 
@@ -208,7 +208,7 @@ decrypt every enc file during deploy.
   in `maxhill-sync-opam-cache`, so the retry is fast. See ADR 0003.
 - **`deploy:sync` succeeds but the service will not start** — run
   `journalctl -u syncdb-server.service -n 50` on the box. The cause is usually a bad
-  env value in `vps/syncdb-server/sync.prod.enc.env`. Run `sops edit` to fix it.
+  env value in `vps/syncdb-server/syncdb-server.prod.enc.env`. Run `sops edit` to fix it.
   Then run `mise run deploy:sync` again.
 - **`deploy:litestream` fails with permission errors under `/etc`** —
   bootstrap likely did not run after a script change. Re-run

@@ -105,7 +105,7 @@ install -m 644 "$V/alert-on-failure/alert-on-failure@.service" /etc/systemd/syst
 install -D -m 644 "$V/litestream/litestream.override.service" /etc/systemd/system/litestream.service.d/override.conf
 
 # ---------- per-app dirs owned by deploy ----------
-for app in sync auth site golf alert-on-failure; do
+for app in syncdb-server auth site golf alert-on-failure; do
   mkdir -p "/opt/$app" "/etc/$app"
   chown deploy:deploy "/opt/$app" "/etc/$app"
   chmod 700 "/etc/$app"
