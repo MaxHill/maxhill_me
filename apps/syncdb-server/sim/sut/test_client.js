@@ -5,11 +5,11 @@ import {
   OperationLog,
   RowStore,
   Sync,
-} from "../../../../packages/idb-distribute/dist/index.js";
+} from "../../../../packages/syncdb/dist/index.js";
 import readline from "node:readline";
 import "fake-indexeddb/auto";
 
-/* TODO: These should be taken from idb-distribute */
+/* TODO: These should be taken from syncdb */
 const OPERATIONS_STORE = "operations";
 const CLIENT_STATE_STORE = "clientState";
 

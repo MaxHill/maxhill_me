@@ -8,7 +8,7 @@ Status: ready-for-agent
 
 ## What to build
 
-Extract operation-log methods (save operation, batch save, mark synced, get unsynced, count, reset) from `IDBRepository` into `packages/idb-distribute/src/indexeddb/operationLog.ts`. This becomes the single source of truth for operation persistence. Methods continue to accept `IDBTransaction` as a parameter.
+Extract operation-log methods (save operation, batch save, mark synced, get unsynced, count, reset) from `IDBRepository` into `packages/syncdb/src/indexeddb/operationLog.ts`. This becomes the single source of truth for operation persistence. Methods continue to accept `IDBTransaction` as a parameter.
 
 ## Acceptance criteria
 

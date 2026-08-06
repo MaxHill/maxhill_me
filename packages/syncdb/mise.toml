@@ -2,7 +2,7 @@
 # Workspace library — consumed via `workspace:*`, never published externally.
 
 [tasks.run]
-description = "Watch-build idb-distribute."
+description = "Watch-build syncdb."
 run = "pnpm exec vite build --watch"
 
 [tasks.test]

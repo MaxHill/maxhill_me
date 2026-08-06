@@ -1,10 +1,10 @@
-import { SubscriptionCallbackHandler, Table } from "@maxhill/idb-distribute";
+import { SubscriptionCallbackHandler, Table } from "@maxhill/syncdb";
 import { DBInterface } from "../../db";
 import { ShotType } from "./shot-type-service";
 
 export type ClubTypes = "putter" | "wedge" | "iron" | "hybrid" | "wood" | "driver";
 export type Club = {
-    _key?: string; // This will be automatically managed by idb-distribute
+    _key?: string; // This will be automatically managed by syncdb
     name: string;
     clubType: ClubTypes,
     shotTypes: ShotType[];  // embedded allowed shot types

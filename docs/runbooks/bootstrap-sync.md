@@ -1,6 +1,6 @@
 # Runbook — Bootstrap the sync opam switch
 
-One-time setup for `apps/sync`. Creates a project-local opam switch and
+One-time setup for `apps/syncdb-server`. Creates a project-local opam switch and
 pins the internal `hegel` toolchain. Run this after you clone the repo and
 before the first `mise run run`. Run it again if the switch is deleted.
 
@@ -11,7 +11,7 @@ before the first `mise run run`. Run it again if the switch is deleted.
 
 ## Steps
 
-From `apps/sync/`:
+From `apps/syncdb-server/`:
 
 ```sh
 # 1. Create the local switch if it does not exist.
@@ -36,7 +36,7 @@ opam install --switch=. ocaml-lsp-server ocamlformat merlin -y
 ## Verify
 
 ```sh
-mise run run     # boots the sync service against sync.dev.env
+mise run run     # boots the sync service against syncdb-server.dev.env
 mise run test    # dune runtest
 ```
 

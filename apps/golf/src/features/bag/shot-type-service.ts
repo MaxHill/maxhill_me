@@ -1,8 +1,8 @@
-import { Table, type SubscriptionCallbackHandler } from "@maxhill/idb-distribute";
+import { Table, type SubscriptionCallbackHandler } from "@maxhill/syncdb";
 import { DBInterface } from "../../db";
 
 export type ShotType = {
-    _key?: string; // This will be automatically managed by idb-distribute
+    _key?: string; // This will be automatically managed by syncdb
     name: string,
     description: string,
 }

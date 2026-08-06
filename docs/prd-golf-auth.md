@@ -70,7 +70,7 @@ requests with 401.
      dismissal in IndexedDB)
    - Settings entry showing sign-in/sign-out state
 
-4. **idb-distribute Sync Headers** (modify, `packages/idb-distribute`) —
+4. **syncdb Sync Headers** (modify, `packages/syncdb`) —
    Extend `Sync.sendSyncRequest()` (or the builder API) to accept a
    `getHeaders` function so the golf app can inject
    `Authorization: Bearer <token>`. This is the integration seam between
@@ -142,7 +142,7 @@ should be deterministic and not require network access.
 
 ## Further Notes
 
-- The `idb-distribute` library currently hardcodes headers in
+- The `syncdb` library currently hardcodes headers in
   `sendSyncRequest()`. The minimal change is adding a
   `getHeaders?: () => Promise<Record<string, string>>` option to the
   builder or sync class. This keeps the library auth-agnostic while

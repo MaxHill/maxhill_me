@@ -8,7 +8,7 @@ Status: ready-for-agent
 
 ## What to build
 
-Extract client-state methods (save/get clientId, serverVersion, logicalClock version) from `IDBRepository` into `packages/idb-distribute/src/indexeddb/clientState.ts`. Methods continue to accept `IDBTransaction` as a parameter.
+Extract client-state methods (save/get clientId, serverVersion, logicalClock version) from `IDBRepository` into `packages/syncdb/src/indexeddb/clientState.ts`. Methods continue to accept `IDBTransaction` as a parameter.
 
 ## Acceptance criteria
 

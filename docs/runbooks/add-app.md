@@ -27,7 +27,7 @@ Copy the nearest sibling directory. Rename the files. Edit the contents.
 
 Create four files:
 
-- **`<name>.service`** — the systemd unit. Copy `vps/sync/sync.service` and
+- **`<name>.service`** — the systemd unit. Copy `vps/syncdb-server/syncdb-server.service` and
   replace `sync` with `<name>`. Keep
   `OnFailure=alert-on-failure@%n.service`.
 - **`<name>.caddy`** — the reverse-proxy block. Pick a localhost port that
@@ -46,7 +46,7 @@ Create four files:
   file on save against the recipients in `.sops.yaml`. Add `KEY=value`
   lines for each value the app reads from `process.env` or `Sys.getenv`.
   Plaintext never lands on disk.
-- **`deploy.sh`** — copy `vps/sync/deploy.sh`. Run `s/sync/<name>/g`. Swap
+- **`deploy.sh`** — copy `vps/syncdb-server/deploy.sh`. Run `s/sync/<name>/g`. Swap
   the build command and the artifact path.
 
 ### Static app

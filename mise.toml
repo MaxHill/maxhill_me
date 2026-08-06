@@ -56,21 +56,21 @@ done
 [tasks."run"]
 description = "Run every workspace project's `run` task in parallel (mprocs)."
 run = """
-mprocs --names 'idb-distribute,css,web-component-utils,components,auth,golf,site,sync' \
-  'mise --cd packages/idb-distribute run run' \
+mprocs --names 'syncdb,css,web-component-utils,components,auth,golf,site,syncdb-server' \
+  'mise --cd packages/syncdb run run' \
   'mise --cd packages/css run run' \
   'mise --cd packages/web-component-utils run run' \
   'mise --cd packages/components run run' \
   'mise --cd apps/auth run run' \
   'mise --cd apps/golf run run' \
   'mise --cd apps/site run run' \
-  'mise --cd apps/sync run run'
+  'mise --cd apps/syncdb-server run run'
 """
 
 # --- deploy:* — publish an app to the VPS ---
 [tasks."deploy:sync"]
 description = "Deploy sync (OCaml service)."
-dir = "apps/sync"
+dir = "apps/syncdb-server"
 run = "mise run deploy"
 
 [tasks."deploy:auth"]

@@ -1,6 +1,6 @@
-# Docker for cross-building `apps/sync` to Linux/amd64
+# Docker for cross-building `apps/syncdb-server` to Linux/amd64
 
-`vps/sync/deploy.sh` builds the sync binary inside a Docker builder
+`vps/syncdb-server/deploy.sh` builds the sync binary inside a Docker builder
 image (`ocaml/opam:ubuntu-24.04-ocaml-5.2` + libssl/libsqlite/libgmp
 apt deps) before rsync'ing the resulting Linux/amd64 ELF to the VPS.
 The image is built lazily on first deploy and cached; opam state
@@ -10,24 +10,24 @@ systemd.
 
 ## Shape
 
-- `vps/sync/Dockerfile.builder` — pinned to OCaml 5.2 (matches
-  `apps/sync/dune-project`), Ubuntu 24.04, apt deps for the native
+- `vps/syncdb-server/Dockerfile.builder` — pinned to OCaml 5.2 (matches
+  `apps/syncdb-server/dune-project`), Ubuntu 24.04, apt deps for the native
   libs sync links against.
-- `vps/sync/deploy.sh` step 1 — `docker build` if the image is
+- `vps/syncdb-server/deploy.sh` step 1 — `docker build` if the image is
   missing, then `docker run --platform linux/amd64` with the repo
   bind-mounted and a named opam-cache volume
   (`maxhill-sync-opam-cache`). Inside the container: `opam install
   --deps-only` against the image's pre-installed OCaml 5.2 switch,
   then `dune build ./bin/main.exe --profile release`. The build
-  target is scoped to `bin/main.exe` (not `.`) so `apps/sync/sim/`,
+  target is scoped to `bin/main.exe` (not `.`) so `apps/syncdb-server/sim/`,
   which depends on `hegel`, is skipped in release builds. `_build/`
   stays in the bind-mounted repo — no separate volume — so step 2's
   `rsync` sees the produced ELF on the host directly. Steps 2 and 3
   (rsync + release on box) are unchanged from before.
-- `apps/sync` dependency cleanup bundled with this switch:
+- `apps/syncdb-server` dependency cleanup bundled with this switch:
   `hegel` and `ppx_hegel_test` moved to `{with-test}` in
   `dune-project` (regenerated `sync.opam`). They're only used by
-  `apps/sync/sim/`; the release binary doesn't need them, so the
+  `apps/syncdb-server/sim/`; the release binary doesn't need them, so the
   Docker builder never has to fetch them from GitHub during deploy.
 
 ## Why not native cross-compile

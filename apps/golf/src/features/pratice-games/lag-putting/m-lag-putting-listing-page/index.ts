@@ -1,5 +1,5 @@
 import { MElement } from "@maxhill/web-component-utils";
-import type { TableChangeEvent } from "@maxhill/idb-distribute";
+import type { TableChangeEvent } from "@maxhill/syncdb";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
 import { createRef, ref } from "lit-html/directives/ref.js";

@@ -1,5 +1,5 @@
 [env]
-_.file = "../../vps/sync/sync.dev.env"
+_.file = "../../vps/syncdb-server/syncdb-server.dev.env"
 
 OPENSSL_DIR = "/opt/homebrew/opt/openssl@3"
 CPATH = "/opt/homebrew/opt/openssl@3/include"
@@ -27,4 +27,4 @@ run = "opam exec --switch=. -- dune build ./bin/simulator_sut.exe && opam exec -
 
 [tasks.deploy]
 description = "Deploy sync (OCaml service) to VPS."
-run = "bash ../../vps/sync/deploy.sh"
+run = "bash ../../vps/syncdb-server/deploy.sh"

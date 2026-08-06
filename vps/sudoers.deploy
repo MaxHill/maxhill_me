@@ -1,4 +1,6 @@
-deploy ALL=(root) NOPASSWD: /bin/systemctl restart sync.service
+deploy ALL=(root) NOPASSWD: /bin/systemctl restart syncdb-server.service
+deploy ALL=(root) NOPASSWD: /bin/systemctl status syncdb-server.service --no-pager -l
+deploy ALL=(root) NOPASSWD: /bin/journalctl -u syncdb-server.service -n 40 --no-pager
 deploy ALL=(root) NOPASSWD: /bin/systemctl restart auth.service
 deploy ALL=(root) NOPASSWD: /bin/systemctl reload caddy
 deploy ALL=(root) NOPASSWD: /bin/systemctl enable litestream.service

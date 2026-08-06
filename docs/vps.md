@@ -30,10 +30,10 @@ How apps get onto the box.
     alert-on-failure.prod.enc.env  decrypted on box to /etc/alert-on-failure/
     deploy.sh                      hand-written, run from laptop
   sync/
-    sync.service                   → /etc/systemd/system/
+    syncdb-server.service                   → /etc/systemd/system/
     sync.caddy                     → /etc/caddy/sites/
-    sync.prod.enc.env              decrypted to /etc/sync/sync.prod.env
-    (sync.dev.env — gitignored, plaintext)
+    syncdb-server.prod.enc.env     decrypted to /etc/syncdb-server/syncdb-server.prod.env
+    (syncdb-server.dev.env — gitignored, plaintext)
     deploy.sh                      hand-written, run from laptop
   auth/                            same shape as sync
   site/
@@ -55,7 +55,7 @@ stow. No symlinks. The one exception is the atomic `current` swap under
 
 - **`sync`** (OCaml) — cross-built inside a Docker container pinned to
   `ocaml/opam:ubuntu-24.04-ocaml-5.2`, targeting linux/amd64.
-  `vps/sync/deploy.sh` builds the image on first run. It caches opam state
+  `vps/syncdb-server/deploy.sh` builds the image on first run. It caches opam state
   in a named volume (`maxhill-sync-opam-cache`). Docker must run on the
   machine that runs `mise run deploy:sync`. On Apple Silicon, the build is
   emulated. Rationale: ADR 0003.
@@ -186,7 +186,7 @@ at 500M.
 ### Backups
 
 Litestream is live. It replicates both production SQLite databases
-(`/var/lib/sync/sync.db` and `/var/lib/auth/auth.db`) to Cloudflare R2.
+(`/var/lib/syncdb-server/syncdb-server.db` and `/var/lib/auth/auth.db`) to Cloudflare R2.
 
 - `bootstrap.sh` installs Litestream and the systemd drop-in.
 - `mise run deploy:litestream` ships `/etc/litestream.yml` and encrypted R2
@@ -222,8 +222,8 @@ actually happens.
 - **Caddy** removes the TLS toil without adding an orchestration layer.
 - **No Docker on the box** — OCaml binaries are self-contained. Bun
   compiles to a self-contained binary. Static sites are just files. The one
-  exception is _build-time_: `apps/sync` is cross-built via a Docker image
-  (`vps/sync/Dockerfile.builder`) because Mac-to-Linux OCaml cross-compile
+  exception is _build-time_: `apps/syncdb-server` is cross-built via a Docker image
+  (`vps/syncdb-server/Dockerfile.builder`) because Mac-to-Linux OCaml cross-compile
   is not viable today (see ADR 0003). The VPS itself still runs plain ELFs
   under systemd.
 - **No manifest, no `kind` enum, no per-kind dispatch code** — four apps

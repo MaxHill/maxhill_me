@@ -144,9 +144,9 @@ mise run deploy:sync               # slow the first time (about 5 to 10
                                    # minutes on Apple Silicon: Docker
                                    # builder image, amd64 emulation, and
                                    # opam deps install). See ADR 0003.
-ssh deploy@$VPS_HOST 'file /opt/sync/current/sync-exe'
+ssh deploy@$VPS_HOST 'file /opt/syncdb-server/current/syncdb-server-exe'
 # expect: ELF 64-bit LSB ... x86-64 ...
-ssh deploy@$VPS_HOST systemctl is-active sync.service
+ssh deploy@$VPS_HOST systemctl is-active syncdb-server.service
 
 mise run deploy:litestream         # ships /etc/litestream.yml + R2 creds
 ssh deploy@$VPS_HOST 'systemctl is-active litestream.service'
@@ -160,7 +160,7 @@ Full sweep:
 
 ```bash
 ssh deploy@$VPS_HOST 'systemctl --failed --no-legend'   # expect empty
-ssh deploy@$VPS_HOST 'systemctl is-active caddy litestream.service sync.service auth.service auth-sweep.timer'
+ssh deploy@$VPS_HOST 'systemctl is-active caddy litestream.service syncdb-server.service auth.service auth-sweep.timer'
 ```
 
 Confirm each subdomain serves over HTTPS with a **Let's Encrypt** cert (not
@@ -170,7 +170,7 @@ Confirm the `deploy` user narrow sudo works, and nothing else does:
 
 ```bash
 ssh deploy@$VPS_HOST 'sudo -l'                             # a list of allowed lines
-ssh deploy@$VPS_HOST 'sudo /bin/systemctl restart sync.service'   # succeeds
+ssh deploy@$VPS_HOST 'sudo /bin/systemctl restart syncdb-server.service'   # succeeds
 ssh deploy@$VPS_HOST 'sudo /bin/systemctl restart caddy'          # succeeds (reload path)
 ssh deploy@$VPS_HOST 'sudo apt-get update'                        # refused
 ```
@@ -207,8 +207,8 @@ decrypt every enc file during deploy.
   the first-time opam install timed out. Re-run. The opam state is cached
   in `maxhill-sync-opam-cache`, so the retry is fast. See ADR 0003.
 - **`deploy:sync` succeeds but the service will not start** — run
-  `journalctl -u sync.service -n 50` on the box. The cause is usually a bad
-  env value in `vps/sync/sync.prod.enc.env`. Run `sops edit` to fix it.
+  `journalctl -u syncdb-server.service -n 50` on the box. The cause is usually a bad
+  env value in `vps/syncdb-server/syncdb-server.prod.enc.env`. Run `sops edit` to fix it.
   Then run `mise run deploy:sync` again.
 - **`deploy:litestream` fails with permission errors under `/etc`** —
   bootstrap likely did not run after a script change. Re-run
