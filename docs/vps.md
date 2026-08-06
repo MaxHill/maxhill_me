@@ -222,7 +222,7 @@ actually happens.
 - **Caddy** removes the TLS toil without adding an orchestration layer.
 - **No Docker on the box** — OCaml binaries are self-contained. Bun
   compiles to a self-contained binary. Static sites are just files. The one
-  exception is _build-time_: `apps/syncdb-serverdb-server` is cross-built via a Docker image
+  exception is _build-time_: `apps/syncdb-server` is cross-built via a Docker image
   (`vps/sync/Dockerfile.builder`) because Mac-to-Linux OCaml cross-compile
   is not viable today (see ADR 0003). The VPS itself still runs plain ELFs
   under systemd.

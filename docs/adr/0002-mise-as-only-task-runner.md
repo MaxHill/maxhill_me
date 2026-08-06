@@ -23,7 +23,7 @@ four tasks:
   consumers pick up changes.
 - **`test`** — bounded automated checks that the current version is
   self-consistent (unit tests, type-checks, `astro check + eslint`).
-- **`fuzz`** — unbounded checks. `apps/syncdb-serverdb-server` wires this to the
+- **`fuzz`** — unbounded checks. `apps/syncdb-server` wires this to the
   simulator search; everywhere else it's `echo "no-op" && exit 0`.
 - **`deploy`** — publish. For apps, `bash ../../vps/<app>/deploy.sh`
   (which builds inline and ships). For workspace libraries, a
@@ -40,7 +40,7 @@ became `docs/runbooks/bootstrap-sync.md`), or invoked directly via
 The design target is [matklad's O(1) build
 file](https://matklad.github.io/2023/12/31/O(1)-build-file.html): the
 number of task verbs you need to learn to work on the repo does not
-grow with the number of apps or packages. Someone opening `apps/syncdb-serverdb-server`
+grow with the number of apps or packages. Someone opening `apps/syncdb-server`
 knows exactly what to type; so does someone opening
 `packages/syncdb`. The interface is the same shape as
 `.github/workflows/` used to enforce, but expressed in the file that
@@ -76,7 +76,7 @@ without adding a new tool.
 
 - **Keep `package.json` scripts as the interface, drop mise for
   tasks.** Rejected: `package.json` scripts don't compose across the
-  OCaml service (`apps/syncdb-serverdb-server`), which doesn't participate in pnpm's
+  OCaml service (`apps/syncdb-server`), which doesn't participate in pnpm's
   script model at all beyond a token entry. mise is the only
   common denominator that spans TS/Bun/Astro/OCaml.
 

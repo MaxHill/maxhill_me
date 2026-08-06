@@ -1,6 +1,6 @@
 # Runbook — Bootstrap the sync opam switch
 
-One-time setup for `apps/syncdb-serverdb-server`. Creates a project-local opam switch and
+One-time setup for `apps/syncdb-server`. Creates a project-local opam switch and
 pins the internal `hegel` toolchain. Run this after you clone the repo and
 before the first `mise run run`. Run it again if the switch is deleted.
 
@@ -11,7 +11,7 @@ before the first `mise run run`. Run it again if the switch is deleted.
 
 ## Steps
 
-From `apps/syncdb-serverdb-server/`:
+From `apps/syncdb-server/`:
 
 ```sh
 # 1. Create the local switch if it does not exist.

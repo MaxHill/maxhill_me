@@ -19,7 +19,7 @@ Create `packages/syncdb/src/indexeddb/index.ts` as the barrel file for the new d
 - [ ] Store-name and index-name constants are defined in `lifecycle.ts`
 - [ ] A `lifecycle.test.ts` passes using `fake-indexeddb`: open, close, version upgrade, index migration
 - [ ] Existing tests still pass (`deno test` or equivalent in the package)
-- [ ] Validated with the simulator (`apps/syncdb-serverdb-server/cmd/simulator/`) — a full run completes without error
+- [ ] Validated with the simulator (`apps/syncdb-server/cmd/simulator/`) — a full run completes without error
 
 ## Blocked by
 
