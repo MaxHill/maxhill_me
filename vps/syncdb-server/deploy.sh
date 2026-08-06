@@ -8,14 +8,6 @@ cd "$(dirname "$0")/../.."
 SHA=$(git rev-parse --short HEAD)
 REL="/opt/syncdb-server/releases/$SHA"
 
-# Optional one-time migration for existing boxes.
-# Runs legacy cleanup + DB path rename before first syncdb-server start.
-# Usage (once): RUN_SYNCDB_MIGRATION=1 mise run deploy:sync
-if [ "${RUN_SYNCDB_MIGRATION:-0}" = "1" ]; then
-  echo "[migration] running legacy sync cleanup + DB path migration"
-  bash vps/syncdb-server/remove-sync-legacy.sh
-fi
-
 # 1. build — cross-compile to Linux/amd64 inside Docker builder.
 # See docs/adr/0003-docker-for-sync-cross-build.md.
 IMG=sync-builder:ocaml-5.2
@@ -59,7 +51,8 @@ ssh "deploy@$VPS_HOST" bash -s <<EOF
   sleep 1
   systemctl is-active --quiet syncdb-server.service || {
     echo "syncdb-server.service failed to start" >&2
-    journalctl -u syncdb-server.service -n 20 --no-pager >&2
+    sudo /bin/systemctl status syncdb-server.service --no-pager -l >&2 || true
+    sudo /bin/journalctl -u syncdb-server.service -n 40 --no-pager >&2 || true
     exit 1
   }
 EOF
