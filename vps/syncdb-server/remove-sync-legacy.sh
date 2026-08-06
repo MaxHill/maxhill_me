@@ -16,7 +16,9 @@ if systemctl list-unit-files | grep -q '^sync\.service'; then
   sudo systemctl disable sync.service || true
 fi
 # Stop new unit too if it was started accidentally.
-sudo systemctl stop syncdb-server.service || true
+if systemctl list-unit-files | grep -q '^syncdb-server\.service'; then
+  sudo systemctl stop syncdb-server.service || true
+fi
 sudo systemctl stop litestream.service || true
 
 echo "[2/6] remove legacy unit and symlink"
@@ -51,9 +53,21 @@ if [ ! -f /var/lib/syncdb-server/syncdb-server.db ]; then
   sudo rm -f /var/lib/syncdb-server/syncdb-server.db \
     /var/lib/syncdb-server/syncdb-server.db-wal \
     /var/lib/syncdb-server/syncdb-server.db-shm
+
   if ! sudo litestream restore -config /etc/litestream.yml /var/lib/syncdb-server/syncdb-server.db; then
-    echo "failed to restore /var/lib/syncdb-server/syncdb-server.db from Litestream" >&2
-    exit 1
+    echo "new-path restore failed; trying legacy restore path then move"
+    sudo install -d /var/lib/sync
+    sudo rm -f /var/lib/sync/sync.db /var/lib/sync/sync.db-wal /var/lib/sync/sync.db-shm
+
+    if ! sudo litestream restore -config /etc/litestream.yml /var/lib/sync/sync.db; then
+      echo "failed to restore from Litestream using both new and legacy DB paths" >&2
+      exit 1
+    fi
+
+    sudo install -d /var/lib/syncdb-server
+    sudo mv /var/lib/sync/sync.db /var/lib/syncdb-server/syncdb-server.db
+    [ -f /var/lib/sync/sync.db-wal ] && sudo mv /var/lib/sync/sync.db-wal /var/lib/syncdb-server/syncdb-server.db-wal || true
+    [ -f /var/lib/sync/sync.db-shm ] && sudo mv /var/lib/sync/sync.db-shm /var/lib/syncdb-server/syncdb-server.db-shm || true
   fi
 fi
 
