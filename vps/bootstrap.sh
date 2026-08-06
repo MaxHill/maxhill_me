@@ -91,8 +91,8 @@ visudo -c -f /etc/sudoers.d/deploy   # fail loud if the file is garbage
 # `mise run deploy:<app>`. alert-on-failure follows the same shape:
 # @.service template here, script + env via deploy.
 mkdir -p /etc/caddy/sites
-install -m 644 "$V/sync/sync.service" /etc/systemd/system/sync.service
-install -m 644 "$V/sync/sync.caddy"   /etc/caddy/sites/sync.caddy
+install -m 644 "$V/syncdb-server/syncdb-server.service" /etc/systemd/system/syncdb-server.service
+install -m 644 "$V/syncdb-server/sync.caddy"              /etc/caddy/sites/sync.caddy
 
 
 install -m 644 "$V/auth/auth.service"       /etc/systemd/system/auth.service
@@ -122,7 +122,7 @@ systemctl reload caddy
 # `--now`) just creates the .wants/ symlink; it doesn't try to exec
 # the binary, so this is safe before the first deploy has shipped
 # /opt/<app>/current/. First `mise run deploy:<app>` starts them.
-systemctl enable sync.service auth.service
+systemctl enable syncdb-server.service auth.service
 # auth's hourly kv-sweep timer (once-only enable; idempotent to re-run)
 systemctl enable --now auth-sweep.timer
 # journald retention only bites after a restart, and only if the config actually changed

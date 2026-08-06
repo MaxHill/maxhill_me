@@ -1,5 +1,5 @@
 [Unit]
-Description=sync service
+Description=syncdb-server service
 After=network.target
 OnFailure=alert-on-failure@%n.service
 

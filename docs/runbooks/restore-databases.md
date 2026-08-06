@@ -33,7 +33,7 @@ Stop the app that owns the DB and stop litestream.
 ### Sync DB
 
 ```bash
-ssh ubuntu@$VPS_HOST 'sudo systemctl stop sync.service; sudo systemctl stop litestream.service'
+ssh ubuntu@$VPS_HOST 'sudo systemctl stop syncdb-server.service; sudo systemctl stop litestream.service'
 ```
 
 ### Auth DB
@@ -113,7 +113,7 @@ EOF
 ### Sync DB
 
 ```bash
-ssh ubuntu@$VPS_HOST 'sudo systemctl start sync.service; sudo systemctl start litestream.service'
+ssh ubuntu@$VPS_HOST 'sudo systemctl start syncdb-server.service; sudo systemctl start litestream.service'
 ```
 
 ### Auth DB
@@ -125,7 +125,7 @@ ssh ubuntu@$VPS_HOST 'sudo systemctl start auth.service; sudo systemctl start li
 ## 6. Verify
 
 ```bash
-ssh ubuntu@$VPS_HOST 'sudo systemctl is-active litestream sync.service auth.service'
+ssh ubuntu@$VPS_HOST 'sudo systemctl is-active litestream syncdb-server.service auth.service'
 ssh ubuntu@$VPS_HOST 'sudo journalctl -u litestream -n 40 --no-pager'
 ```
 
@@ -147,6 +147,6 @@ curl -I https://sync.maxhill.me
 - **`cannot restore, output path already exists and is not empty`** — remove
   the DB and sidecars first, or use `-force` explicitly.
 - **Restored DB starts but app fails** — check app unit logs:
-  `journalctl -u sync.service -n 80` or `journalctl -u auth.service -n 80`.
+  `journalctl -u syncdb-server.service -n 80` or `journalctl -u auth.service -n 80`.
 - **Need to roll back this restore** — stop services, move
   `*.bak.<timestamp>` back to original filename, start services again.

@@ -13,7 +13,7 @@ type t = {
 
 (* Env-var driven. The service unit ships an EnvironmentFile= at
    /etc/sync/sync.prod.env; systemd sets these before ExecStart=.
-   For dev, source vps/sync/sync.dev.env (or run under mise). *)
+   For dev, source vps/syncdb-server/sync.dev.env (or run under mise). *)
 
 let parse_port = function
   | None -> 3001

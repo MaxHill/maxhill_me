@@ -1,6 +1,6 @@
 # Docker for cross-building `apps/syncdb-server` to Linux/amd64
 
-`vps/sync/deploy.sh` builds the sync binary inside a Docker builder
+`vps/syncdb-server/deploy.sh` builds the sync binary inside a Docker builder
 image (`ocaml/opam:ubuntu-24.04-ocaml-5.2` + libssl/libsqlite/libgmp
 apt deps) before rsync'ing the resulting Linux/amd64 ELF to the VPS.
 The image is built lazily on first deploy and cached; opam state
@@ -10,10 +10,10 @@ systemd.
 
 ## Shape
 
-- `vps/sync/Dockerfile.builder` — pinned to OCaml 5.2 (matches
+- `vps/syncdb-server/Dockerfile.builder` — pinned to OCaml 5.2 (matches
   `apps/syncdb-server/dune-project`), Ubuntu 24.04, apt deps for the native
   libs sync links against.
-- `vps/sync/deploy.sh` step 1 — `docker build` if the image is
+- `vps/syncdb-server/deploy.sh` step 1 — `docker build` if the image is
   missing, then `docker run --platform linux/amd64` with the repo
   bind-mounted and a named opam-cache volume
   (`maxhill-sync-opam-cache`). Inside the container: `opam install

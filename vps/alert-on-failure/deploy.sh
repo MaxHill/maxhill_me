@@ -5,7 +5,7 @@
 #   - the Resend credentials env file to /etc/alert-on-failure/
 #
 # The systemd @.service template is installed by bootstrap.sh (same
-# as sync.service, auth.service, etc). No service to restart —
+# as syncdb-server.service, auth.service, etc). No service to restart —
 # alert-on-failure@<unit>.service is instantiated on-demand by
 # OnFailure= when some other unit fails.
 set -euo pipefail
