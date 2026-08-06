@@ -1,6 +1,6 @@
-# Build image for cross-compiling apps/sync from a dev machine
+# Build image for cross-compiling apps/syncdb-server from a dev machine
 # (typically macOS/arm64) to Linux/amd64. Pinned to the same OCaml
-# version as apps/sync (5.2). See docs/adr/0003-docker-for-sync-cross-build.md.
+# version as apps/syncdb-server (5.2). See docs/adr/0003-docker-for-sync-cross-build.md.
 FROM ocaml/opam:ubuntu-24.04-ocaml-5.2
 # Base image sets `USER opam`, but Docker 29's containerd image store
 # sometimes fails to resolve that username at RUN time

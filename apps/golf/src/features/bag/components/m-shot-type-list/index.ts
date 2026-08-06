@@ -3,7 +3,7 @@ import styles from "./index.css?inline";
 import { html, render } from "lit-html";
 import { get_DB } from "../../../../db";
 import { ShotType, ShotTypeService } from "../../shot-type-service";
-import { TableChangeEvent } from "@maxhill/idb-distribute";
+import { TableChangeEvent } from "@maxhill/syncdb";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import "@maxhill/components/m-card";
 

@@ -2,7 +2,7 @@
 
 > **Historical:** written before the sync server was ported to OCaml.
 > The middleware described below was ultimately implemented in OCaml
-> (Piaf + `jose`) rather than Go/`jwx`. See `apps/sync/lib/auth.ml`
+> (Piaf + `jose`) rather than Go/`jwx`. See `apps/syncdb-serverdb-server/lib/auth.ml`
 > for the shipped code. The requirements below remain accurate; only
 > the language and library changed.
 

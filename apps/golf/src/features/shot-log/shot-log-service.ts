@@ -1,4 +1,4 @@
-import { SubscriptionCallbackHandler, Table } from "@maxhill/idb-distribute";
+import { SubscriptionCallbackHandler, Table } from "@maxhill/syncdb";
 import { DBInterface } from "../../db";
 
 export type ShotLog = {

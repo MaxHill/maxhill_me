@@ -19,12 +19,12 @@ docker image inspect "$IMG" >/dev/null 2>&1 || \
 docker run --rm --platform linux/amd64 \
   -v "$PWD:/src" \
   -v maxhill-sync-opam-cache:/home/opam/.opam \
-  -w /src/apps/sync \
+  -w /src/apps/syncdb-server \
   "$IMG" bash -c '
     set -euo pipefail
     # Use the image’s pre-installed OCaml 5.2 switch — no per-project
     # switch needed. Deps only (no --with-test): hegel/ppx_hegel_test
-    # are {with-test} and only used by apps/sync/sim, which the
+    # are {with-test} and only used by apps/syncdb-server/sim, which the
     # release target below does not build.
     opam install . --deps-only -y
     opam exec -- dune build ./bin/main.exe --profile release
@@ -32,7 +32,7 @@ docker run --rm --platform linux/amd64 \
 
 # 2. ship
 ssh "deploy@$VPS_HOST" "mkdir -p $REL"
-rsync apps/sync/_build/default/bin/main.exe "deploy@$VPS_HOST:$REL/sync-exe"
+rsync apps/syncdb-server/_build/default/bin/main.exe "deploy@$VPS_HOST:$REL/sync-exe"
 rsync vps/sync/sync.prod.enc.env            "deploy@$VPS_HOST:/tmp/sync.prod.enc.env"
 
 # 3. release (on box)

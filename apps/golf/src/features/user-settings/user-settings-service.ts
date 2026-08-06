@@ -3,7 +3,7 @@
  * Settings sync across devices automatically.
  */
 
-import { Table } from "@maxhill/idb-distribute";
+import { Table } from "@maxhill/syncdb";
 import { DBInterface } from "../../db";
 
 const DB_OWNER_USER_ID_KEY = "db_owner_user_id";

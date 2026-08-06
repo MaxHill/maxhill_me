@@ -1,4 +1,4 @@
-# Add `getHeaders` hook to idb-distribute sync
+# Add `getHeaders` hook to syncdb sync
 
 **Label:** ready-for-agent
 
@@ -8,7 +8,7 @@ docs/prd-golf-auth.md
 
 ## What to build
 
-Extend the `idb-distribute` library's sync layer to accept a `getHeaders` callback so consumers can inject custom HTTP headers (e.g. `Authorization: Bearer <token>`) into sync requests.
+Extend the `syncdb` library's sync layer to accept a `getHeaders` callback so consumers can inject custom HTTP headers (e.g. `Authorization: Bearer <token>`) into sync requests.
 
 The builder API should accept something like `withSyncHeaders(fn: () => Promise<Record<string, string>>)`. The `Sync.sendSyncRequest()` method should call this function and merge the returned headers with the existing `Content-Type` header before making the fetch call.
 

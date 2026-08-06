@@ -3,5 +3,4 @@
 (library
  (name sync_simulator)
  (libraries sync eio eio_main unix logs hegel yojson ppx_yojson_conv_lib)
- (inline_tests (backend ppx_hegel_test))
  (preprocess (pps ppx_hegel_test ppx_yojson_conv)))

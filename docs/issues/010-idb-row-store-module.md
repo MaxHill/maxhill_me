@@ -8,7 +8,7 @@ Status: ready-for-agent
 
 ## What to build
 
-Extract row-storage methods (`saveRow`, `getRow`, `getRows`, `deleteRow`, query methods) from `IDBRepository` into `packages/idb-distribute/src/indexeddb/rowStore.ts`. The class accepts an `IDBTransaction` parameter for each method (same pattern as today). Tombstone logic in `saveRow` stays as-is (known debt, out of scope).
+Extract row-storage methods (`saveRow`, `getRow`, `getRows`, `deleteRow`, query methods) from `IDBRepository` into `packages/syncdb/src/indexeddb/rowStore.ts`. The class accepts an `IDBTransaction` parameter for each method (same pattern as today). Tombstone logic in `saveRow` stays as-is (known debt, out of scope).
 
 ## Acceptance criteria
 

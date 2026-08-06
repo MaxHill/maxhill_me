@@ -9,7 +9,7 @@
   "dependencies": {
     "@maxhill/components": "workspace:*",
     "@maxhill/css": "workspace:*",
-    "@maxhill/idb-distribute": "workspace:*",
+    "@maxhill/syncdb": "workspace:*",
     "@maxhill/web-component-utils": "workspace:*",
     "@openauthjs/openauth": "^0.4.3",
     "lit-html": "^3.2.1",

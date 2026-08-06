@@ -1,4 +1,4 @@
-import { CRDTDatabase, newDatabase } from "@maxhill/idb-distribute";
+import { CRDTDatabase, newDatabase } from "@maxhill/syncdb";
 import { authClient } from "./features/auth/auth-client";
 import { UserSettingsService } from "./features/user-settings/user-settings-service";
 import { reconcileDatabaseOwnership } from "./db-ownership";

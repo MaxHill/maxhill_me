@@ -136,7 +136,7 @@ per service unit + one fewer parser per app forever after.
 
 The "no Docker" rejection above refers to *runtime* on the box. That
 still holds: nothing on the VPS uses Docker, systemd runs plain
-ELFs. Build-time is now a partial exception for `apps/sync` only:
+ELFs. Build-time is now a partial exception for `apps/syncdb-serverdb-server` only:
 the OCaml binary is cross-compiled inside a Docker builder on the
 dev machine, because macOS → Linux OCaml cross-compile is not viable
 today (dune's `-x cross` rebuilds every build-time helper as a Linux

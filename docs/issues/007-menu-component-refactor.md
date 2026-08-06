@@ -8,7 +8,7 @@ Refactor the imperative `main-menu.ts` into a proper component architecture:
 
 3. **Patch `m-popover-menu` shadow DOM compat** — Change anchor lookup from `document.getElementById(this.anchor)` to `(this.getRootNode() as Document | ShadowRoot).getElementById(this.anchor)` so it works inside shadow DOM.
 
-4. **Future: `m-theme-switcher` persistence via idb-distribute** — Migrate from localStorage to `user_settings` CRDT table so theme preference syncs across devices. (Separate slice, not part of initial refactor.)
+4. **Future: `m-theme-switcher` persistence via syncdb** — Migrate from localStorage to `user_settings` CRDT table so theme preference syncs across devices. (Separate slice, not part of initial refactor.)
 
 ## Acceptance criteria
 
@@ -29,4 +29,4 @@ Refactor the imperative `main-menu.ts` into a proper component architecture:
 - `m-main-menu` owns all rendering — no orphaned HTML in index.html
 - Auth-dependent UI uses pure template functions, not sub-components
 - Theme switcher is a separate reusable component (not golf-specific)
-- idb-distribute theme sync is a follow-up, not part of this issue
+- syncdb theme sync is a follow-up, not part of this issue

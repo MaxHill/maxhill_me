@@ -63,7 +63,7 @@ tolerant of colliding dots.
 Indexes can be created at database initialization:
 
 ```typescript
-import { CRDTDatabase } from "@maxhill/idb-distribute";
+import { CRDTDatabase } from "@maxhill/syncdb";
 
 const db = new CRDTDatabase(
   "mydb",
@@ -93,7 +93,7 @@ This section documents the proposed builder pattern API. The current implementat
 ### Setup
 
 ```typescript
-import { CRDTDatabase, above, below, exact } from "@maxhill/idb-distribute";
+import { CRDTDatabase, above, below, exact } from "@maxhill/syncdb";
 
 const db = new CRDTDatabase("mydb", {
   usersByAge: { table: "users", keys: ["age"] },
@@ -179,7 +179,7 @@ for await (const user of users.index("usersByFullName").query(exact(["Alice", "S
 ### Query Operators
 
 ```typescript
-import { exact, above, below, between } from "@maxhill/idb-distribute";
+import { exact, above, below, between } from "@maxhill/syncdb";
 
 exact(value)
 above(value)

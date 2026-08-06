@@ -1,4 +1,4 @@
-import { desc, SubscriptionCallbackHandler, Table } from "@maxhill/idb-distribute";
+import { desc, SubscriptionCallbackHandler, Table } from "@maxhill/syncdb";
 import { DBInterface } from "../../../db";
 import { PracticeGameMetadata } from "../practice-game";
 
