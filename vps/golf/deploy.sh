@@ -4,6 +4,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR/../.."
 : "${VPS_HOST:?VPS_HOST not set (run via mise run deploy:golf)}"
+SSH_OPTS='-o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=5 -o ServerAliveCountMax=3'
+RSYNC_SSH="ssh $SSH_OPTS"
+
 
 SHA=$(git rev-parse --short HEAD)
 REL="/opt/golf/releases/$SHA"
@@ -17,8 +20,8 @@ set +a
 
 (cd apps/golf && pnpm exec vite build)
 
-ssh "deploy@$VPS_HOST" "mkdir -p $REL"
-rsync -a --delete apps/golf/dist/ "deploy@$VPS_HOST:$REL/"
+ssh $SSH_OPTS "deploy@$VPS_HOST" "mkdir -p $REL"
+rsync -a --delete -e "$RSYNC_SSH" apps/golf/dist/ "deploy@$VPS_HOST:$REL/"
 ssh "deploy@$VPS_HOST" "ln -sfn $REL /opt/golf/current.tmp && mv -Tf /opt/golf/current.tmp /opt/golf/current"
 
 echo "golf deployed at $SHA"
