@@ -7,7 +7,7 @@ node = "22"
 [env]
 # The VPS. App subdomains (sync.maxhill.me, auth.maxhill.me, …) all
 # resolve here; every deploy targets the same box.
-VPS_HOST = "maxhill.me"
+VPS_HOST = "164.132.64.112"
 
 # Every app and package exposes the same four canonical tasks:
 #   run, test, fuzz, deploy

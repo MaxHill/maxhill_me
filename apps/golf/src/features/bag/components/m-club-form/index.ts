@@ -92,10 +92,6 @@ export class MClubForm extends MElement {
 
     await this.loadShotTypes();
     this.renderComponent();
-
-    if (this.isEditing && this.currentClub) {
-      this.populateForm(this.currentClub);
-    }
   }
 
   disconnectedCallback() {
@@ -108,30 +104,6 @@ export class MClubForm extends MElement {
     for await (const shotType of shotTypesIterator) {
       if (shotType._key) {
         this.shotTypes.push(shotType as ShotType);
-      }
-    }
-  }
-
-  private populateForm(club: Club) {
-    if (this.clubTypeCombobox.value && club.clubType) {
-      const clubTypeOption = this.clubTypeCombobox.value.querySelector(
-        `m-option[value="${club.clubType}"]`,
-      ) as MOption;
-      if (clubTypeOption) {
-        this.clubTypeCombobox.value.select(clubTypeOption);
-      }
-    }
-
-    if (this.shotTypesCombobox.value && club.shotTypes) {
-      for (const shotType of club.shotTypes) {
-        if (shotType._key) {
-          const option = this.shotTypesCombobox.value.querySelector(
-            `m-option[value="${shotType._key}"]`,
-          ) as MOption;
-          if (option) {
-            this.shotTypesCombobox.value.select(option);
-          }
-        }
       }
     }
   }
@@ -203,6 +175,11 @@ export class MClubForm extends MElement {
     const buttonText = this.isEditing ? "Save" : "Add";
     const ariaLabel = this.isEditing ? "Edit club form" : "Add new club form";
     const buttonAriaLabel = this.isEditing ? "Submit form to save club" : "Submit form to add club";
+    const selectedShotTypeKeys = new Set(
+      (this.currentClub?.shotTypes ?? [])
+        .map((shotType) => shotType?._key)
+        .filter((key): key is string => !!key),
+    );
 
     render(
       html`
@@ -237,12 +214,12 @@ export class MClubForm extends MElement {
             placeholder="Select what type of club"
             aria-required="true"
           >
-            <m-option value="putter">Putter</m-option>
-            <m-option value="wedge">Wedge</m-option>
-            <m-option value="iron">Iron</m-option>
-            <m-option value="hybrid">Hybrid</m-option>
-            <m-option value="wood">Wood</m-option>
-            <m-option value="driver">Driver</m-option>
+            <m-option value="putter" ?selected=${this.currentClub?.clubType === "putter"}>Putter</m-option>
+            <m-option value="wedge" ?selected=${this.currentClub?.clubType === "wedge"}>Wedge</m-option>
+            <m-option value="iron" ?selected=${this.currentClub?.clubType === "iron"}>Iron</m-option>
+            <m-option value="hybrid" ?selected=${this.currentClub?.clubType === "hybrid"}>Hybrid</m-option>
+            <m-option value="wood" ?selected=${this.currentClub?.clubType === "wood"}>Wood</m-option>
+            <m-option value="driver" ?selected=${this.currentClub?.clubType === "driver"}>Driver</m-option>
           </m-listbox>
 
           <details>
@@ -278,7 +255,7 @@ export class MClubForm extends MElement {
                 name="lie"
                 label="Lie"
                 placeholder="Ex. 30"
-                value=${this.currentClub?.loft || ''}
+                value=${this.currentClub?.lie || ''}
               ></m-input>
 
 
@@ -298,7 +275,7 @@ export class MClubForm extends MElement {
             >
               ${this.shotTypes.map((shotType) =>
                 html`
-                  <m-option value=${shotType._key}>
+                  <m-option value=${shotType._key} ?selected=${selectedShotTypeKeys.has(shotType._key!)}>
                       <div class="name">${shotType.name}</div>
                       <div class="description">${shotType.description}</div>
                   </m-option>

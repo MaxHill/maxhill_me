@@ -60,5 +60,51 @@ describe("m-club-form", () => {
 
       expect(innerNativeInput().value).to.equal("Club B");
     });
+
+    it("keeps shared shot type selected when switching between clubs", async () => {
+      const db = await get_DB();
+      const shotTypeService = new ShotTypeService(db);
+      const clubService = new ClubService(db);
+
+      await shotTypeService.addShotType({
+        name: "Stock",
+        description: "Shared across clubs",
+      });
+
+      const shotTypes: any[] = [];
+      for await (const st of shotTypeService.table.query()) {
+        shotTypes.push(st);
+      }
+      const sharedShotType = shotTypes.find((s) => s.name === "Stock") ?? shotTypes[0];
+
+      const keyA = `test-club-a-${crypto.randomUUID()}`;
+      const keyB = `test-club-b-${crypto.randomUUID()}`;
+
+      await clubService.setClub(keyA, {
+        name: "Club A",
+        clubType: "iron",
+        shotTypes: [sharedShotType],
+      });
+      await clubService.setClub(keyB, {
+        name: "Club B",
+        clubType: "wedge",
+        shotTypes: [sharedShotType],
+      });
+
+      const form = await fixture<MClubForm>(html`
+        <m-club-form club-key=${keyA}></m-club-form>
+      `);
+
+      await new Promise((r) => setTimeout(r, 200));
+
+      form.setAttribute("club-key", keyB);
+      await new Promise((r) => setTimeout(r, 200));
+
+      const shotTypesListbox = form.shadowRoot!.querySelector(
+        'm-listbox[name="shotTypes"]',
+      ) as any;
+
+      expect(shotTypesListbox.selectedValues).to.deep.equal([sharedShotType._key]);
+    });
   });
 });
