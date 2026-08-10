@@ -253,4 +253,55 @@ export default function (plop) {
             ];
         },
     });
+
+    plop.setGenerator('ocaml-project', {
+        description: 'Create an OCaml project with Hegel and inline expect tests',
+        prompts: [
+            {
+                type: 'input',
+                name: 'projectName',
+                message: 'Project name:',
+                validate: (value) => {
+                    if (!value) return 'Project name is required';
+                    if (!/^[a-z][a-z0-9_]*$/.test(value)) {
+                        return 'Project name must use lowercase letters, numbers, and underscores';
+                    }
+                    return true;
+                },
+            },
+            {
+                type: 'input',
+                name: 'projectPath',
+                message: 'Project path relative to <repo_root>:',
+                default: (answers) => answers.projectName,
+                validate: (value) => {
+                    if (!value) return 'Project path is required';
+                    if (value.startsWith('/') || value.split('/').includes('..')) {
+                        return 'Project path must be relative to the repository root';
+                    }
+                    return true;
+                },
+            },
+        ],
+        actions: (data) => {
+            data.projectPath = data.projectPath.replace(/\/+$/, '');
+            data.projectModule = plop.getHelper('pascalCase')(data.projectName);
+
+            const basePath = data.projectPath;
+            const templatePath = 'plop/templates/ocaml-project';
+
+            return [
+                { type: 'add', path: `${basePath}/mise.toml`, templateFile: `${templatePath}/mise.toml.hbs` },
+                { type: 'add', path: `${basePath}/dune-project`, templateFile: `${templatePath}/dune-project.hbs` },
+                { type: 'add', path: `${basePath}/{{projectName}}.opam`, templateFile: `${templatePath}/project.opam.hbs` },
+                { type: 'add', path: `${basePath}/.gitignore`, templateFile: `${templatePath}/gitignore.hbs` },
+                { type: 'add', path: `${basePath}/bin/dune`, templateFile: `${templatePath}/bin-dune.hbs` },
+                { type: 'add', path: `${basePath}/bin/main.ml`, templateFile: `${templatePath}/main.ml.hbs` },
+                { type: 'add', path: `${basePath}/lib/dune`, templateFile: `${templatePath}/lib-dune.hbs` },
+                { type: 'add', path: `${basePath}/lib/{{projectName}}.ml`, templateFile: `${templatePath}/lib.ml.hbs` },
+                { type: 'add', path: `${basePath}/test/dune`, templateFile: `${templatePath}/test-dune.hbs` },
+                { type: 'add', path: `${basePath}/test/test_{{projectName}}.ml`, templateFile: `${templatePath}/test.ml.hbs` },
+            ];
+        },
+    });
 }

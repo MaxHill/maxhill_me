@@ -1,6 +1,6 @@
-# Component Generator
+# Code generators
 
-This directory contains Plop templates for generating new web components.
+This directory contains Plop templates for components, events, and OCaml projects.
 
 ## Usage
 
@@ -9,6 +9,19 @@ mise run generate
 ```
 
 ## Features
+
+### OCaml project generator
+
+Creates an OCaml project at a path relative to `<repo_root>`. For example, `apps/my_app` creates `<repo_root>/apps/my_app`.
+
+The project includes:
+
+- a local-switch `mise` task interface
+- inline `ppx_expect` tests in `lib/`
+- Hegel property tests in `test/`
+- generated dune and opam package files
+
+After generation, follow `docs/runbooks/create-ocaml-project.md` to create the switch and install dependencies.
 
 ### Component Generator
 
@@ -107,6 +120,17 @@ plop/
     │   ├── index.css.hbs
     │   ├── index.test.ts.hbs
     │   └── DOCS.mdx.hbs
-    └── event/
-        └── event.ts.hbs
+    ├── event/
+    │   └── event.ts.hbs
+    └── ocaml-project/
+        ├── bin-dune.hbs
+        ├── dune-project.hbs
+        ├── gitignore.hbs
+        ├── lib-dune.hbs
+        ├── lib.ml.hbs
+        ├── main.ml.hbs
+        ├── mise.toml.hbs
+        ├── project.opam.hbs
+        ├── test-dune.hbs
+        └── test.ml.hbs
 ```
