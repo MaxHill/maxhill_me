@@ -4,6 +4,7 @@ Use the Plop generator to create an OCaml project with these features:
 
 - a local opam switch
 - a `mise` task interface
+- an `.ocamlformat` configuration
 - inline `ppx_expect` tests in `lib/`
 - Hegel property tests in `test/`
 
@@ -98,7 +99,26 @@ opam install . --deps-only --with-test -y
 This installs `ppx_expect`, Hegel, and the other dependencies from
 `<project-name>.opam`.
 
-## 7. Verify the project
+## 7. Install development tools
+
+Install the language server and formatter in the local switch:
+
+```sh
+opam install ocaml-lsp-server ocamlformat -y
+```
+
+Do not add these tools to `dune-project`. The build does not depend on
+them.
+
+Verify the tools and format the project:
+
+```sh
+ocamllsp --version
+ocamlformat --version
+dune fmt
+```
+
+## 8. Verify the project
 
 Run the generated application:
 

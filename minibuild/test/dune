@@ -1,4 +1,5 @@
 (test
  (name test_minibuild)
  (libraries minibuild hegel)
- (preprocess (pps ppx_hegel_test)))
+ (preprocess
+  (pps ppx_hegel_test)))

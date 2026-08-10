@@ -17,6 +17,7 @@ Creates an OCaml project at a path relative to `<repo_root>`. For example, `apps
 The project includes:
 
 - a local-switch `mise` task interface
+- an OCamlFormat configuration
 - inline `ppx_expect` tests in `lib/`
 - Hegel property tests in `test/`
 - generated dune and opam package files
@@ -130,6 +131,7 @@ plop/
         ├── lib.ml.hbs
         ├── main.ml.hbs
         ├── mise.toml.hbs
+        ├── ocamlformat.hbs
         ├── project.opam.hbs
         ├── test-dune.hbs
         └── test.ml.hbs

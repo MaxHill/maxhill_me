@@ -295,6 +295,7 @@ export default function (plop) {
                 { type: 'add', path: `${basePath}/dune-project`, templateFile: `${templatePath}/dune-project.hbs` },
                 { type: 'add', path: `${basePath}/{{projectName}}.opam`, templateFile: `${templatePath}/project.opam.hbs` },
                 { type: 'add', path: `${basePath}/.gitignore`, templateFile: `${templatePath}/gitignore.hbs` },
+                { type: 'add', path: `${basePath}/.ocamlformat`, templateFile: `${templatePath}/ocamlformat.hbs` },
                 { type: 'add', path: `${basePath}/bin/dune`, templateFile: `${templatePath}/bin-dune.hbs` },
                 { type: 'add', path: `${basePath}/bin/main.ml`, templateFile: `${templatePath}/main.ml.hbs` },
                 { type: 'add', path: `${basePath}/lib/dune`, templateFile: `${templatePath}/lib-dune.hbs` },
