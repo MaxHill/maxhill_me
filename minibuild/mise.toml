@@ -9,7 +9,7 @@ opam = "2.5.1"
 
 [tasks.run]
 description = "Run minibuild locally."
-run = "dune exec --watch ./bin/main.exe"
+run = "dune exec ./bin/main.exe --"
 
 [tasks.test]
 description = "Run bounded dune tests."
