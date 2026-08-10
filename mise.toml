@@ -3,6 +3,8 @@ opam = "2.5.1"
 1password = "latest"
 # Pinned to LTS — Playwright's browser extraction hangs on Node 26.x.
 node = "22"
+bun = "latest"
+sops = "latest"
 
 [env]
 # The VPS. App subdomains (sync.maxhill.me, auth.maxhill.me, …) all

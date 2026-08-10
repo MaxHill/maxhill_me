@@ -9,8 +9,8 @@ import { get_DB } from "../../../db";
 import { renderSyncBanner } from "../../user-settings/sync-banner";
 
 import { unsafeSVG } from "lit-html/directives/unsafe-svg.js";
-import clubsSvg from "../../../../public/clubs.svg?raw";
-import ballSvg from "../../../../public/golfball-big.svg?raw";
+import clubsSvg from "../../../dither/out/clubs.svg?raw";
+import ballSvg from "../../../dither/out//golfball-big.svg?raw";
 
 
 const baseStyleSheet = new CSSStyleSheet();

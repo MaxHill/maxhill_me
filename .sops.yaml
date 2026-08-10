@@ -11,6 +11,7 @@ creation_rules:
   - path_regex: \.enc\.env$
     input_type: dotenv
     age:
-      - age1fzjqfezgzhjlsejldsujzgtaj9qx23kh46un6jmupwmuwdsczq4qgvp54j
-      - age1qsxv8kur5ta38thpkr8z7pfv566pfkd2g29xqn0makdgrtcsu3tq5xekun
+      - age1fzjqfezgzhjlsejldsujzgtaj9qx23kh46un6jmupwmuwdsczq4qgvp54j # laptop
+      - age1x6mqmyn7tffa9g8w3j7n5qcmjqntk24vn2uxaprhfn8zywhggsgq6vvzax # desktop
+      - age1qsxv8kur5ta38thpkr8z7pfv566pfkd2g29xqn0makdgrtcsu3tq5xekun # server
 
