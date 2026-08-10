@@ -22,6 +22,7 @@
  (depends
   ocaml
   ppx_expect
+  cmdliner
   (hegel :with-test)
   (ppx_hegel_test :with-test))
  (tags

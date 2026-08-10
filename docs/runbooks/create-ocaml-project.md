@@ -47,9 +47,11 @@ Initialize opam if this machine does not have an opam root:
 opam init --shell-setup -y
 ```
 
-Opam adds a `source` line to your shell configuration. This line is expected. The later direct `dune` commands need this setup.
+Opam adds a `source` line to your shell configuration. This line is
+expected. The later direct `dune` commands need this setup.
 
-Start a new shell after this command. You can also activate opam in the current shell:
+Start a new shell after this command. You can also activate opam in the
+current shell:
 
 ```sh
 eval "$(opam env)"
@@ -114,4 +116,96 @@ Run the expect test and the Hegel property test:
 
 ```sh
 mise run test
+```
+
+## Optional — Add Cmdliner
+
+Complete all previous steps before you add Cmdliner. This example shows how
+to add and use a normal opam package.
+
+`apps/syncdb-server/dune-project`, `apps/syncdb-server/bin/dune`, and
+`apps/syncdb-server/bin/simulator.ml` provide a larger reference.
+
+### 1. Declare the dependency
+
+Add `cmdliner` to the package dependencies in `dune-project`:
+
+```lisp
+(depends
+  ocaml
+  ppx_expect
+  cmdliner
+  (hegel :with-test)
+  (ppx_hegel_test :with-test))
+```
+
+### 2. Regenerate the opam file
+
+```sh
+dune runtest --auto-promote || dune runtest
+```
+
+The first command promotes the changed `<project-name>.opam` file. Dune
+runs the tests again if the promotion returns a nonzero status.
+
+### 3. Install the dependency
+
+```sh
+opam install . --deps-only --with-test -y
+```
+
+Opam reads the generated `<project-name>.opam` file and installs Cmdliner.
+
+### 4. Link Cmdliner to the executable
+
+Add `cmdliner` to `bin/dune`:
+
+```lisp
+(executable
+ (public_name <project-name>)
+ (name main)
+ (libraries <project-name> cmdliner))
+```
+
+### 5. Add a command-line option
+
+Replace `bin/main.ml` with this example:
+
+```ocaml
+open Cmdliner
+
+
+let run name = print_endline (<Project_module>.greet name)
+
+let command =
+  let name =
+    let doc = "Name to greet." in
+    Arg.(value & opt string "World" & info [ "name" ] ~docv:"NAME" ~doc)
+  ;;
+  let info = Cmd.info "<project-name>" ~doc:"Print a greeting." in
+  Cmd.v info Term.(const run $ name)
+;;
+
+let () = exit (Cmd.eval command)
+```
+
+Replace `<Project_module>` with the OCaml module name. For example, use
+`My_app` for the project name `my_app`.
+
+### 6. Verify Cmdliner
+
+```sh
+dune exec ./bin/main.exe -- --name Max
+```
+
+Expected output:
+
+```text
+Hello, Max!
+```
+
+Check the generated help:
+
+```sh
+dune exec ./bin/main.exe -- --help
 ```

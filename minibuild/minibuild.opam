@@ -13,6 +13,7 @@ depends: [
   "dune" {>= "3.23"}
   "ocaml"
   "ppx_expect"
+  "cmdliner"
   "hegel" {with-test}
   "ppx_hegel_test" {with-test}
   "odoc" {with-doc}
