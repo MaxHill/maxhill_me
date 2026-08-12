@@ -6,29 +6,65 @@
    post — this is exactly the pattern that bites root scripts). *)
 
 (* Run argv directly. No /bin/sh -c anywhere in this file. *)
-let rec run_cmd (argv : string array) : (string, string) result =
+let rec run_cmd ?(quiet = true) (argv : string array) : (string, string) result =
   let stdout_read, stdout_write = Unix.pipe () in
+  let stderr_read, stderr_write = Unix.pipe () in
   Unix.set_close_on_exec stdout_read;
   let pid =
-    Unix.create_process argv.(0) argv Unix.stdin stdout_write Unix.stderr
+    Unix.create_process argv.(0) argv Unix.stdin stdout_write stderr_write
   in
   Unix.close stdout_write;
-  let res = read_all stdout_read in
+  Unix.close stderr_write;
+  (* TODO: stderr handling is incomplete. In quiet mode this pipe is not
+     drained; otherwise it is drained only after stdout. A child that fills
+     stderr can deadlock, and [print_stderr] currently reads one chunk only. *)
+  let res = read_all ~quiet stdout_read in
+  if not quiet then print_stderr stderr_read;
   Unix.close stdout_read;
+  Unix.close stderr_read;
   match Unix.waitpid [] pid with
   | _, Unix.WEXITED 0 -> Ok res
   | _, Unix.WEXITED n -> Error (Printf.sprintf "%s exited %d" argv.(0) n)
   | _, _ -> Error (Printf.sprintf "%s killed/stopped" argv.(0))
 
-and read_all fd =
+and read_all ?(quiet = true) fd =
   let buffer = Bytes.create 4096 in
   let result = Buffer.create 4096 in
+  let at_line_start = ref true in
   let rec loop () =
     match Unix.read fd buffer 0 (Bytes.length buffer) with
     | 0 -> Buffer.contents result
     | n ->
-      Buffer.add_subbytes result buffer 0 n;
+      let chunk = Bytes.sub_string buffer 0 n in
+      Buffer.add_string result chunk;
+      if not quiet
+      then
+        String.iter
+          (fun c ->
+             if !at_line_start then print_string "[stdout]  ";
+             print_char c;
+             flush stdout;
+             at_line_start := c = '\n')
+          chunk;
       loop ()
+  in
+  loop ()
+
+and print_stderr fd : unit =
+  let buffer = Bytes.create 4096 in
+  let at_line_start = ref true in
+  let rec loop () =
+    match Unix.read fd buffer 0 (Bytes.length buffer) with
+    | 0 -> ()
+    | n ->
+      let chunk = Bytes.sub_string buffer 0 n in
+      String.iter
+        (fun c ->
+           if !at_line_start then print_string "[stderr]  ";
+           print_char c;
+           flush stderr;
+           at_line_start := c = '\n')
+        chunk
   in
   loop ()
 ;;
@@ -72,28 +108,36 @@ let%expect_test "run_cmd basics" =
     |}]
 ;;
 
-(* ---------- steps ---------- *)
+let rec find_project_root () =
+  let cwd = Unix.getcwd () in
+  let root_marker_file = "pnpm-workspace.yaml" in
+  match is_root_directory cwd ~root_marker_file with
+  | true -> Ok cwd
+  | false -> search_for_root_file 0 cwd ~root_marker_file
 
-(* let%expect_test "create_file_example" = *)
-(*   let create_file = *)
-(*     { name = "create a temporary file" *)
-(*     ; check = *)
-(*         (fun () -> *)
-(*           match run_cmd [| "cat"; "/tmp/testfile.txt" |] with *)
-(*           | Ok _ -> true *)
-(*           | Error _ -> false) *)
-(*     ; apply = *)
-(*         (fun () -> *)
-(*           let* () = run_cmd [| "touch"; "/tmp/testfile.txt" |] in *)
-(*           let ( let* ) = Result.bind in *)
-(*           let* () = run_cmd [| "echo"; "'test'"; ">>"; "/tmp/testfile.txt" |] in *)
-(*           run_cmd [| "cat"; "/tmp/testfile.txt" |]) *)
-(*     } *)
-(*   in *)
-(*   let _ = *)
-(*     match create_file.apply () with *)
-(*     | Ok () -> print_endline "Ok" *)
-(*     | Error e -> print_endline e *)
-(*   in *)
-(*   [%expect {| Hello, World! |}] *)
-(* ;; *)
+and is_root_directory filename ~root_marker_file =
+  Sys.file_exists (Filename.concat filename root_marker_file)
+
+and search_for_root_file i filename ~root_marker_file =
+  let parent = Filename.dirname filename in
+  let max_search_depth = 20 in
+  match is_root_directory ~root_marker_file parent || i > max_search_depth with
+  | true -> Ok parent
+  | false ->
+    (match Sys.file_exists parent with
+     | false ->
+       Error
+         (Format.sprintf
+            "Could not find root marker (%s) within %i parent directories"
+            root_marker_file
+            max_search_depth)
+     | true -> search_for_root_file ~root_marker_file (i + 1) parent)
+;;
+
+let%expect_test "find root" =
+  (match find_project_root () with
+   | Ok root -> root
+   | Error error -> error)
+  |> print_endline;
+  [%expect {| |}]
+;;

@@ -1,3 +1,11 @@
+monorepo_root = true
+
+[monorepo]
+config_roots = [
+    "packages/*",
+    "apps/*",
+]
+
 [tools]
 opam = "2.5.1"
 1password = "latest"

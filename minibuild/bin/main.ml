@@ -1,6 +1,22 @@
+open Minibuild.Shared
 open Cmdliner
 
-let run name = print_endline (Minibuild.greet name)
+let run name =
+  let res =
+    Minibuild.init ()
+    |> Fun.flip Result.bind (fun ctx ->
+      match Minibuild.Syncdb_server.run ~ctx with
+      | Ok res -> Ok ctx
+      | Error err ->
+        print_endline ("error: " ^ err);
+        exit 1)
+  in
+  match res with
+  | Ok ctx -> exit 0
+  | Error err ->
+    print_endline ("error: " ^ err);
+    exit 1
+;;
 
 let command =
   let name =
