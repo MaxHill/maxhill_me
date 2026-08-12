@@ -1,4 +1,4 @@
 (executable
  (public_name minibuild)
  (name main)
- (libraries minibuild cmdliner))
+ (libraries minibuild eio_main cmdliner))

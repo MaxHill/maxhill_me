@@ -108,36 +108,39 @@ let%expect_test "run_cmd basics" =
     |}]
 ;;
 
-let rec find_project_root () =
-  let cwd = Unix.getcwd () in
-  let root_marker_file = "pnpm-workspace.yaml" in
-  match is_root_directory cwd ~root_marker_file with
-  | true -> Ok cwd
-  | false -> search_for_root_file 0 cwd ~root_marker_file
+let rec find_upwards path filename =
+  let candidate = Eio.Path.(path / filename) in
+  if Eio.Path.is_file candidate
+  then Some path
+  else (
+    match Eio.Path.split path with
+    | None -> None
+    | Some (parent, _) -> find_upwards parent filename)
+;;
 
-and is_root_directory filename ~root_marker_file =
-  Sys.file_exists (Filename.concat filename root_marker_file)
-
-and search_for_root_file i filename ~root_marker_file =
-  let parent = Filename.dirname filename in
-  let max_search_depth = 20 in
-  match is_root_directory ~root_marker_file parent || i > max_search_depth with
-  | true -> Ok parent
-  | false ->
-    (match Sys.file_exists parent with
-     | false ->
-       Error
-         (Format.sprintf
-            "Could not find root marker (%s) within %i parent directories"
-            root_marker_file
-            max_search_depth)
-     | true -> search_for_root_file ~root_marker_file (i + 1) parent)
+let create_temp_dir env =
+  let fs = Eio.Stdenv.fs env in
+  Filename.temp_dir "minibuild-" "-test" |> fun path -> Eio.Path.(fs / path)
 ;;
 
 let%expect_test "find root" =
-  (match find_project_root () with
-   | Ok root -> root
-   | Error error -> error)
-  |> print_endline;
-  [%expect {| |}]
+  Eio_main.run
+  @@ fun env ->
+  let temp_dir = create_temp_dir env in
+  Fun.protect
+    ~finally:(fun () -> Eio.Path.rmtree ~missing_ok:true temp_dir)
+    (fun () ->
+       let nested = Eio.Path.(temp_dir / "a" / "b") in
+       Eio.Path.mkdirs ~perm:0o700 nested;
+       Eio.Path.save
+         ~create:(`Or_truncate 0o600)
+         Eio.Path.(temp_dir / "needle.txt")
+         "";
+       match find_upwards nested "needle.txt" with
+       | Some root ->
+         print_endline
+           (Bool.to_string
+              (Eio.Path.native_exn root = Eio.Path.native_exn temp_dir))
+       | None -> print_endline "not found");
+  [%expect {| true |}]
 ;;
