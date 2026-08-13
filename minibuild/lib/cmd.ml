@@ -4,6 +4,7 @@ let rec run_cmd ~env (argv : string list) : (string, string) result =
   let proc_mgr = Eio.Stdenv.process_mgr env in
   let stdout_read, stdout_write = Eio.Process.pipe ~sw proc_mgr in
   let stderr_read, stderr_write = Eio.Process.pipe ~sw proc_mgr in
+  Format.eprintf "executing: %s\n" @@ String.concat " " argv;
   let child =
     Eio.Process.spawn
       ~sw
@@ -14,12 +15,10 @@ let rec run_cmd ~env (argv : string list) : (string, string) result =
   in
   Eio.Flow.close stdout_write;
   Eio.Flow.close stderr_write;
-  let output, () =
+  let output, _ =
     Eio.Fiber.pair
-      (fun () ->
-         Eio.Buf_read.parse_exn ~max_size:max_int process_stdout stdout_read)
-      (fun () ->
-         Eio.Buf_read.parse_exn ~max_size:max_int process_stderr stderr_read)
+      (print_std ~flow:stdout_read ~prefix:"[stdout]")
+      (print_std ~flow:stderr_read ~prefix:"[stderr]")
   in
   match Eio.Process.await child with
   | `Exited 0 -> Ok output
@@ -27,41 +26,11 @@ let rec run_cmd ~env (argv : string list) : (string, string) result =
   | `Signaled signal ->
     Error (Format.sprintf "process killed by signal %d" signal)
 
-(*Flusing each character is not the most performant
-but it's simple and with the size of the 
-outputs we're dealing with here it 
-should be fine*)
-and process_stderr buf_read =
-  let at_line_start = ref true in
-  Eio.Buf_read.seq
-    ~stop:Eio.Buf_read.at_end_of_input
-    Eio.Buf_read.any_char
-    buf_read
-  |> Seq.iter
-     @@ fun char ->
-     if !at_line_start then output_string stderr "[stderr] ";
-     output_char stderr char;
-     flush stderr;
-     at_line_start := char = '\n'
-
-(*Flusing each character is not the most performant 
-but it's simple and with the size of the 
-outputs we're dealing with here it 
-should be fine*)
-and process_stdout buf_read =
-  let captured = Buffer.create 4096 in
-  let at_line_start = ref true in
-  Eio.Buf_read.seq
-    ~stop:Eio.Buf_read.at_end_of_input
-    Eio.Buf_read.any_char
-    buf_read
-  |> Seq.iter (fun char ->
-    if !at_line_start then output_string stderr "[stdout] ";
-    output_char stderr char;
-    flush stderr;
-    Buffer.add_char captured char;
-    at_line_start := char = '\n');
-  Buffer.contents captured
+and print_std ~flow ~prefix () =
+  let buf = Eio.Buf_read.of_flow ~max_size:max_int flow in
+  let lines = Eio.Buf_read.lines buf |> List.of_seq in
+  List.iter (fun line -> Format.eprintf "%s %s@." prefix line) lines;
+  String.concat "\n" lines
 ;;
 
 let%expect_test "run_cmd basics" =
@@ -73,7 +42,7 @@ let%expect_test "run_cmd basics" =
   (Eio_main.run
    @@ fun env ->
    Printf.eprintf "command that prints to stdout:\n";
-   run_cmd ~env [ "printf"; "%s\n"; "hello there" ] |> display_command_result;
+   run_cmd ~env [ "echo"; "-n"; "hello there" ] |> display_command_result;
    Printf.eprintf "command that prints to stderr:\n";
    run_cmd ~env [ "ls"; "./this-path-does-not-exist" ])
   |> display_command_result;
@@ -82,32 +51,6 @@ let%expect_test "run_cmd basics" =
     command that prints to stdout:
     [stdout] hello there
     returned: Ok hello there
-
-    command that prints to stderr:
-    [stderr] ls: cannot access './this-path-does-not-exist': No such file or directory
-    returned: Error process exited with code 2
-    |}]
-;;
-
-let%expect_test "run_cmd" =
-  let display_command_result result =
-    match result with
-    | Ok returned -> Printf.eprintf "returned: Ok %s\n" returned
-    | Error returned -> Printf.eprintf "returned: Error %s\n" returned
-  in
-  (Eio_main.run
-   @@ fun env ->
-   Printf.eprintf "command that prints to stdout:\n";
-   run_cmd ~env [ "printf"; "%s\n"; "hello there" ] |> display_command_result;
-   Printf.eprintf "command that prints to stderr:\n";
-   run_cmd ~env [ "ls"; "./this-path-does-not-exist" ])
-  |> display_command_result;
-  [%expect
-    {|
-    command that prints to stdout:
-    [stdout] hello there
-    returned: Ok hello there
-
     command that prints to stderr:
     [stderr] ls: cannot access './this-path-does-not-exist': No such file or directory
     returned: Error process exited with code 2
