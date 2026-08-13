@@ -22,3 +22,6 @@ let results_all_list array_of_result =
     array_of_result
     (Ok [])
 ;;
+
+let result_bind ~f res = Result.bind res f
+let result_map ~f res = Result.map res f

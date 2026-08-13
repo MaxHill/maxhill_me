@@ -4,7 +4,9 @@ let rec run_cmd ~env (argv : string list) : (string, string) result =
   let proc_mgr = Eio.Stdenv.process_mgr env in
   let stdout_read, stdout_write = Eio.Process.pipe ~sw proc_mgr in
   let stderr_read, stderr_write = Eio.Process.pipe ~sw proc_mgr in
-  Format.eprintf "executing: %s\n" @@ String.concat " " argv;
+  Logs.debug (fun m -> m "executing: %s" (String.concat " " argv));
+  Minibuild_reporter.with_indent
+  @@ fun () ->
   let child =
     Eio.Process.spawn
       ~sw
@@ -15,10 +17,12 @@ let rec run_cmd ~env (argv : string list) : (string, string) result =
   in
   Eio.Flow.close stdout_write;
   Eio.Flow.close stderr_write;
-  let output, _ =
+  let output, _stderr_output =
     Eio.Fiber.pair
-      (print_std ~flow:stdout_read ~prefix:"[stdout]")
-      (print_std ~flow:stderr_read ~prefix:"[stderr]")
+      (fun () ->
+         print_std ~flow:stdout_read ~prefix:"[stdout]" ~logger:Logs.debug)
+      (fun () ->
+         print_std ~flow:stderr_read ~prefix:"[stderr]" ~logger:Logs.info)
   in
   match Eio.Process.await child with
   | `Exited 0 -> Ok output
@@ -26,10 +30,10 @@ let rec run_cmd ~env (argv : string list) : (string, string) result =
   | `Signaled signal ->
     Error (Format.sprintf "process killed by signal %d" signal)
 
-and print_std ~flow ~prefix () =
+and print_std ~flow ~prefix ~logger =
   let buf = Eio.Buf_read.of_flow ~max_size:max_int flow in
   let lines = Eio.Buf_read.lines buf |> List.of_seq in
-  List.iter (fun line -> Format.eprintf "%s %s@." prefix line) lines;
+  List.iter (fun line -> logger (fun m -> m "%s %s" prefix line)) lines;
   String.concat "\n" lines
 ;;
 
@@ -49,10 +53,8 @@ let%expect_test "run_cmd basics" =
   [%expect
     {|
     command that prints to stdout:
-    [stdout] hello there
     returned: Ok hello there
     command that prints to stderr:
-    [stderr] ls: cannot access './this-path-does-not-exist': No such file or directory
     returned: Error process exited with code 2
     |}]
 ;;
@@ -60,8 +62,6 @@ let%expect_test "run_cmd basics" =
 let remote_cmd ~env vps_host remote_cmd =
   run_cmd ~env [ "ssh"; vps_host; remote_cmd ]
 ;;
-
-let path_exists p = Sys.file_exists p
 
 (* Will return for example:
 file_permission "some_file.txt" = 0o600*)

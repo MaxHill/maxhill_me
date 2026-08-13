@@ -15,6 +15,8 @@ depends: [
   "ppx_expect"
   "cmdliner"
   "eio_main"
+  "logs"
+  "fmt"
   "hegel" {with-test}
   "ppx_hegel_test" {with-test}
   "odoc" {with-doc}
