@@ -5,6 +5,62 @@
    quoting/injection surface at all (see matklad's "Shell Injection"
    post — this is exactly the pattern that bites root scripts). *)
 
+let rec run_cmd_eio ~env (argv : string list) : (string, _) result =
+  let proc_mgr = Eio.Stdenv.process_mgr env in
+  let _output =
+    Eio.Process.parse_out
+      ~stdin:(Eio.Flow.string_source "One two three\nOne two three\n")
+      (* ~stderr:read_stderr *)
+      proc_mgr
+      read_stdout
+      [ "cat" ]
+  in
+  Ok ""
+
+and read_stdout buf_read =
+  let captured = Buffer.create 4096 in
+  let at_line_start = ref true in
+  Eio.Buf_read.seq
+    ~stop:Eio.Buf_read.at_end_of_input
+    Eio.Buf_read.any_char
+    buf_read
+  |> Seq.iter (fun char ->
+    if !at_line_start then print_string "[stdout] ";
+    print_char char;
+    flush stdout;
+    Buffer.add_char captured char;
+    at_line_start := char = '\n');
+  Buffer.contents captured
+
+and read_stderr flow sink =
+  let buf = Cstruct.create 4096 in
+  let rec loop () =
+    match Eio.Flow.single_read flow buf with
+    | 0 -> ()
+    | n ->
+      let chunk = Cstruct.to_string (Cstruct.sub buf 0 n) in
+      print_string chunk;
+      (* Print as it comes in! *)
+      flush stdout;
+      Eio.Flow.copy_string chunk sink;
+      loop ()
+  in
+  loop ()
+;;
+
+let%expect_test "run_cmd_eio basics" =
+  Eio_main.run
+  @@ fun env ->
+  let _ = run_cmd_eio ~env [ "ls" ] in
+  [%expect
+    {|
+    echo command: [success] 'test-text'
+
+    file exists: true
+    'test-text'
+    |}]
+;;
+
 (* Run argv directly. No /bin/sh -c anywhere in this file. *)
 let rec run_cmd ?(quiet = true) (argv : string array) : (string, string) result =
   let stdout_read, stdout_write = Unix.pipe () in
@@ -118,24 +174,27 @@ let rec find_upwards path filename =
     | Some (parent, _) -> find_upwards parent filename)
 ;;
 
-let create_temp_dir env =
-  let fs = Eio.Stdenv.fs env in
-  Filename.temp_dir "minibuild-" "-test" |> fun path -> Eio.Path.(fs / path)
-;;
-
 let%expect_test "find root" =
+  let create_temp_dir env =
+    let fs = Eio.Stdenv.fs env in
+    Filename.temp_dir "minibuild-" "-test" |> fun path -> Eio.Path.(fs / path)
+  in
+  let fill_sub_dir temp_dir =
+    let nested = Eio.Path.(temp_dir / "a" / "b") in
+    Eio.Path.mkdirs ~perm:0o700 nested;
+    Eio.Path.save
+      ~create:(`Or_truncate 0o600)
+      Eio.Path.(temp_dir / "needle.txt")
+      "";
+    nested
+  in
   Eio_main.run
   @@ fun env ->
   let temp_dir = create_temp_dir env in
   Fun.protect
     ~finally:(fun () -> Eio.Path.rmtree ~missing_ok:true temp_dir)
     (fun () ->
-       let nested = Eio.Path.(temp_dir / "a" / "b") in
-       Eio.Path.mkdirs ~perm:0o700 nested;
-       Eio.Path.save
-         ~create:(`Or_truncate 0o600)
-         Eio.Path.(temp_dir / "needle.txt")
-         "";
+       let nested = fill_sub_dir temp_dir in
        match find_upwards nested "needle.txt" with
        | Some root ->
          print_endline
