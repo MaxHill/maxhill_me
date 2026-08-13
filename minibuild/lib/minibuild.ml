@@ -10,7 +10,7 @@ let init env : (Types.context, string) result =
     Cmd.find_upwards cwd "pnpm-workspace.yaml"
     |> Option.to_result ~none:"Could not find pnpm-workspace.yaml"
   in
-  let _ = Cmd.run_cmd ~quiet:false [| "mise"; "install"; "--monorepo" |] in
-  let _ = Cmd.run_cmd ~quiet:false [| "echo"; "test" |] in
-  Ok Types.{ project_root }
+  let _ = Cmd.run_cmd ~env [ "mise"; "install"; "--monorepo" ] in
+  let _ = Cmd.run_cmd ~env [ "echo"; "test" ] in
+  Ok Types.{ env; project_root }
 ;;

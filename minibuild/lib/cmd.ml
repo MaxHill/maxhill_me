@@ -1,23 +1,54 @@
-(* setup.ml — global, machine-wide provisioning for a fresh Ubuntu box.
-   Run once as root. Safe to re-run: every step checks its own state
-   before acting, and re-verifies after. No shell strings, ever —
-   commands are argv arrays passed straight to exec, so there's no
-   quoting/injection surface at all (see matklad's "Shell Injection"
-   post — this is exactly the pattern that bites root scripts). *)
-
-let rec run_cmd_eio ~env (argv : string list) : (string, _) result =
+let rec run_cmd ~env (argv : string list) : (string, string) result =
+  Eio.Switch.run
+  @@ fun sw ->
   let proc_mgr = Eio.Stdenv.process_mgr env in
-  let _output =
-    Eio.Process.parse_out
-      ~stdin:(Eio.Flow.string_source "One two three\nOne two three\n")
-      (* ~stderr:read_stderr *)
+  let stdout_read, stdout_write = Eio.Process.pipe ~sw proc_mgr in
+  let stderr_read, stderr_write = Eio.Process.pipe ~sw proc_mgr in
+  let child =
+    Eio.Process.spawn
+      ~sw
+      ~stdout:stdout_write
+      ~stderr:stderr_write
       proc_mgr
-      read_stdout
-      [ "cat" ]
+      argv
   in
-  Ok ""
+  Eio.Flow.close stdout_write;
+  Eio.Flow.close stderr_write;
+  let output, () =
+    Eio.Fiber.pair
+      (fun () ->
+         Eio.Buf_read.parse_exn ~max_size:max_int process_stdout stdout_read)
+      (fun () ->
+         Eio.Buf_read.parse_exn ~max_size:max_int process_stderr stderr_read)
+  in
+  match Eio.Process.await child with
+  | `Exited 0 -> Ok output
+  | `Exited code -> Error (Format.sprintf "process exited with code %d" code)
+  | `Signaled signal ->
+    Error (Format.sprintf "process killed by signal %d" signal)
 
-and read_stdout buf_read =
+(*Flusing each character is not the most performant
+but it's simple and with the size of the 
+outputs we're dealing with here it 
+should be fine*)
+and process_stderr buf_read =
+  let at_line_start = ref true in
+  Eio.Buf_read.seq
+    ~stop:Eio.Buf_read.at_end_of_input
+    Eio.Buf_read.any_char
+    buf_read
+  |> Seq.iter
+     @@ fun char ->
+     if !at_line_start then output_string stderr "[stderr] ";
+     output_char stderr char;
+     flush stderr;
+     at_line_start := char = '\n'
+
+(*Flusing each character is not the most performant 
+but it's simple and with the size of the 
+outputs we're dealing with here it 
+should be fine*)
+and process_stdout buf_read =
   let captured = Buffer.create 4096 in
   let at_line_start = ref true in
   Eio.Buf_read.seq
@@ -25,144 +56,73 @@ and read_stdout buf_read =
     Eio.Buf_read.any_char
     buf_read
   |> Seq.iter (fun char ->
-    if !at_line_start then print_string "[stdout] ";
-    print_char char;
-    flush stdout;
+    if !at_line_start then output_string stderr "[stdout] ";
+    output_char stderr char;
+    flush stderr;
     Buffer.add_char captured char;
     at_line_start := char = '\n');
   Buffer.contents captured
-
-and read_stderr flow sink =
-  let buf = Cstruct.create 4096 in
-  let rec loop () =
-    match Eio.Flow.single_read flow buf with
-    | 0 -> ()
-    | n ->
-      let chunk = Cstruct.to_string (Cstruct.sub buf 0 n) in
-      print_string chunk;
-      (* Print as it comes in! *)
-      flush stdout;
-      Eio.Flow.copy_string chunk sink;
-      loop ()
-  in
-  loop ()
 ;;
 
-let%expect_test "run_cmd_eio basics" =
-  Eio_main.run
-  @@ fun env ->
-  let _ = run_cmd_eio ~env [ "ls" ] in
+let%expect_test "run_cmd basics" =
+  let display_command_result result =
+    match result with
+    | Ok returned -> Printf.eprintf "returned: Ok %s\n" returned
+    | Error returned -> Printf.eprintf "returned: Error %s\n" returned
+  in
+  (Eio_main.run
+   @@ fun env ->
+   Printf.eprintf "command that prints to stdout:\n";
+   run_cmd ~env [ "printf"; "%s\n"; "hello there" ] |> display_command_result;
+   Printf.eprintf "command that prints to stderr:\n";
+   run_cmd ~env [ "ls"; "./this-path-does-not-exist" ])
+  |> display_command_result;
   [%expect
     {|
-    echo command: [success] 'test-text'
+    command that prints to stdout:
+    [stdout] hello there
+    returned: Ok hello there
 
-    file exists: true
-    'test-text'
+    command that prints to stderr:
+    [stderr] ls: cannot access './this-path-does-not-exist': No such file or directory
+    returned: Error process exited with code 2
     |}]
 ;;
 
-(* Run argv directly. No /bin/sh -c anywhere in this file. *)
-let rec run_cmd ?(quiet = true) (argv : string array) : (string, string) result =
-  let stdout_read, stdout_write = Unix.pipe () in
-  let stderr_read, stderr_write = Unix.pipe () in
-  Unix.set_close_on_exec stdout_read;
-  let pid =
-    Unix.create_process argv.(0) argv Unix.stdin stdout_write stderr_write
+let%expect_test "run_cmd" =
+  let display_command_result result =
+    match result with
+    | Ok returned -> Printf.eprintf "returned: Ok %s\n" returned
+    | Error returned -> Printf.eprintf "returned: Error %s\n" returned
   in
-  Unix.close stdout_write;
-  Unix.close stderr_write;
-  (* TODO: stderr handling is incomplete. In quiet mode this pipe is not
-     drained; otherwise it is drained only after stdout. A child that fills
-     stderr can deadlock, and [print_stderr] currently reads one chunk only. *)
-  let res = read_all ~quiet stdout_read in
-  if not quiet then print_stderr stderr_read;
-  Unix.close stdout_read;
-  Unix.close stderr_read;
-  match Unix.waitpid [] pid with
-  | _, Unix.WEXITED 0 -> Ok res
-  | _, Unix.WEXITED n -> Error (Printf.sprintf "%s exited %d" argv.(0) n)
-  | _, _ -> Error (Printf.sprintf "%s killed/stopped" argv.(0))
+  (Eio_main.run
+   @@ fun env ->
+   Printf.eprintf "command that prints to stdout:\n";
+   run_cmd ~env [ "printf"; "%s\n"; "hello there" ] |> display_command_result;
+   Printf.eprintf "command that prints to stderr:\n";
+   run_cmd ~env [ "ls"; "./this-path-does-not-exist" ])
+  |> display_command_result;
+  [%expect
+    {|
+    command that prints to stdout:
+    [stdout] hello there
+    returned: Ok hello there
 
-and read_all ?(quiet = true) fd =
-  let buffer = Bytes.create 4096 in
-  let result = Buffer.create 4096 in
-  let at_line_start = ref true in
-  let rec loop () =
-    match Unix.read fd buffer 0 (Bytes.length buffer) with
-    | 0 -> Buffer.contents result
-    | n ->
-      let chunk = Bytes.sub_string buffer 0 n in
-      Buffer.add_string result chunk;
-      if not quiet
-      then
-        String.iter
-          (fun c ->
-             if !at_line_start then print_string "[stdout]  ";
-             print_char c;
-             flush stdout;
-             at_line_start := c = '\n')
-          chunk;
-      loop ()
-  in
-  loop ()
-
-and print_stderr fd : unit =
-  let buffer = Bytes.create 4096 in
-  let at_line_start = ref true in
-  let rec loop () =
-    match Unix.read fd buffer 0 (Bytes.length buffer) with
-    | 0 -> ()
-    | n ->
-      let chunk = Bytes.sub_string buffer 0 n in
-      String.iter
-        (fun c ->
-           if !at_line_start then print_string "[stderr]  ";
-           print_char c;
-           flush stderr;
-           at_line_start := c = '\n')
-        chunk
-  in
-  loop ()
+    command that prints to stderr:
+    [stderr] ls: cannot access './this-path-does-not-exist': No such file or directory
+    returned: Error process exited with code 2
+    |}]
 ;;
 
-let remote_cmd vps_host remote_cmd = run_cmd [| "ssh"; vps_host; remote_cmd |]
+let remote_cmd ~env vps_host remote_cmd =
+  run_cmd ~env [ "ssh"; vps_host; remote_cmd ]
+;;
+
 let path_exists p = Sys.file_exists p
 
 (* Will return for example:
 file_permission "some_file.txt" = 0o600*)
 let file_permission p = (Unix.stat p).Unix.st_perm
-
-let%expect_test "run_cmd basics" =
-  let tmp_dir = Filename.temp_dir "minibuild_" "_testing" in
-  let filename = "test-file.txt" in
-  let filepath = tmp_dir ^ filename in
-  let _ = run_cmd [| "touch"; filepath |] in
-  let out = run_cmd [| "echo"; "'test-text'" |] in
-  let created =
-    match Sys.file_exists filepath with
-    | true -> "file exists: true"
-    | false -> "file exists: false"
-  in
-  let out_msg =
-    match out with
-    | Ok o -> Format.sprintf "echo command: [success] %s" o
-    | Error e -> Format.sprintf "echo command: [failed ]  %s" e
-  in
-  print_endline out_msg;
-  print_endline created;
-  let () =
-    match out with
-    | Ok o -> print_endline o
-    | Error e -> print_endline e
-  in
-  [%expect
-    {|
-    echo command: [success] 'test-text'
-
-    file exists: true
-    'test-text'
-    |}]
-;;
 
 let rec find_upwards path filename =
   let candidate = Eio.Path.(path / filename) in
