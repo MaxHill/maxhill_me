@@ -5,6 +5,7 @@ module Shared = Shared
 type context = Types.context
 
 let reporter = Minibuild_reporter.reporter
+let command_error_to_string = Cmd.command_error_to_string
 
 let init env : (Types.context, string) result =
   Logs.warn (fun m -> m "initializing");

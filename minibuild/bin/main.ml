@@ -4,24 +4,28 @@ open Cmdliner
 let command_handler env level name =
   Logs.set_level level;
   let res =
-    Minibuild.init env
-    |> result_bind ~f:(fun ctx ->
-      match Minibuild.install_system_tools ~ctx with
-      | Ok res -> Ok ctx
-      | Error err ->
-        Logs.err (fun m -> m "error: %s" err);
-        Error err)
-    |> result_bind ~f:(fun ctx ->
-      match Minibuild.Syncdb_server.run ~ctx with
-      | Ok res -> Ok ctx
-      | Error err ->
-        Logs.err (fun m -> m "error: %s" err);
-        Error err)
+    match Minibuild.init env with
+    | Error err -> Error err
+    | Ok ctx ->
+      (match Minibuild.install_system_tools ~ctx with
+       | Error err ->
+         Error
+           (Format.sprintf
+              "installing system tools failed\n%s"
+              (Minibuild.command_error_to_string err))
+       | Ok _ ->
+         (match Minibuild.Syncdb_server.run ~ctx with
+          | Error err ->
+            Error
+              (Format.sprintf
+                 "syncdb-server failed\n%s"
+                 (Minibuild.command_error_to_string err))
+          | Ok _ -> Ok ()))
   in
   match res with
-  | Ok _ -> exit 0
+  | Ok () -> exit 0
   | Error err ->
-    Logs.err (fun m -> m "error: %s" err);
+    Logs.err (fun m -> m "%s" err);
     exit 1
 ;;
 

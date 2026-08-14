@@ -1,4 +1,40 @@
-let rec run_cmd ~env (argv : string list) : (string, string) result =
+type command_error =
+  { argv : string list
+  ; status : Eio.Process.exit_status
+  ; stderr : string
+  }
+
+let command_error_to_string { argv; status; stderr } =
+  let summary =
+    Format.asprintf
+      "command failed: %a\nexit status: %a"
+      Eio.Process.pp_args
+      argv
+      Eio.Process.pp_status
+      status
+  in
+  if String.trim stderr = ""
+  then summary
+  else Format.sprintf "%s\nstderr:\n%s" summary stderr
+;;
+
+let%expect_test "command error includes diagnostic context" =
+  command_error_to_string
+    { argv = [ "mise"; "install"; "--monorepo" ]
+    ; status = `Exited 1
+    ; stderr = "plugin download failed"
+    }
+  |> print_endline;
+  [%expect
+    {|
+    command failed: mise install --monorepo
+    exit status: Exited (code 1)
+    stderr:
+    plugin download failed
+    |}]
+;;
+
+let rec run_cmd ~env (argv : string list) : (string, command_error) result =
   Eio.Switch.run
   @@ fun sw ->
   let proc_mgr = Eio.Stdenv.process_mgr env in
@@ -17,7 +53,7 @@ let rec run_cmd ~env (argv : string list) : (string, string) result =
   in
   Eio.Flow.close stdout_write;
   Eio.Flow.close stderr_write;
-  let output, _stderr_output =
+  let output, stderr =
     Eio.Fiber.pair
       (fun () ->
          print_std ~flow:stdout_read ~prefix:"[stdout]" ~logger:Logs.debug)
@@ -26,9 +62,7 @@ let rec run_cmd ~env (argv : string list) : (string, string) result =
   in
   match Eio.Process.await child with
   | `Exited 0 -> Ok output
-  | `Exited code -> Error (Format.sprintf "process exited with code %d" code)
-  | `Signaled signal ->
-    Error (Format.sprintf "process killed by signal %d" signal)
+  | (`Exited _ | `Signaled _) as status -> Error { argv; status; stderr }
 
 and print_std ~flow ~prefix ~logger =
   let buf = Eio.Buf_read.of_flow ~max_size:max_int flow in
@@ -41,7 +75,14 @@ let%expect_test "run_cmd basics" =
   let display_command_result result =
     match result with
     | Ok returned -> Printf.eprintf "returned: Ok %s\n" returned
-    | Error returned -> Printf.eprintf "returned: Error %s\n" returned
+    | Error { argv; status; stderr } ->
+      Format.eprintf
+        "returned: Error command=%a status=%a stderr=%b\n"
+        Eio.Process.pp_args
+        argv
+        Eio.Process.pp_status
+        status
+        (stderr <> "")
   in
   (Eio_main.run
    @@ fun env ->
@@ -55,7 +96,7 @@ let%expect_test "run_cmd basics" =
     command that prints to stdout:
     returned: Ok hello there
     command that prints to stderr:
-    returned: Error process exited with code 2
+    returned: Error command=ls ./this-path-does-not-exist status=Exited (code 2) stderr=true
     |}]
 ;;
 
