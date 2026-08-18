@@ -24,6 +24,12 @@ VPS_HOST = "164.132.64.112"
 # See https://matklad.github.io/2023/12/31/O(1)-build-file.html
 # Root-level tasks here fan out or delegate to the per-project mise.toml files.
 
+[tasks.mb]
+description = "Provision (or re-provision) the VPS from /vps/. Runs as root."
+dir = "minibuild"
+run = "dune exec ./bin/main.exe --"
+
+
 [tasks.bootstrap]
 description = "Provision (or re-provision) the VPS from /vps/. Runs as root."
 run = """

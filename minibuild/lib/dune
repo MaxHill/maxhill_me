@@ -3,6 +3,6 @@
 (library
  (name minibuild)
  (inline_tests)
- (libraries unix eio_main logs logs.fmt fmt)
+ (libraries unix eio_main)
  (preprocess
   (pps ppx_expect)))

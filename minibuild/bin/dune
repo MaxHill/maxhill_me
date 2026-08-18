@@ -1,4 +1,4 @@
 (executable
  (public_name minibuild)
  (name main)
- (libraries minibuild eio_main cmdliner logs logs.fmt logs.cli fmt.tty))
+ (libraries minibuild eio_main cmdliner))

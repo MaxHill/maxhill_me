@@ -1,11 +1,15 @@
 type t
 
 val create
-  :  ?should_skip:(unit -> bool)
+  :  ?should_skip:(Types.context -> bool)
   -> name:string
-  -> apply:(unit -> (unit, string) result)
+  -> apply:(Types.context -> (Types.context, Types.app_error) result)
   -> unit
   -> t
 
-val run_step : t -> (unit, string) result
-val run_steps : t list -> (unit, string) result
+val run_step : ctx:Types.context -> t -> (Types.context, Types.app_error) result
+
+val run_steps
+  :  ctx:Types.context
+  -> t list
+  -> (Types.context, Types.app_error) result
