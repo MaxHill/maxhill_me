@@ -2,17 +2,24 @@
 
 How apps get onto the box.
 
+Local orchestration scripts use TypeScript (`*.ts`).
+They run with `pnpm exec tsx ...` through `mise` tasks.
+On-box bootstrap and release steps run as compiled Bun Linux binaries
+from `*-remote.ts` files.
+
 - **One VPS** (Hetzner CX22). Ubuntu. Caddy for TLS. systemd for process
-  management. No Docker.
-- **Four apps** — `sync` and `auth` are long-running services (OCaml and
-  Bun-compiled binaries). `site` and `golf` are static (Astro and a PWA).
-- **One helper**, `alert-on-failure` — a systemd `@.service` template that
-  emails via Resend when any service enters a failed state. It has the same
-  shape as every other app: the unit is installed by bootstrap. The script
-  and env are shipped by `deploy.sh`.
-- **Three users on the box**: `ubuntu` (SSH access, runs `bootstrap.sh`),
-  `root` (bootstrap), and `deploy` (runs every deploy, with narrow sudo
-  grants to restart the two services and reload Caddy — nothing else).
+  management. No Docker runtime on the box.
+- **Four apps** — `syncdb-server` and `auth` are long-running services
+  (OCaml and Bun-compiled binaries). `site` and `golf` are static
+  (Astro and a PWA).
+- **One helper**, `alert-on-failure`.
+  It is a systemd `@.service` template.
+  It sends email through Resend when a service fails.
+  Bootstrap installs the unit template.
+  `vps/alert-on-failure/deploy.ts` ships the binary and env file.
+- **Three users on the box**: `ubuntu` (SSH access), `root` (bootstrap), and
+  `deploy` (runs every deploy, with narrow sudo grants to restart the two
+  services and reload Caddy — nothing else).
 
 ---
 
@@ -20,42 +27,52 @@ How apps get onto the box.
 
 ```
 /vps/
-  bootstrap.sh                     idempotent, root, runs on every re-provision
+  bootstrap.ts                     local orchestrator (compile + ship + run)
+  bootstrap-remote.ts              compiled Linux binary, runs as root on VPS
+  utils.ts                         shared deploy/bootstrap helpers
   Caddyfile                        → /etc/caddy/Caddyfile
   journald-retention.conf          → /etc/systemd/journald.conf.d/retention.conf
   sudoers.deploy                   → /etc/sudoers.d/deploy  (hand-written)
   alert-on-failure/
     alert-on-failure@.service      → /etc/systemd/system/
-    alert-on-failure.sh            shipped to /opt/alert-on-failure/current/
+    alert-on-failure.ts            compiled to on-box binary
     alert-on-failure.prod.enc.env  decrypted on box to /etc/alert-on-failure/
-    deploy.sh                      hand-written, run from laptop
-  sync/
-    syncdb-server.service                   → /etc/systemd/system/
+    deploy.ts                      local deploy orchestrator
+    deploy-remote.ts               compiled Linux binary, runs on VPS
+  syncdb-server/
+    syncdb-server.service          → /etc/systemd/system/
     sync.caddy                     → /etc/caddy/sites/
     syncdb-server.prod.enc.env     decrypted to /etc/syncdb-server/syncdb-server.prod.env
     (syncdb-server.dev.env — gitignored, plaintext)
-    deploy.sh                      hand-written, run from laptop
-  auth/                            same shape as sync
+    deploy.ts                      local deploy orchestrator
+    deploy-remote.ts               compiled Linux binary, runs on VPS
+  auth/                            same shape as syncdb-server
   site/
     site.caddy                     → /etc/caddy/sites/
-    deploy.sh
+    deploy.ts
+    deploy-remote.ts
   golf/
     golf.caddy                     → /etc/caddy/sites/
     golf.build.env                 build-time VITE_* vars (public URLs, plaintext)
-    deploy.sh
+    deploy.ts
+    deploy-remote.ts
 ```
 
-`bootstrap.sh` **copies** every file that ships to a fixed destination. No
-stow. No symlinks. The one exception is the atomic `current` swap under
-`/opt/<app>/`. The deploy script does that.
+`bootstrap.ts` rsyncs `vps/`.
+It compiles and ships `bootstrap-remote.ts`.
+It runs the remote binary on the box as root.
+Do not use stow.
+Do not use symlinks for config files.
+Deploy uses one symlink swap at `/opt/<app>/current`.
 
 ---
 
 ## Build paths per app
 
-- **`sync`** (OCaml) — cross-built inside a Docker container pinned to
+- **`syncdb-server`** (OCaml, serves `sync.maxhill.me`) — cross-built
+  inside a Docker container pinned to
   `ocaml/opam:ubuntu-24.04-ocaml-5.2`, targeting linux/amd64.
-  `vps/syncdb-server/deploy.sh` builds the image on first run. It caches opam state
+  `vps/syncdb-server/deploy.ts` builds the image on first run. It caches opam state
   in a named volume (`maxhill-sync-opam-cache`). Docker must run on the
   machine that runs `mise run deploy:sync`. On Apple Silicon, the build is
   emulated. Rationale: ADR 0003.
@@ -78,7 +95,9 @@ stow. No symlinks. The one exception is the atomic `current` swap under
 | Remove an app                 | `docs/runbooks/remove-app.md`         |
 | Edit secrets and config       | `docs/runbooks/edit-secrets.md`       |
 
-There is no `deploy:all`. You rarely want it. Chain the commands if you do:
+There is no `deploy:all` task.
+You usually do not need it.
+If needed, chain commands:
 `mise run deploy:sync && mise run deploy:auth`.
 
 ---
@@ -104,10 +123,11 @@ Two files per app with secrets:
 - `<app>.dev.env` — gitignored, plaintext, per-machine. Same keys as the
   encrypted file.
 
-Dev and prod hit the same code path. Only the env source differs. For dev,
-`mise` auto-loads `vps/<app>/<app>.dev.env` via `[env]._.file` in each app
-`mise.toml`. Run `mise run dev:<app>` from anywhere in the repo. Or
-`cd apps/<app> && mise run dev`.
+Dev and prod use the same code path.
+Only the env source changes.
+For dev, `mise` auto-loads `vps/<app>/<app>.dev.env` from `[env]._.file`.
+Run `mise run run` in `apps/<app>/`.
+Or run `mise --cd apps/<app> run run` from the repo root.
 
 **Static apps with build-time env** (`golf`): Vite inlines `VITE_*` vars
 into the built bundle. Prod values live in `vps/<app>/<app>.build.env` —
@@ -121,8 +141,8 @@ URLs by construction. The deploy script sources the file before
 
 Two age keypairs. Both are listed as recipients in `.sops.yaml`:
 
-- **Laptop keypair** — lets you edit every `.prod.enc.json`.
-- **VPS keypair** — generated by `bootstrap.sh` at `/etc/sops/key.txt`. It
+- **Laptop keypair** — lets you edit every `.prod.enc.env`.
+- **VPS keypair** — generated by bootstrap at `/etc/sops/key.txt`. It
   never leaves the box. It lets the box decrypt during deploy and
   bootstrap.
 
@@ -153,7 +173,7 @@ One setup step lives outside this repo:
 ### SSH
 
 Hetzner installs the SSH key attached at server-creation time into
-`/home/ubuntu/.ssh/authorized_keys` before first boot. `bootstrap.sh` clones
+`/home/ubuntu/.ssh/authorized_keys` before first boot. Bootstrap clones
 that file into `/home/deploy/.ssh/authorized_keys`. The same laptop key works
 for `ubuntu` (SSH access, bootstrap, break-glass) and `deploy` (every routine
 deploy). Bootstrap also installs `/etc/ssh/sshd_config.d/10-maxhill.conf`.
@@ -168,27 +188,29 @@ at 500M.
 
 ### Alarms
 
-- **Service-level**: `OnFailure=alert-on-failure@%n.service` on every
-  service unit. It emails via Resend. It uses the same Resend account as
-  product email. No separate webhook service. `alert-on-failure` follows
-  the standard shape: `bootstrap.sh` installs the `@.service` template.
-  `mise run deploy:alert-on-failure` ships the shell script (to
-  `/opt/alert-on-failure/current/`) and the Resend credentials env file.
-  Note: on a crash-loop, systemd triggers `OnFailure=` once per restart
-  cycle within `StartLimitBurst=` (default 5). A hard-failing service
-  produces up to 5 emails before systemd gives up on it. Left as-is: the
-  redundancy is cheap and email is not perfectly reliable. Revisit if it
-  becomes noisy in practice.
-- **Box-level** (deferred): an external dead-man switch (healthchecks.io).
-  A down box cannot alert on itself. Add it when the box has been live long
-  enough to warrant it.
+- **Service-level**: Add `OnFailure=alert-on-failure@%n.service` to each
+  service unit.
+  The helper sends email through Resend.
+  It uses the same Resend account as product email.
+  Do not add a separate webhook service.
+  Bootstrap installs the `@.service` template.
+  `mise run deploy:alert-on-failure` ships a compiled binary to
+  `/opt/alert-on-failure/current/alert-on-failure`.
+  It also ships the Resend credential env file.
+  In a crash loop, systemd can trigger up to `StartLimitBurst=` emails.
+  Default `StartLimitBurst=` is 5.
+  Keep this behavior unless it becomes noisy.
+- **Box-level** (deferred): Use an external dead-man switch,
+  for example healthchecks.io.
+  A down box cannot alert on itself.
+  Add this check after the box runs long enough to justify it.
 
 ### Backups
 
 Litestream is live. It replicates both production SQLite databases
 (`/var/lib/syncdb-server/syncdb-server.db` and `/var/lib/auth/auth.db`) to Cloudflare R2.
 
-- `bootstrap.sh` installs Litestream and the systemd drop-in.
+- Bootstrap installs Litestream and the systemd drop-in.
 - `mise run deploy:litestream` ships `/etc/litestream.yml` and encrypted R2
   credentials (`/etc/litestream/litestream.prod.env`).
 - `litestream.service` runs continuously and logs periodic `replica sync`
@@ -220,17 +242,22 @@ actually happens.
 - **An owned VPS** is the cheapest option and gives full control. No
   multi-region need justifies a PaaS.
 - **Caddy** removes the TLS toil without adding an orchestration layer.
-- **No Docker on the box** — OCaml binaries are self-contained. Bun
-  compiles to a self-contained binary. Static sites are just files. The one
-  exception is _build-time_: `apps/syncdb-server` is cross-built via a Docker image
-  (`vps/syncdb-server/Dockerfile.builder`) because Mac-to-Linux OCaml cross-compile
-  is not viable today (see ADR 0003). The VPS itself still runs plain ELFs
-  under systemd.
-- **No manifest, no `kind` enum, no per-kind dispatch code** — four apps
-  means four hand-written `deploy.sh` files. Duplication at N=4 is cheaper
-  than the abstraction it would take to remove it.
-- **One `deploy.sh` per app** because the interesting differences (build
-  command, artifact path, restart-or-not, config-or-not) are per-app
+- **No Docker on the box**.
+  OCaml binaries are self-contained.
+  Bun compiles to a self-contained binary.
+  Static sites are plain files.
+  One build-time exception exists.
+  `apps/syncdb-server` cross-builds in a Docker image from
+  `vps/syncdb-server/Dockerfile.builder`.
+  This avoids Mac-to-Linux OCaml cross-compile limits.
+  See ADR 0003.
+  The VPS still runs plain ELF binaries under systemd.
+- **No manifest, no `kind` enum, no per-kind dispatch code** — each app has
+  a hand-written deploy pair (`deploy.ts` + `deploy-remote.ts`).
+  Duplication at this repo size is cheaper than the abstraction it would
+  take to remove it.
+- **One deploy entrypoint per app** because the interesting differences
+  (build command, artifact path, restart-or-not, config-or-not) are per-app
   anyway. When two scripts drift, that is information.
 - **`EnvironmentFile=` everywhere instead of a config-file arg**: same
   dev/prod code path. Secrets never bake into artifacts. No per-app JSON

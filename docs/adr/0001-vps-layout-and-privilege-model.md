@@ -4,7 +4,8 @@ We centralise all VPS deployment machinery under a single `/vps/`
 directory rather than colocating it per-app under `/apps/<name>/vps/`,
 and we use narrow per-service `systemctl` sudo grants instead of a
 generic on-box wrapper script. We also **do not abstract over app
-kinds** — each app has its own hand-written `deploy.sh`.
+kinds** — each app has its own hand-written deploy scripts (`deploy.ts`
+plus `deploy-remote.ts`).
 
 > **Revised 2026-07-21.** An earlier draft of this ADR designed an
 > `app.json` manifest, a `kind ∈ {service, static, oneshot}` enum, an
@@ -18,24 +19,24 @@ kinds** — each app has its own hand-written `deploy.sh`.
 
 ```
 /vps/
-  bootstrap.sh                     idempotent, root, runs on every re-provision
+  bootstrap.ts                     local orchestrator for bootstrap
   Caddyfile                        → /etc/caddy/Caddyfile
   journald-retention.conf          → /etc/systemd/journald.conf.d/
   sudoers.deploy                   → /etc/sudoers.d/deploy  (hand-written)
   alert-on-failure@.service        → /etc/systemd/system/
-  alert-on-failure.sh              → /usr/local/bin/
+  alert-on-failure/alert-on-failure.ts   compiled and shipped to /opt/alert-on-failure/current/
   alert-on-failure.prod.enc.json   decrypted on box to /etc/alert-on-failure/
   <app>/                           one dir per app; contents vary by app
     <app>.service                  (service apps)
     <app>.caddy                    (all apps)
     <app>.prod.enc.env             (apps with secrets)
-    deploy.sh                      always present, hand-written
+    deploy.ts                      always present, hand-written
 ```
 
 `/apps/` stays purely product source. Nothing under `/apps/<name>/`
 knows about the VPS.
 
-`bootstrap.sh` names each app it installs by hand. There is no
+`bootstrap-remote.ts` names each app it installs by hand. There is no
 discovery loop, no manifest, no dispatch.
 
 ## Considered options
@@ -58,7 +59,7 @@ discovery loop, no manifest, no dispatch.
   root-capable code that must stay in sync with deploy scripts.
   Narrow sudo keeps the on-box privilege surface the smallest set of
   commands `deploy` actually needs; unit-file / caddy-site / sudoers
-  changes go through `bootstrap.sh` (which is already designed to be
+  changes go through bootstrap (which is already designed to be
   idempotent and re-runnable).
 
 - **Drop the `deploy` user, SSH as root.** Rejected: cheap defence in
@@ -73,7 +74,7 @@ discovery loop, no manifest, no dispatch.
 ## Consequences
 
 - Adding an app is a five-file touch (create `vps/<app>/`, edit
-  `bootstrap.sh`, edit `sudoers.deploy`, edit `mise.toml`, add DNS)
+  `bootstrap-remote.ts`, edit `sudoers.deploy`, edit `mise.toml`, add DNS)
   followed by `mise run bootstrap` and the first
   `mise run deploy:<app>`. See the runbook in `docs/vps.md`.
 - Removing an app is a hand-typed cleanup on the box + reversing the

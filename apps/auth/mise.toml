@@ -21,4 +21,4 @@ run = 'echo "no-op" && exit 0'
 
 [tasks.deploy]
 description = "Deploy auth (Bun-compiled service) to VPS."
-run = "bash ../../vps/auth/deploy.sh"
+run = "pnpm exec tsx ../../vps/auth/deploy.ts"

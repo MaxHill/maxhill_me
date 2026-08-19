@@ -25,8 +25,9 @@ four tasks:
   self-consistent (unit tests, type-checks, `astro check + eslint`).
 - **`fuzz`** — unbounded checks. `apps/syncdb-server` wires this to the
   simulator search; everywhere else it's `echo "no-op" && exit 0`.
-- **`deploy`** — publish. For apps, `bash ../../vps/<app>/deploy.sh`
-  (which builds inline and ships). For workspace libraries, a
+- **`deploy`** — publish. For apps,
+  `pnpm exec tsx ../../vps/<app>/deploy.ts` (which builds inline,
+  ships, and runs a remote deploy binary). For workspace libraries, a
   one-shot build — the artifact consumers pick up via `workspace:*`.
 
 No implementation helpers. Anything a build script would previously
@@ -89,7 +90,7 @@ without adding a new tool.
   outweighed any expressiveness gain from bespoke names.
 
 - **Keep `build` as a fifth canonical verb.** Considered and
-  rejected. For apps, `deploy.sh` already builds inline before
+  rejected. For apps, `deploy.ts` already builds inline before
   shipping, so `build` was a duplicate entry point. For workspace
   libraries, the "built form" _is_ the deployed form (consumers pick
   up `dist/` via `workspace:*`), so `deploy` doing a one-shot build
@@ -110,9 +111,9 @@ without adding a new tool.
 - `_.path = ["./node_modules/.bin"]` was tried and rejected in
   favour of explicit `pnpm exec <bin>` in every task, so it's
   self-documenting which binaries are project-scoped.
-- Deploy scripts in `vps/<app>/deploy.sh` are cwd-agnostic (they
-  self-locate to repo root via `dirname "$0"`) so `mise run deploy`
-  works from the project directory without ceremony.
+- Deploy scripts in `vps/<app>/deploy.ts` are cwd-agnostic (they
+  self-locate to repo root) so `mise run deploy` works from the
+  project directory without ceremony.
 - CI is currently absent (GitHub Actions was deleted alongside
   turbo; the replacement isn't decided yet). Whatever replaces it
   will call `mise run test` and `mise run deploy:<app>` and inherit

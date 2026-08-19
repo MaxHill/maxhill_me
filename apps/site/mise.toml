@@ -18,4 +18,4 @@ run = 'echo "no-op" && exit 0'
 
 [tasks.deploy]
 description = "Deploy site (Astro static) to VPS."
-run = "bash ../../vps/site/deploy.sh"
+run = "pnpm exec tsx ../../vps/site/deploy.ts"

@@ -18,4 +18,4 @@ run = 'echo "no-op" && exit 0'
 
 [tasks.deploy]
 description = "Deploy golf (PWA static) to VPS."
-run = "bash ../../vps/golf/deploy.sh"
+run = "pnpm exec tsx ../../vps/golf/deploy.ts"

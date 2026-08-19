@@ -1,18 +1,20 @@
 # Runbook — Remove an app
 
-There is no `decommission.sh`. You will remove an app maybe twice in your
-life. Type the commands.
+There is no `decommission.sh` script.
+Remove the app with these steps.
 
-SQLite state at `/var/lib/<app>/` stays in place unless you delete it. Git
-regenerates everything else.
+By default, SQLite data stays at `/var/lib/<name>/`.
+Remove that data only when you intend permanent deletion.
 
----
+## 1. Remove app files on the box
 
-## 1. On the box (as ubuntu)
+Connect:
 
 ```bash
 ssh ubuntu@$VPS_HOST
 ```
+
+Run these commands:
 
 ```bash
 # service apps only
@@ -29,36 +31,40 @@ sudo systemctl daemon-reload
 sudo systemctl reload caddy
 ```
 
-**SQLite state.** `/var/lib/<name>/` (the systemd `StateDirectory=`) stays
-in place. Delete it only if you are sure:
+## 2. Remove SQLite data only if needed
+
+`/var/lib/<name>/` stays in place.
+Delete it only if you are sure.
 
 ```bash
-sudo rm -rf /var/lib/<name>    # irrecoverable
+sudo rm -rf /var/lib/<name>
 ```
 
-## 2. In the repo
+## 3. Remove app references in the repo
 
-- Delete `vps/<name>/`.
-- Remove the app `install` lines from `vps/bootstrap.sh`.
-- Remove `<name>` from the `for app in sync auth site golf; do` loop in
-  `bootstrap.sh`.
-- Remove the app line from `vps/sudoers.deploy` (service apps only).
-- Remove the app task from `mise.toml`.
-- Delete `apps/<name>/` if the product code is also going away.
+1. Delete `vps/<name>/`.
+2. Remove app `install` lines from `vps/bootstrap-remote.ts`.
+3. Remove `<name>` from the app loop in `vps/bootstrap-remote.ts`.
+4. Remove app lines from `vps/sudoers.deploy` for service apps.
+5. Remove the app task from `mise.toml`.
+6. Delete `apps/<name>/` if product code is retired.
 
-## 3. DNS
+## 4. Remove DNS
 
-Remove the `<name>.maxhill.me` record.
+Remove the `<name>.maxhill.me` DNS record.
 
-## 4. Confirm
+## 5. Confirm
 
 ```bash
-mise run bootstrap    # regenerates sudoers cleanly. Nothing should reference <name>.
+mise run bootstrap
 ```
 
-## 5. Sanity check
+Make sure no config still references `<name>`.
+
+## 6. Final check on the box
 
 ```bash
 ssh ubuntu@$VPS_HOST "sudo ls /etc/systemd/system/ /etc/caddy/sites/ /opt/ /etc/ | grep <name>"
-# no output means clean
 ```
+
+The command must print no output.

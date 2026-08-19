@@ -18,11 +18,7 @@ VPS_HOST = "164.132.64.112"
 
 [tasks.bootstrap]
 description = "Provision (or re-provision) the VPS from /vps/. Runs as root."
-run = """
-ssh ubuntu@$VPS_HOST 'sudo mkdir -p /opt/bootstrap/vps'
-rsync -a --delete vps/ ubuntu@$VPS_HOST:/tmp/bootstrap-vps/
-ssh ubuntu@$VPS_HOST 'sudo rsync -a --delete /tmp/bootstrap-vps/ /opt/bootstrap/vps/ && sudo bash /opt/bootstrap/vps/bootstrap.sh'
-"""
+run = "pnpm exec tsx vps/bootstrap.ts"
 
 [tasks.generate]
 description = "Run plop code-gen (templates in ./plop)."
@@ -92,8 +88,8 @@ run = "mise run deploy"
 
 [tasks."deploy:alert-on-failure"]
 description = "Deploy alert-on-failure Resend env to VPS (no service restart)."
-run = "bash vps/alert-on-failure/deploy.sh"
+run = "pnpm exec tsx vps/alert-on-failure/deploy.ts"
 
 [tasks."deploy:litestream"]
 description = "Deploy litestream config + env to VPS."
-run = "bash vps/litestream/deploy.sh"
+run = "pnpm exec tsx vps/litestream/deploy.ts"

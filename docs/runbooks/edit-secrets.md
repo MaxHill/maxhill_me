@@ -1,87 +1,88 @@
 # Runbook — Edit secrets and config
 
-Rotate an API key. Change a `to:` address. Change a config value. This
-applies to any `<app>.prod.enc.env` file under `vps/`.
+Use this runbook to change a production secret or config value.
+This runbook applies to `vps/<app>/<app>.prod.enc.env` files.
 
-Pick your app. Examples:
+Examples:
 
-- `vps/alert-on-failure/alert-on-failure.prod.enc.env` — decrypted during
-  **deploy**.
-- `vps/auth/auth.prod.enc.env` — decrypted during **deploy**.
+- `vps/alert-on-failure/alert-on-failure.prod.enc.env`
+- `vps/auth/auth.prod.enc.env`
 
-The pattern is the same for every `.prod.enc.env` file.
-
-## 1. Edit in place
+## 1. Edit the encrypted file
 
 ```bash
-sops edit vps/<app>.prod.enc.env
+sops edit vps/<app>/<app>.prod.enc.env
 ```
 
-sops decrypts to a temp file. sops opens `$EDITOR`. sops re-encrypts the
-file on save. sops never writes plaintext to the repo. Do not run `sops -d`
-to a sibling file and edit that. You will leak the plaintext.
+SOPS decrypts to a temporary file.
+SOPS opens `$EDITOR`.
+SOPS encrypts again when you save.
+Do not write plaintext to a repo file.
+Do not run `sops -d` to a sibling file.
 
-## 2. Commit
+## 2. Commit the change
 
 ```bash
-git add vps/<app>.prod.enc.env
-git diff --cached vps/<app>.prod.enc.env   # sanity: only ciphertext and MAC changed
+git add vps/<app>/<app>.prod.enc.env
+git diff --cached vps/<app>/<app>.prod.enc.env
 git commit -m "<app>: rotate <thing>"
 git push
 ```
 
-## 3. Apply
+Make sure only ciphertext and MAC changed.
 
-Redeploy the app so `deploy.sh` re-decrypts the env on the box:
+## 3. Apply the change on the VPS
 
 ```bash
 mise run deploy:<app>
 ```
 
+`deploy.ts` decrypts the env file on the box.
+
 ## 4. Verify
 
-The check is app-specific. Examples:
+Use an app-specific check.
 
-- `alert-on-failure` — trigger a failure. Confirm the email lands:
-  ```bash
-  ssh ubuntu@$VPS_HOST 'sudo systemd-run --unit=alert-smoketest-$$ /bin/false'
-  ```
-  The unit exits non-zero. `OnFailure=` fires. Email arrives.
-- Any HTTP app — hit its health endpoint. Then tail `journalctl -u <app>`
-  on the box.
+Example for `alert-on-failure`:
+
+```bash
+ssh ubuntu@$VPS_HOST 'sudo systemd-run --unit=alert-smoketest-$$ /bin/false'
+```
+
+Make sure an email arrives.
+
+Example for HTTP apps:
+
+1. Call the app health endpoint.
+2. Check logs with `journalctl -u <app>`.
 
 ---
 
-## Add a new recipient later
+## Add a new recipient
 
-Use this for a second laptop or a replacement VPS. Get the new pubkey,
-then:
+Use this when you add a laptop key or a new VPS key.
 
 ```bash
-# 1. Append the pubkey to the `age:` list in .sops.yaml (comma-separated).
 $EDITOR .sops.yaml
-
-# 2. Re-wrap every encrypted file against the new recipient set.
 find vps -name '*.enc.env' -exec sops updatekeys {} \;
-
-# 3. Commit both.
 git add .sops.yaml vps/**/*.enc.env
 git commit -m "sops: add <who> as recipient"
 ```
 
-`updatekeys` re-wraps only the data key. The encrypted payload does not
-change. Diffs stay small.
+`updatekeys` re-wraps only the data key.
+The encrypted payload stays the same.
 
 ---
 
 ## If it goes wrong
 
-- **`sops edit` says "no key could decrypt the data"** — the laptop age key
-  is not in the `.sops.yaml` recipients for this file. Or
-  `SOPS_AGE_KEY_FILE` or `~/.config/sops/age/keys.txt` does not point at
-  it. Fix the env. Do not re-encrypt.
-- **Bootstrap or deploy fails on the decrypt step** — the VPS age key is
-  not a recipient. Run `sops updatekeys` (see above). Commit. Retry.
-- **App misbehaves after apply** — check `journalctl -u <app>` on the box.
-  The cause is usually a typo in the new value (a bad API key, an
-  unverified sending domain, and so on).
+- **`sops edit` says no key can decrypt**
+  Check `.sops.yaml` recipients.
+  Check `SOPS_AGE_KEY_FILE` or `~/.config/sops/age/keys.txt`.
+- **Deploy fails on decrypt**
+  Add the VPS key to recipients.
+  Run `sops updatekeys`.
+  Commit and deploy again.
+- **App fails after deploy**
+  Check `journalctl -u <app>`.
+  Check for wrong values, such as API keys.

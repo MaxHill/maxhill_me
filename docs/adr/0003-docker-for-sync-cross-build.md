@@ -1,6 +1,6 @@
 # Docker for cross-building `apps/syncdb-server` to Linux/amd64
 
-`vps/syncdb-server/deploy.sh` builds the sync binary inside a Docker builder
+`vps/syncdb-server/deploy.ts` builds the sync binary inside a Docker builder
 image (`ocaml/opam:ubuntu-24.04-ocaml-5.2` + libssl/libsqlite/libgmp
 apt deps) before rsync'ing the resulting Linux/amd64 ELF to the VPS.
 The image is built lazily on first deploy and cached; opam state
@@ -13,7 +13,7 @@ systemd.
 - `vps/syncdb-server/Dockerfile.builder` — pinned to OCaml 5.2 (matches
   `apps/syncdb-server/dune-project`), Ubuntu 24.04, apt deps for the native
   libs sync links against.
-- `vps/syncdb-server/deploy.sh` step 1 — `docker build` if the image is
+- `vps/syncdb-server/deploy.ts` step 1 — `docker build` if the image is
   missing, then `docker run --platform linux/amd64` with the repo
   bind-mounted and a named opam-cache volume
   (`maxhill-sync-opam-cache`). Inside the container: `opam install
@@ -69,7 +69,7 @@ in the deploy path *after* rsync, which is the wrong place for them.
   qemu). Acceptable for a laptop-driven deploy; if it becomes
   painful, run the same script on an amd64 runner without changing
   anything else. The VPS is x86_64 (confirmed by
-  `vps/auth/deploy.sh` shipping `bun-linux-x64`).
+  `vps/auth/deploy.ts` shipping `bun-linux-x64`).
 - **`docs/vps.md`'s "no Docker" line now means "no Docker on the
   box"** — build-time containerisation for one app is a smaller
   compromise than shipping upstream OCaml patches or maintaining a

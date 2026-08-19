@@ -24,7 +24,7 @@ Systemd units live under `vps/auth/`:
 
 - `auth.service` — the long-running server.
 - `auth-sweep.service` + `auth-sweep.timer` — hourly `DELETE` of
-  expired KV rows. Enabled once by `bootstrap.sh`.
+  expired KV rows. Enabled once by bootstrap.
 
 ## CLI
 
@@ -78,12 +78,12 @@ Discovery endpoint: <http://localhost:3002/.well-known/oauth-authorization-serve
 
 ## Production deploy
 
-`mise run deploy:auth` from the repo root. See `vps/auth/deploy.sh`:
+`mise run deploy:auth` from the repo root. See `vps/auth/deploy.ts`:
 it builds the binary with `bun build --compile
---target=bun-linux-x64`, rsyncs the artifact plus
-`vps/auth/auth.prod.enc.env`, decrypts to `/etc/auth/auth.prod.env` on
-the box via sops, atomically swaps the `/opt/auth/current` symlink,
-and restarts `auth.service`.
+--target=bun-linux-x64`, compiles and ships `deploy-remote.ts`, rsyncs
+artifact + encrypted env, then the remote deploy binary decrypts to
+`/etc/auth/auth.prod.env`, atomically swaps `/opt/auth/current`, and
+restarts `auth.service`.
 
 Rotating `RESEND_API_KEY` (or any prod env var): `sops edit
 vps/auth/auth.prod.enc.env`, commit, redeploy. Full flow in

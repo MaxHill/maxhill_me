@@ -27,4 +27,4 @@ run = "opam exec --switch=. -- dune build ./bin/simulator_sut.exe && opam exec -
 
 [tasks.deploy]
 description = "Deploy sync (OCaml service) to VPS."
-run = "bash ../../vps/syncdb-server/deploy.sh"
+run = "pnpm exec tsx ../../vps/syncdb-server/deploy.ts"
