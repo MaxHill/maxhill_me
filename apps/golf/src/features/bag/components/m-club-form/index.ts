@@ -308,7 +308,7 @@ export class MClubForm extends MElement {
         </button>
 
         ${this.isEditing ? html`
-          <details class="danger-zone">
+          <details class="danger-zone box" data-variant="surface">
             <summary>Danger zone</summary>
             <button
               type="button"

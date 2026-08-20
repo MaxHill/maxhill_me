@@ -101,10 +101,6 @@ details[open] > :not(summary) {
 
 .danger-zone {
   margin-block-start: var(--size-4);
-  padding: var(--size-3);
-  border: 1px solid var(--color-stroke);
-  border-radius: var(--radius-box);
-  background: var(--color-surface);
 }
 
 .danger-zone summary {
