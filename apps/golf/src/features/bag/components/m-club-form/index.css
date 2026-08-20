@@ -38,7 +38,7 @@
     grid-area: button;
   }
 
-  .danger-zone {
+  m-danger-zone.danger-zone {
     grid-area: danger;
   }
 }
@@ -97,21 +97,6 @@ details[open] > :not(summary) {
   margin-top: var(--size-3);
   display: grid;
   gap: var(--size-3);
-}
-
-.danger-zone {
-  margin-block-start: var(--size-4);
-}
-
-.danger-zone summary {
-  cursor: pointer;
-  font: var(--p2);
-  font-family: var(--ff-display);
-  color: var(--color-text-softer);
-}
-
-.danger-zone-delete {
-  margin-block-start: var(--size-3);
 }
 
 .shot-type li {

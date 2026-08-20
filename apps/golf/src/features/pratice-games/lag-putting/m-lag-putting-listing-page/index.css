@@ -129,26 +129,6 @@
   width: 100%;
 }
 
-.danger-zone {
-  margin-block-start: var(--size-4);
-  padding: var(--size-3);
-  border: 1px solid var(--color-stroke);
-  border-radius: var(--radius-box);
-  background: var(--color-neutral-fill-softer);
-}
-
-.danger-zone summary {
-  cursor: pointer;
-  font: var(--p2);
-  font-family: var(--ff-display);
-  color: var(--color-text-softer);
-}
-
-.danger-zone-delete {
-  margin-block-start: var(--size-3);
-  /* color: var(--color-destructive-text-colorful); */
-}
-
 .new-game-dialog::backdrop {
   background: oklch(0% 0 0 / 0.5);
 }
