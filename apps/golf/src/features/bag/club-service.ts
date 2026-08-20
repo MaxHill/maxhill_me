@@ -27,6 +27,10 @@ export class ClubService {
         await this.table.setRow(key, club);
     }
 
+    async deleteClub(key: string): Promise<void> {
+        await this.table.deleteRow(key);
+    }
+
     subscribe(handler: SubscriptionCallbackHandler): () => void {
         return this.table.subscribe(handler);
     }

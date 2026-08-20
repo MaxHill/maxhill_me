@@ -14,7 +14,8 @@
     "header header"
       "success success"
       "fields shot-types"
-      "button button";
+      "button button"
+      "danger danger";
   }
   
   .success-message {
@@ -35,6 +36,10 @@
   
   .submit-button {
     grid-area: button;
+  }
+
+  .danger-zone {
+    grid-area: danger;
   }
 }
 
@@ -92,6 +97,25 @@ details[open] > :not(summary) {
   margin-top: var(--size-3);
   display: grid;
   gap: var(--size-3);
+}
+
+.danger-zone {
+  margin-block-start: var(--size-4);
+  padding: var(--size-3);
+  border: 1px solid var(--color-stroke);
+  border-radius: var(--radius-box);
+  background: var(--color-neutral-fill-softer);
+}
+
+.danger-zone summary {
+  cursor: pointer;
+  font: var(--p2);
+  font-family: var(--ff-display);
+  color: var(--color-text-softer);
+}
+
+.danger-zone-delete {
+  margin-block-start: var(--size-3);
 }
 
 .shot-type li {

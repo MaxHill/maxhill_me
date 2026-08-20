@@ -170,6 +170,15 @@ export class MClubForm extends MElement {
     }
   };
 
+  private handleDeleteClub = async () => {
+    if (!this.isEditing) return;
+
+    await this.clubService.deleteClub(this.clubKey);
+
+    window.history.pushState({}, "", "/bag");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  };
+
   private renderComponent() {
     const heading = this.isEditing ? "Edit club" : "Add club";
     const buttonText = this.isEditing ? "Save" : "Add";
@@ -297,6 +306,20 @@ export class MClubForm extends MElement {
         <button part="save-button" class="button submit-button" type="submit" aria-label=${buttonAriaLabel}>
           ${buttonText}
         </button>
+
+        ${this.isEditing ? html`
+          <details class="danger-zone">
+            <summary>Danger zone</summary>
+            <button
+              type="button"
+              class="button danger-zone-delete"
+              data-style="destructive"
+              @click=${this.handleDeleteClub}
+            >
+              Remove club
+            </button>
+          </details>
+        ` : null}
         </form>
         
         <dialog ${ref(this.dialogRef)} class="shot-type-dialog">
