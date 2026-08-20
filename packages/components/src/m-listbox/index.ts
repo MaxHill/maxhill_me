@@ -98,6 +98,8 @@ export class MListbox extends MFormAssociatedElement {
     static tagName = "m-listbox";
     static formAssociated = true;
 
+    private isReconcilingOptionSelection = false;
+
     @BindAttribute()
     mode: "single-select" | "single-focus" | "multiple" = "single-select";
 
@@ -219,6 +221,63 @@ export class MListbox extends MFormAssociatedElement {
             new MListboxChangeEvent({ option: option, selected: selectedValues }),
         );
         this.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    /**
+     * Keep listbox state in sync when options are selected programmatically.
+     * Example: option.selected = true from consumer code.
+     */
+    private handleOptionSelectedChange = (event: Event): void => {
+        if (this.isReconcilingOptionSelection) return;
+
+        const option = event.target as MOption;
+        if (!option || !this.options.includes(option)) return;
+
+        this.isReconcilingOptionSelection = true;
+        try {
+            const deselectedOptions: MOption[] = [];
+
+            // In single modes, selecting one option must deselect all others.
+            if (this.mode !== "multiple" && option.selected) {
+                for (const other of this.options) {
+                    if (other !== option && other.selected) {
+                        other.selected = false;
+                        deselectedOptions.push(other);
+                    }
+                }
+            }
+
+            for (const deselected of deselectedOptions) {
+                this.dispatchEvent(new MListboxUnselectedEvent({ option: deselected }));
+            }
+
+            const EventClass = option.selected ? MListboxSelectEvent : MListboxUnselectedEvent;
+            this.dispatchEvent(new EventClass({ option }));
+
+            const selectedValues = this.optionListManager.selectedValues;
+            const nextValue = this.mode === "multiple" ? selectedValues : (selectedValues[0] ?? null);
+            const changed = this.hasValueChanged(nextValue);
+
+            this.value = nextValue;
+
+            if (changed) {
+                this.dispatchEvent(new MListboxChangeEvent({ option, selected: selectedValues }));
+                this.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        } finally {
+            this.isReconcilingOptionSelection = false;
+        }
+    };
+
+    private hasValueChanged(nextValue: string | string[] | null): boolean {
+        const currentValue = this.value;
+
+        if (Array.isArray(currentValue) && Array.isArray(nextValue)) {
+            if (currentValue.length !== nextValue.length) return true;
+            return currentValue.some((value, index) => value !== nextValue[index]);
+        }
+
+        return currentValue !== nextValue;
     }
 
     /**
@@ -368,6 +427,7 @@ export class MListbox extends MFormAssociatedElement {
         this.addEventListener("click", this.handleClick);
         this.addEventListener("mouseover", this.handleMouseOver);
         this.addEventListener("mouseout", this.handleMouseOut);
+        this.addEventListener("m-option-selected-change", this.handleOptionSelectedChange);
 
         // Setup label click to focus the component
         if (this.labelElement) {
@@ -407,6 +467,7 @@ export class MListbox extends MFormAssociatedElement {
         this.removeEventListener("click", this.handleClick);
         this.removeEventListener("mouseover", this.handleMouseOver);
         this.removeEventListener("mouseout", this.handleMouseOut);
+        this.removeEventListener("m-option-selected-change", this.handleOptionSelectedChange);
 
         if (this.labelElement) {
             this.labelElement.removeEventListener("click", this.handleLabelClick);
@@ -429,7 +490,9 @@ export class MListbox extends MFormAssociatedElement {
         if (name === "mode") {
             // Rebuild manager with new selection mode
             this.optionListManager = this.createOptionListManager();
+            this.isReconcilingOptionSelection = true;
             this.options.forEach((option) => (option.selected = false));
+            this.isReconcilingOptionSelection = false;
             this.optionListManager.focusedElement = null;
             this.value = null;
             if (this.mode === "multiple") {
@@ -469,7 +532,9 @@ export class MListbox extends MFormAssociatedElement {
 
     formResetCallback(): void {
         super.formResetCallback(); // Reset value and hasInteracted
+        this.isReconcilingOptionSelection = true;
         this.options.forEach((option) => (option.selected = false));
+        this.isReconcilingOptionSelection = false;
         this.optionListManager.focusedElement = null;
     }
 

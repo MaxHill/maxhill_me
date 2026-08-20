@@ -661,6 +661,62 @@ describe('m-listbox', () => {
       expect(formData.getAll('fruits')).to.deep.equal(['apple', 'cherry']);
     });
 
+    it('should sync listbox state when option.selected is changed programmatically in multiple mode', async () => {
+      const form = await fixture<HTMLFormElement>(html`
+        <form>
+          <m-listbox name="fruits" mode="multiple">
+            <m-option value="apple">Apple</m-option>
+            <m-option value="banana">Banana</m-option>
+            <m-option value="cherry">Cherry</m-option>
+          </m-listbox>
+        </form>
+      `);
+
+      await waitUntil(() => form.querySelectorAll('m-option').length === 3);
+      const listBox = form.querySelector('m-listbox') as MListbox;
+      const options = form.querySelectorAll('m-option');
+      const apple = options[0] as MOption;
+      const cherry = options[2] as MOption;
+
+      apple.selected = true;
+      cherry.selected = true;
+
+      await waitUntil(() => listBox.selectedValues.length === 2);
+
+      expect(listBox.selectedValues).to.deep.equal(['apple', 'cherry']);
+      const formData = new FormData(form);
+      expect(formData.getAll('fruits')).to.deep.equal(['apple', 'cherry']);
+    });
+
+    it('should enforce single-select semantics when option.selected is changed programmatically', async () => {
+      const form = await fixture<HTMLFormElement>(html`
+        <form>
+          <m-listbox name="fruit">
+            <m-option value="apple">Apple</m-option>
+            <m-option value="banana">Banana</m-option>
+          </m-listbox>
+        </form>
+      `);
+
+      await waitUntil(() => form.querySelectorAll('m-option').length === 2);
+      const listBox = form.querySelector('m-listbox') as MListbox;
+      const options = form.querySelectorAll('m-option');
+      const apple = options[0] as MOption;
+      const banana = options[1] as MOption;
+
+      apple.selected = true;
+      await waitUntil(() => listBox.value === 'apple');
+
+      banana.selected = true;
+      await waitUntil(() => listBox.value === 'banana');
+
+      expect(apple.selected).to.equal(false);
+      expect(banana.selected).to.equal(true);
+
+      const formData = new FormData(form);
+      expect(formData.get('fruit')).to.equal('banana');
+    });
+
     it.skip('should handle disabled state from form', async () => {
       const form = await fixture<HTMLFormElement>(html`
         <form>

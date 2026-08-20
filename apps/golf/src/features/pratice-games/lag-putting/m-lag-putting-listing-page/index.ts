@@ -100,7 +100,9 @@ export class MLagPuttingListingPage extends MElement {
   private handleDeleteSelectedGame = async () => {
     if (!this.selectedGame) return;
 
-    const shouldDelete = confirm(`Delete round from ${this.formatDate(this.selectedGame.createdAt)}?`);
+    const shouldDelete = confirm(
+      `Delete round from ${this.formatDate(this.selectedGame.createdAt)}?`,
+    );
     if (!shouldDelete) return;
 
     await this.lagPuttingGameService.deleteGame(this.selectedGame._key);
@@ -130,6 +132,8 @@ export class MLagPuttingListingPage extends MElement {
       html`
 
 
+
+
         <div class="page-header">
           <h1>Lag Putting</h1>
         </div>
@@ -153,26 +157,26 @@ export class MLagPuttingListingPage extends MElement {
         <dialog ${ref(this.editDialogRef)} class="edit-game-dialog">
           ${this.selectedGame
             ? html`
-                <m-create-lag-putting-game-form
-                  mode="edit"
-                  course-name="${this.selectedGame.courseName}"
-                  practice-area-name="${this.selectedGame.practiceAreaName}"
-                  @create-lag-putt-cancel="${this.handleCloseEditDialog}"
-                  @create-lag-putting-submit-event="${this.handleEditSubmit}"
-                ></m-create-lag-putting-game-form>
+              <m-create-lag-putting-game-form
+                mode="edit"
+                course-name="${this.selectedGame.courseName}"
+                practice-area-name="${this.selectedGame.practiceAreaName}"
+                @create-lag-putt-cancel="${this.handleCloseEditDialog}"
+                @create-lag-putting-submit-event="${this.handleEditSubmit}"
+              ></m-create-lag-putting-game-form>
 
-                <details class="danger-zone">
-                  <summary>danger-zone</summary>
-                  <button
-                    type="button"
-                    class="button danger-zone-delete"
-                    data-variant="secondary"
-                    @click="${this.handleDeleteSelectedGame}"
-                  >
-                    Delete game
-                  </button>
-                </details>
-              `
+              <details class="danger-zone">
+                <summary>danger-zone</summary>
+                <button
+                  type="button"
+                  class="button danger-zone-delete"
+                  data-style="destructive"
+                  @click="${this.handleDeleteSelectedGame}"
+                >
+                  Delete game
+                </button>
+              </details>
+            `
             : null}
         </dialog>
 
@@ -220,7 +224,8 @@ export class MLagPuttingListingPage extends MElement {
               title="$ lag-putting --list"
               message="No rounds yet. Start your first lag putting round to track progress over time."
             >
-              <button slot="action" type="button" class="button" @click=${this.handleOpenCreateDialog}>
+              <button slot="action" type="button" class="button" @click=${this
+                .handleOpenCreateDialog}>
                 New round
               </button>
             </m-empty-state>
