@@ -18,7 +18,6 @@ import { MBagAddPage } from "./features/bag/pages/m-bag-add-page";
 import { MBagEditPage } from "./features/bag/pages/m-bag-edit-page";
 import { MLagPuttingListingPage } from "./features/pratice-games/lag-putting/m-lag-putting-listing-page";
 import { MCreateLagPuttingGameForm } from "./features/pratice-games/lag-putting/m-create-lag-putting-game-form"
-import { MDangerZone } from "./features/shared/components/m-danger-zone";
 
 
 // Register app components
@@ -29,7 +28,6 @@ MClubForm.define();
 MClubList.define();
 MListingPage.define();
 MCreateLagPuttingGameForm.define();
-MDangerZone.define();
 
 // Register new page components
 MBagListPage.define();

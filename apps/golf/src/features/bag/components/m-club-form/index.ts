@@ -15,7 +15,7 @@ import { Club, ClubService, ClubTypes } from "../../club-service";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { ClubSavedEvent } from "../../events";
 import "../m-shot-type-form";
-import "../../../shared/components/m-danger-zone";
+import { renderDangerZone } from "../../../shared/templates/danger-zone";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -308,14 +308,14 @@ export class MClubForm extends MElement {
           ${buttonText}
         </button>
 
-        ${this.isEditing ? html`
-          <m-danger-zone
-            class="danger-zone"
-            title="Danger zone"
-            action-label="Remove club"
-            @danger-zone-action=${this.handleDeleteClub}
-          ></m-danger-zone>
-        ` : null}
+        ${this.isEditing
+          ? renderDangerZone({
+              className: "danger-zone",
+              title: "Danger zone",
+              actionLabel: "Remove club",
+              onAction: this.handleDeleteClub,
+            })
+          : null}
         </form>
         
         <dialog ${ref(this.dialogRef)} class="shot-type-dialog">

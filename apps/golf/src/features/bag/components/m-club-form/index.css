@@ -38,7 +38,7 @@
     grid-area: button;
   }
 
-  m-danger-zone.danger-zone {
+  .danger-zone {
     grid-area: danger;
   }
 }

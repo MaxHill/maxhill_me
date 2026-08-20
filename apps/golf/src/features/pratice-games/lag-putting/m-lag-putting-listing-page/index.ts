@@ -8,7 +8,7 @@ import { globalStyleSheet } from "../../../../styles/global-styles";
 import { get_DB } from "../../../../db.ts";
 import { LagPuttingGame, LagPuttingGameService } from "../lag-putting-service.ts";
 import { CreateLagPuttingSubmitEventEvent } from "../m-create-lag-putting-game-form/events";
-import "../../../shared/components/m-danger-zone";
+import { renderDangerZone } from "../../../shared/templates/danger-zone";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -166,12 +166,12 @@ export class MLagPuttingListingPage extends MElement {
                 @create-lag-putting-submit-event="${this.handleEditSubmit}"
               ></m-create-lag-putting-game-form>
 
-              <m-danger-zone
-                class="danger-zone"
-                title="Danger zone"
-                action-label="Delete game"
-                @danger-zone-action=${this.handleDeleteSelectedGame}
-              ></m-danger-zone>
+              ${renderDangerZone({
+                className: "danger-zone",
+                title: "Danger zone",
+                actionLabel: "Delete game",
+                onAction: this.handleDeleteSelectedGame,
+              })}
             `
             : null}
         </dialog>
