@@ -8,6 +8,7 @@ import { globalStyleSheet } from "../../../../styles/global-styles";
 import { get_DB } from "../../../../db.ts";
 import { LagPuttingGame, LagPuttingGameService } from "../lag-putting-service.ts";
 import { CreateLagPuttingSubmitEventEvent } from "../m-create-lag-putting-game-form/events";
+import { renderDangerZone } from "../../../shared/templates/danger-zone";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -134,6 +135,8 @@ export class MLagPuttingListingPage extends MElement {
 
 
 
+
+
         <div class="page-header">
           <h1>Lag Putting</h1>
         </div>
@@ -157,6 +160,8 @@ export class MLagPuttingListingPage extends MElement {
         <dialog ${ref(this.editDialogRef)} class="edit-game-dialog">
           ${this.selectedGame
             ? html`
+
+
               <m-create-lag-putting-game-form
                 mode="edit"
                 course-name="${this.selectedGame.courseName}"
@@ -165,17 +170,12 @@ export class MLagPuttingListingPage extends MElement {
                 @create-lag-putting-submit-event="${this.handleEditSubmit}"
               ></m-create-lag-putting-game-form>
 
-              <details class="danger-zone">
-                <summary>danger-zone</summary>
-                <button
-                  type="button"
-                  class="button danger-zone-delete"
-                  data-style="destructive"
-                  @click="${this.handleDeleteSelectedGame}"
-                >
-                  Delete game
-                </button>
-              </details>
+              ${renderDangerZone({
+                attributes: [["data-margin", "bs-4"]],
+                title: "Danger zone",
+                actionLabel: "Delete game",
+                onAction: this.handleDeleteSelectedGame,
+              })}
             `
             : null}
         </dialog>

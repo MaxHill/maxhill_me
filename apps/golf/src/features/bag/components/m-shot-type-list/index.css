@@ -104,18 +104,6 @@
     outline-offset: 2px;
 }
 
-.add-shot-type-button {
+.create-shot-type-button {
     align-self: flex-start;
-    margin-top: var(--size-2);
-    border: 2px dashed var(--color-primary-stroke-mid);
-    background: transparent;
-    color: var(--color-text);
-    padding: var(--size-3) var(--size-4);
-    min-height: 44px;
-}
-
-.add-shot-type-button:hover {
-    border-color: var(--color-primary-stroke-loud);
-    color: var(--color-primary-text-on-soft);
-    background: var(--color-primary-fill-softer);
 }

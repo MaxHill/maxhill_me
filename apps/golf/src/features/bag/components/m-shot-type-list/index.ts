@@ -80,8 +80,14 @@ export class MShotTypeList extends MElement {
               </m-card>
             `})}
             ${this.interactive ? html`
-              <a href="/bag/shot-type/add" class="button add-shot-type-button">
-                + Add Shot Type
+              <a
+                href="/bag/shot-type/add"
+                class="button create-shot-type-button"
+                data-variant="secondary"
+                data-margin="bs-2"
+                aria-label="Create new shot type"
+              >
+                + Create New Shot Type
               </a>
             ` : null}
           </div>

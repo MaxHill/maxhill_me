@@ -11,30 +11,35 @@
   .form {
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
-    "header header"
+      "header header"
       "success success"
       "fields shot-types"
-      "button button";
+      "button button"
+      "danger danger";
   }
-  
+
   .success-message {
     grid-area: success;
   }
-  
+
   .form-header {
     grid-area: header;
   }
-  
+
   .main-inputs {
     grid-area: fields;
   }
-  
+
   .shot-types-section {
     grid-area: shot-types;
   }
-  
+
   .submit-button {
     grid-area: button;
+  }
+
+  .danger-zone {
+    grid-area: danger;
   }
 }
 
@@ -43,7 +48,11 @@
   color: var(--color-constructive, #5dbb55);
   padding: var(--size-2);
   text-align: center;
-  background: color-mix(in oklch, var(--color-constructive, #5dbb55) 10%, transparent);
+  background: color-mix(
+    in oklch,
+    var(--color-constructive, #5dbb55) 10%,
+    transparent
+  );
   border: 1px solid var(--color-constructive, #5dbb55);
 }
 
@@ -75,11 +84,6 @@
 .form > div {
   display: grid;
   gap: var(--size-3);
-}
-
-details {
-  border: var(--border);
-  padding: var(--size-2);
 }
 
 summary {
