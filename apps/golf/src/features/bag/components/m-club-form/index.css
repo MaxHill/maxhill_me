@@ -99,6 +99,31 @@ details[open] > :not(summary) {
   gap: var(--size-3);
 }
 
+.danger-zone > .danger-zone-summary {
+  display: flex;
+  align-items: center;
+  min-block-size: var(--size-6);
+  gap: var(--size-2);
+  font: var(--p2);
+  font-family: var(--ff-display);
+  color: var(--color-text-softer);
+  cursor: pointer;
+}
+
+.danger-zone > .danger-zone-summary::-webkit-details-marker {
+  display: none;
+}
+
+.danger-zone > .danger-zone-summary::before {
+  content: "▾";
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.danger-zone:not([open]) > .danger-zone-summary::before {
+  transform: rotate(-90deg);
+}
+
 .shot-type li {
   padding: var(--size-2);
   display: grid;
