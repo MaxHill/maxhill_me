@@ -113,7 +113,7 @@ const routes = [
     action: () => {
       document.title = "Add Shot Type - Golf Bag Tracker";
       return html`
-        <div class="stack" data-gap="4">
+        <div class="stack" data-gap="4" style="max-width: var(--size-content-3);">
           <m-shot-type-form></m-shot-type-form>
           <a href="/bag" aria-label="Go back to bag page">Back</a>
         </div>
@@ -125,7 +125,7 @@ const routes = [
     action: ({ params }: RouteContext) => {
       document.title = "Edit Shot Type - Golf Bag Tracker";
       return html`
-        <div class="stack" data-gap="4">
+        <div class="stack" data-gap="4" style="max-width: var(--size-content-3);">
           <m-shot-type-form shot-type-key="${params.key}"></m-shot-type-form>
           <a href="/bag" aria-label="Go back to bag page">Back</a>
         </div>

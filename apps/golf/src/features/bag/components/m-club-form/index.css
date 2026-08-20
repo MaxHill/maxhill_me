@@ -92,7 +92,7 @@ summary {
   user-select: none;
 }
 
-details[open] > :not(summary) {
+.optional-specs[open] > :not(summary) {
   margin-top: var(--size-3);
   display: grid;
   gap: var(--size-3);

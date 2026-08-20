@@ -1,11 +1,12 @@
-import { MElement, BindAttribute } from "@maxhill/web-component-utils";
+import { BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
-import { ref, createRef } from "lit-html/directives/ref.js";
+import { createRef, ref } from "lit-html/directives/ref.js";
 import { get_DB } from "../../../../db";
 import { ShotType, ShotTypeService } from "../../shot-type-service";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import "@maxhill/components/m-input";
+import { renderDangerZone } from "../../../shared/templates/danger-zone";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -15,7 +16,7 @@ baseStyleSheet.replaceSync(styles);
  *
  * @customElement
  * @tagname m-shot-type-form
- * 
+ *
  * @attr {string} shot-type-key - Key of shot type to edit (omit for add mode)
  */
 export class MShotTypeForm extends MElement {
@@ -42,15 +43,15 @@ export class MShotTypeForm extends MElement {
   async connectedCallback() {
     const db = await get_DB();
     this.shotTypeService = new ShotTypeService(db);
-    
+
     this.isEditMode = !!this.shotTypeKey;
-    
+
     if (this.isEditMode) {
       const row = await this.shotTypeService.table.get(this.shotTypeKey);
       this.shotType = row ? (row as ShotType) : null;
       this.isStockShotType = this.shotType?.name === "Stock";
     }
-    
+
     this.renderComponent();
   }
 
@@ -72,16 +73,18 @@ export class MShotTypeForm extends MElement {
         name: this.isStockShotType ? "Stock" : name, // Don't allow changing Stock name
         description,
       });
-      
+
       // Always emit event - let parent decide what to do
-      this.dispatchEvent(new CustomEvent('shot-type-saved', { 
-        detail: { key: this.shotTypeKey },
-        bubbles: true,
-        composed: true
-      }));
-      
+      this.dispatchEvent(
+        new CustomEvent("shot-type-saved", {
+          detail: { key: this.shotTypeKey },
+          bubbles: true,
+          composed: true,
+        }),
+      );
+
       if (!this.inline) {
-        window.location.href = '/bag';
+        window.location.href = "/bag";
       }
     } else {
       const newKey = crypto.randomUUID();
@@ -89,107 +92,123 @@ export class MShotTypeForm extends MElement {
         name,
         description,
       });
-      
+
       // Always emit event with the new key - let parent decide what to do
-      this.dispatchEvent(new CustomEvent('shot-type-created', { 
-        detail: { key: newKey },
-        bubbles: true,
-        composed: true
-      }));
-      
+      this.dispatchEvent(
+        new CustomEvent("shot-type-created", {
+          detail: { key: newKey },
+          bubbles: true,
+          composed: true,
+        }),
+      );
+
       if (!this.inline) {
-        window.location.href = '/bag';
+        window.location.href = "/bag";
       }
     }
   };
 
   private handleDelete = async () => {
     if (!this.isEditMode || !this.shotType) return;
-    
-    if (!confirm(`Archive "${this.shotType.name}" shot type? It will be hidden from new clubs but preserved in existing clubs.`)) {
+
+    if (
+      !confirm(
+        `Archive "${this.shotType.name}" shot type? It will be hidden from new clubs but preserved in existing clubs.`,
+      )
+    ) {
       return;
     }
-    
+
     // Soft delete: mark as archived
     await this.shotTypeService.table.setRow(this.shotTypeKey, {
       ...this.shotType,
       archived: true,
     });
-    
+
     window.history.back();
   };
 
   private renderComponent() {
-    const title = this.isEditMode 
-      ? `Edit${this.isStockShotType ? " Stock Shot Type" : " Shot Type"}` 
-      : this.inline ? "New Shot Type" : "Add Shot Type";
-    const submitLabel = this.isEditMode 
-      ? "Save Changes" 
-      : this.inline ? "Create & Select" : "Add Shot Type";
+    const title = this.isEditMode
+      ? `Edit${this.isStockShotType ? " Stock Shot Type" : " Shot Type"}`
+      : this.inline
+      ? "New Shot Type"
+      : "Add Shot Type";
+    const submitLabel = this.isEditMode
+      ? "Save Changes"
+      : this.inline
+      ? "Create & Select"
+      : "Add Shot Type";
 
-    render(html`
-      <form 
-        ${ref(this.formRef)}
-        class="form" 
-        aria-label=${`${title} form`}
-        @submit=${this.handleFormSubmit}
-      >
-        <h2 class="h1">${title}</h2>
-        
-        <m-input 
-          required 
-          minlength="2" 
-          name="name" 
-          label="Name" 
-          placeholder="e.g., Full swing, Punch, Flop"
-          value=${this.shotType?.name || ""}
-          ?disabled=${this.isStockShotType}
-          aria-required="true"
-          clearable
-        ></m-input>
-        
-        <m-input 
-          required 
-          minlength="10" 
-          name="description" 
-          label="Description" 
-          placeholder="Describe when and how you use this shot"
-          value=${this.shotType?.description || ""}
-          aria-required="true"
-          clearable
-        ></m-input>
+    render(
+      html`
+        <form
+          ${ref(this.formRef)}
+          class="form"
+          data-gap="4"
+          data-padding="4"
+          aria-label=${`${title} form`}
+          @submit=${this.handleFormSubmit}
+        >
+          <h2 class="h1">${title}</h2>
 
-        <div class="form-actions stack" data-direction="row">
-          <button class="button" type="submit" data-style="constructive">
-            ${submitLabel}
-          </button>
-          <button 
-            class="button" 
-            type="button" 
-            data-variant="secondary" 
-            @click=${() => {
-              this.dispatchEvent(new CustomEvent('cancel', { bubbles: true, composed: true }));
-              if (!this.inline) {
-                window.location.href = '/bag';
-              }
-            }}
-          >
-            Cancel
-          </button>
-        </div>
-        
-        ${this.isEditMode && !this.isStockShotType && !this.inline ? html`
-          <button 
-            class="button delete-button" 
-            type="button" 
-            data-style="destructive"
-            @click=${this.handleDelete}
-          >
-            Archive Shot Type
-          </button>
-        ` : null}
-      </form>
-    `, this.shadowRoot!);
+          <m-input 
+            required 
+            minlength="2" 
+            name="name" 
+            label="Name" 
+            placeholder="e.g., Full swing, Punch, Flop"
+            value=${this.shotType?.name || ""}
+            ?disabled=${this.isStockShotType}
+            aria-required="true"
+            clearable
+          ></m-input>
+
+          <m-input 
+            required 
+            minlength="10" 
+            name="description" 
+            label="Description" 
+            placeholder="Describe when and how you use this shot"
+            value=${this.shotType?.description || ""}
+            aria-required="true"
+            clearable
+          ></m-input>
+
+          <div class="form-actions stack" data-direction="row">
+            <button class="button" type="submit" >
+              ${submitLabel}
+            </button>
+            <button 
+              class="button" 
+              type="button" 
+              data-variant="secondary" 
+              @click=${() => {
+                this.dispatchEvent(new CustomEvent("cancel", { bubbles: true, composed: true }));
+                if (!this.inline) {
+                  window.location.href = "/bag";
+                }
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+
+          ${this.isEditMode && !this.isStockShotType && !this.inline
+            ? renderDangerZone({
+              title: "Danger zone",
+              className: "shot-type-danger-zone",
+              actionLabel: "Archive Shot Type",
+              onAction: this.handleDelete,
+              attributes: [["data-margin", "bs-4"]],
+              description:
+                "Archiving hides this shot type from new clubs but preserves it on existing clubs.",
+            })
+            : null}
+        </form>
+      `,
+      this.shadowRoot!,
+    );
   }
 }
 

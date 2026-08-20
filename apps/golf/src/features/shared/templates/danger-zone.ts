@@ -54,6 +54,7 @@ export function renderDangerZone({
       <summary class="danger-zone-summary">${title}</summary>
       ${description ? html`<p data-text="softer">${description}</p>` : nothing}
       <button
+      data-margin="bs-2"
         type="button"
         class="button"
         data-style="destructive"
