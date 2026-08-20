@@ -17,7 +17,7 @@ export function renderDangerZone({
 }: DangerZoneTemplateOptions): TemplateResult {
   return html`
     <details class=${`danger-zone box stack ${className}`.trim()} data-variant="surface" data-gap="2" data-margin="bs-4">
-      <summary style="display: flex; align-items: center; list-style-position: inside;">${title}</summary>
+      <summary class="stack" data-direction="row" data-align="center">${title}</summary>
       ${description ? html`<p data-text="softer">${description}</p>` : nothing}
       <button
         type="button"
