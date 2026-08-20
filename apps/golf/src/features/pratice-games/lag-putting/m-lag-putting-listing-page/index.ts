@@ -135,6 +135,8 @@ export class MLagPuttingListingPage extends MElement {
 
 
 
+
+
         <div class="page-header">
           <h1>Lag Putting</h1>
         </div>
@@ -158,6 +160,8 @@ export class MLagPuttingListingPage extends MElement {
         <dialog ${ref(this.editDialogRef)} class="edit-game-dialog">
           ${this.selectedGame
             ? html`
+
+
               <m-create-lag-putting-game-form
                 mode="edit"
                 course-name="${this.selectedGame.courseName}"
@@ -167,7 +171,7 @@ export class MLagPuttingListingPage extends MElement {
               ></m-create-lag-putting-game-form>
 
               ${renderDangerZone({
-                className: "danger-zone",
+                attributes: [["data-margin", "bs-4"]],
                 title: "Danger zone",
                 actionLabel: "Delete game",
                 onAction: this.handleDeleteSelectedGame,

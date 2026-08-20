@@ -1,7 +1,7 @@
 import { BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
-import { ref, createRef } from "lit-html/directives/ref.js";
+import { createRef, ref } from "lit-html/directives/ref.js";
 import "@maxhill/components/m-combobox";
 import "@maxhill/components/m-listbox";
 import "@maxhill/components/m-option";
@@ -127,7 +127,6 @@ export class MClubForm extends MElement {
       return;
     }
 
-
     const brand = formData.get("brand")?.toString();
     const model = formData.get("model")?.toString();
     const loft = formData.get("loft")?.toString();
@@ -156,10 +155,10 @@ export class MClubForm extends MElement {
 
   private handleShotTypeCreated = async (e: CustomEvent) => {
     const { key } = e.detail;
-    
+
     this.handleCloseDialog();
 
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     if (this.shotTypesCombobox.value) {
       const option = this.shotTypesCombobox.value.querySelector(
@@ -200,7 +199,7 @@ export class MClubForm extends MElement {
           @submit=${this.handleFormSubmit}
           part="form"
         >
-        
+
         <div class="form-header">
           <h2 class="h1" part="title">${heading}</h2>
           <a href="/bag" class="close-link" aria-label="Close form">×</a>
@@ -213,7 +212,7 @@ export class MClubForm extends MElement {
             label="Name *"
             placeholder="Ex. 60deg, 7, spoon"
             aria-required="true"
-            value=${this.currentClub?.name || ''}
+            value=${this.currentClub?.name || ""}
           ></m-input>
 
           <m-listbox
@@ -224,22 +223,28 @@ export class MClubForm extends MElement {
             placeholder="Select what type of club"
             aria-required="true"
           >
-            <m-option value="putter" ?selected=${this.currentClub?.clubType === "putter"}>Putter</m-option>
-            <m-option value="wedge" ?selected=${this.currentClub?.clubType === "wedge"}>Wedge</m-option>
-            <m-option value="iron" ?selected=${this.currentClub?.clubType === "iron"}>Iron</m-option>
-            <m-option value="hybrid" ?selected=${this.currentClub?.clubType === "hybrid"}>Hybrid</m-option>
-            <m-option value="wood" ?selected=${this.currentClub?.clubType === "wood"}>Wood</m-option>
-            <m-option value="driver" ?selected=${this.currentClub?.clubType === "driver"}>Driver</m-option>
+            <m-option value="putter" ?selected=${this.currentClub?.clubType ===
+              "putter"}>Putter</m-option>
+            <m-option value="wedge" ?selected=${this.currentClub?.clubType ===
+              "wedge"}>Wedge</m-option>
+            <m-option value="iron" ?selected=${this.currentClub?.clubType ===
+              "iron"}>Iron</m-option>
+            <m-option value="hybrid" ?selected=${this.currentClub?.clubType ===
+              "hybrid"}>Hybrid</m-option>
+            <m-option value="wood" ?selected=${this.currentClub?.clubType ===
+              "wood"}>Wood</m-option>
+            <m-option value="driver" ?selected=${this.currentClub?.clubType ===
+              "driver"}>Driver</m-option>
           </m-listbox>
 
-          <details>
+          <details class="optional-specs box" data-padding="2">
             <summary>Optional specs</summary>
               <m-input
                 min="2"
                 name="brand"
                 label="Brand"
                 placeholder="Ex. Titleist"
-                value=${this.currentClub?.brand || ''}
+                value=${this.currentClub?.brand || ""}
               ></m-input>
 
               <m-input
@@ -247,7 +252,7 @@ export class MClubForm extends MElement {
                 name="model"
                 label="Model"
                 placeholder="Ex. t100"
-                value=${this.currentClub?.model || ''}
+                value=${this.currentClub?.model || ""}
               ></m-input>
 
               <m-input
@@ -256,7 +261,7 @@ export class MClubForm extends MElement {
                 name="loft"
                 label="Loft (deg)"
                 placeholder="Ex. 38"
-                value=${this.currentClub?.loft || ''}
+                value=${this.currentClub?.loft || ""}
               ></m-input>
 
               <m-input
@@ -265,13 +270,13 @@ export class MClubForm extends MElement {
                 name="lie"
                 label="Lie"
                 placeholder="Ex. 30"
-                value=${this.currentClub?.lie || ''}
+                value=${this.currentClub?.lie || ""}
               ></m-input>
 
 
           </details>
         </div>
-        
+
         <div class="shot-types-section">
           <m-listbox
               ${ref(this.shotTypesCombobox)}
@@ -285,14 +290,16 @@ export class MClubForm extends MElement {
             >
               ${this.shotTypes.map((shotType) =>
                 html`
-                  <m-option value=${shotType._key} ?selected=${selectedShotTypeKeys.has(shotType._key!)}>
-                      <div class="name">${shotType.name}</div>
-                      <div class="description">${shotType.description}</div>
+                  <m-option value=${shotType._key} ?selected=${selectedShotTypeKeys.has(
+                    shotType._key!,
+                  )}>
+                    <div class="name">${shotType.name}</div>
+                    <div class="description">${shotType.description}</div>
                   </m-option>
                 `
               )}
             </m-listbox>
-          
+
           <button 
             type="button" 
             class="button create-shot-type-button" 
@@ -303,23 +310,23 @@ export class MClubForm extends MElement {
             + Create New Shot Type
           </button>
         </div>
-        
+
         <button part="save-button" class="button submit-button" type="submit" aria-label=${buttonAriaLabel}>
           ${buttonText}
         </button>
 
         ${this.isEditing
           ? renderDangerZone({
-              className: "danger-zone",
-              title: "Danger zone",
-              actionLabel: "Remove club",
-              onAction: this.handleDeleteClub,
-            })
+            title: "Danger zone",
+            attributes: [["data-margin", "bs-4"]],
+            actionLabel: "Remove club",
+            onAction: this.handleDeleteClub,
+          })
           : null}
         </form>
-        
+
         <dialog ${ref(this.dialogRef)} class="shot-type-dialog">
-          <m-shot-type-form 
+          <m-shot-type-form
             inline
             @shot-type-created=${this.handleShotTypeCreated}
             @cancel=${this.handleCloseDialog}
