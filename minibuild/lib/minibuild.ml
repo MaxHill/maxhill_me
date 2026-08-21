@@ -1,5 +1,6 @@
 open Shared
 module Syncdb_server = Syncdb_server
+module Bootstrap = Bootstrap
 module Shared = Shared
 module Step = Step
 

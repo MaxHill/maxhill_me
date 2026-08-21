@@ -11,13 +11,16 @@ let create ?(should_skip = fun _ctx -> false) ~name ~apply () =
 ;;
 
 let run_step ~ctx step =
-  match step.should_skip ctx with
+  let step_ctx = Types.append_prefix ctx step.name in
+  match step.should_skip step_ctx with
   | true ->
     Reporter.overprint ctx.reporter (Format.sprintf " [skip] %s " step.name);
     Ok ctx
   | false ->
     Reporter.overprint ctx.reporter (Format.sprintf " %s" step.name);
-    step.apply ctx
+    (match step.apply step_ctx with
+     | Ok ctx' -> Ok { ctx' with reporter = ctx.reporter }
+     | Error _ as err -> err)
 ;;
 
 let%expect_test "run_step" =
