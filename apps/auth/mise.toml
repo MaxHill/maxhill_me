@@ -12,8 +12,8 @@ description = "Run auth locally with hot reload."
 run = "bun --watch src/index.ts run"
 
 [tasks.test]
-description = "Type-check (no other bounded checks defined)."
-run = "pnpm exec tsc --noEmit"
+description = "Oxlint + type-check."
+run = "pnpm exec oxlint . && pnpm exec tsc --noEmit"
 
 [tasks.fuzz]
 description = "Unbounded checks (none defined)."

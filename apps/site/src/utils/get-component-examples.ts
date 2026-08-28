@@ -12,7 +12,7 @@ export interface ComponentExample {
 
 const DEFAULT_COMPONENTS_DIR = path.resolve(
   process.cwd(),
-  "../../packages/components/src"
+  "../../packages/components/src",
 );
 
 function parseFolder(folderName: string): { order: number; slug: string } {
@@ -31,7 +31,10 @@ function readOptionalFile(filePath: string): string | undefined {
   }
 }
 
-export function getExamplesForComponent(tagName: string, basePath = DEFAULT_COMPONENTS_DIR): ComponentExample[] {
+export function getExamplesForComponent(
+  tagName: string,
+  basePath = DEFAULT_COMPONENTS_DIR,
+): ComponentExample[] {
   const examplesDir = path.join(basePath, tagName, "examples");
 
   let entries: fs.Dirent[];
@@ -70,7 +73,9 @@ export function getExamplesForComponent(tagName: string, basePath = DEFAULT_COMP
   return examples.sort((a, b) => a.order - b.order);
 }
 
-export function getAllComponentExamples(basePath = DEFAULT_COMPONENTS_DIR): Map<string, ComponentExample[]> {
+export function getAllComponentExamples(
+  basePath = DEFAULT_COMPONENTS_DIR,
+): Map<string, ComponentExample[]> {
   const result = new Map<string, ComponentExample[]>();
 
   let entries: fs.Dirent[];

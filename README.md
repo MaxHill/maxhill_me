@@ -9,6 +9,7 @@ Monorepo for Max Hill's personal website and services.
   Workers)
 - `packages/components` - Web components library
 - `packages/css` - CSS design system
+- `packages/oxlint-config` - Shared Oxlint config
 
 ## Development
 
@@ -59,7 +60,7 @@ On every push and PR, the following checks run:
 
 1. Build all packages and apps
 2. Type check (TypeScript)
-3. Lint (ESLint for packages, astro check for site)
+3. Lint (Oxlint for JS/TS, astro check for site)
 4. Test (web-test-runner)
 
 ### Deployments
@@ -111,7 +112,7 @@ Check deployment status:
 **Lint fails with "astro: command not found":**
 
 - Ensure `astro` is in devDependencies in apps/site/package.json
-- Ensure site has a `lint` script defined
+- Run `pnpm install` so root `oxlint` is available to workspace `mise run test`
 
 **Deployment fails with "Unauthorized":**
 

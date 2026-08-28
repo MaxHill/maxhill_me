@@ -22,7 +22,7 @@ four tasks:
   the dev server. For libraries, the watch-mode build so downstream
   consumers pick up changes.
 - **`test`** — bounded automated checks that the current version is
-  self-consistent (unit tests, type-checks, `astro check + eslint`).
+  self-consistent (unit tests, type-checks, `oxlint + astro check`).
 - **`fuzz`** — unbounded checks. `apps/syncdb-server` wires this to the
   simulator search; everywhere else it's `echo "no-op" && exit 0`.
 - **`deploy`** — publish. For apps,

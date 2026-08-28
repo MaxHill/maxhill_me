@@ -9,8 +9,8 @@ description = "Run the Vite dev server."
 run = "pnpm exec vite"
 
 [tasks.test]
-description = "Run web-test-runner suites."
-run = "pnpm exec web-test-runner"
+description = "Oxlint + web-test-runner suites."
+run = "pnpm exec oxlint . && pnpm exec web-test-runner"
 
 [tasks.fuzz]
 description = "Unbounded checks (none defined)."

@@ -6,8 +6,8 @@ description = "Watch-build syncdb."
 run = "pnpm exec vite build --watch"
 
 [tasks.test]
-description = "Run vitest (bounded)."
-run = "pnpm exec vitest run"
+description = "Oxlint + vitest."
+run = "pnpm exec oxlint . && pnpm exec vitest run"
 
 [tasks.fuzz]
 description = "Unbounded checks (none defined)."

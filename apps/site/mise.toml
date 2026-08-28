@@ -9,8 +9,8 @@ description = "Run the Astro dev server."
 run = "pnpm exec astro dev --host"
 
 [tasks.test]
-description = "Astro check + eslint."
-run = "pnpm exec astro check && pnpm exec eslint ."
+description = "Oxlint + Astro check."
+run = "pnpm exec oxlint . && pnpm exec astro check"
 
 [tasks.fuzz]
 description = "Unbounded checks (none defined)."

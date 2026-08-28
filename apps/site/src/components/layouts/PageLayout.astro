@@ -139,7 +139,9 @@ const { title, bodyClass } = Astro.props;
             // Update theme button label
             function updateThemeLabel() {
                 const themeLabel = document.getElementById('theme-label');
-                if (!themeLabel) return;
+                if (!themeLabel) {
+                    return;
+                }
                 
                 const savedTheme = localStorage.getItem('theme');
                 const currentTheme = savedTheme || 'system';

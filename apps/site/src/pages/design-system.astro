@@ -3,274 +3,368 @@ import PageLayout from "../components/layouts/PageLayout.astro";
 import Document from "../components/sections/Document.astro";
 import { getCollection } from "astro:content";
 
-
 const title = "Design System";
 const docs = await getCollection("documentation");
 const sortedDocs = docs.sort((a, b) => a.id.localeCompare(b.id));
 
 const renderedDocs = await Promise.all(
-    sortedDocs.map(async (doc) => {
-        const { Content } = await doc.render();
-        const metadata = {
-            Title: doc.data.title,
-            Author: doc.data.author,
-            Date: doc.data.date.toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "2-digit",
-            }),
-            Link: `#${doc.data.htmlId}`,
-            Tags: doc.data.tags.join(", "),
-        };
-        return { doc, Content, metadata };
-    }),
+  sortedDocs.map(async (doc) => {
+    const { Content } = await doc.render();
+    const metadata = {
+      Title: doc.data.title,
+      Author: doc.data.author,
+      Date: doc.data.date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "2-digit",
+      }),
+      Link: `#${doc.data.htmlId}`,
+      Tags: doc.data.tags.join(", "),
+    };
+    return { doc, Content, metadata };
+  }),
 );
 
-type NavItem = 
-    | { type: 'page', id: string, title: string, htmlId: string }
-    | { type: 'folder', name: string, pages: Array<{ id: string, title: string, htmlId: string }> };
+type NavItem =
+  | { type: "page"; id: string; title: string; htmlId: string }
+  | {
+      type: "folder";
+      name: string;
+      pages: Array<{ id: string; title: string; htmlId: string }>;
+    };
 
-function buildNavHierarchy(docs: typeof sortedDocs): NavItem[] {
-    const hierarchy: NavItem[] = [];
-    const folderMap = new Map<string, Array<{ id: string, title: string, htmlId: string }>>();
+function buildNavHierarchy(items: typeof sortedDocs): NavItem[] {
+  const hierarchy: NavItem[] = [];
+  const folderMap = new Map<
+    string,
+    Array<{ id: string; title: string; htmlId: string }>
+  >();
 
-    for (const doc of docs) {
-        const parts = doc.id.split('/');
-        
-        if (parts.length === 1) {
-            hierarchy.push({
-                type: 'page',
-                id: doc.id,
-                title: doc.data.title,
-                htmlId: doc.data.htmlId,
-            });
-        } else {
-            const folderName = parts[0];
-            if (!folderMap.has(folderName)) {
-                folderMap.set(folderName, []);
-            }
-            folderMap.get(folderName)!.push({
-                id: doc.id,
-                title: doc.data.title,
-                htmlId: doc.data.htmlId,
-            });
-        }
+  for (const doc of items) {
+    const parts = doc.id.split("/");
+
+    if (parts.length === 1) {
+      hierarchy.push({
+        type: "page",
+        id: doc.id,
+        title: doc.data.title,
+        htmlId: doc.data.htmlId,
+      });
+    } else {
+      const folderName = parts[0];
+      if (!folderMap.has(folderName)) {
+        folderMap.set(folderName, []);
+      }
+      folderMap.get(folderName)!.push({
+        id: doc.id,
+        title: doc.data.title,
+        htmlId: doc.data.htmlId,
+      });
     }
+  }
 
-    for (const [folderName, pages] of folderMap.entries()) {
-        if (pages.length === 1) {
-            hierarchy.push({
-                type: 'page',
-                id: pages[0].id,
-                title: pages[0].title,
-                htmlId: pages[0].htmlId,
-            });
-        } else {
-            hierarchy.push({
-                type: 'folder',
-                name: folderName,
-                pages: pages,
-            });
-        }
+  for (const [folderName, pages] of folderMap.entries()) {
+    if (pages.length === 1) {
+      hierarchy.push({
+        type: "page",
+        id: pages[0].id,
+        title: pages[0].title,
+        htmlId: pages[0].htmlId,
+      });
+    } else {
+      hierarchy.push({
+        type: "folder",
+        name: folderName,
+        pages: pages,
+      });
     }
+  }
 
-    return hierarchy.sort((a, b) => {
-        const getOrder = (item: NavItem) => {
-            if (item.type === 'page') return item.id;
-            return item.pages[0]?.id || item.name;
-        };
-        return getOrder(a).localeCompare(getOrder(b));
-    });
+  return hierarchy.sort((a, b) => {
+    const getOrder = (item: NavItem) => {
+      if (item.type === "page") {
+        return item.id;
+      }
+      return item.pages[0]?.id || item.name;
+    };
+    return getOrder(a).localeCompare(getOrder(b));
+  });
 }
 
 const navHierarchy = buildNavHierarchy(sortedDocs);
 ---
 
 <PageLayout title={title} bodyClass="design-system-page">
-    <button class="sidebar-toggle button" id="toggle-menu-button" aria-label="Show sections">Sections</button>
-    <div class="main exposed-grid">
-        <div id="hero" class="hero">
-            <m-fit-text font-display>Design<br />system</m-fit-text>
-        </div>
-        <div id="anchor-menu" class="anchor-menu stack exposed-grid">
-            <a href="#hero" class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">~</a>
-            {
-                navHierarchy.map((item) => {
-                    if (item.type === 'page') {
-                        return (
-                            <a href={`#${item.htmlId}`} class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">
-                                {item.title}
-                            </a>
-                        );
-                    } else {
-                        return (
-                            <details open class="nav-folder">
-                                <summary>{item.name}</summary>
-                                <ul>
-                                    {item.pages.map((page) => (
-                                        <li>
-                                            <a href={`#${page.htmlId}`} class="nav-link" popovertarget="anchor-menu" popovertargetaction="hide">
-                                                {page.title}
-                                            </a>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </details>
-                        );
-                    }
-                })
-            }
-        </div>
-        {
-            renderedDocs.map(({ doc, Content, metadata }) => (
-                <Document id={doc.data.htmlId} metadata={metadata}>
-                <h2 class="h1">{doc.data.title}</h2>
-                    <Content />
-                </Document>
-            ))
-        }
+  <button
+    class="sidebar-toggle button"
+    id="toggle-menu-button"
+    aria-label="Show sections">Sections</button
+  >
+  <div class="main exposed-grid">
+    <div id="hero" class="hero">
+      <m-fit-text font-display>Design<br />system</m-fit-text>
     </div>
+    <div id="anchor-menu" class="anchor-menu stack exposed-grid">
+      <a
+        href="#hero"
+        class="nav-link"
+        popovertarget="anchor-menu"
+        popovertargetaction="hide">~</a
+      >
+      {
+        navHierarchy.map((item) => {
+          if (item.type === "page") {
+            return (
+              <a
+                href={`#${item.htmlId}`}
+                class="nav-link"
+                popovertarget="anchor-menu"
+                popovertargetaction="hide"
+              >
+                {item.title}
+              </a>
+            );
+          } else {
+            return (
+              <details open class="nav-folder">
+                <summary>{item.name}</summary>
+                <ul>
+                  {item.pages.map((page) => (
+                    <li>
+                      <a
+                        href={`#${page.htmlId}`}
+                        class="nav-link"
+                        popovertarget="anchor-menu"
+                        popovertargetaction="hide"
+                      >
+                        {page.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            );
+          }
+        })
+      }
+    </div>
+    {
+      renderedDocs.map(({ doc, Content, metadata }) => (
+        <Document id={doc.data.htmlId} metadata={metadata}>
+          <h2 class="h1">{doc.data.title}</h2>
+          <Content />
+        </Document>
+      ))
+    }
+  </div>
 </PageLayout>
 
 <script>
-    function init() {
-        const parent = document.querySelector(".main");
-        if (!parent) return;
+  type InitState = {
+    parent: Element;
+    children: Element[];
+    toggleMenuButton: Element;
+    anchorMenu: Element;
+    navLinks: Element[];
+  };
 
-        const children = document.querySelectorAll(".document, .hero");
-        if (children.length === 0) return;
-
-        const toggleMenuButton = document.querySelector("#toggle-menu-button");
-        if (!toggleMenuButton) return;
-
-        const anchorMenu = document.querySelector("#anchor-menu");
-        if (!anchorMenu) return;
-
-        const navLinks = document.querySelectorAll(".nav-link");
-
-        document.addEventListener("click", (e) => {
-            if(toggleMenuButton.contains(e.target as Node)) {
-                anchorMenu.classList.toggle("open");
-            } else if (e.target && (e.target as Element).matches(".nav-link") || !anchorMenu.contains(e.target as Node)) {
-                anchorMenu.classList.remove("open");
-            }
-        });
-
-        const observerOptions = {
-            root: parent,
-            rootMargin: "0px",
-            threshold: [0.5, 0.75, 0.99, 1.0],
-        };
-
-        const observer = new IntersectionObserver((_entries) => {
-            const fullyVisibleElements = Array.from(children)
-                .map((child) => {
-                    const rect = child.getBoundingClientRect();
-                    const rootRect = parent.getBoundingClientRect();
-                    const visibleWidth =
-                        Math.min(rect.right, rootRect.right) -
-                        Math.max(rect.left, rootRect.left);
-                    const ratio = visibleWidth / rect.width;
-                    return { element: child, ratio };
-                })
-                .filter(({ ratio }) => ratio >= 0.99);
-
-            if (fullyVisibleElements.length === 0) return;
-
-            children.forEach((child) => child.classList.remove("visible"));
-            fullyVisibleElements.forEach(({ element }) => {
-                element.classList.add("visible");
-            });
-
-            const rightmostElement =
-                fullyVisibleElements[fullyVisibleElements.length - 1].element;
-
-            children.forEach((child) => child.classList.remove("active"));
-            navLinks.forEach((link) => link.classList.remove("active"));
-
-            rightmostElement.classList.add("active");
-            const targetId = rightmostElement.id;
-            if (!targetId) return;
-
-            const correspondingLink = document.querySelector(
-                `a[href="#${targetId}"]`,
-            );
-            if (correspondingLink) {
-                correspondingLink.classList.add("active");
-            }
-
-            history.replaceState(null, "", `#${targetId}`);
-        }, observerOptions);
-
-        children.forEach((child) => observer.observe(child));
-
-        document.addEventListener("keydown", (e) => {
-            if (!e.target) return;
-
-            if (
-                e.target instanceof HTMLInputElement ||
-                e.target instanceof HTMLTextAreaElement
-            ) {
-                return;
-            }
-
-            const activeDocument = document.querySelector(".document.active");
-
-            if (e.key === "ArrowDown" || e.key === "j") {
-                e.preventDefault();
-                if (activeDocument) {
-                    activeDocument.scrollBy({
-                        top: 30,
-                        behavior: "instant",
-                    });
-                }
-            } else if (e.key === "ArrowUp" || e.key === "k") {
-                e.preventDefault();
-                if (activeDocument) {
-                    activeDocument.scrollBy({
-                        top: -30,
-                        behavior: "instant",
-                    });
-                }
-            }
-
-            const currentHash = window.location.hash.substring(1);
-            const currentElement = currentHash
-                ? document.getElementById(currentHash)
-                : null;
-
-            if (!currentElement) return;
-
-            const childrenArray = Array.from(children);
-            const currentIndex = childrenArray.indexOf(currentElement);
-            if (currentIndex === -1) return;
-
-            if ((e.key === "ArrowLeft" || e.key === "h") && currentIndex > 0) {
-                e.preventDefault();
-                const targetElement = childrenArray[currentIndex - 1];
-                if (targetElement) {
-                    targetElement.scrollIntoView({
-                        behavior: "smooth",
-                        inline: "end",
-                        block: "nearest",
-                    });
-                }
-            } else if (
-                (e.key === "ArrowRight" || e.key === "l") &&
-                currentIndex < childrenArray.length - 1
-            ) {
-                e.preventDefault();
-                const targetElement = childrenArray[currentIndex + 1];
-                if (targetElement) {
-                    targetElement.scrollIntoView({
-                        behavior: "smooth",
-                        inline: "end",
-                        block: "nearest",
-                    });
-                }
-            }
-        });
+  function init() {
+    const state = getInitState();
+    if (!state) {
+      return;
     }
 
-    document.addEventListener('astro:page-load', init);
+    initMenuToggle(state);
+    initVisibilityObserver(state);
+    initKeyboardNavigation(state);
+  }
+
+  function getInitState(): InitState | null {
+    const parent = document.querySelector(".main");
+    if (!parent) {
+      return null;
+    }
+
+    const children = Array.from(
+      document.querySelectorAll(".document, .hero"),
+    );
+    if (children.length === 0) {
+      return null;
+    }
+
+    const toggleMenuButton = document.querySelector("#toggle-menu-button");
+    if (!toggleMenuButton) {
+      return null;
+    }
+
+    const anchorMenu = document.querySelector("#anchor-menu");
+    if (!anchorMenu) {
+      return null;
+    }
+
+    return {
+      parent,
+      children,
+      toggleMenuButton,
+      anchorMenu,
+      navLinks: Array.from(document.querySelectorAll(".nav-link")),
+    };
+  }
+
+  function initMenuToggle(state: InitState) {
+    document.addEventListener("click", (e) => {
+      if (!(e.target instanceof Node)) {
+        return;
+      }
+
+      if (state.toggleMenuButton.contains(e.target)) {
+        toggleAnchorMenu(state);
+        return;
+      }
+
+      if (
+        isNavLinkTarget(e.target) ||
+        !state.anchorMenu.contains(e.target)
+      ) {
+        closeAnchorMenu(state);
+      }
+    });
+  }
+
+  function toggleAnchorMenu(state: InitState) {
+    state.anchorMenu.classList.toggle("open");
+  }
+
+  function closeAnchorMenu(state: InitState) {
+    state.anchorMenu.classList.remove("open");
+  }
+
+  function isNavLinkTarget(target: Node) {
+    return target instanceof Element && target.matches(".nav-link");
+  }
+
+  function initVisibilityObserver(state: InitState) {
+    const observer = new IntersectionObserver(
+      () => {
+        updateVisibleSections(state);
+      },
+      {
+        root: state.parent,
+        rootMargin: "0px",
+        threshold: [0.5, 0.75, 0.99, 1.0],
+      },
+    );
+
+    state.children.forEach((child) => observer.observe(child));
+  }
+
+  function updateVisibleSections(state: InitState) {
+    const rootRect = state.parent.getBoundingClientRect();
+    const fullyVisibleElements = state.children
+      .map((child) => {
+        const rect = child.getBoundingClientRect();
+        const visibleWidth =
+          Math.min(rect.right, rootRect.right) -
+          Math.max(rect.left, rootRect.left);
+        return { element: child, ratio: visibleWidth / rect.width };
+      })
+      .filter(({ ratio }) => ratio >= 0.99);
+
+    if (fullyVisibleElements.length === 0) {
+      return;
+    }
+
+    state.children.forEach((child) => {
+      child.classList.remove("visible", "active");
+    });
+    state.navLinks.forEach((link) => link.classList.remove("active"));
+    fullyVisibleElements.forEach(({ element }) => {
+      element.classList.add("visible");
+    });
+
+    const rightmostElement =
+      fullyVisibleElements[fullyVisibleElements.length - 1].element;
+    rightmostElement.classList.add("active");
+
+    const targetId = rightmostElement.id;
+    if (!targetId) {
+      return;
+    }
+
+    const correspondingLink = document.querySelector(
+      `a[href="#${targetId}"]`,
+    );
+    correspondingLink?.classList.add("active");
+    history.replaceState(null, "", `#${targetId}`);
+  }
+
+  function initKeyboardNavigation(state: InitState) {
+    document.addEventListener("keydown", (e) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      if (e.key === "ArrowDown" || e.key === "j") {
+        e.preventDefault();
+        scrollActiveDocumentBy(30);
+        return;
+      }
+
+      if (e.key === "ArrowUp" || e.key === "k") {
+        e.preventDefault();
+        scrollActiveDocumentBy(-30);
+        return;
+      }
+
+      const currentIndex = getCurrentChildIndex(state);
+      if (currentIndex === null) {
+        return;
+      }
+
+      if ((e.key === "ArrowLeft" || e.key === "h") && currentIndex > 0) {
+        e.preventDefault();
+        scrollToChild(state.children[currentIndex - 1]);
+        return;
+      }
+
+      if (
+        (e.key === "ArrowRight" || e.key === "l") &&
+        currentIndex < state.children.length - 1
+      ) {
+        e.preventDefault();
+        scrollToChild(state.children[currentIndex + 1]);
+      }
+    });
+  }
+
+  function scrollActiveDocumentBy(top: number) {
+    const activeDocument = document.querySelector(".document.active");
+    activeDocument?.scrollBy({ top, behavior: "instant" });
+  }
+
+  function getCurrentChildIndex(state: InitState) {
+    const currentHash = window.location.hash.substring(1);
+    const currentElement = currentHash
+      ? document.getElementById(currentHash)
+      : null;
+    if (!currentElement) {
+      return null;
+    }
+
+    const currentIndex = state.children.indexOf(currentElement);
+    return currentIndex === -1 ? null : currentIndex;
+  }
+
+  function scrollToChild(child: Element | undefined) {
+    child?.scrollIntoView({
+      behavior: "smooth",
+      inline: "end",
+      block: "nearest",
+    });
+  }
+
+  document.addEventListener("astro:page-load", init);
 </script>

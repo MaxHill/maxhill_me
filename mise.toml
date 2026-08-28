@@ -54,9 +54,10 @@ done
 [tasks."run"]
 description = "Run every workspace project's `run` task in parallel (mprocs)."
 run = """
-mprocs --names 'syncdb,css,web-component-utils,components,auth,golf,site,syncdb-server' \
+mprocs --names 'syncdb,css,oxlint-config,web-component-utils,components,auth,golf,site,syncdb-server' \
   'mise --cd packages/syncdb run run' \
   'mise --cd packages/css run run' \
+  'mise --cd packages/oxlint-config run run' \
   'mise --cd packages/web-component-utils run run' \
   'mise --cd packages/components run run' \
   'mise --cd apps/auth run run' \

@@ -1,13 +1,13 @@
 import {
-  getComponentByTagName,
-  getComponentPublicProperties,
-  getComponentPublicMethods,
-  getComponentEventsWithType,
   type Component,
-  type Property,
-  type Method,
   type ComponentEvent,
   type CssPart,
+  getComponentByTagName,
+  getComponentEventsWithType,
+  getComponentPublicMethods,
+  getComponentPublicProperties,
+  type Method,
+  type Property,
   type Slot,
 } from "@wc-toolkit/cem-utilities";
 import customElements from "@maxhill/components/custom-elements.json";
@@ -35,7 +35,9 @@ interface CemManifest {
 
 function parseComponent(tagName: string, cem: unknown): ComponentData | undefined {
   const comp = getComponentByTagName(cem, tagName);
-  if (!comp) return undefined;
+  if (!comp) {
+    return undefined;
+  }
 
   const properties = (getComponentPublicProperties(comp) || []).map((p: Property) => ({
     name: p.name || "—",
@@ -63,14 +65,19 @@ function parseComponent(tagName: string, cem: unknown): ComponentData | undefine
     description: s.description || "",
   }));
 
-  const cssParts = ((comp as Component & { cssParts?: CssPart[] }).cssParts || []).map((p: CssPart) => ({
+  const cssParts = ((comp as Component & { cssParts?: CssPart[] }).cssParts || []).map((
+    p: CssPart,
+  ) => ({
     name: p.name || "—",
     description: p.description || "",
   }));
 
-  const formAssociated = (comp as Component & { members?: Array<{ name?: string; static?: boolean; default?: string }> }).members?.some(
-    (m: { name?: string; static?: boolean; default?: string }) => m.name === "formAssociated" && m.static === true && m.default === "true"
-  ) ?? false;
+  const formAssociated =
+    (comp as Component & { members?: Array<{ name?: string; static?: boolean; default?: string }> })
+      .members?.some(
+        (m: { name?: string; static?: boolean; default?: string }) =>
+          m.name === "formAssociated" && m.static === true && m.default === "true",
+      ) ?? false;
 
   return {
     tagName,
@@ -104,7 +111,7 @@ const ALL_COMPONENTS: ComponentData[] = TAG_NAMES
   .filter((c): c is ComponentData => c !== undefined);
 
 const COMPONENT_MAP = new Map<string, ComponentData>(
-  ALL_COMPONENTS.map((c) => [c.tagName, c])
+  ALL_COMPONENTS.map((c) => [c.tagName, c]),
 );
 
 // ═══════════════════════════════════════
