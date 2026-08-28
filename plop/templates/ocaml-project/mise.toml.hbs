@@ -1,0 +1,24 @@
+[tools]
+opam = "2.5.1"
+
+# Canonical verbs (O(1) build interface):
+#   run    — start the local built-from-source copy
+#   test   — bounded automated checks (dune runtest)
+#   fuzz   — unbounded checks (simulator search)
+#   deploy — publish
+
+[tasks.run]
+description = "Run {{projectName}} locally and restart on source changes."
+run = "dune exec --watch ./bin/main.exe"
+
+[tasks.test]
+description = "Run bounded dune tests."
+run = "dune runtest"
+
+[tasks.fuzz]
+description = "Unbounded simulator search."
+run = 'echo "no-op" && exit 0'
+
+[tasks.deploy]
+description = "Deploy {{projectName}}."
+run = 'echo "no-op" && exit 0'
