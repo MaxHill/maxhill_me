@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./index.js",
-    "./max-len-plugin": "./max-len-plugin.js"
+    "./max-len-plugin": "./max-len-plugin.js",
+    "./assertions-per-function-plugin": "./assertions-per-function-plugin.js"
   }
 }

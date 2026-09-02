@@ -6,8 +6,8 @@ description = "Nothing to run for the shared oxlint config."
 run = 'echo "no-op" && exit 0'
 
 [tasks.test]
-description = "Self-check the max-len plugin and lint the package."
-run = "node ./max-len.test.mjs && pnpm exec oxlint ."
+description = "Self-check the custom oxlint plugins."
+run = "node ./max-len.test.mjs && node ./assertions-per-function.test.mjs"
 
 [tasks.fuzz]
 description = "Unbounded checks (none defined)."

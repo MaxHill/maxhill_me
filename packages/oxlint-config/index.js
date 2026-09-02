@@ -8,6 +8,10 @@ const config = {
   plugins: ['eslint', 'typescript'],
   rules: {
     'maxhill/max-len': ['error', { code: 100, tabWidth: 2, ignoreUrls: true }],
+    'maxhill/assertions-per-function': [
+      'error',
+      { minAssertions: 2, assertionFunctions: ['assert', 'invariant'] },
+    ],
     curly: 'error',
     'max-lines-per-function': ['error', { max: 70, IIFEs: true }],
     'max-params': ['error', 4],

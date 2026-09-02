@@ -1,3 +1,5 @@
+import assertionsPerFunctionPlugin from './assertions-per-function-plugin.js';
+
 const DEFAULT_OPTIONS = {
   code: 100,
   tabWidth: 2,
@@ -110,5 +112,6 @@ export default {
   },
   rules: {
     'max-len': maxLenRule,
+    ...assertionsPerFunctionPlugin.rules,
   },
 };
