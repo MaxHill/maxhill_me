@@ -2,5 +2,9 @@
 
 (test
  (name test_{{projectName}})
- (libraries {{projectName}} hegel)
- (preprocess (pps ppx_hegel_test)))
+ (libraries {{projectName}} hegel compiler-libs.common)
+ (preprocess (pps ppx_hegel_test))
+ (deps
+  (glob_files ../lib/*.ml)
+  (glob_files ../bin/*.ml))
+ (action (run %{test} %{deps})))

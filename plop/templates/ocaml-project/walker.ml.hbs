@@ -1,0 +1,395 @@
+open Parsetree
+
+exception Panic of string
+
+type checkers =
+  { check_function : ctx:ctx -> pattern -> expression -> string option list
+  ; check_variable : ctx:ctx -> pattern -> expression -> string option list
+  ; check_binding_value :
+      ctx:ctx -> loc:Location.t -> string -> string option list
+  ; check_module : ctx:ctx -> loc:Location.t -> string -> string option list
+  ; check_open_module :
+      ctx:ctx -> loc:Location.t -> string -> string option list
+  ; check_include : ctx:ctx -> include_declaration -> string option list
+  ; check_type : ctx:ctx -> type_declaration -> string option list
+  ; check_exception : ctx:ctx -> extension_constructor -> string option list
+  ; check_class : ctx:ctx -> loc:Location.t -> string -> string option list
+  ; check_class_constructor :
+      ctx:ctx -> loc:Location.t -> string -> string option list
+  ; check_class_value :
+      ctx:ctx -> loc:Location.t -> string -> string option list
+  ; check_class_method :
+      ctx:ctx
+      -> loc:Location.t
+      -> string
+      -> expression option
+      -> string option list
+  }
+
+and error =
+  { message : string
+  ; filename : string
+  ; scope_depth : int
+  ; loc : Location.t option
+  }
+
+and ctx =
+  { filename : string
+  ; scope_depth : int
+  ; errors : error option list
+  ; check_function : ctx:ctx -> pattern -> expression -> string option list
+  ; check_variable : ctx:ctx -> pattern -> expression -> string option list
+  ; check_binding_value :
+      ctx:ctx -> loc:Location.t -> string -> string option list
+  ; check_module : ctx:ctx -> loc:Location.t -> string -> string option list
+  ; check_open_module :
+      ctx:ctx -> loc:Location.t -> string -> string option list
+  ; check_include : ctx:ctx -> include_declaration -> string option list
+  ; check_type : ctx:ctx -> type_declaration -> string option list
+  ; check_exception : ctx:ctx -> extension_constructor -> string option list
+  ; check_class : ctx:ctx -> loc:Location.t -> string -> string option list
+  ; check_class_constructor :
+      ctx:ctx -> loc:Location.t -> string -> string option list
+  ; check_class_value :
+      ctx:ctx -> loc:Location.t -> string -> string option list
+  ; check_class_method :
+      ctx:ctx
+      -> loc:Location.t
+      -> string
+      -> expression option
+      -> string option list
+  }
+
+let lines_of_loc loc =
+  let start_line = loc.Location.loc_start.Lexing.pos_lnum in
+  let end_line = loc.Location.loc_end.Lexing.pos_lnum in
+  start_line, end_line, end_line - start_line + 1
+;;
+
+let default_checkers =
+  { check_function = (fun ~ctx:_ _pattern _expr -> [ None ])
+  ; check_variable = (fun ~ctx:_ _pattern _expr -> [ None ])
+  ; check_binding_value = (fun ~ctx:_ ~loc:_ _value -> [ None ])
+  ; check_module = (fun ~ctx:_ ~loc:_ _name -> [ None ])
+  ; check_open_module = (fun ~ctx:_ ~loc:_ _name -> [ None ])
+  ; check_include = (fun ~ctx:_ _include_declaration -> [ None ])
+  ; check_type = (fun ~ctx:_ _type_declaration -> [ None ])
+  ; check_exception = (fun ~ctx:_ _extension_constructor -> [ None ])
+  ; check_class = (fun ~ctx:_ ~loc:_ _name -> [ None ])
+  ; check_class_constructor = (fun ~ctx:_ ~loc:_ _name -> [ None ])
+  ; check_class_value = (fun ~ctx:_ ~loc:_ _name -> [ None ])
+  ; check_class_method = (fun ~ctx:_ ~loc:_ _name _expr -> [ None ])
+  }
+;;
+
+let init_ctx ?(checkers = default_checkers) filename =
+  { filename
+  ; scope_depth = 0
+  ; errors = []
+  ; check_function = checkers.check_function
+  ; check_variable = checkers.check_variable
+  ; check_binding_value = checkers.check_binding_value
+  ; check_module = checkers.check_module
+  ; check_open_module = checkers.check_open_module
+  ; check_include = checkers.check_include
+  ; check_type = checkers.check_type
+  ; check_exception = checkers.check_exception
+  ; check_class = checkers.check_class
+  ; check_class_constructor = checkers.check_class_constructor
+  ; check_class_value = checkers.check_class_value
+  ; check_class_method = checkers.check_class_method
+  }
+;;
+
+let in_scope (ctx : ctx) = { ctx with scope_depth = ctx.scope_depth + 1 }
+
+let record_check
+      (ctx : ctx)
+      ~(loc : Location.t option)
+      (results : string option list)
+  =
+  let errors =
+    List.map
+      (function
+        | None -> None
+        | Some message ->
+          Some
+            { message
+            ; filename = ctx.filename
+            ; scope_depth = ctx.scope_depth
+            ; loc
+            })
+      results
+  in
+  { ctx with errors = List.rev_append errors ctx.errors }
+;;
+
+let finalize_ctx (ctx : ctx) = { ctx with errors = List.rev ctx.errors }
+
+let get_ast filename =
+  let ic = open_in filename in
+  let lexbuf = Lexing.from_channel ic in
+  Location.init lexbuf filename;
+  let ast = Parse.implementation lexbuf in
+  close_in ic;
+  ast
+;;
+
+let rec walk_extension_payload (ctx : ctx) payload =
+  match payload with
+  | PStr structure -> walk_structure (in_scope ctx) structure
+  | PPat (_pattern, maybe_expr) ->
+    (match maybe_expr with
+     | None -> ctx
+     | Some expr -> walk_expression (in_scope ctx) expr)
+  | PTyp _ | PSig _ -> ctx
+
+and walk_module_expr (ctx : ctx) module_expr =
+  match module_expr.pmod_desc with
+  | Pmod_structure structure -> walk_structure (in_scope ctx) structure
+  | Pmod_constraint (inner_module_expr, _module_type) ->
+    walk_module_expr ctx inner_module_expr
+  | _ -> raise (Panic "walk_structure: module expression kind not implemented")
+
+and walk_module_binding (ctx : ctx) module_binding =
+  let ctx =
+    (match module_binding.pmb_name.txt with
+     | Some name -> ctx.check_module ~ctx ~loc:module_binding.pmb_loc name
+     | None -> ctx.check_module ~ctx ~loc:module_binding.pmb_loc "<anonymous>")
+    |> record_check ctx ~loc:(Some module_binding.pmb_loc)
+  in
+  walk_module_expr ctx module_binding.pmb_expr
+
+and walk_structure (ctx : ctx) ast =
+  List.fold_left
+    (fun (ctx : ctx) structure_item ->
+       match structure_item.pstr_desc with
+       | Pstr_value (_, bindings) -> List.fold_left walk_binding ctx bindings
+       | Pstr_module module_binding -> walk_module_binding ctx module_binding
+       | Pstr_recmodule module_bindings ->
+         List.fold_left walk_module_binding ctx module_bindings
+       | Pstr_type (_rec_flag, type_declarations) ->
+         List.fold_left
+           (fun (ctx : ctx) type_declaration ->
+              ctx.check_type ~ctx type_declaration
+              |> record_check ctx ~loc:(Some type_declaration.ptype_loc))
+           ctx
+           type_declarations
+       | Pstr_exception type_exception ->
+         ctx.check_exception ~ctx type_exception.ptyexn_constructor
+         |> record_check
+              ctx
+              ~loc:(Some type_exception.ptyexn_constructor.pext_loc)
+       | Pstr_primitive _value_description -> ctx
+       | Pstr_modtype _module_type_declaration -> ctx
+       | Pstr_class_type _class_type_declarations -> ctx
+       | Pstr_typext _type_extension -> ctx
+       | Pstr_attribute _attribute -> ctx
+       | Pstr_class class_declarations ->
+         List.fold_left
+           (fun (ctx : ctx) class_declaration ->
+              let ctx =
+                ctx.check_class
+                  ~ctx
+                  ~loc:class_declaration.pci_loc
+                  class_declaration.pci_name.txt
+                |> record_check ctx ~loc:(Some class_declaration.pci_loc)
+              in
+              walk_class (in_scope ctx) class_declaration.pci_expr)
+           ctx
+           class_declarations
+       | Pstr_open open_declaration ->
+         let module_name =
+           match open_declaration.popen_expr.pmod_desc with
+           | Pmod_ident longident ->
+             String.concat "." (Longident.flatten longident.txt)
+           | _ -> "<complex module expression>"
+         in
+         ctx.check_open_module ~ctx ~loc:open_declaration.popen_loc module_name
+         |> record_check ctx ~loc:(Some open_declaration.popen_loc)
+       | Pstr_include include_declaration ->
+         ctx.check_include ~ctx include_declaration
+         |> record_check ctx ~loc:(Some include_declaration.pincl_loc)
+       | Pstr_extension ((_, payload), _attrs) ->
+         walk_extension_payload ctx payload
+       | Pstr_eval (_expr, _attrs) -> ctx)
+    ctx
+    ast
+
+and walk_binding (ctx : ctx) binding =
+  let loc = Some binding.pvb_expr.pexp_loc in
+  let ctx =
+    match binding.pvb_expr.pexp_desc with
+    | Pexp_constant const ->
+      let ctx =
+        (match const.pconst_desc with
+         | Pconst_string (value, _, _) ->
+           ctx.check_binding_value ~ctx ~loc:binding.pvb_expr.pexp_loc value
+         | Pconst_char ch ->
+           ctx.check_binding_value
+             ~ctx
+             ~loc:binding.pvb_expr.pexp_loc
+             (String.make 1 ch)
+         | Pconst_integer (value, _) ->
+           ctx.check_binding_value ~ctx ~loc:binding.pvb_expr.pexp_loc value
+         | Pconst_float (value, _) ->
+           ctx.check_binding_value ~ctx ~loc:binding.pvb_expr.pexp_loc value)
+        |> record_check ctx ~loc
+      in
+      ctx.check_variable ~ctx binding.pvb_pat binding.pvb_expr
+      |> record_check ctx ~loc
+    | Pexp_function _ ->
+      ctx.check_function ~ctx binding.pvb_pat binding.pvb_expr
+      |> record_check ctx ~loc
+    | _ ->
+      ctx.check_variable ~ctx binding.pvb_pat binding.pvb_expr
+      |> record_check ctx ~loc
+  in
+  walk_expression ctx binding.pvb_expr
+
+and walk_expression (ctx : ctx) expression =
+  match expression.pexp_desc with
+  | Pexp_let (_, bindings, body) ->
+    let ctx = List.fold_left walk_binding ctx bindings in
+    walk_expression (in_scope ctx) body
+  | Pexp_function (params, body_constraint, body) ->
+    let _ = params, body_constraint in
+    begin match body with
+    | Pfunction_cases (cases, _loc, _attrs) ->
+      List.fold_left
+        (fun (ctx : ctx) case -> walk_expression (in_scope ctx) case.pc_rhs)
+        ctx
+        cases
+    | Pfunction_body expr -> walk_expression (in_scope ctx) expr
+    end
+  | Pexp_letexception (type_exception, body_expr) ->
+    let ctx =
+      ctx.check_exception ~ctx type_exception
+      |> record_check ctx ~loc:(Some type_exception.pext_loc)
+    in
+    walk_expression (in_scope ctx) body_expr
+  | Pexp_match (scrutinee, cases) | Pexp_try (scrutinee, cases) ->
+    let ctx = walk_expression ctx scrutinee in
+    List.fold_left
+      (fun (ctx : ctx) case -> walk_expression (in_scope ctx) case.pc_rhs)
+      ctx
+      cases
+  | Pexp_ifthenelse (cond, then_expr, else_expr) ->
+    let ctx = walk_expression ctx cond in
+    let ctx = walk_expression ctx then_expr in
+    (match else_expr with
+     | None -> ctx
+     | Some expr -> walk_expression ctx expr)
+  | Pexp_sequence (a, b) | Pexp_apply (a, ((_, b) :: _)) ->
+    let ctx = walk_expression ctx a in
+    walk_expression ctx b
+  | Pexp_apply (fn, args) ->
+    let ctx = walk_expression ctx fn in
+    List.fold_left (fun (ctx : ctx) (_, arg) -> walk_expression ctx arg) ctx args
+  | Pexp_tuple exprs ->
+    List.fold_left (fun (ctx : ctx) (_, expr) -> walk_expression ctx expr) ctx exprs
+  | Pexp_array exprs -> List.fold_left walk_expression ctx exprs
+  | Pexp_construct (_, None) -> ctx
+  | Pexp_construct (_, Some expr)
+  | Pexp_variant (_, Some expr)
+  | Pexp_constraint (expr, _)
+  | Pexp_coerce (expr, _, _)
+  | Pexp_send (expr, _)
+  | Pexp_setinstvar (_, expr)
+  | Pexp_assert expr
+  | Pexp_lazy expr
+  | Pexp_poly (expr, _)
+  | Pexp_newtype (_, expr) -> walk_expression ctx expr
+  | Pexp_record (fields, default) ->
+    let ctx =
+      List.fold_left (fun (ctx : ctx) (_, expr) -> walk_expression ctx expr) ctx fields
+    in
+    (match default with
+     | None -> ctx
+     | Some expr -> walk_expression ctx expr)
+  | Pexp_field (expr, _) -> walk_expression ctx expr
+  | Pexp_setfield (record_expr, _, value_expr) ->
+    let ctx = walk_expression ctx record_expr in
+    walk_expression ctx value_expr
+  | Pexp_while (cond_expr, body_expr) ->
+    let ctx = walk_expression ctx cond_expr in
+    walk_expression ctx body_expr
+  | Pexp_for (_pat, start_expr, end_expr, _direction_flag, body_expr) ->
+    let ctx = walk_expression ctx start_expr in
+    let ctx = walk_expression ctx end_expr in
+    walk_expression (in_scope ctx) body_expr
+  | Pexp_object class_structure -> walk_class_structure ctx class_structure
+  | Pexp_override overrides ->
+    List.fold_left (fun (ctx : ctx) (_, expr) -> walk_expression ctx expr) ctx overrides
+  | Pexp_extension (_name, payload) -> walk_extension_payload ctx payload
+  | Pexp_constant _ | Pexp_ident _ | Pexp_unreachable -> ctx
+  | _ -> raise (Panic "walk_expression: expression kind not implemented")
+
+and walk_class (ctx : ctx) class_expression =
+  match class_expression.pcl_desc with
+  | Pcl_structure class_structure -> walk_class_structure (in_scope ctx) class_structure
+  | Pcl_constr (lid, _) ->
+    ctx.check_class_constructor
+      ~ctx
+      ~loc:class_expression.pcl_loc
+      (String.concat "." (Longident.flatten lid.txt))
+    |> record_check ctx ~loc:(Some class_expression.pcl_loc)
+  | Pcl_fun (_, default, _pattern, body) ->
+    let ctx =
+      match default with
+      | None -> ctx
+      | Some expr -> walk_expression ctx expr
+    in
+    walk_class (in_scope ctx) body
+  | Pcl_let (_, bindings, body) ->
+    let ctx = List.fold_left walk_binding ctx bindings in
+    walk_class (in_scope ctx) body
+  | Pcl_open (open_description, class_expr) ->
+    let module_name = String.concat "." (Longident.flatten open_description.popen_expr.txt) in
+    let ctx =
+      ctx.check_open_module
+        ~ctx
+        ~loc:open_description.popen_loc
+        module_name
+      |> record_check ctx ~loc:(Some open_description.popen_loc)
+    in
+    walk_class ctx class_expr
+  | _ -> raise (Panic "walk_class: class expression kind not implemented")
+
+and walk_class_structure (ctx : ctx) class_structure =
+  List.fold_left
+    (fun (ctx : ctx) field -> walk_class_field (in_scope ctx) field)
+    ctx
+    class_structure.pcstr_fields
+
+and walk_class_field (ctx : ctx) field =
+  match field.pcf_desc with
+  | Pcf_method (name, _, class_field_kind) ->
+    let ctx =
+      ctx.check_class_method
+        ~ctx
+        ~loc:field.pcf_loc
+        name.txt
+        (match class_field_kind with
+         | Cfk_virtual _ -> None
+         | Cfk_concrete (_, expr) -> Some expr)
+      |> record_check ctx ~loc:(Some field.pcf_loc)
+    in
+    begin match class_field_kind with
+    | Cfk_virtual _ -> ctx
+    | Cfk_concrete (_, expr) -> walk_expression ctx expr
+    end
+  | Pcf_val (name, _, class_field_kind) ->
+    let ctx =
+      ctx.check_class_value ~ctx ~loc:field.pcf_loc name.txt
+      |> record_check ctx ~loc:(Some field.pcf_loc)
+    in
+    begin match class_field_kind with
+    | Cfk_virtual _ -> ctx
+    | Cfk_concrete (_, expr) -> walk_expression ctx expr
+    end
+  | Pcf_initializer expr -> walk_expression ctx expr
+  | Pcf_constraint _ -> ctx
+  | Pcf_inherit (_, class_expr, _) -> walk_class ctx class_expr
+  | Pcf_attribute _ | Pcf_extension _ -> ctx
+;;

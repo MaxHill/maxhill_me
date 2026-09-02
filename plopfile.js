@@ -301,6 +301,8 @@ export default function (plop) {
                 { type: 'add', path: `${basePath}/lib/dune`, templateFile: `${templatePath}/lib-dune.hbs` },
                 { type: 'add', path: `${basePath}/lib/{{projectName}}.ml`, templateFile: `${templatePath}/lib.ml.hbs` },
                 { type: 'add', path: `${basePath}/test/dune`, templateFile: `${templatePath}/test-dune.hbs` },
+                { type: 'add', path: `${basePath}/test/walker.ml`, templateFile: `${templatePath}/walker.ml.hbs` },
+                { type: 'add', path: `${basePath}/test/test_lint.ml`, templateFile: `${templatePath}/test_lint.ml.hbs` },
                 { type: 'add', path: `${basePath}/test/test_{{projectName}}.ml`, templateFile: `${templatePath}/test.ml.hbs` },
             ];
         },

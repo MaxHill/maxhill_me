@@ -1,3 +1,20 @@
+monorepo_root = true
+
+[monorepo]
+config_roots = [
+  ".",
+  "apps/auth",
+  "apps/golf",
+  "apps/rss",
+  "apps/site",
+  "apps/syncdb-server",
+  "packages/components",
+  "packages/css",
+  "packages/oxlint-config",
+  "packages/syncdb",
+  "packages/web-component-utils",
+]
+
 [tools]
 opam = "2.5.1"
 1password = "latest"

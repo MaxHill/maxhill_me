@@ -12,8 +12,8 @@ description = "Run {{projectName}} locally and restart on source changes."
 run = "dune exec --watch ./bin/main.exe"
 
 [tasks.test]
-description = "Run bounded dune tests."
-run = "dune runtest"
+description = "Run ocamlformat --check, then bounded dune tests."
+run = "for f in $(find test -name '*.ml' -o -name '*.mli'); do ocamlformat --check \"$f\" || { echo \"ocamlformat failed: $f\"; exit 1; }; done && dune runtest --no-buffer --force"
 
 [tasks.fuzz]
 description = "Unbounded simulator search."

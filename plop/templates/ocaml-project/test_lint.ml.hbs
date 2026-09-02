@@ -1,0 +1,391 @@
+open Walker
+
+(* Validators *)
+(* ======================*)
+let max_function_lines = 70
+let min_assertions_per_function = 2
+
+let rec count_assertions_in_expression (expr : Parsetree.expression) =
+  let nested_count =
+    match expr.pexp_desc with
+    | Pexp_let (_, bindings, body) ->
+      List.fold_left
+        (fun count (binding : Parsetree.value_binding) ->
+           count + count_assertions_in_expression binding.pvb_expr)
+        0
+        bindings
+      + count_assertions_in_expression body
+    | Pexp_function (_, _, body) ->
+      (match body with
+       | Pfunction_cases (cases, _, _) ->
+         List.fold_left
+           (fun count (case : Parsetree.case) ->
+              count + count_assertions_in_expression case.pc_rhs)
+           0
+           cases
+       | Pfunction_body body_expr -> count_assertions_in_expression body_expr)
+    | Pexp_apply (fn, args) ->
+      count_assertions_in_expression fn
+      + List.fold_left
+          (fun count (_, arg) -> count + count_assertions_in_expression arg)
+          0
+          args
+    | Pexp_match (scrutinee, cases) | Pexp_try (scrutinee, cases) ->
+      count_assertions_in_expression scrutinee
+      + List.fold_left
+          (fun count (case : Parsetree.case) ->
+             count + count_assertions_in_expression case.pc_rhs)
+          0
+          cases
+    | Pexp_ifthenelse (cond, then_expr, else_expr) ->
+      count_assertions_in_expression cond
+      + count_assertions_in_expression then_expr
+      +
+        (match else_expr with
+        | None -> 0
+        | Some else_expr -> count_assertions_in_expression else_expr)
+    | Pexp_sequence (a, b) ->
+      count_assertions_in_expression a + count_assertions_in_expression b
+    | Pexp_tuple exprs ->
+      List.fold_left
+        (fun count (_, expr) -> count + count_assertions_in_expression expr)
+        0
+        exprs
+    | Pexp_array exprs ->
+      List.fold_left
+        (fun count expr -> count + count_assertions_in_expression expr)
+        0
+        exprs
+    | Pexp_construct (_, maybe_expr) | Pexp_variant (_, maybe_expr) ->
+      (match maybe_expr with
+       | None -> 0
+       | Some expr -> count_assertions_in_expression expr)
+    | Pexp_constraint (expr, _)
+    | Pexp_coerce (expr, _, _)
+    | Pexp_send (expr, _)
+    | Pexp_setinstvar (_, expr)
+    | Pexp_lazy expr
+    | Pexp_poly (expr, _)
+    | Pexp_newtype (_, expr) -> count_assertions_in_expression expr
+    | Pexp_record (fields, default) ->
+      List.fold_left
+        (fun count (_, expr) -> count + count_assertions_in_expression expr)
+        0
+        fields
+      +
+        (match default with
+        | None -> 0
+        | Some default_expr -> count_assertions_in_expression default_expr)
+    | Pexp_field (expr, _) -> count_assertions_in_expression expr
+    | Pexp_setfield (record_expr, _, value_expr) ->
+      count_assertions_in_expression record_expr
+      + count_assertions_in_expression value_expr
+    | Pexp_while (cond_expr, body_expr) ->
+      count_assertions_in_expression cond_expr
+      + count_assertions_in_expression body_expr
+    | Pexp_for (_, start_expr, end_expr, _, body_expr) ->
+      count_assertions_in_expression start_expr
+      + count_assertions_in_expression end_expr
+      + count_assertions_in_expression body_expr
+    | Pexp_override overrides ->
+      List.fold_left
+        (fun count (_, expr) -> count + count_assertions_in_expression expr)
+        0
+        overrides
+    | Pexp_assert expr -> 1 + count_assertions_in_expression expr
+    | Pexp_constant _ | Pexp_ident _ | Pexp_unreachable -> 0
+    | _ -> 0
+  in
+  nested_count
+;;
+
+let assertion_count_validator ~kind ~name ~expr =
+  let assertion_count = count_assertions_in_expression expr in
+  if assertion_count < min_assertions_per_function
+  then
+    Some
+      (Format.sprintf
+         "%s%s has %d assertions. Minimum is %d assertions."
+         kind
+         (match name with
+          | None -> ""
+          | Some value -> Format.sprintf " \"%s\"" value)
+         assertion_count
+         min_assertions_per_function)
+  else None
+;;
+
+let function_length_validator ~kind ~name ~loc =
+  let start_line = loc.Location.loc_start.Lexing.pos_lnum in
+  let end_line = loc.Location.loc_end.Lexing.pos_lnum in
+  let line_count = end_line - start_line + 1 in
+  if line_count > max_function_lines
+  then
+    Some
+      (Format.sprintf
+         "%s%s is too long (%d lines). Maximum is %d lines."
+         kind
+         (match name with
+          | None -> ""
+          | Some value -> Format.sprintf " \"%s\"" value)
+         line_count
+         max_function_lines)
+  else None
+;;
+
+let name_validator name =
+  match String.lowercase_ascii name with
+  | "arg" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"argument\""
+         name)
+  | "args" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"arguments\""
+         name)
+  | "buf" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"buffer\""
+         name)
+  | "cfg" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \
+          \"configuration\""
+         name)
+  | "dest" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \
+          \"destination\""
+         name)
+  | "dst" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \
+          \"destination\""
+         name)
+  | "err" ->
+    Some
+      (Format.sprintf
+         "err abbriviation is not allowed use full names like: \"error\"")
+  | "errs" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"errors\""
+         name)
+  | "fn" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"function\""
+         name)
+  | "fmt" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"format\""
+         name)
+  | "idx" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"index\""
+         name)
+  | "len" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"length\""
+         name)
+  | "msg" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"message\""
+         name)
+  | "num" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"number\""
+         name)
+  | "obj" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"object\""
+         name)
+  | "op" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"operation\""
+         name)
+  | "param" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"parameter\""
+         name)
+  | "params" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \
+          \"parameters\""
+         name)
+  | "pos" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"position\""
+         name)
+  | "prev" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"previous\""
+         name)
+  | "ptr" ->
+    Some
+      (Format.sprintf
+         "ptr abbriviation is not allowed use full names like: \"pointer\"")
+  | "ref" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"reference\""
+         name)
+  | "req" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"request\""
+         name)
+  | "resp" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"response\""
+         name)
+  | "src" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"source\""
+         name)
+  | "tmp" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"temporary\""
+         name)
+  | "val" ->
+    Some
+      (Format.sprintf
+         "\"%s\" abbriviation is not allowed use full names like: \"value\""
+         name)
+  | _ -> None
+;;
+
+(* Checkers*)
+(* ======================*)
+let check_variable ~ctx:_ (pat : Parsetree.pattern) _expr =
+  let naming_error =
+    match pat.ppat_desc with
+    | Ppat_var name -> name_validator name.txt
+    | _ -> None
+  in
+  [ naming_error ]
+;;
+
+let check_function ~ctx:_ (pat : Parsetree.pattern) (expr : Parsetree.expression) =
+  let function_name =
+    match pat.ppat_desc with
+    | Ppat_var name -> Some name.txt
+    | _ -> None
+  in
+  let naming_error =
+    match pat.ppat_desc with
+    | Ppat_var name -> name_validator name.txt
+    | _ -> None
+  in
+  let length_error =
+    function_length_validator
+      ~kind:"function"
+      ~name:function_name
+      ~loc:expr.pexp_loc
+  in
+  let assertion_count_error =
+    match function_name with
+    | None -> None
+    | Some _ ->
+      assertion_count_validator ~kind:"function" ~name:function_name ~expr
+  in
+  [ naming_error; length_error; assertion_count_error ]
+;;
+
+let check_module ~ctx:_ ~loc:_ name =
+  let naming_error = name_validator name in
+  [ naming_error ]
+;;
+
+let check_type ~ctx:_ (type_declaration : Parsetree.type_declaration) =
+  let naming_error = name_validator type_declaration.ptype_name.txt in
+  [ naming_error ]
+;;
+
+let check_class ~ctx:_ ~loc:_ name =
+  let naming_error = name_validator name in
+  [ naming_error ]
+;;
+
+let check_class_method ~ctx:_ ~loc name method_expr =
+  let naming_error = name_validator name in
+  let length_error =
+    function_length_validator ~kind:"class method" ~name:(Some name) ~loc
+  in
+  let assertion_count_error =
+    match method_expr with
+    | None -> None
+    | Some expr ->
+      assertion_count_validator ~kind:"class method" ~name:(Some name) ~expr
+  in
+  [ naming_error; length_error; assertion_count_error ]
+;;
+
+let check_class_value ~ctx:_ ~loc:_ name =
+  let naming_error = name_validator name in
+  [ naming_error ]
+;;
+
+let lint_checkers =
+  { Walker.default_checkers with
+    check_variable
+  ; check_function
+  ; check_module
+  ; check_type
+  ; check_class
+  ; check_class_method
+  ; check_class_value
+  }
+;;
+
+let print_error error =
+  let start_line, end_line =
+    match error.loc with
+    | None -> 0, 0
+    | Some loc -> loc.loc_start.pos_lnum, loc.loc_end.pos_lnum
+  in
+  Printf.printf
+    "\nerror: %s\n  file: %s\n  start_line: %d\n  end_line: %d\n"
+    error.message
+    error.filename
+    start_line
+    end_line
+;;
+
+let check_file filename =
+  let ctx = init_ctx ~checkers:lint_checkers filename in
+  Format.printf "\nfile %s%!" filename;
+  let ast = get_ast filename in
+  let ctx = walk_structure ctx ast |> finalize_ctx in
+  let errors = List.filter_map (fun error -> error) ctx.errors in
+  List.iter print_error errors;
+  List.length errors
+;;
+
+let run files =
+  let error_count =
+    List.fold_left (fun total file -> total + check_file file) 0 files
+  in
+  if error_count > 0
+  then failwith (Printf.sprintf "lint failed with %d errors" error_count)
+;;

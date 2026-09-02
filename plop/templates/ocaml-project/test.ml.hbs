@@ -5,4 +5,13 @@ let%hegel_test greeting_is_not_empty tc =
   assert (String.length ({{projectModule}}.greet name) > 8)
 ;;
 
-let () = greeting_is_not_empty ()
+let () =
+  let files =
+    Sys.argv
+    |> Array.to_list
+    |> List.tl
+    |> List.filter (fun path -> not (Filename.check_suffix path ".pp.ml"))
+  in
+  greeting_is_not_empty ();
+  Test_lint.run files
+;;
