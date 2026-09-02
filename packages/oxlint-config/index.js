@@ -12,6 +12,7 @@ const config = {
       'error',
       { minAssertions: 2, assertionFunctions: ['assert', 'invariant'] },
     ],
+    'maxhill/no-abbreviations': 'error',
     curly: 'error',
     'max-lines-per-function': ['error', { max: 70, IIFEs: true }],
     'max-params': ['error', 4],

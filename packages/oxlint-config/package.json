@@ -6,6 +6,7 @@
   "exports": {
     ".": "./index.js",
     "./max-len-plugin": "./max-len-plugin.js",
-    "./assertions-per-function-plugin": "./assertions-per-function-plugin.js"
+    "./assertions-per-function-plugin": "./assertions-per-function-plugin.js",
+    "./no-abbreviations-plugin": "./no-abbreviations-plugin.js"
   }
 }

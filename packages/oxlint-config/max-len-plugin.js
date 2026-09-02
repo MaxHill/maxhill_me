@@ -1,4 +1,5 @@
 import assertionsPerFunctionPlugin from './assertions-per-function-plugin.js';
+import noAbbreviationsPlugin from './no-abbreviations-plugin.js';
 
 const DEFAULT_OPTIONS = {
   code: 100,
@@ -113,5 +114,6 @@ export default {
   rules: {
     'max-len': maxLenRule,
     ...assertionsPerFunctionPlugin.rules,
+    ...noAbbreviationsPlugin.rules,
   },
 };
