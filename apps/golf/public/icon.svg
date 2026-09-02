@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="m">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="golf">
   <style>
     @font-face {
       font-family: "Departure Mono";
@@ -7,17 +7,19 @@
       font-weight: 400;
       font-style: normal;
     }
+
     rect { fill: #fbf3e9; }
+
     text {
       fill: #0f0f0f;
       font-family: "Departure Mono", monospace;
-      font-size: 280px;
-      letter-spacing: -8px;
+      font-size: 128px;
+      letter-spacing: -4px;
       text-anchor: middle;
       dominant-baseline: middle;
       text-rendering: geometricPrecision;
     }
   </style>
   <rect width="512" height="512" rx="112" ry="112"/>
-  <text x="256" y="274">m</text>
+  <text x="256" y="274">golf</text>
 </svg>

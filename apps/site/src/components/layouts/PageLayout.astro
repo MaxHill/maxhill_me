@@ -14,8 +14,13 @@ const { title, bodyClass } = Astro.props;
 <html lang="en">
     <head>
         <meta charset="utf-8" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" type="image/png" href="/favicon.png?v=4" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="viewport" content="width=device-width" />
+        <meta name="theme-color" content="#fbf3e9" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="max" />
         <title>maxhill.se - {title}</title>
 
         <ClientRouter />
