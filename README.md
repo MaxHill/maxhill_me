@@ -44,6 +44,23 @@ cd apps/site && mise run run     # Astro dev server
 cd apps/auth && mise run run     # Bun --watch
 ```
 
+## Roadmap (Current Priority Order)
+
+1. Implement and use Server-Sent Events (SSE) for updates in
+   `apps/syncdb-server/`.
+2. Inject errors in `apps/syncdb-server/bin/simulator.ml`:
+   - Deliver out of order
+   - Corrupt request
+   - Corrupt response
+3. Implement compaction in `packages/idb-distribute/` and
+   `apps/syncdb-server/`.
+4. Write usage examples for `packages/idb-distribute/`.
+5. Create a `user` app and integrate it with `apps/auth/`.
+6. Define and build an admin/system-status surface (VPS health, user
+   management, and related admin workflows).
+7. Write an integration script that runs all tests and checks all packages
+   before merging to `main`, to keep the full system green.
+
 ## CI/CD Pipeline
 
 ### Overview
