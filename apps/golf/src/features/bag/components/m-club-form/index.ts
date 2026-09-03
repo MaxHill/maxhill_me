@@ -43,6 +43,7 @@ export class MClubForm extends MElement {
   private shotTypesCombobox = createRef<MCombobox>();
   private dialogRef = createRef<HTMLDialogElement>();
   private unsubscribe!: () => void;
+  private saveInFlight: Promise<void> = Promise.resolve();
 
   get isEditing(): boolean {
     return !!this.clubKey;
@@ -109,40 +110,53 @@ export class MClubForm extends MElement {
     }
   }
 
-  private handleFormSubmit = async (e: Event) => {
+  private handleFormSubmit = (e: Event) => {
     e.preventDefault();
-    if (!this.formRef.value) return;
+    void this.saveClub("submit");
+  };
 
-    const formData = new FormData(this.formRef.value);
+  private handleAutosave = () => {
+    if (!this.isEditing) return;
+    void this.saveClub("autosave");
+  };
 
-    const name = formData.get("name")?.toString();
-    const clubType = formData.get("clubType")?.toString() as ClubTypes;
-    const shotTypes = await Promise.all(
-      formData.getAll("shotTypes").map(async (key) => {
-        return await this.shotTypeService.table.get(key.toString());
-      }),
-    ) as ShotType[];
+  private saveClub = (trigger: "submit" | "autosave"): Promise<void> => {
+    this.saveInFlight = this.saveInFlight.then(async () => {
+      const form = this.formRef.value;
+      if (!form || !form.checkValidity()) return;
 
-    if (!name || !clubType || shotTypes.length === 0) {
-      return;
-    }
+      const formData = new FormData(form);
+      const name = formData.get("name")?.toString();
+      const clubType = formData.get("clubType")?.toString() as ClubTypes;
+      const shotTypes = await Promise.all(
+        formData.getAll("shotTypes").map(async (key) =>
+          await this.shotTypeService.table.get(key.toString()),
+        ),
+      ) as ShotType[];
 
-    const brand = formData.get("brand")?.toString();
-    const model = formData.get("model")?.toString();
-    const loft = formData.get("loft")?.toString();
-    const lie = formData.get("lie")?.toString();
+      if (!name || !clubType || shotTypes.length === 0) return;
 
-    const club: Club = { name, clubType, shotTypes };
-    if (brand) club.brand = brand;
-    if (model) club.model = model;
-    if (loft) club.loft = loft;
-    if (lie) club.lie = lie;
-    const key = this.isEditing ? this.clubKey : crypto.randomUUID();
+      const club: Club = { name, clubType, shotTypes };
+      for (const field of ["brand", "model", "loft", "lie"] as const) {
+        const value = formData.get(field)?.toString();
+        if (value) club[field] = value;
+      }
 
-    await this.clubService.setClub(key, club);
+      const mode = this.isEditing ? "edit" : "add";
+      const key = this.isEditing ? this.clubKey : crypto.randomUUID();
+      await this.clubService.setClub(key, club);
+      this.dispatchEvent(new ClubSavedEvent({ key, club, mode, trigger }));
 
-    // Always emit event - let parent decide what to do
-    this.dispatchEvent(new ClubSavedEvent({ key, club }));
+      if (mode === "add") {
+        this.currentClub = null;
+        this.renderComponent();
+        (this.shadowRoot?.querySelector("m-input[name='name']") as HTMLElement)?.focus();
+      }
+    }).catch((error) => {
+      // Keep the queue usable after a failed write. A future save can retry.
+      console.error("Failed to save club", error);
+    });
+    return this.saveInFlight;
   };
 
   private handleOpenDialog = () => {
@@ -209,6 +223,7 @@ export class MClubForm extends MElement {
             required
             min="2"
             name="name"
+            @blur=${this.handleAutosave}
             label="Name *"
             placeholder="Ex. 60deg, 7, spoon"
             aria-required="true"
@@ -219,6 +234,7 @@ export class MClubForm extends MElement {
             ${ref(this.clubTypeCombobox)}
             required
             name="clubType"
+            @change=${this.handleAutosave}
             label="Club type *"
             placeholder="Select what type of club"
             aria-required="true"
@@ -242,6 +258,7 @@ export class MClubForm extends MElement {
               <m-input
                 min="2"
                 name="brand"
+                @blur=${this.handleAutosave}
                 label="Brand"
                 placeholder="Ex. Titleist"
                 value=${this.currentClub?.brand || ""}
@@ -250,6 +267,7 @@ export class MClubForm extends MElement {
               <m-input
                 min="2"
                 name="model"
+                @blur=${this.handleAutosave}
                 label="Model"
                 placeholder="Ex. t100"
                 value=${this.currentClub?.model || ""}
@@ -259,6 +277,7 @@ export class MClubForm extends MElement {
                 min="2"
                 type="number"
                 name="loft"
+                @blur=${this.handleAutosave}
                 label="Loft (deg)"
                 placeholder="Ex. 38"
                 value=${this.currentClub?.loft || ""}
@@ -268,6 +287,7 @@ export class MClubForm extends MElement {
                 min="2"
                 type="number"
                 name="lie"
+                @blur=${this.handleAutosave}
                 label="Lie"
                 placeholder="Ex. 30"
                 value=${this.currentClub?.lie || ""}
@@ -283,6 +303,7 @@ export class MClubForm extends MElement {
               class="shot-type"
               required
               name="shotTypes"
+              @change=${this.handleAutosave}
               label="Shot types *"
               mode="multiple"
               placeholder="Select available shot types"
@@ -311,9 +332,11 @@ export class MClubForm extends MElement {
           </button>
         </div>
 
-        <button part="save-button" class="button submit-button" type="submit" aria-label=${buttonAriaLabel}>
-          ${buttonText}
-        </button>
+        ${this.isEditing
+          ? null
+          : html`<button part="save-button" class="button submit-button" type="submit" aria-label=${buttonAriaLabel}>
+              ${buttonText}
+            </button>`}
 
         ${this.isEditing
           ? renderDangerZone({

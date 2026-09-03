@@ -6,6 +6,7 @@ import "@maxhill/components/register-all";
 
 import "./features/router/router.ts";
 import "./features/menu/main-menu.ts";
+import "./features/notifications/m-notifications";
 import "@maxhill/components/m-empty-state";
 import { MShotTypeList } from "./features/bag/components/m-shot-type-list";
 import { MAddShotTypeForm } from "./features/bag/components/m-add-shot-type-form";

@@ -26,6 +26,7 @@ body {
   scroll-behavior: smooth;
   background: var(--color-background);
 
+  grid-template-columns: auto minmax(0, 1fr) auto;
   justify-content: space-between;
   padding-inline: var(--size-2);
   position: fixed;
@@ -36,9 +37,20 @@ body {
   border-bottom: var(--border);
   z-index: 10;
 
-  /* On mobile, align content to the right */
+  /* On mobile, let the notification fill the space before the menu button. */
   @media (width <= 768px) {
-    justify-content: flex-end;
+    grid-template-columns: minmax(0, 1fr) auto;
+    justify-content: initial;
+
+    & > .mobile-menu-button {
+      grid-column: 2;
+      order: 2;
+    }
+
+    & > m-notifications {
+      grid-column: 1;
+      order: 1;
+    }
   }
 
   & > nav {
@@ -59,9 +71,18 @@ body {
   /* Desktop-only items */
   & > .desktop-nav,
   & > .desktop-theme {
+    order: 1;
     @media (width <= 768px) {
       display: none;
     }
+  }
+
+  & > m-notifications {
+    order: 2;
+  }
+
+  & > .desktop-theme {
+    order: 3;
   }
 }
 
