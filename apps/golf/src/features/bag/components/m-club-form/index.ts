@@ -242,18 +242,18 @@ export class MClubForm extends MElement {
             placeholder="Select what type of club"
             aria-required="true"
           >
-            <m-option value="putter" ?selected=${this.currentClub?.clubType ===
-              "putter"}>Putter</m-option>
-            <m-option value="wedge" ?selected=${this.currentClub?.clubType ===
-              "wedge"}>Wedge</m-option>
-            <m-option value="iron" ?selected=${this.currentClub?.clubType ===
-              "iron"}>Iron</m-option>
-            <m-option value="hybrid" ?selected=${this.currentClub?.clubType ===
-              "hybrid"}>Hybrid</m-option>
-            <m-option value="wood" ?selected=${this.currentClub?.clubType ===
-              "wood"}>Wood</m-option>
             <m-option value="driver" ?selected=${this.currentClub?.clubType ===
               "driver"}>Driver</m-option>
+            <m-option value="wood" ?selected=${this.currentClub?.clubType ===
+              "wood"}>Wood</m-option>
+            <m-option value="hybrid" ?selected=${this.currentClub?.clubType ===
+              "hybrid"}>Hybrid</m-option>
+            <m-option value="iron" ?selected=${this.currentClub?.clubType ===
+              "iron"}>Iron</m-option>
+            <m-option value="wedge" ?selected=${this.currentClub?.clubType ===
+              "wedge"}>Wedge</m-option>
+            <m-option value="putter" ?selected=${this.currentClub?.clubType ===
+              "putter"}>Putter</m-option>
           </m-listbox>
 
           <details class="optional-specs box" data-padding="2">

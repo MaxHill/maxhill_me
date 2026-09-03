@@ -30,10 +30,12 @@ export class MNotifications extends MElement {
 
   connectedCallback() {
     document.addEventListener("club-saved", this.handleClubSaved);
+    document.addEventListener("shot-type-created", this.handleShotTypeCreated);
   }
 
   disconnectedCallback() {
     document.removeEventListener("club-saved", this.handleClubSaved);
+    document.removeEventListener("shot-type-created", this.handleShotTypeCreated);
     if (this.hideTimer) clearTimeout(this.hideTimer);
   }
 
@@ -42,6 +44,13 @@ export class MNotifications extends MElement {
     if (!club?.name || !club?.clubType || (mode !== "add" && mode !== "edit")) return;
 
     this.showMessage(`Club ${club.name} ${club.clubType} ${mode === "add" ? "added" : "saved"}`);
+  };
+
+  private handleShotTypeCreated = (event: Event) => {
+    const { name } = (event as CustomEvent).detail ?? {};
+    if (!name) return;
+
+    this.showMessage(`Shot type ${name} added`);
   };
 
   private showMessage(message: string) {

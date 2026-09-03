@@ -96,7 +96,7 @@ export class MShotTypeForm extends MElement {
       // Always emit event with the new key - let parent decide what to do
       this.dispatchEvent(
         new CustomEvent("shot-type-created", {
-          detail: { key: newKey },
+          detail: { key: newKey, name, description },
           bubbles: true,
           composed: true,
         }),

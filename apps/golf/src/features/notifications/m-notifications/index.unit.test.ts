@@ -33,6 +33,21 @@ describe("m-notifications", () => {
     vi.useRealTimers();
   });
 
+  it("shows shot type creation messages", () => {
+    const notifications = document.createElement("m-notifications");
+    document.body.append(notifications);
+
+    document.dispatchEvent(new CustomEvent("shot-type-created", {
+      detail: { key: "shot-type-key", name: "Punch", description: "Low flight" },
+    }));
+
+    const message = notifications.shadowRoot!.querySelector(".message") as HTMLElement;
+    expect(message.textContent).toBe("Shot type Punch added");
+    expect(message.hidden).toBe(false);
+
+    notifications.remove();
+  });
+
   it("replaces the message and restarts the timer", () => {
     vi.useFakeTimers();
     const notifications = document.createElement("m-notifications");
