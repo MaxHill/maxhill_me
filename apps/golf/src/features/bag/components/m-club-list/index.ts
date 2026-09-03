@@ -7,6 +7,7 @@ import { TableChangeEvent } from "@maxhill/syncdb";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { html, render } from "lit-html";
 import "@maxhill/components/m-card";
+import { sortClubs } from "./club-order";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -72,6 +73,7 @@ export class MClubList extends MElement {
     for await (const club of this.clubService.table.query()) {
       this.clubs.push(club as Club);
     }
+    this.clubs = sortClubs(this.clubs);
     this.render();
   }
 
