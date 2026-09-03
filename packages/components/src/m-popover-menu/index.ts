@@ -42,6 +42,7 @@ export class MPopoverMenu extends MElement {
         this.setupRole();
         this.findAnchorElement();
         this.setupPositioning();
+        this.addEventListener('click', this.handleClick);
     }
     
     private setupRole() {
@@ -55,6 +56,7 @@ export class MPopoverMenu extends MElement {
         this.cleanup();
         this.removeEventListener('beforetoggle', this.handleBeforeToggle);
         this.removeEventListener('toggle', this.handleToggle);
+        this.removeEventListener('click', this.handleClick);
     }
 
     attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
@@ -103,6 +105,16 @@ export class MPopoverMenu extends MElement {
         if ((event as ToggleEvent).newState !== 'open') {
             this.cleanup();
         }
+    };
+
+    private handleClick = (event: Event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+
+        if (!target.closest('a[href]')) return;
+        if (!this.matches(':popover-open')) return;
+
+        this.hidePopover();
     };
 
     private async updatePosition() {

@@ -84,4 +84,49 @@ describe('m-popover-menu', () => {
             expect(menu.style.top).to.not.equal('');
         });
     });
+
+    describe('link behavior', () => {
+        it('closes when a link inside the popover is clicked', async () => {
+            const container = await fixture(html`
+                <div>
+                    <button id="link-trigger" popovertarget="link-menu">Open</button>
+                    <m-popover-menu id="link-menu" popover anchor="link-trigger">
+                        <a href="/next">Next</a>
+                    </m-popover-menu>
+                </div>
+            `);
+
+            const button = container.querySelector('#link-trigger') as HTMLButtonElement;
+            const menu = container.querySelector('#link-menu') as MPopoverMenu;
+            const link = container.querySelector('a') as HTMLAnchorElement;
+
+            button.click();
+            await waitUntil(() => menu.matches(':popover-open'));
+
+            link.addEventListener('click', (event) => event.preventDefault());
+            link.click();
+            await waitUntil(() => !menu.matches(':popover-open'));
+        });
+
+        it('stays open when a button inside the popover is clicked', async () => {
+            const container = await fixture(html`
+                <div>
+                    <button id="button-trigger" popovertarget="button-menu">Open</button>
+                    <m-popover-menu id="button-menu" popover anchor="button-trigger">
+                        <button type="button">Keep open</button>
+                    </m-popover-menu>
+                </div>
+            `);
+
+            const trigger = container.querySelector('#button-trigger') as HTMLButtonElement;
+            const menu = container.querySelector('#button-menu') as MPopoverMenu;
+            const innerButton = container.querySelector('m-popover-menu button') as HTMLButtonElement;
+
+            trigger.click();
+            await waitUntil(() => menu.matches(':popover-open'));
+
+            innerButton.click();
+            expect(menu.matches(':popover-open')).to.equal(true);
+        });
+    });
 });

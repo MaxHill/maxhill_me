@@ -38,8 +38,15 @@ export class MLandingPage extends MElement {
         this.shadowRoot!.adoptedStyleSheets = [globalStyleSheet, baseStyleSheet];
     }
 
-    async connectedCallback() {
+    connectedCallback() {
+        this.render();
+        void this.initialize();
+    }
+
+    private async initialize() {
         const db = await get_DB();
+        if (!this.isConnected) return;
+
         this.settings = new UserSettingsService(db);
 
         this.unsubscribe = authClient.onAuthChange((authenticated) => {
@@ -47,16 +54,20 @@ export class MLandingPage extends MElement {
                 this.showBanner = false;
             } else {
                 this.showBanner = true;
-                this.settings!.remove("banner_dismissed");
+                void this.settings!.remove("banner_dismissed");
             }
             this.render();
         });
 
         const token = await authClient.getToken();
+        if (!this.isConnected) return;
+
         if (!token) {
             const dismissed = await this.settings.get<boolean>("banner_dismissed");
+            if (!this.isConnected) return;
             this.showBanner = !dismissed;
         }
+
         this.render();
     }
 
