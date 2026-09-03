@@ -32,6 +32,10 @@
   border-block-start: 1px solid var(--color-stroke);
 }
 
+m-empty-state {
+  padding-inline: var(--body-margin);
+}
+
 .game-row {
   display: flex;
   align-items: stretch;
