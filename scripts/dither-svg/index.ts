@@ -3,22 +3,22 @@
  * dither-svg — process "Dither it!" SVG exports for the web.
  *
  * Pipeline per file:
- *   1. Strip every black <rect> (fill="#000000" / "#000").
- *   2. Compute bounding box of remaining white <rect>s.
- *   3. Rewrite the root <svg viewBox="..."> to that box.
- *   4. Run SVGO.
+ *   1. Strip every black <rect>.
+ *   2. Merge adjacent white rects into path segments.
+ *   3. Compute bounding box of the white artwork.
+ *   4. Rewrite the root <svg viewBox="..."> to that box.
  *
  * Usage:
- *   tsx scripts/dither-svg/index.ts <inputDir> <outputDir>
- *   ./scripts/dither-svg/index.ts <inputDir> <outputDir>
+ *   tsx scripts/dither-svg/index.ts <inputDir> [outputDir]
+ *   ./scripts/dither-svg/index.ts <inputDir> [outputDir]
+ *
+ * If outputDir is omitted, the script walks up from inputDir and writes to the
+ * nearest ancestor app's public/ directory.
  */
 
-import { readdir, readFile, writeFile, mkdir, stat } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 
-// Matches a single <rect x="N" y="N" width="N" height="N" fill="#XXX"/>
-// Dither it! output is uniform: attributes in this order, self-closing, no whitespace.
-// We stay tolerant to attribute order and quote style.
 const RECT_RE = /<rect\b([^>]*?)\/?>/g;
 
 interface Rect {
@@ -27,6 +27,21 @@ interface Rect {
 	w: number;
 	h: number;
 	fill: string;
+}
+
+interface Bounds {
+	minX: number;
+	minY: number;
+	maxX: number;
+	maxY: number;
+}
+
+interface ProcessResult {
+	svg: string;
+	bounds: Bounds | null;
+	kept: number;
+	dropped: number;
+	merged: number;
 }
 
 function attr(attrs: string, name: string): string | undefined {
@@ -52,66 +67,90 @@ function isWhite(fill: string): boolean {
 	return fill === "#ffffff" || fill === "#fff" || fill === "white";
 }
 
-interface ProcessResult {
-	svg: string;
-	bounds: { minX: number; minY: number; maxX: number; maxY: number } | null;
-	kept: number;
-	dropped: number;
+function sortRects(a: Rect, b: Rect): number {
+	return a.y - b.y || a.x - b.x || a.h - b.h || a.w - b.w;
 }
 
-function processSvg(input: string): ProcessResult {
+function mergeRects(rects: Rect[]): Rect[] {
+	const merged: Rect[] = [];
+	for (const rect of [...rects].sort(sortRects)) {
+		const prev = merged.at(-1);
+		if (prev && prev.y === rect.y && prev.h === rect.h && prev.x + prev.w === rect.x) {
+			prev.w += rect.w;
+			continue;
+		}
+		merged.push({ ...rect });
+	}
+	return merged;
+}
+
+function getBounds(rects: Rect[]): Bounds | null {
+	if (rects.length === 0) return null;
 	let minX = Infinity;
 	let minY = Infinity;
 	let maxX = -Infinity;
 	let maxY = -Infinity;
+	for (const rect of rects) {
+		if (rect.x < minX) minX = rect.x;
+		if (rect.y < minY) minY = rect.y;
+		if (rect.x + rect.w > maxX) maxX = rect.x + rect.w;
+		if (rect.y + rect.h > maxY) maxY = rect.y + rect.h;
+	}
+	return { minX, minY, maxX, maxY };
+}
+
+function rectsToPath(rects: Rect[]): string {
+	return rects.map((rect) => `M${rect.x} ${rect.y}h${rect.w}v${rect.h}h-${rect.w}z`).join("");
+}
+
+function updateRootSvg(input: string, viewBox: string): string {
+	return input.replace(/<svg\b([^>]*)>/, (_match, attrs: string) => {
+		let next = attrs;
+		if (/\bviewBox\s*=/.test(next)) {
+			next = next.replace(/\bviewBox\s*=\s*"[^"]*"/, `viewBox="${viewBox}"`);
+		} else {
+			next = ` viewBox="${viewBox}"${next}`;
+		}
+		next = next.replace(/\s+(width|height|fill)\s*=\s*"[^"]*"/g, "");
+		return `<svg${next}>`;
+	});
+}
+
+function replaceSvgChildren(svg: string, children: string): string {
+	return svg.replace(/(<svg\b[^>]*>)([\s\S]*?)(<\/svg>)/, `$1${children}$3`);
+}
+
+function processSvg(input: string): ProcessResult {
+	const whiteRects: Rect[] = [];
 	let kept = 0;
 	let dropped = 0;
 
-	// Replace-scan: remove black rects, accumulate bounds from white rects.
-	const stripped = input.replace(RECT_RE, (match, attrs: string) => {
-		const r = parseRect(attrs);
-		if (!r) return match;
-		if (isBlack(r.fill)) {
+	const nonBlackRectsRemoved = input.replace(RECT_RE, (match, attrs: string) => {
+		const rect = parseRect(attrs);
+		if (!rect) return match;
+		if (isBlack(rect.fill)) {
 			dropped++;
 			return "";
 		}
-		if (isWhite(r.fill)) {
+		if (isWhite(rect.fill)) {
 			kept++;
-			if (r.x < minX) minX = r.x;
-			if (r.y < minY) minY = r.y;
-			if (r.x + r.w > maxX) maxX = r.x + r.w;
-			if (r.y + r.h > maxY) maxY = r.y + r.h;
-			// Drop the fill attribute so callers can set it via CSS.
-			return match.replace(/\s+fill\s*=\s*"[^"]*"/, "");
+			whiteRects.push(rect);
+			return "";
 		}
-		// Non-black / non-white: leave alone, don't count toward bounds.
 		return match;
 	});
 
-	if (!Number.isFinite(minX)) {
-		return { svg: stripped, bounds: null, kept, dropped };
+	const mergedRects = mergeRects(whiteRects);
+	const bounds = getBounds(whiteRects);
+	if (!bounds) {
+		return { svg: nonBlackRectsRemoved, bounds: null, kept, dropped, merged: 0 };
 	}
 
-	const bounds = { minX, minY, maxX, maxY };
-	const w = maxX - minX;
-	const h = maxY - minY;
-	const newViewBox = `${minX} ${minY} ${w} ${h}`;
-
-	// Rewrite (or inject) viewBox on the root <svg>, and drop width/height
-	// and any fill so consumers control color via CSS (svg { fill: … }).
-	const cropped = stripped.replace(/<svg\b([^>]*)>/, (m, attrs: string) => {
-		let a: string = attrs;
-		if (/\bviewBox\s*=/.test(a)) {
-			a = a.replace(/\bviewBox\s*=\s*"[^"]*"/, `viewBox="${newViewBox}"`);
-		} else {
-			a = ` viewBox="${newViewBox}"` + a;
-		}
-		// Drop width/height so it scales freely, and drop any root fill.
-		a = a.replace(/\s+(width|height|fill)\s*=\s*"[^"]*"/g, "");
-		return `<svg${a}>`;
-	});
-
-	return { svg: cropped, bounds, kept, dropped };
+	const viewBox = `${bounds.minX} ${bounds.minY} ${bounds.maxX - bounds.minX} ${bounds.maxY - bounds.minY}`;
+	const path = `<path d="${rectsToPath(mergedRects)}"/>`;
+	const withRoot = updateRootSvg(nonBlackRectsRemoved, viewBox);
+	const svg = replaceSvgChildren(withRoot, path);
+	return { svg, bounds, kept, dropped, merged: mergedRects.length };
 }
 
 function fmtBytes(n: number): string {
@@ -124,17 +163,38 @@ function pad(s: string, n: number): string {
 	return s.length >= n ? s : s + " ".repeat(n - s.length);
 }
 
+async function findNearestPublicDir(fromDir: string): Promise<string | null> {
+	let current = resolve(fromDir);
+	while (true) {
+		const candidate = join(current, "public");
+		const found = await stat(candidate).catch(() => null);
+		if (found?.isDirectory()) return candidate;
+		const parent = dirname(current);
+		if (parent === current) return null;
+		current = parent;
+	}
+}
+
+async function resolveOutputDir(inputDir: string, outArg?: string): Promise<string> {
+	if (outArg) return resolve(outArg);
+	const publicDir = await findNearestPublicDir(inputDir);
+	if (!publicDir) {
+		throw new Error(`Could not find ancestor public/ directory for ${inputDir}`);
+	}
+	return publicDir;
+}
+
 async function main() {
 	const [, , inArg, outArg] = process.argv;
-	if (!inArg || !outArg) {
-		console.error("Usage: dither-svg <inputDir> <outputDir>");
+	if (!inArg) {
+		console.error("Usage: dither-svg <inputDir> [outputDir]");
 		process.exit(1);
 	}
 	const inputDir = resolve(inArg);
-	const outputDir = resolve(outArg);
+	const outputDir = await resolveOutputDir(inputDir, outArg);
 
-	const s = await stat(inputDir).catch(() => null);
-	if (!s?.isDirectory()) {
+	const inputStat = await stat(inputDir).catch(() => null);
+	if (!inputStat?.isDirectory()) {
 		console.error(`Input dir not found: ${inputDir}`);
 		process.exit(1);
 	}
@@ -151,6 +211,9 @@ async function main() {
 	let totalOut = 0;
 	const nameCol = Math.min(40, Math.max(...entries.map((e) => e.length)) + 2);
 
+	console.log(`input:  ${inputDir}`);
+	console.log(`output: ${outputDir}\n`);
+
 	for (const name of entries) {
 		const inPath = join(inputDir, name);
 		const outPath = join(outputDir, name);
@@ -159,23 +222,21 @@ async function main() {
 		const inBytes = Buffer.byteLength(raw);
 
 		process.stdout.write(`processing (${fmtBytes(inBytes)})... `);
-		const { svg, bounds, kept, dropped } = processSvg(raw);
+		const { svg, bounds, kept, dropped, merged } = processSvg(raw);
 		if (!bounds) {
-			console.warn(`skipped (no white artwork found)`);
+			console.warn("skipped (no white artwork found)");
 			continue;
 		}
 
-		process.stdout.write(`writing... `);
-		const finalSvg = svg;
-		const outBytes = Buffer.byteLength(finalSvg);
-		await writeFile(outPath, finalSvg);
-
+		process.stdout.write("writing... ");
+		const outBytes = Buffer.byteLength(svg);
+		await writeFile(outPath, svg);
 		totalIn += inBytes;
 		totalOut += outBytes;
 
 		const pct = ((1 - outBytes / inBytes) * 100).toFixed(1);
 		console.log(
-			`done  ${fmtBytes(inBytes)} → ${fmtBytes(outBytes)} (-${pct}%)  kept ${kept}, dropped ${dropped}`,
+			`done  ${fmtBytes(inBytes)} → ${fmtBytes(outBytes)} (-${pct}%)  kept ${kept}, merged ${merged}, dropped ${dropped}`,
 		);
 	}
 

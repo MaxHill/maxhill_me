@@ -8,11 +8,6 @@ import { UserSettingsService } from "../../user-settings/user-settings-service";
 import { get_DB } from "../../../db";
 import { renderSyncBanner } from "../../user-settings/sync-banner";
 
-import { unsafeSVG } from "lit-html/directives/unsafe-svg.js";
-import clubsSvg from "../../../dither/out/clubs.svg?raw";
-import ballSvg from "../../../dither/out//golfball-big.svg?raw";
-
-
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
 
@@ -102,9 +97,7 @@ export class MLandingPage extends MElement {
           <section class="actions" aria-label="Next actions">
             <a class="action-card box" href="/lag-putting">
               <div class="action-body">
-                <div class="art">
-                    ${unsafeSVG(ballSvg)}
-                </div>
+                <div class="art" data-art="golfball-big" aria-hidden="true"></div>
                 <p class="action-kicker">Practice game</p>
                 <h2>Lag Putting</h2>
                 <p>Start a round, score each putt, and track consistency over 18 holes.</p>
@@ -114,9 +107,7 @@ export class MLandingPage extends MElement {
 
             <a class="action-card box" href="/bag">
               <div class="action-body">
-                <div class="art">
-                    ${unsafeSVG(clubsSvg)}
-                </div>
+                <div class="art" data-art="clubs" aria-hidden="true"></div>
                 <p class="action-kicker">Equipment</p>
                 <h2>Manage bag</h2>
                 <p>Update clubs and shot types so your practice data stays useful.</p>

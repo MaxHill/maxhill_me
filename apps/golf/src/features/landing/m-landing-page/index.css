@@ -69,12 +69,24 @@
   gap: var(--size-2);
   .art {
       aspect-ratio: 16/9;
-      svg {
-          fill: var(--color-primary-text-colorful);
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-      }
+      pointer-events: none;
+      background-color: var(--color-primary-text-colorful);
+      -webkit-mask-position: center;
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-size: contain;
+      mask-position: center;
+      mask-repeat: no-repeat;
+      mask-size: contain;
+  }
+
+  .art[data-art="golfball-big"] {
+      -webkit-mask-image: url("/golfball-big.svg");
+      mask-image: url("/golfball-big.svg");
+  }
+
+  .art[data-art="clubs"] {
+      -webkit-mask-image: url("/clubs.svg");
+      mask-image: url("/clubs.svg");
   }
 }
 
