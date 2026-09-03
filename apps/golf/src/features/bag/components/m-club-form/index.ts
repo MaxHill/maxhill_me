@@ -148,6 +148,9 @@ export class MClubForm extends MElement {
       this.dispatchEvent(new ClubSavedEvent({ key, club, mode, trigger }));
 
       if (mode === "add") {
+        // The controls are form-associated custom elements, so reset them
+        // through the form rather than relying on rerendering attributes.
+        form.reset();
         this.currentClub = null;
         this.renderComponent();
         (this.shadowRoot?.querySelector("m-input[name='name']") as HTMLElement)?.focus();
