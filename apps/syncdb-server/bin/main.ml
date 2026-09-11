@@ -45,5 +45,7 @@ let () =
 
   Sync.Repository.init_schema_with_pool db_pool
   |> fail_on_repository_error "init_schema";
-  let context = Sync.Server.{ db_pool; auth } in
+  let event_hub = Sync.Event_hub.init () in
+  let clock = Eio.Stdenv.clock env in
+  let context = Sync.Server.{ db_pool; auth; event_hub; clock } in
   Sync.Server.start env ~sw ~port:config.port ~context

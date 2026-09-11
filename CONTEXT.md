@@ -59,3 +59,28 @@ For service apps, decrypt config and restart the unit.
 `systemctl restart <app>.service` per registered service app, plus
 `systemctl reload caddy`. No wrapper, no `ALL`, no wildcards. Lives
 in `vps/sudoers.deploy` (hand-written), installed by bootstrap.
+
+### Sync
+
+**Tenant**: Partition of one user's data for one named database.
+Identified by `userId` + `dbName`. The server op log and live
+subscriptions are both scoped to a tenant.
+_Avoid_: account, database (alone), user (alone).
+
+**Upstream change**: A wake-up that a tenant's server op log has
+advanced. It does not carry operations. The client still pulls ops
+with sync.
+_Avoid_: push notification, sync event, live update (ambiguous).
+
+**Client id**: Stable id of one local replica (one browser profile,
+device, or simulator instance). Distinct replicas of the same tenant
+must not share a client id.
+_Avoid_: device id, session id, user id.
+
+**Local change**: A data change that originated from a write on this
+replica (`setRow` / `setField` / `deleteRow`).
+_Avoid_: local event, write event.
+
+**Remote change**: A data change applied from operations returned by
+sync (other replicas).
+_Avoid_: remote event, pull event.

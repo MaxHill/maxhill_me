@@ -122,8 +122,10 @@ export class AuthClient {
   /**
    * Returns a valid access token and refreshes if needed.
    * Returns null if the user is not authenticated.
+   *
+   * @param forceRefresh - Always hit the refresh endpoint (e.g. after HTTP 401).
    */
-  async getToken(): Promise<string | null> {
+  async getToken(options?: { forceRefresh?: boolean }): Promise<string | null> {
     const access = await this.dbGet<string>("access_token");
     if (!access) {
       return null;
@@ -131,8 +133,9 @@ export class AuthClient {
 
     const expiresAt = await this.dbGet<number>("expires_at");
     const isNearExpiry = !expiresAt || Date.now() > expiresAt - 30_000;
+    const shouldRefresh = options?.forceRefresh === true || isNearExpiry;
 
-    if (!isNearExpiry) {
+    if (!shouldRefresh) {
       return access;
     }
 

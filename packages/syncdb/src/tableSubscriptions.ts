@@ -1,57 +1,134 @@
+export type ChangeSource = "local" | "remote";
+
+/** Filter for subscribe: include local writes, remote applies, or both. */
+export type SourceFilter = "all" | ChangeSource;
+
 export interface TableChangeEvent {
-    table: string;
+  table: string;
+  source: ChangeSource;
 }
+
 export type SubscriptionCallbackHandler = (event: TableChangeEvent) => void;
+
+type Subscription = {
+  handler: SubscriptionCallbackHandler;
+  source: SourceFilter;
+};
+
+function sourceMatches(filter: SourceFilter, source: ChangeSource): boolean {
+  return filter === "all" || filter === source;
+}
+
+function eventKey(event: TableChangeEvent): string {
+  return `${event.table}:${event.source}`;
+}
+
 export class TableSubscriptions {
-    subscriptions: Map<string, SubscriptionCallbackHandler[]> = new Map();
+  /** @internal table name → subscriptions */
+  subscriptions: Map<string, Subscription[]> = new Map();
 
-    private pendingNotifications = new Set<string>();
-    private notificationScheduled = false;
+  private databaseSubscriptions: Subscription[] = [];
 
-    subscribe(table: string, handler: SubscriptionCallbackHandler) {
-        let handlers = this.subscriptions.get(table);
-        if (!handlers) {
-            handlers = [];
-            this.subscriptions.set(table, handlers);
-        }
+  /** Deduped pending events for the next microtask flush. */
+  private pendingNotifications = new Map<string, TableChangeEvent>();
+  private notificationScheduled = false;
 
-        if (handlers.includes(handler)) {
-            console.warn(`Handler already subscribed to table "${table}"`);
-        } else {
-            handlers.push(handler);
-        }
-
-        return () => {
-            const idx = handlers!.indexOf(handler);
-            if (idx !== -1) handlers!.splice(idx, 1);
-            if (handlers!.length === 0) this.subscriptions.delete(table);
-        };
+  subscribe(
+    table: string,
+    handler: SubscriptionCallbackHandler,
+    source: SourceFilter = "all",
+  ): () => void {
+    let handlers = this.subscriptions.get(table);
+    if (!handlers) {
+      handlers = [];
+      this.subscriptions.set(table, handlers);
     }
 
-    notify(table: string) {
-        this.pendingNotifications.add(table);
-        if (!this.notificationScheduled) {
-            this.notificationScheduled = true;
-            queueMicrotask(() => this.flushNotifications());
-        }
+    if (handlers.some((entry) => entry.handler === handler)) {
+      console.warn(`Handler already subscribed to table "${table}"`);
+    } else {
+      handlers.push({ handler, source });
     }
 
-    private flushNotifications() {
-        this.notificationScheduled = false;
+    return () => {
+      const list = this.subscriptions.get(table);
+      if (!list) {
+        return;
+      }
+      const index = list.findIndex((entry) => entry.handler === handler);
+      if (index !== -1) {
+        list.splice(index, 1);
+      }
+      if (list.length === 0) {
+        this.subscriptions.delete(table);
+      }
+    };
+  }
 
-        for (const table of this.pendingNotifications) {
-            const handlers = this.subscriptions.get(table);
-            if (handlers) {
-                for (const handler of handlers) {
-                    try {
-                        handler({ table });
-                    } catch (e) {
-                        console.error(e);
-                    }
-                }
-            }
-        }
-
-        this.pendingNotifications.clear();
+  /**
+   * Database-wide subscribe. Fires for every table notification whose source
+   * matches the filter (default `"all"`).
+   */
+  subscribeDatabase(
+    handler: SubscriptionCallbackHandler,
+    source: SourceFilter = "all",
+  ): () => void {
+    if (this.databaseSubscriptions.some((entry) => entry.handler === handler)) {
+      console.warn("Handler already subscribed at database level");
+    } else {
+      this.databaseSubscriptions.push({ handler, source });
     }
+
+    return () => {
+      const index = this.databaseSubscriptions.findIndex(
+        (entry) => entry.handler === handler,
+      );
+      if (index !== -1) {
+        this.databaseSubscriptions.splice(index, 1);
+      }
+    };
+  }
+
+  notify(table: string, source: ChangeSource): void {
+    const event: TableChangeEvent = { table, source };
+    this.pendingNotifications.set(eventKey(event), event);
+    if (!this.notificationScheduled) {
+      this.notificationScheduled = true;
+      queueMicrotask(() => this.flushNotifications());
+    }
+  }
+
+  private flushNotifications(): void {
+    this.notificationScheduled = false;
+
+    const events = [...this.pendingNotifications.values()];
+    this.pendingNotifications.clear();
+
+    for (const event of events) {
+      const tableHandlers = this.subscriptions.get(event.table);
+      if (tableHandlers) {
+        for (const entry of [...tableHandlers]) {
+          if (!sourceMatches(entry.source, event.source)) {
+            continue;
+          }
+          try {
+            entry.handler(event);
+          } catch (error) {
+            console.error(error);
+          }
+        }
+      }
+
+      for (const entry of [...this.databaseSubscriptions]) {
+        if (!sourceMatches(entry.source, event.source)) {
+          continue;
+        }
+        try {
+          entry.handler(event);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    }
+  }
 }

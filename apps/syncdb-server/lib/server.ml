@@ -1,6 +1,17 @@
 type response = { status : Httpun.Status.t; body : string }
 type response_format = [ `Text | `Json ]
-type context = { db_pool : Repository.pool; auth : Auth.t }
+
+type context = {
+  db_pool : Repository.pool;
+  auth : Auth.t;
+  event_hub : Event_hub.t;
+  clock : float Eio.Time.clock_ty Eio.Std.r;
+}
+
+(* Comment frames while blocked on hub await. 15s is enough for typical proxy
+   idle limits; same-clientId replace already clears HMR/reconnect zombies. *)
+let sse_keepalive_seconds = 15.0
+let sse_keepalive_frame = ": keepalive\n\n"
 
 let ( let* ) = Result.bind
 
@@ -28,6 +39,9 @@ let cors_headers =
     ("access-control-allow-methods", "GET,POST,OPTIONS");
     ("access-control-allow-headers", "authorization,content-type");
   ]
+
+let json_error_body message =
+  Yojson.Safe.to_string (`Assoc [ ("error", `String message) ])
 
 let respond_with_content_type reqd ~content_type ({ status; body } : response) =
   let headers =
@@ -65,6 +79,107 @@ let read_request_body reqd on_body =
   in
   loop ()
 
+let subscribe_db_name path =
+  match String.split_on_char '/' path with
+  | [ ""; "subscribe"; db_name ] when db_name <> "" -> Some db_name
+  | _ -> None
+
+let encode_sse_event = function
+  | Event_hub.Upstream_change -> "event: upstreamChange\ndata: {}\n\n"
+
+let write_sse_frame body_writer frame =
+  let flushed, resolve = Eio.Promise.create () in
+  Httpun.Body.Writer.write_string body_writer frame;
+  Httpun.Body.Writer.flush body_writer (function
+    | `Written -> Eio.Promise.resolve resolve `Written
+    | `Closed -> Eio.Promise.resolve resolve `Closed);
+  Eio.Promise.await flushed
+
+let handle_subscribe (context : context) reqd request uri db_name =
+  let authorization = Httpun.Headers.get request.Httpun.Request.headers "authorization" in
+  match Auth.validate_bearer context.auth authorization with
+  | Error err ->
+      let msg = Auth.error_to_string err in
+      Log.err (fun m -> m "subscribe auth error: %s" msg);
+      respond_json reqd
+        { status = `Unauthorized; body = json_error_body msg }
+  | Ok user -> (
+      match Db_name.validate db_name with
+      | Error msg ->
+          respond_json reqd { status = `Bad_request; body = json_error_body msg }
+      | Ok db_name -> (
+          match Uri.get_query_param uri "clientId" with
+          | None | Some "" ->
+              respond_json reqd
+                {
+                  status = `Bad_request;
+                  body = json_error_body "missing clientId query parameter";
+                }
+          | Some client_id -> (
+              match
+                Event_hub.subscribe context.event_hub ~user_id:user.id ~db_name
+                  ~client_id
+              with
+              | Error `At_capacity ->
+                  Log.warn (fun m ->
+                      m
+                        "subscribe at capacity user_id=%s db_name=%s client_id=%s"
+                        user.id db_name client_id);
+                  respond_json reqd
+                    {
+                      status = `Too_many_requests;
+                      body = json_error_body "too many subscribers";
+                    }
+              | Ok sub ->
+                  let headers =
+                    Httpun.Headers.of_list
+                      (cors_headers
+                      @ [
+                          ("content-type", "text/event-stream; charset=utf-8");
+                          ("cache-control", "no-cache");
+                          ("connection", "keep-alive");
+                        ])
+                  in
+                  let response = Httpun.Response.create ~headers `OK in
+                  let body_writer =
+                    Httpun.Reqd.respond_with_streaming
+                      ~flush_headers_immediately:true reqd response
+                  in
+                  let close_stream () =
+                    Event_hub.unsubscribe context.event_hub sub;
+                    Httpun.Body.Writer.close body_writer
+                  in
+                  let rec loop () =
+                    match
+                      Eio.Fiber.first
+                        (fun () -> `Hub (Event_hub.await sub))
+                        (fun () ->
+                          Eio.Time.sleep context.clock sse_keepalive_seconds;
+                          `Keepalive)
+                    with
+                    | `Hub None -> close_stream ()
+                    | `Hub (Some event) -> (
+                        match
+                          write_sse_frame body_writer (encode_sse_event event)
+                        with
+                        | `Written -> loop ()
+                        | `Closed -> close_stream ())
+                    | `Keepalive -> (
+                        match write_sse_frame body_writer sse_keepalive_frame with
+                        | `Written -> loop ()
+                        | `Closed -> close_stream ())
+                  in
+                  match
+                    try Ok (loop ()) with
+                    | exn ->
+                        Event_hub.unsubscribe context.event_hub sub;
+                        Error exn
+                  with
+                  | Ok () -> ()
+                  | Error exn ->
+                      Httpun.Body.Writer.close body_writer;
+                      raise exn)))
+
 let request_handler (context : context) _client_addr reqd =
   let reqd = reqd.Gluten.Reqd.reqd in
   let request = Httpun.Reqd.request reqd in
@@ -76,6 +191,8 @@ let request_handler (context : context) _client_addr reqd =
   match (meth, path) with
   | `OPTIONS, "/sync" ->
       respond_text reqd { status = `No_content; body = "" }
+  | `OPTIONS, path when Option.is_some (subscribe_db_name path) ->
+      respond_text reqd { status = `No_content; body = "" }
   | `POST, "/sync" -> (
       let authorization = Httpun.Headers.get request.headers "authorization" in
       match Auth.validate_bearer context.auth authorization with
@@ -86,21 +203,24 @@ let request_handler (context : context) _client_addr reqd =
       | Ok user ->
           read_request_body reqd (fun body ->
               let result =
-                let* request =
+                let* sync_request =
                   Sync_engine.decode_sync_request body
                   |> Result.map_error (fun msg -> `Decode msg)
                 in
-                let tenant_key = request.db_name ^ ":" ^ user.id in
+                let tenant_key = sync_request.db_name ^ ":" ^ user.id in
                 let* response_or_error =
                   Caqti_eio.Pool.use
                     (fun conn ->
                       Ok
                         (Sync_engine.process_sync_request_with_connection conn
-                           ~db_name:tenant_key request))
+                           ~db_name:tenant_key sync_request))
                     context.db_pool
                   |> Result.map_error (fun err -> `Db err)
                 in
-                response_or_error |> Result.map_error (fun err -> `Sync err)
+                let* response =
+                  response_or_error |> Result.map_error (fun err -> `Sync err)
+                in
+                Ok (sync_request, response)
               in
               match result with
               | Error (`Decode msg) ->
@@ -118,12 +238,21 @@ let request_handler (context : context) _client_addr reqd =
                   Log.err (fun m -> m "sync process error: %s" msg);
                   respond_text reqd
                     { status = status_of_sync_error err; body = msg }
-              | Ok response ->
+              | Ok (sync_request, response) ->
+                  if sync_request.operations <> [] then
+                    Event_hub.publish context.event_hub ~user_id:user.id
+                      ~db_name:sync_request.db_name
+                      ~exclude_client_id:sync_request.client_id
+                      Event_hub.Upstream_change;
                   respond_json reqd
                     {
                       status = `OK;
                       body = Sync_engine.encode_sync_response response;
                     }))
+  | `GET, path -> (
+      match subscribe_db_name path with
+      | Some db_name -> handle_subscribe context reqd request uri db_name
+      | None -> respond_by_format reqd (route ~meth ~target:path))
   | _ -> respond_by_format reqd (route ~meth ~target:path)
 
 let error_handler _client_addr ?request:_ error handle =

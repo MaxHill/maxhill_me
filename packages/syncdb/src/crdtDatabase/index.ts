@@ -14,7 +14,11 @@ import { SyncErrorCode } from "../sync/errors.ts";
 import { promisifyIDBRequest } from "../utils.ts";
 import { Table } from "../table.ts";
 import { DatabaseSchema, EmptySchema } from "../types.ts";
-import { TableSubscriptions } from "../tableSubscriptions.ts";
+import {
+  type SourceFilter,
+  type SubscriptionCallbackHandler,
+  TableSubscriptions,
+} from "../tableSubscriptions.ts";
 import { assertValidDbName } from "../dbName.ts";
 
 export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
@@ -69,6 +73,17 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
       await this.clientState.saveClientId(tx, this.clientId);
     }
     await this.lifecycle.commit(tx);
+  }
+
+  /**
+   * Subscribe to data changes across all tables.
+   * Second argument filters origin: `"all"` (default), `"local"`, or `"remote"`.
+   */
+  subscribe(
+    handler: SubscriptionCallbackHandler,
+    source: SourceFilter = "all",
+  ): () => void {
+    return this.tableSubscriptions.subscribeDatabase(handler, source);
   }
 
   table<TTableName extends keyof TSchema & string>(
@@ -143,7 +158,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
         response.operations.map((operation) => operation.table),
       );
       for (const table of changedTables) {
-        this.tableSubscriptions.notify(table);
+        this.tableSubscriptions.notify(table, "remote");
       }
     } catch (error: any) {
       // Check if this is a "client state out of sync" error using the error name

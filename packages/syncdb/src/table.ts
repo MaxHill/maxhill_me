@@ -10,7 +10,11 @@ import { OperationLog } from "./indexeddb/operationLog.ts";
 import { Index, QueryCondition } from "./indexes.ts";
 import { asc, Direction, resolveQueryArgs } from "./direction.ts";
 import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
-import { SubscriptionCallbackHandler, TableSubscriptions } from "./tableSubscriptions.ts";
+import {
+    type SourceFilter,
+    SubscriptionCallbackHandler,
+    TableSubscriptions,
+} from "./tableSubscriptions.ts";
 
 export class Table<TIndexes extends Record<string, string[]> = Record<string, string[]>> {
     private tableName: string;
@@ -42,8 +46,11 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
         this.tableSubscriptions = tableSubscriptions;
     }
 
-    subscribe(handler: SubscriptionCallbackHandler): () => void {
-        return this.tableSubscriptions.subscribe(this.tableName, handler);
+    subscribe(
+        handler: SubscriptionCallbackHandler,
+        source: SourceFilter = "all",
+    ): () => void {
+        return this.tableSubscriptions.subscribe(this.tableName, handler, source);
     }
 
     async setRow(rowKey: ValidKey, value: any): Promise<void> {
@@ -82,7 +89,7 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
             this.operationLog.saveOperation(tx, op),
         ]);
         await this.lifecycle.commit(tx);
-        this.tableSubscriptions.notify(this.tableName);
+        this.tableSubscriptions.notify(this.tableName, "local");
     }
 
     async setField(rowKey: ValidKey, field: any, value: any): Promise<void> {
@@ -113,7 +120,7 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
             this.operationLog.saveOperation(tx, op),
         ]);
         await this.lifecycle.commit(tx);
-        this.tableSubscriptions.notify(this.tableName);
+        this.tableSubscriptions.notify(this.tableName, "local");
     }
 
     async deleteRow(rowKey: ValidKey) {
@@ -143,7 +150,7 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
             this.operationLog.saveOperation(tx, op),
         ]);
         await this.lifecycle.commit(tx);
-        this.tableSubscriptions.notify(this.tableName);
+        this.tableSubscriptions.notify(this.tableName, "local");
     }
 
     //  ------------------------------------------------------------------------

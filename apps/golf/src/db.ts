@@ -2,9 +2,19 @@ import { CRDTDatabase, newDatabase } from "@maxhill/syncdb";
 import { authClient } from "./features/auth/auth-client";
 import { UserSettingsService } from "./features/user-settings/user-settings-service";
 import { reconcileDatabaseOwnership } from "./db-ownership";
+import {
+  createRequestSync,
+  onLocalWrite,
+  onSchedule,
+  onUpstreamChange,
+  type StopHandle,
+} from "./sync-strategies";
 
 const SYNC_URL = import.meta.env.VITE_SYNC_URL || "http://localhost:3001/sync";
-const SYNC_INTERVAL_MS = 10_000;
+/** Safety-net pull when SSE is quiet. */
+const SYNC_INTERVAL_MS = 120_000;
+/** Trailing debounce after local writes before pushing. */
+const LOCAL_SYNC_DEBOUNCE_MS = 1_000;
 
 export type DBInterface = CRDTDatabase<{
   shot_types: {};
@@ -12,6 +22,11 @@ export type DBInterface = CRDTDatabase<{
   shot_log: {};
   lag_putting_games: { byCreatedAt: string[] };
   user_settings: {};
+  golf_rounds: { byStartedAt: string[] };
+  golf_round_holes: {
+    byRoundId: string[];
+    byRoundAndHole: string[];
+  };
 }>;
 
 const DB_NAME = "golf";
@@ -21,7 +36,8 @@ declare global {
   interface Window {
     __appDB?: DBInterface;
     __appDBPromise?: Promise<DBInterface>;
-    __appDBSyncIntervalId?: number;
+    __appDBSyncStops?: StopHandle[];
+    __appDBSyncReset?: () => void;
   }
 }
 
@@ -30,8 +46,12 @@ let authResetHookRegistered = false;
 export async function get_DB(): Promise<DBInterface> {
   resetDbSingletonOnAuthChange();
 
-  if (window.__appDB) return window.__appDB;
-  if (window.__appDBPromise) return window.__appDBPromise;
+  if (window.__appDB) {
+    return window.__appDB;
+  }
+  if (window.__appDBPromise) {
+    return window.__appDBPromise;
+  }
 
   window.__appDBPromise = buildAndOpenDatabase().then((db) => withOwnershipEnforcement(db));
   const currentPromise = window.__appDBPromise;
@@ -49,17 +69,7 @@ export async function get_DB(): Promise<DBInterface> {
     }
 
     window.__appDB = db;
-
-    // Start auto-sync interval (only syncs when authenticated)
-    window.__appDBSyncIntervalId = window.setInterval(async () => {
-      const token = await authClient.getToken();
-      if (!token) return;
-      try {
-        await db.sync();
-      } catch (error) {
-        console.warn("Periodic sync failed", error);
-      }
-    }, SYNC_INTERVAL_MS);
+    startSyncStrategies(db);
 
     return db;
   } catch (error) {
@@ -79,8 +89,8 @@ async function withOwnershipEnforcement(db: DBInterface): Promise<DBInterface> {
     currentUserID,
     storedOwnerUserID,
     claimOwnerUserID: async (candidateDb, userID) => {
-      const settings = new UserSettingsService(candidateDb);
-      await settings.setDatabaseOwnerUserID(userID);
+      const ownerSettings = new UserSettingsService(candidateDb);
+      await ownerSettings.setDatabaseOwnerUserID(userID);
     },
     resetForNewOwner: async (candidateDb, userID) => {
       await candidateDb.close();
@@ -103,15 +113,24 @@ function buildAndOpenDatabase(): Promise<DBInterface> {
     .addTable("shot_log", {})
     .addTable("lag_putting_games", { byCreatedAt: ["createdAt"] })
     .addTable("user_settings", {})
+    .addTable("golf_rounds", { byStartedAt: ["startedAt"] })
+    .addTable("golf_round_holes", {
+      byRoundId: ["roundId"],
+      byRoundAndHole: ["roundId", "holeNumber"],
+    })
     .withSyncRemote(SYNC_URL)
     .withSyncHeaders(async () => {
       const token = await authClient.getToken();
-      if (!token) return {};
+      if (!token) {
+        return {};
+      }
       return { Authorization: `Bearer ${token}` };
     })
     .withOnUnauthorized(async () => {
       const token = await authClient.getToken();
-      if (token) return true;
+      if (token) {
+        return true;
+      }
       authClient.logout();
       return false;
     })
@@ -140,21 +159,73 @@ async function deleteLocalDatabase(name: string): Promise<void> {
 }
 
 function resetDbSingletonOnAuthChange(): void {
-  if (authResetHookRegistered) return;
+  if (authResetHookRegistered) {
+    return;
+  }
   authResetHookRegistered = true;
 
-  authClient.onAuthChange(() => {
-    void resetDBSingleton().catch((error) => {
-      console.warn("Failed to reset DB singleton after auth change", error);
-    });
+  authClient.onAuthChange((authenticated) => {
+    void (async () => {
+      try {
+        await resetDBSingleton();
+        // Login used to only tear down strategies and never reopen — no sync
+        // until a full navigation. Re-open when authenticated so triggers restart.
+        if (authenticated) {
+          await get_DB();
+        }
+      } catch (error) {
+        console.warn("Failed to reset DB singleton after auth change", error);
+      }
+    })();
   });
 }
 
-async function resetDBSingleton(): Promise<void> {
-  if (window.__appDBSyncIntervalId !== undefined) {
-    clearInterval(window.__appDBSyncIntervalId);
-    delete window.__appDBSyncIntervalId;
+function startSyncStrategies(db: DBInterface): void {
+  stopSyncStrategies();
+
+  const { requestSync, reset } = createRequestSync({
+    db,
+    getToken: () => authClient.getToken(),
+  });
+  window.__appDBSyncReset = reset;
+
+  window.__appDBSyncStops = [
+    onSchedule({ requestSync, intervalMs: SYNC_INTERVAL_MS }),
+    onLocalWrite({ db, requestSync, debounceMs: LOCAL_SYNC_DEBOUNCE_MS }),
+    onUpstreamChange({
+      db,
+      requestSync,
+      syncUrl: SYNC_URL,
+      dbName: DB_NAME,
+      getToken: () => authClient.getToken(),
+      onUnauthorized: async () => {
+        // Match POST /sync: try a forced refresh once, else log out.
+        const token = await authClient.getToken({ forceRefresh: true });
+        if (token) {
+          return true;
+        }
+        await authClient.logout();
+        return false;
+      },
+    }),
+  ];
+}
+
+function stopSyncStrategies(): void {
+  if (window.__appDBSyncStops) {
+    for (const handle of window.__appDBSyncStops) {
+      handle.stop();
+    }
+    delete window.__appDBSyncStops;
   }
+  if (window.__appDBSyncReset) {
+    window.__appDBSyncReset();
+    delete window.__appDBSyncReset;
+  }
+}
+
+async function resetDBSingleton(): Promise<void> {
+  stopSyncStrategies();
 
   if (window.__appDB) {
     await window.__appDB.close().catch((error) => {

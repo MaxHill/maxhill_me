@@ -96,13 +96,19 @@ async function resetDBSingletonForTests(): Promise<void> {
     await db.close();
   }
 
-  if (window.__appDBSyncIntervalId !== undefined) {
-    clearInterval(window.__appDBSyncIntervalId);
+  if (window.__appDBSyncStops) {
+    for (const handle of window.__appDBSyncStops) {
+      handle.stop();
+    }
+  }
+  if (window.__appDBSyncReset) {
+    window.__appDBSyncReset();
   }
 
   delete window.__appDB;
   delete window.__appDBPromise;
-  delete window.__appDBSyncIntervalId;
+  delete window.__appDBSyncStops;
+  delete window.__appDBSyncReset;
 }
 
 async function deleteDatabase(name: string): Promise<void> {

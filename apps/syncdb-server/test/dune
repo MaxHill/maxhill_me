@@ -1,6 +1,6 @@
 (tests
- (names server_test config_test repository_test sync_engine_test sync_engine_integration_test auth_test)
- (modules server_test config_test repository_test sync_engine_test sync_engine_integration_test auth_test)
+ (names server_test config_test repository_test sync_engine_test sync_engine_integration_test auth_test event_hub_test)
+ (modules server_test config_test repository_test sync_engine_test sync_engine_integration_test auth_test event_hub_test)
  (libraries sync httpun logs eio_main caqti caqti-eio.unix caqti-driver-sqlite3 uri unix yojson jose ptime.clock))
 
 (test

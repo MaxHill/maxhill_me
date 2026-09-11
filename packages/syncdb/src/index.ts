@@ -7,7 +7,12 @@ export type { IndexDefinition } from "./indexes.ts";
 export type { DatabaseSchema, EmptySchema } from "./types.ts";
 export { isSyncError, type SyncError, SyncErrorCode } from "./sync/errors.ts";
 export type { SyncHeadersProvider } from "./sync/index.ts";
-export type { SubscriptionCallbackHandler, TableChangeEvent } from "./tableSubscriptions.ts";
+export type {
+  ChangeSource,
+  SourceFilter,
+  SubscriptionCallbackHandler,
+  TableChangeEvent,
+} from "./tableSubscriptions.ts";
 
 // Below this line is only exported for the simulator
 export { Lifecycle } from "./indexeddb/lifecycle.ts";

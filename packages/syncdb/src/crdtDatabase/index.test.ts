@@ -178,7 +178,30 @@ describe("CRDTDatabase", () => {
       await Promise.resolve();
 
       expect(handler).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledWith({ table: "users" });
+      expect(handler).toHaveBeenCalledWith({ table: "users", source: "local" });
+    });
+
+    it("should notify database subscribers with source local on write", async () => {
+      const handler = vi.fn();
+      db.subscribe(handler);
+
+      await db.table("users").setRow("u1", { name: "Alice", age: 25 });
+      await Promise.resolve();
+
+      expect(handler).toHaveBeenCalledWith({ table: "users", source: "local" });
+    });
+
+    it("should filter database subscribers by source", async () => {
+      const localOnly = vi.fn();
+      const remoteOnly = vi.fn();
+      db.subscribe(localOnly, "local");
+      db.subscribe(remoteOnly, "remote");
+
+      await db.table("users").setRow("u1", { name: "Alice", age: 25 });
+      await Promise.resolve();
+
+      expect(localOnly).toHaveBeenCalledTimes(1);
+      expect(remoteOnly).toHaveBeenCalledTimes(0);
     });
 
     it("should notify subscribers when setField is called", async () => {

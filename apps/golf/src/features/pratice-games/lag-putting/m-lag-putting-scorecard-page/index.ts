@@ -41,12 +41,10 @@ export class MLagPuttingScorecardPage extends MElement {
     const db = await get_DB();
     this.lagPuttingGameService = new LagPuttingGameService(db);
 
-    const row = await this.lagPuttingGameService.table.get(this.gameKey);
-    this.currentGame = row ? (row as LagPuttingGame) : null;
+    await this.reloadGame();
 
     this.unsubscribe = this.lagPuttingGameService.subscribe(() => {
-      this.render();
-      this.setupScrollObserver();
+      void this.handleGameChanged();
     });
 
     this.render();
@@ -58,12 +56,39 @@ export class MLagPuttingScorecardPage extends MElement {
     this.scrollObserver?.disconnect();
   }
 
+  /** Reload from IDB so local writes and remote sync both refresh the HUD. */
+  private async reloadGame(): Promise<void> {
+    if (!this.gameKey) {
+      this.currentGame = null;
+      return;
+    }
+    this.currentGame = await this.lagPuttingGameService.getGame(this.gameKey);
+  }
+
+  private handleGameChanged = async (): Promise<void> => {
+    await this.reloadGame();
+    if (!this.isConnected) {
+      return;
+    }
+    // lit-html diffs the HUD/options. Do not rebuild the scroll observer:
+    // the 18 putt cards keep the same nodes for the life of this page.
+    this.render();
+  };
+
+  /**
+   * Bind once after the first render. Score updates do not replace putt cards,
+   * so rebinding on every change is wasted work.
+   */
   private setupScrollObserver() {
-    this.scrollObserver?.disconnect();
+    if (this.scrollObserver) {
+      return;
+    }
 
     const container = this.puttsContainerRef.value;
     const nav = this.navStripRef.value;
-    if (!container || !nav) return;
+    if (!container || !nav) {
+      return;
+    }
 
     this.scrollObserver = new IntersectionObserver(
       (entries) => {
@@ -71,7 +96,9 @@ export class MLagPuttingScorecardPage extends MElement {
           .filter((e) => e.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
 
-        if (visible.length === 0) return;
+        if (visible.length === 0) {
+          return;
+        }
 
         const mostVisible = visible[0].target as HTMLElement;
         const puttId = mostVisible.id; // "putt-1", "putt-2", etc.
@@ -82,7 +109,11 @@ export class MLagPuttingScorecardPage extends MElement {
         const matchingLink = nav.querySelector(`a[href="#${puttId}"]`);
         if (matchingLink) {
           matchingLink.setAttribute("data-active", "");
-          matchingLink.scrollIntoView({ behavior: "instant", block: "nearest", inline: "nearest" });
+          matchingLink.scrollIntoView({
+            behavior: "instant",
+            block: "nearest",
+            inline: "nearest",
+          });
         }
       },
       {
@@ -191,11 +222,14 @@ export class MLagPuttingScorecardPage extends MElement {
     }
 
     this.currentGame.putts[puttIndex].result = result;
+    this.render();
 
     try {
       await this.lagPuttingGameService.recordPuttResult(this.currentGame._key, puttIndex, result);
     } catch (error) {
       console.error("Failed to save putt result:", error);
+      // Re-load authoritative state if the write failed.
+      await this.handleGameChanged();
     }
   };
 
