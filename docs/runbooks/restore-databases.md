@@ -83,8 +83,15 @@ sudo litestream restore -config /etc/litestream.yml "$DB"
 # Point-in-time example:
 # sudo litestream restore -config /etc/litestream.yml -timestamp 2026-08-05T16:20:00Z "$DB"
 
-sudo chown --reference "${DB}.bak.${TS}" "$DB" || true
-sudo chmod 640 "$DB" || true
+# DynamicUser=syncdb-server owns StateDirectory under /var/lib/private/.
+# Restore runs as root and leaves root:root files. That causes
+# "attempt to write a readonly database" until ownership is fixed.
+REAL_DIR=/var/lib/private/syncdb-server
+sudo chown -R syncdb-server:syncdb-server "$REAL_DIR"
+sudo chmod 750 "$REAL_DIR"
+sudo chmod 660 "$REAL_DIR"/syncdb-server.db \
+  "$REAL_DIR"/syncdb-server.db-wal \
+  "$REAL_DIR"/syncdb-server.db-shm 2>/dev/null || true
 EOF
 ```
 
@@ -106,8 +113,12 @@ sudo litestream restore -config /etc/litestream.yml "$DB"
 # Point-in-time example:
 # sudo litestream restore -config /etc/litestream.yml -timestamp 2026-08-05T16:20:00Z "$DB"
 
-sudo chown --reference "${DB}.bak.${TS}" "$DB" || true
-sudo chmod 640 "$DB" || true
+REAL_DIR=/var/lib/private/auth
+sudo chown -R auth:auth "$REAL_DIR"
+sudo chmod 750 "$REAL_DIR"
+sudo chmod 660 "$REAL_DIR"/auth.db \
+  "$REAL_DIR"/auth.db-wal \
+  "$REAL_DIR"/auth.db-shm 2>/dev/null || true
 EOF
 ```
 
