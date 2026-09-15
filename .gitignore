@@ -39,6 +39,7 @@ vps/**/*.dev.env
 
 # Build artifacts and caches
 **/.zig-cache/
+**/zig-out/
 **/build/tmp/
 **/*.test
 !**/*.test.ts
