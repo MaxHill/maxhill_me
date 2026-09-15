@@ -469,7 +469,7 @@ export class Sync {
     return this.sha256Array(parts);
   }
 
-  async validateResponseHash(response: SyncResponse): Promise<void> {
+  async validateResponseHash(response: SyncResponse): Promise<boolean> {
     const localHash = await this.createResponseHash(response);
     if (localHash !== response.responseHash) {
       const debugInfo = {
@@ -480,9 +480,10 @@ export class Sync {
         operationCount: response.operations.length,
         syncedOperationCount: response.syncedOperations.length,
       };
-      console.error("Sync response failed integrity check", debugInfo);
-      throw new Error(`Sync response failed integrity check: ${JSON.stringify(debugInfo)}`);
+      console.warn("Dropping sync response with invalid integrity hash", debugInfo);
+      return false;
     }
+    return true;
   }
 
   /**

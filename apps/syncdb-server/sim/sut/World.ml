@@ -39,6 +39,8 @@ let init ~sw ~env (frng : FRNG.t) (db_conn : connection) :
     }
 
 let step ~client world : (unit, FRNG.frng_error) result =
+  let* () = Request_broker.tick ~world in
+
   (* Send a request to the sync engine *)
 
   (* Take actions on clients.

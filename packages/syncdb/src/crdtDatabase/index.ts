@@ -144,7 +144,11 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
         response = await this.syncManager.sendSyncRequest(this.syncRemote, syncRequest);
       }
 
-      await this.syncManager.validateResponseHash(response);
+      const responseIsValid = await this.syncManager.validateResponseHash(response);
+      if (!responseIsValid) {
+        console.warn("Dropping invalid sync response without crashing the client.");
+        return;
+      }
 
       const writeTx = this.lifecycle.transaction([
         CLIENT_STATE_STORE,
