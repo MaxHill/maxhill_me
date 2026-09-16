@@ -1,7 +1,7 @@
 # maxhill.me
 
 This monorepo contains maxhill.me apps.
-It also contains the tools that provision and deploy one Hetzner VPS.
+It also contains the tools that provision and deploy one OVHcloud VPS.
 
 ## Language
 

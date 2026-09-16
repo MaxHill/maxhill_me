@@ -7,7 +7,7 @@ They run with `pnpm exec tsx ...` through `mise` tasks.
 On-box bootstrap and release steps run as compiled Bun Linux binaries
 from `*-remote.ts` files.
 
-- **One VPS** (Hetzner CX22). Ubuntu. Caddy for TLS. systemd for process
+- **One VPS** (OVHcloud). Ubuntu. Caddy for TLS. systemd for process
   management. No Docker runtime on the box.
 - **Four apps** — `syncdb-server` and `auth` are long-running services
   (OCaml and Bun-compiled binaries). `site` and `golf` are static
@@ -172,7 +172,7 @@ One setup step lives outside this repo:
 
 ### SSH
 
-Hetzner installs the SSH key attached at server-creation time into
+OVHcloud installs the SSH key attached at server-creation time into
 `/home/ubuntu/.ssh/authorized_keys` before first boot. Bootstrap clones
 that file into `/home/deploy/.ssh/authorized_keys`. The same laptop key works
 for `ubuntu` (SSH access, bootstrap, break-glass) and `deploy` (every routine

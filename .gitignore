@@ -14,6 +14,10 @@ yarn-error.log*
 pnpm-debug.log*
 mprocs.log
 
+# local planning scratch
+PLAN.md
+plans/
+
 # playwright mcp artifacts
 .playwright-mcp/
 
@@ -39,6 +43,7 @@ vps/**/*.dev.env
 
 # Build artifacts and caches
 **/.zig-cache/
+**/zig-out/
 **/build/tmp/
 **/*.test
 !**/*.test.ts

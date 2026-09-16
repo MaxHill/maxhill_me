@@ -20,13 +20,13 @@ Do these items once per laptop.
 
 ## 1. Order the VPS
 
-1. Order a Hetzner CX22.
+1. Order an OVHcloud VPS.
 2. Select Ubuntu 24.04 and x86_64.
-3. Select region `hel1`.
+3. Select the target region.
 4. Attach `~/.ssh/id_ed25519.pub` at create time.
 5. Copy the VPS IPv4 and IPv6 addresses.
 
-Hetzner writes your key to `/home/ubuntu/.ssh/authorized_keys`.
+OVHcloud writes your key to `/home/ubuntu/.ssh/authorized_keys`.
 Bootstrap copies that key for user `deploy`.
 
 ## 2. Set `VPS_HOST` to the raw IP
@@ -187,7 +187,7 @@ This commit lets the VPS decrypt env files on deploy.
 
 - **`ssh ubuntu@$VPS_HOST` fails**
   Check that you attached the SSH key at server creation.
-  Fix key access in Hetzner console.
+  Fix key access in the OVHcloud console.
   Repeat from step 1.
 - **Deploy fails on decrypt**
   Check that VPS age key is in `.sops.yaml` recipients.
