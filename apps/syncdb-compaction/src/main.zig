@@ -11,8 +11,8 @@ pub fn main(init: std.process.Init) !void {
     const arena: std.mem.Allocator = init.arena.allocator();
 
     // Accessing command line arguments:
-    const args = try init.minimal.args.toSlice(arena);
-    for (args) |arg| {
+    const arguments = try init.minimal.args.toSlice(arena);
+    for (arguments) |arg| {
         std.log.info("arg: {s}", .{arg});
     }
 
@@ -58,13 +58,13 @@ fn testOne(context: void, smith: *std.testing.Smith) !void {
         .dup_data => {
             if (list.items.len == 0) continue;
             if (list.items.len > std.math.maxInt(u32)) return error.SkipZigTest;
-            const len = smith.valueRangeAtMost(u32, 1, @min(32, list.items.len));
-            const off = smith.valueRangeAtMost(u32, 0, @intCast(list.items.len - len));
-            try list.appendSlice(gpa, list.items[off..][0..len]);
+            const length = smith.valueRangeAtMost(u32, 1, @min(32, list.items.len));
+            const off = smith.valueRangeAtMost(u32, 0, @intCast(list.items.len - length));
+            try list.appendSlice(gpa, list.items[off..][0..length]);
             try std.testing.expectEqualSlices(
                 u8,
-                list.items[off..][0..len],
-                list.items[list.items.len - len ..],
+                list.items[off..][0..length],
+                list.items[list.items.len - length ..],
             );
         },
     };
