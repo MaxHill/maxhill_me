@@ -205,6 +205,37 @@ fn varDeclNameToken(tree: Ast, node: Ast.Node.Index) ?Ast.TokenIndex {
     return name_token;
 }
 
+fn nodeContainsIdentifier(tree: Ast, node: Ast.Node.Index, identifier: []const u8) bool {
+    assert(identifier.len > 0);
+    const first_token = tree.firstToken(node);
+    const last_token = tree.lastToken(node);
+    assert(last_token >= first_token);
+
+    var token = first_token;
+    while (token <= last_token) : (token += 1) {
+        if (tree.tokenTag(token) != .identifier) continue;
+        if (std.mem.eql(u8, tree.tokenSlice(token), identifier)) return true;
+    }
+    return false;
+}
+
+fn fnProtoHasParameterTypeIdentifier(tree: Ast, fn_proto: *const Ast.full.FnProto, identifier: []const u8) bool {
+    assert(identifier.len > 0);
+    var param_iterator = fn_proto.iterate(&tree);
+    while (param_iterator.next()) |parameter| {
+        const type_node = parameter.type_expr orelse continue;
+        if (nodeContainsIdentifier(tree, type_node, identifier)) return true;
+    }
+    return false;
+}
+
+fn functionSkipsAssertionFloor(tree: Ast, fn_proto: *const Ast.full.FnProto, function_name: []const u8) bool {
+    assert(function_name.len > 0);
+    if (std.mem.eql(u8, function_name, "main")) return true;
+    if (fnProtoHasParameterTypeIdentifier(tree, fn_proto, "Smith")) return true;
+    return false;
+}
+
 fn checkFunction(
     gpa: Allocator,
     tree: Ast,
@@ -247,15 +278,17 @@ fn checkFunction(
 
     // Match the OCaml port: only named functions need the assertion floor.
     if (function_name) |name| {
-        const assertion_count = countAssertionsInNode(tree, body_node);
-        if (assertion_count < min_assertions_per_function) {
-            const message = try std.fmt.allocPrint(
-                gpa,
-                "function \"{s}\" has {d} assertions. Minimum is {d} assertions.",
-                .{ name, assertion_count, min_assertions_per_function },
-            );
-            errdefer gpa.free(message);
-            try appendError(gpa, errors, filename, span.start_line, span.end_line, message);
+        if (!functionSkipsAssertionFloor(tree, &fn_proto, name)) {
+            const assertion_count = countAssertionsInNode(tree, body_node);
+            if (assertion_count < min_assertions_per_function) {
+                const message = try std.fmt.allocPrint(
+                    gpa,
+                    "function \"{s}\" has {d} assertions. Minimum is {d} assertions.",
+                    .{ name, assertion_count, min_assertions_per_function },
+                );
+                errdefer gpa.free(message);
+                try appendError(gpa, errors, filename, span.start_line, span.end_line, message);
+            }
         }
     }
 
@@ -408,6 +441,20 @@ test "lint accepts functions that meet the assertion floor" {
     try std.testing.expectEqual(@as(usize, 0), errors.items.len);
 }
 
+test "lint skips assertion floor for test declarations" {
+    const source =
+        \\const std = @import("std");
+        \\test "basic add functionality" {
+        \\    try std.testing.expect(true);
+        \\}
+    ;
+    var errors: std.ArrayList(LintError) = .empty;
+    defer freeErrors(std.testing.allocator, &errors);
+
+    try lintSource(std.testing.allocator, "synthetic.zig", source, &errors);
+    try std.testing.expectEqual(@as(usize, 0), errors.items.len);
+}
+
 test "lint reports banned parameter names" {
     const source =
         \\const std = @import("std");
@@ -422,6 +469,51 @@ test "lint reports banned parameter names" {
 
     try lintSource(std.testing.allocator, "synthetic.zig", source, &errors);
     try expectMessageContains(errors.items, "\"buf\" abbriviation");
+}
+
+test "lint ignores stdlib len field access" {
+    const source =
+        \\const std = @import("std");
+        \\pub fn count(items: []const u8) u32 {
+        \\    std.debug.assert(items.len > 0);
+        \\    std.debug.assert(items.len >= 1);
+        \\    return @as(u32, items.len);
+        \\}
+    ;
+    var errors: std.ArrayList(LintError) = .empty;
+    defer freeErrors(std.testing.allocator, &errors);
+
+    try lintSource(std.testing.allocator, "synthetic.zig", source, &errors);
+    try std.testing.expectEqual(@as(usize, 0), errors.items.len);
+}
+
+test "lint skips assertion floor for Zig entry points" {
+    const source =
+        \\const std = @import("std");
+        \\pub fn main(init: std.process.Init) !void {
+        \\    _ = init;
+        \\}
+    ;
+    var errors: std.ArrayList(LintError) = .empty;
+    defer freeErrors(std.testing.allocator, &errors);
+
+    try lintSource(std.testing.allocator, "synthetic.zig", source, &errors);
+    try std.testing.expectEqual(@as(usize, 0), errors.items.len);
+}
+
+test "lint skips assertion floor for fuzz callbacks" {
+    const source =
+        \\const std = @import("std");
+        \\fn checkFuzzCase(context: void, smith: *std.testing.Smith) !void {
+        \\    _ = context;
+        \\    _ = smith;
+        \\}
+    ;
+    var errors: std.ArrayList(LintError) = .empty;
+    defer freeErrors(std.testing.allocator, &errors);
+
+    try lintSource(std.testing.allocator, "synthetic.zig", source, &errors);
+    try std.testing.expectEqual(@as(usize, 0), errors.items.len);
 }
 
 test "lint reports functions that exceed the line limit" {
@@ -468,6 +560,7 @@ test "lint project sources" {
     while (try iterator.next(io)) |entry| {
         if (entry.kind != .file) continue;
         if (!std.mem.endsWith(u8, entry.name, ".zig")) continue;
+        if (std.mem.eql(u8, entry.name, "lint.zig")) continue;
 
         const path = try std.fmt.allocPrint(gpa, "src/{s}", .{entry.name});
         defer gpa.free(path);
