@@ -3,6 +3,48 @@ const Io = std.Io;
 
 const syncdb_compaction = @import("syncdb_compaction");
 
+const Dot = struct {
+    clientId: []u8,
+    version: i32, // TODO: is i32 the correct type?
+};
+
+const ValidKey = []u8;
+
+const CRDTOperation = union(enum) {
+    set: struct {
+        table: []u8,
+        rowKey: []u8,
+        field: ?[]u8,
+        value: []u8,
+        dot: Dot,
+    },
+    set_row: struct {
+        table: []u8,
+        rowKey: []u8,
+        field: ?[]u8,
+        value: std.StringHashMap([]const u8), // TODO may need allocation can we do some other way?
+        dot: Dot,
+    },
+    remove: struct {
+        table: []u8,
+        rowKey: []u8,
+        dot: Dot,
+        context: std.StringHashMap(i32), // TODO may need allocation can we do some other way?
+    },
+};
+
+const LWWField = struct {
+    value: []u8, // TODO: In typescript this is any, this is wrong but we need to be more precise
+    dot: Dot,
+};
+
+const ORMapRow = struct {
+    table_name: []u8,
+    row_key: ValidKey,
+    fields: std.StringHashMap(LWWField),
+    tombstone: ?struct { dot: Dot, context: std.StringHashMap(i32) },
+};
+
 pub fn main(init: std.process.Init) !void {
     // Prints to stderr, unbuffered, ignoring potential errors.
     std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
@@ -29,6 +71,10 @@ pub fn main(init: std.process.Init) !void {
     try syncdb_compaction.printAnotherMessage(stdout_writer);
 
     try stdout_writer.flush(); // Don't forget to flush!
+}
+
+pub fn thing() void {
+    std.debug.print("Test", .{});
 }
 
 test "simple test" {
