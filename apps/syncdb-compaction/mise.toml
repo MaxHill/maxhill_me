@@ -1,0 +1,21 @@
+# Canonical verbs (O(1) build interface):
+#   run    — start the local built-from-source copy
+#   test   — bounded automated checks
+#   fuzz   — unbounded checks (none)
+#   deploy — publish
+
+[tasks.run]
+description = "Run the Zig compaction app locally."
+run = "zig build run"
+
+[tasks.test]
+description = "Run Zig tests."
+run = "zig build test"
+
+[tasks.fuzz]
+description = "Run Zig fuzz tests."
+run = "zig build test --fuzz"
+
+[tasks.deploy]
+description = "Deploy syncdb-compaction."
+run = 'echo "no deploy target configured" && exit 0'
