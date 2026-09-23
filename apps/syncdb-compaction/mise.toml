@@ -19,3 +19,6 @@ run = "zig build test --fuzz"
 [tasks.deploy]
 description = "Deploy syncdb-compaction."
 run = 'echo "no deploy target configured" && exit 0'
+
+[tools]
+zig = "latest"

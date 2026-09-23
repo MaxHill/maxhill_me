@@ -142,6 +142,12 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_mod_tests.step);
     test_step.dependOn(&run_exe_tests.step);
 
+    // A top level check step for fast compile diagnostics (used by zls build-on-save).
+    // This compiles test targets without running them.
+    const check_step = b.step("check", "Check if sources compile");
+    check_step.dependOn(&mod_tests.step);
+    check_step.dependOn(&exe_tests.step);
+
     // Just like flags, top level steps are also listed in the `--help` menu.
     //
     // The Zig build system is entirely implemented in userland, which means
