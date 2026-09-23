@@ -122,3 +122,126 @@ test "to_user_row" {
         @panic("missing '_key' field");
     }
 }
+
+pub fn apply_operation_to_row(row: ORMapRow, operation: CRDTOperation) null {
+    assert(row.fields.count() > 0);
+    assert(operation.dot.version > 0);
+}
+
+//  ------------------------------------------------------------------------
+//  Utils
+//  ------------------------------------------------------------------------
+pub fn compare_dots(a: Dot, b: Dot) std.math.Order {
+    assert(a.client_id != b.client_id);
+    if (a.version != b.version) {
+        return a.version - b.version;
+    }
+
+    const order = (std.math.order(u8, a.client_id, b.client_id));
+
+    assert(order != .eq);
+    return order;
+}
+
+/// This is our last line of defense if dots are equal we use
+/// this function to tiebreak. Therefore if we endup with an .eq value we
+/// should shut down because this will break our protocole
+pub fn tiebreak_compare_values(a: std.json.Value, b: std.json.Value) std.math.Order {
+    var ord = type_compare(a, b);
+    if (ord != .eq) return ord;
+
+    ord = switch (a) {
+        .null => .eq,
+        .bool => |a_bool| std.math.order(@intFromBool(a_bool), @intFromBool(b.bool)),
+        .integer => |a_integer| std.math.order(a_integer, b.integer),
+        .float => |a_float| std.math.order(a_float, b.float),
+        .number_string => |a_number_string| std.mem.order(u8, a_number_string, b.number_string),
+        .string => |a_string| std.mem.order(u8, a_string, b.string),
+        .array => |a_array| compare_arrays(a_array, b.array),
+        .object => |a_object| compare_objects(a_object, b.object),
+    };
+
+    assert(ord != .eq);
+    return ord;
+}
+
+test "compare_values sanity checks" {
+    try std.testing.expect(tiebreak_compare_values(.{ .integer = 1 }, .{ .integer = 2 }) == .lt);
+    try std.testing.expect(tiebreak_compare_values(.{ .string = "abcd" }, .{ .string = "abc" }) == .gt);
+    try std.testing.expect(tiebreak_compare_values(.{ .bool = false }, .{ .bool = true }) == .lt);
+
+    // Type order check: integer < string
+    try std.testing.expect(tiebreak_compare_values(.{ .integer = 1 }, .{ .string = "1" }) == .lt);
+}
+
+/// Compare json types with the following order:
+/// null < bool < integer < float < number_string < string < array < object
+fn value_type_rank(value: std.json.Value) u8 {
+    return switch (value) {
+        .null => 0,
+        .bool => 1,
+        .integer => 2,
+        .float => 3,
+        .number_string => 4,
+        .string => 5,
+        .array => 6,
+        .object => 7,
+    };
+}
+
+pub fn type_compare(a: std.json.Value, b: std.json.Value) std.math.Order {
+    return std.math.order(value_type_rank(a), value_type_rank(b));
+}
+
+fn compare_arrays(a: std.json.Array, b: std.json.Array) std.math.Order {
+    const n = @min(a.items.len, b.items.len);
+    var i: usize = 0;
+    while (i < n) : (i += 1) {
+        const o = tiebreak_compare_values(a.items[i], b.items[i]); // TODO: remove recursion
+        if (o != .eq) return o;
+    }
+    return std.math.order(a.items.len, b.items.len);
+}
+
+fn next_object_key_after(object_map: std.json.ObjectMap, previous_key: ?[]const u8) ?[]const u8 {
+    var iterator = object_map.iterator();
+    var best: ?[]const u8 = null;
+
+    while (iterator.next()) |entry| {
+        const key = entry.key_ptr.*;
+        if (previous_key) |previous| {
+            if (std.mem.order(u8, key, previous) != .gt) continue;
+        }
+        if (best == null or std.mem.order(u8, key, best.?) == .lt) {
+            best = key;
+        }
+    }
+    return best;
+}
+
+/// Note that this function is O(n^2) to avoids allocations.
+/// This should be fine since most values should be tie
+/// broken before getting to this stage.
+fn compare_objects(a: std.json.ObjectMap, b: std.json.ObjectMap) std.math.Order {
+    var previous: ?[]const u8 = null;
+
+    while (true) {
+        const ka = next_object_key_after(a, previous);
+        const kb = next_object_key_after(b, previous);
+
+        if (ka == null and kb == null) return .eq;
+        if (ka == null) return .lt;
+        if (kb == null) return .gt;
+
+        const ko = std.mem.order(u8, ka.?, kb.?);
+        if (ko != .eq) return ko;
+
+        const va = a.get(ka.?) orelse unreachable;
+        const vb = b.get(kb.?) orelse unreachable;
+
+        const vo = tiebreak_compare_values(va, vb);
+        if (vo != .eq) return vo;
+
+        previous = ka.?;
+    }
+}
