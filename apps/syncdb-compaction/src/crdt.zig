@@ -3,9 +3,19 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
+const object_fields_max = 200;
+
 const Dot = struct {
     client_id: []const u8,
     version: i32,
+
+    fn is_valid(dot: @This()) bool {
+        return dot.client_id.len > 0 and dot.version >= 0;
+    }
+
+    fn equal(a: @This(), b: Dot) bool {
+        return a.version == b.version and std.mem.eql(u8, a.client_id, b.client_id);
+    }
 };
 
 const ValidKey = []const u8;
@@ -21,7 +31,7 @@ const CRDTOperation = union(enum) {
     set_row: struct {
         table: []u8,
         row_key: []u8,
-        field: ?[]u8,
+        fields: ?[]u8,
         value: std.json.Value,
         dot: Dot,
     },
@@ -31,6 +41,30 @@ const CRDTOperation = union(enum) {
         dot: Dot,
         context: std.StringHashMap(i32), // Always present (empty object for non-remove operations)
     },
+
+    fn is_valid(operation: @This()) bool {
+        switch (operation) {
+            .set => |set| {
+                return set.table.len > 0 and
+                    set.row_key.len > 0 and
+                    set.field != null and
+                    set.field.?.len > 0 and
+                    set.dot.is_valid();
+            },
+            .set_row => |set_row| {
+                return set_row.table.len > 0 and
+                    set_row.row_key.len > 0 and
+                    set_row.fields == null and
+                    set_row.dot.is_valid();
+            },
+            .remove => |remove| {
+                return remove.table.len > 0 and
+                    remove.row_key.len > 0 and
+                    remove.dot.is_valid() and
+                    context_valid(remove.context);
+            },
+        }
+    }
 };
 
 const LWWField = struct {
@@ -46,6 +80,27 @@ const ORMapRow = struct {
         dot: Dot,
         context: std.StringHashMap(i32), // tracks which dots were observed by this delete
     },
+
+    fn is_valid(row: ORMapRow) bool {
+        if (row.table_name.len == 0) return false;
+        if (row.row_key.len == 0) return false;
+
+        var fields = row.fields.iterator();
+        while (fields.next()) |entry| {
+            if (!field_key_valid(entry.key_ptr.*)) return false;
+            if (!entry.value_ptr.dot.is_valid()) return false;
+        }
+
+        if (row.tombstone) |tombstone| {
+            if (!tombstone.dot.is_valid()) return false;
+            if (!context_valid(tombstone.context)) return false;
+        }
+        return true;
+    }
+
+    fn field_key_valid(field: []const u8) bool {
+        return field.len > 0 and !std.mem.eql(u8, field, "_key");
+    }
 };
 
 const UserRow = std.StringHashMap(std.json.Value);
@@ -55,8 +110,10 @@ const UserRow = std.StringHashMap(std.json.Value);
 pub fn to_user_row(out: *UserRow, row: ORMapRow) !bool {
     assert(out.count() == 0);
     assert(out.capacity() >= row.fields.count() + 1);
+    assert(row.is_valid());
 
     if (row.fields.count() == 0) {
+        assert(out.count() == 0);
         return false;
     }
 
@@ -68,6 +125,7 @@ pub fn to_user_row(out: *UserRow, row: ORMapRow) !bool {
     }
 
     assert(out.count() == row.fields.count() + 1);
+    assert(out.contains("_key"));
     return true;
 }
 
@@ -83,7 +141,7 @@ test "to_user_row" {
 
     const name_value = LWWField{
         .value = .{ .string = "max" },
-        .dot = Dot{ .client_id = "client_1", .version = 0 },
+        .dot = Dot{ .client_id = "client_1", .version = 1 },
     };
     try fields.put("name", name_value);
 
@@ -124,58 +182,59 @@ test "to_user_row" {
 }
 
 pub fn apply_operation_to_row(row: ORMapRow, operation: CRDTOperation) null {
-    assert(row.fields.count() > 0);
-    assert(operation.dot.version > 0);
+    assert(operation.is_valid());
+    assert(row.is_valid());
+    // TODO: Implement
+    assert(row.is_valid());
 }
 
 //  ------------------------------------------------------------------------
 //  Utils
 //  ------------------------------------------------------------------------
 pub fn compare_dots(a: Dot, b: Dot) std.math.Order {
-    assert(a.client_id != b.client_id);
-    if (a.version != b.version) {
-        return a.version - b.version;
-    }
+    assert(a.is_valid());
+    assert(b.is_valid());
+    assert(!a.equal(b));
 
-    const order = (std.math.order(u8, a.client_id, b.client_id));
+    const version_order = std.math.order(a.version, b.version);
+    if (version_order != .eq) return version_order;
 
-    assert(order != .eq);
-    return order;
+    const client_order = std.mem.order(u8, a.client_id, b.client_id);
+    assert(client_order != .eq);
+    return client_order;
 }
 
-/// This is our last line of defense if dots are equal we use
-/// this function to tiebreak. Therefore if we endup with an .eq value we
-/// should shut down because this will break our protocole
-pub fn tiebreak_compare_values(a: std.json.Value, b: std.json.Value) std.math.Order {
-    var ord = type_compare(a, b);
+pub fn compare_values(a: std.json.Value, b: std.json.Value) std.math.Order {
+    var ord = compare_value_type(a, b);
     if (ord != .eq) return ord;
 
     ord = switch (a) {
         .null => .eq,
         .bool => |a_bool| std.math.order(@intFromBool(a_bool), @intFromBool(b.bool)),
         .integer => |a_integer| std.math.order(a_integer, b.integer),
-        .float => |a_float| std.math.order(a_float, b.float),
+        .float => |a_float| {
+            assert(!std.math.isNan(a_float));
+            assert(!std.math.isNan(b.float));
+            return std.math.order(a_float, b.float);
+        },
         .number_string => |a_number_string| std.mem.order(u8, a_number_string, b.number_string),
         .string => |a_string| std.mem.order(u8, a_string, b.string),
         .array => |a_array| compare_arrays(a_array, b.array),
         .object => |a_object| compare_objects(a_object, b.object),
     };
 
-    assert(ord != .eq);
     return ord;
 }
 
 test "compare_values sanity checks" {
-    try std.testing.expect(tiebreak_compare_values(.{ .integer = 1 }, .{ .integer = 2 }) == .lt);
-    try std.testing.expect(tiebreak_compare_values(.{ .string = "abcd" }, .{ .string = "abc" }) == .gt);
-    try std.testing.expect(tiebreak_compare_values(.{ .bool = false }, .{ .bool = true }) == .lt);
+    try std.testing.expect(compare_values(.{ .integer = 1 }, .{ .integer = 2 }) == .lt);
+    try std.testing.expect(compare_values(.{ .string = "abcd" }, .{ .string = "abc" }) == .gt);
+    try std.testing.expect(compare_values(.{ .bool = false }, .{ .bool = true }) == .lt);
 
     // Type order check: integer < string
-    try std.testing.expect(tiebreak_compare_values(.{ .integer = 1 }, .{ .string = "1" }) == .lt);
+    try std.testing.expect(compare_values(.{ .integer = 1 }, .{ .string = "1" }) == .lt);
 }
 
-/// Compare json types with the following order:
-/// null < bool < integer < float < number_string < string < array < object
 fn value_type_rank(value: std.json.Value) u8 {
     return switch (value) {
         .null => 0,
@@ -189,7 +248,30 @@ fn value_type_rank(value: std.json.Value) u8 {
     };
 }
 
-pub fn type_compare(a: std.json.Value, b: std.json.Value) std.math.Order {
+// This test is a duplication by design
+// because we should never change the
+// ordering of types since that
+// will change determinism
+// semantics.
+test "value_type_rank" {
+    var array = std.json.Array.init(std.testing.allocator);
+    defer array.deinit();
+
+    const object: std.json.ObjectMap = .{};
+
+    assert(value_type_rank(.null) == 0);
+    assert(value_type_rank(.{ .bool = false }) == 1);
+    assert(value_type_rank(.{ .integer = 1 }) == 2);
+    assert(value_type_rank(.{ .float = 1 }) == 3);
+    assert(value_type_rank(.{ .number_string = "1" }) == 4);
+    assert(value_type_rank(.{ .string = "str" }) == 5);
+    assert(value_type_rank(.{ .array = array }) == 6);
+    assert(value_type_rank(.{ .object = object }) == 7);
+}
+
+/// Compare json types with the following order:
+/// null < bool < integer < float < number_string < string < array < object
+pub fn compare_value_type(a: std.json.Value, b: std.json.Value) std.math.Order {
     return std.math.order(value_type_rank(a), value_type_rank(b));
 }
 
@@ -197,7 +279,7 @@ fn compare_arrays(a: std.json.Array, b: std.json.Array) std.math.Order {
     const n = @min(a.items.len, b.items.len);
     var i: usize = 0;
     while (i < n) : (i += 1) {
-        const o = tiebreak_compare_values(a.items[i], b.items[i]); // TODO: remove recursion
+        const o = compare_values(a.items[i], b.items[i]); // TODO: remove recursion
         if (o != .eq) return o;
     }
     return std.math.order(a.items.len, b.items.len);
@@ -223,6 +305,8 @@ fn next_object_key_after(object_map: std.json.ObjectMap, previous_key: ?[]const 
 /// This should be fine since most values should be tie
 /// broken before getting to this stage.
 fn compare_objects(a: std.json.ObjectMap, b: std.json.ObjectMap) std.math.Order {
+    assert(a.count() <= object_fields_max);
+    assert(b.count() <= object_fields_max);
     var previous: ?[]const u8 = null;
 
     while (true) {
@@ -236,12 +320,31 @@ fn compare_objects(a: std.json.ObjectMap, b: std.json.ObjectMap) std.math.Order 
         const ko = std.mem.order(u8, ka.?, kb.?);
         if (ko != .eq) return ko;
 
-        const va = a.get(ka.?) orelse unreachable;
-        const vb = b.get(kb.?) orelse unreachable;
+        const va = a.get(ka.?) orelse {
+            assert(false);
+            unreachable;
+        };
+        const vb = b.get(kb.?) orelse {
+            assert(false);
+            unreachable;
+        };
 
-        const vo = tiebreak_compare_values(va, vb);
+        const vo = compare_values(va, vb);
         if (vo != .eq) return vo;
 
         previous = ka.?;
     }
+}
+
+//  ------------------------------------------------------------------------
+//  Assert helpers
+//  ------------------------------------------------------------------------
+
+fn context_valid(context: std.StringHashMap(i32)) bool {
+    var iterator = context.iterator();
+    while (iterator.next()) |entry| {
+        if (entry.key_ptr.*.len <= 0) return false;
+        if (entry.value_ptr.* < 0) return false;
+    }
+    return true;
 }
