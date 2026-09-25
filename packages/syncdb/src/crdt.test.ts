@@ -3,6 +3,7 @@ import fc from "fast-check";
 import {
   applyOperationToRow,
   compareDots,
+  compareValues,
   type CRDTOperation,
   type Dot,
   type LWWField,
@@ -162,6 +163,55 @@ describe("compareDots", () => {
         }),
       );
     });
+  });
+});
+
+//  ------------------------------------------------------------------------
+//  compareValues Tests
+//  ------------------------------------------------------------------------
+
+describe("compareValues", () => {
+  it("uses the Zig CRDT value type order", () => {
+    expect(compareValues(null, false)).toBeLessThan(0);
+    expect(compareValues(false, 1)).toBeLessThan(0);
+    expect(compareValues(1, 1.5)).toBeLessThan(0);
+    expect(compareValues(1.5, "1.5")).toBeLessThan(0);
+    expect(compareValues("value", [])).toBeLessThan(0);
+    expect(compareValues([], {})).toBeLessThan(0);
+  });
+
+  it("compares arrays lexicographically by value", () => {
+    expect(compareValues([1, "b"], [1, "c"])).toBeLessThan(0);
+    expect(compareValues([1], [1, null])).toBeLessThan(0);
+    expect(compareValues([1, { b: true }], [1, { b: true }])).toBe(0);
+  });
+
+  it("compares objects by sorted UTF-8 keys and then values", () => {
+    expect(compareValues({ b: 1, a: 2 }, { a: 2, b: 1 })).toBe(0);
+    expect(compareValues({ a: 1 }, { b: 0 })).toBeLessThan(0);
+    expect(compareValues({ a: 1 }, { a: 2 })).toBeLessThan(0);
+  });
+
+  it("uses the robust value comparison when dots are equal", () => {
+    const row: ORMapRow = {
+      [TABLE_NAME]: "test",
+      [ROW_KEY]: "row1",
+      fields: {
+        value: { value: "z", dot: { clientId: "client1", version: 1 } },
+      },
+    };
+    const op: CRDTOperation = {
+      type: "set",
+      table: "test",
+      rowKey: "row1",
+      field: "value",
+      value: {},
+      dot: { clientId: "client1", version: 1 },
+    };
+
+    applyOperationToRow(row, op);
+
+    expect(row.fields.value?.value).toEqual({});
   });
 });
 

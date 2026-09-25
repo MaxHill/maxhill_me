@@ -62,7 +62,7 @@ export function toUserRow(row: ORMapRow) {
     return undefined;
   }
 
-  let result: Record<string, any> = {};
+  const result: Record<string, any> = {};
   for (const [field, fieldState] of Object.entries(row.fields)) {
     result[field] = fieldState.value;
   }
@@ -77,18 +77,154 @@ export type CRDTValue = Record<ValidKey, ORMapRow>;
 //  Methods
 //  ------------------------------------------------------------------------
 export function compareDots(a: Dot, b: Dot): number {
-  if (a.version !== b.version) return a.version - b.version;
-  return a.clientId.localeCompare(b.clientId);
+  if (a.version !== b.version) {
+    return a.version - b.version;
+  }
+  return compareUtf8Bytes(a.clientId, b.clientId);
 }
 
 /**
- * Deterministic comparison of values for tiebreaking when dots are equal.
- * Uses JSON serialization for consistent ordering.
+ * Deterministic comparison of JSON values for tiebreaking when dots are equal.
+ *
+ * Keep this in sync with apps/syncdb-compaction/src/crdt.zig:
+ * null < bool < integer < float < number_string < string < array < object.
+ * TypeScript has no separate representation for Zig's `number_string`, so that
+ * rank is reserved and normal JavaScript strings compare at the `string` rank.
  */
-function compareValues(a: any, b: any): number {
-  const aStr = JSON.stringify(a);
-  const bStr = JSON.stringify(b);
-  return aStr.localeCompare(bStr);
+export function compareValues(a: any, b: any): number {
+  const typeOrder = compareValueType(a, b);
+  if (typeOrder !== 0) {
+    return typeOrder;
+  }
+
+  switch (valueTypeRank(a)) {
+    case 0:
+      return 0;
+    case 1:
+      return Number(a) - Number(b);
+    case 2:
+    case 3:
+      return compareNumbers(a, b);
+    case 5:
+      return compareUtf8Bytes(a, b);
+    case 6:
+      return compareArrays(a, b);
+    case 7:
+      return compareObjects(a, b);
+    default:
+      throw new Error(`Unsupported CRDT value type rank: ${valueTypeRank(a)}`);
+  }
+}
+
+function compareValueType(a: any, b: any): number {
+  return valueTypeRank(a) - valueTypeRank(b);
+}
+
+function valueTypeRank(value: any): number {
+  if (value === null) {
+    return 0;
+  }
+  if (typeof value === "boolean") {
+    return 1;
+  }
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      throw new Error(`Invalid CRDT number value: ${value}`);
+    }
+    return Number.isInteger(value) ? 2 : 3;
+  }
+  if (typeof value === "string") {
+    return 5;
+  }
+  if (Array.isArray(value)) {
+    return 6;
+  }
+  if (isPlainObject(value)) {
+    return 7;
+  }
+
+  throw new Error(`Unsupported CRDT value type: ${typeof value}`);
+}
+
+function compareNumbers(a: number, b: number): number {
+  if (a < b) {
+    return -1;
+  }
+  if (a > b) {
+    return 1;
+  }
+  return 0;
+}
+
+const utf8Encoder = new TextEncoder();
+
+function compareUtf8Bytes(a: string, b: string): number {
+  const aBytes = utf8Encoder.encode(a);
+  const bBytes = utf8Encoder.encode(b);
+  const n = Math.min(aBytes.length, bBytes.length);
+
+  for (let i = 0; i < n; i++) {
+    const aByte = aBytes[i];
+    const bByte = bBytes[i];
+    if (aByte === undefined || bByte === undefined) {
+      throw new Error("UTF-8 encoder produced sparse output");
+    }
+    if (aByte < bByte) {
+      return -1;
+    }
+    if (aByte > bByte) {
+      return 1;
+    }
+  }
+
+  return aBytes.length - bBytes.length;
+}
+
+function compareArrays(a: any[], b: any[]): number {
+  const n = Math.min(a.length, b.length);
+
+  for (let i = 0; i < n; i++) {
+    const order = compareValues(a[i], b[i]);
+    if (order !== 0) {
+      return order;
+    }
+  }
+
+  return a.length - b.length;
+}
+
+function compareObjects(a: Record<string, any>, b: Record<string, any>): number {
+  const aKeys = Object.keys(a).sort(compareUtf8Bytes);
+  const bKeys = Object.keys(b).sort(compareUtf8Bytes);
+  const n = Math.min(aKeys.length, bKeys.length);
+
+  for (let i = 0; i < n; i++) {
+    const aKey = aKeys[i];
+    const bKey = bKeys[i];
+    if (aKey === undefined || bKey === undefined) {
+      throw new Error("Object.keys produced sparse output");
+    }
+
+    const keyOrder = compareUtf8Bytes(aKey, bKey);
+    if (keyOrder !== 0) {
+      return keyOrder;
+    }
+
+    const valueOrder = compareValues(a[aKey], b[bKey]);
+    if (valueOrder !== 0) {
+      return valueOrder;
+    }
+  }
+
+  return aKeys.length - bKeys.length;
+}
+
+function isPlainObject(value: any): value is Record<string, any> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): void {
