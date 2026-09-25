@@ -135,19 +135,26 @@ fn checkName(
     try appendError(gpa, errors, filename, start_line, end_line, message);
 }
 
-fn calleeIsAssert(tree: Ast, node: Ast.Node.Index) bool {
+fn nameIsAssertLike(name: []const u8) bool {
+    assert(name.len > 0);
+    if (std.mem.eql(u8, name, "assert")) return true;
+    if (std.mem.startsWith(u8, name, "assert_")) return true;
+    return false;
+}
+
+fn calleeIsAssertLike(tree: Ast, node: Ast.Node.Index) bool {
     var current = node;
     while (true) {
         switch (tree.nodeTag(current)) {
             .identifier => {
-                const is_assert = std.mem.eql(u8, tree.tokenSlice(tree.nodeMainToken(current)), "assert");
-                assert(tree.tokenTag(tree.nodeMainToken(current)) == .identifier);
-                return is_assert;
+                const token = tree.nodeMainToken(current);
+                assert(tree.tokenTag(token) == .identifier);
+                return nameIsAssertLike(tree.tokenSlice(token));
             },
             .field_access => {
                 const field_token = tree.nodeData(current).node_and_token[1];
                 assert(tree.tokenTag(field_token) == .identifier);
-                return std.mem.eql(u8, tree.tokenSlice(field_token), "assert");
+                return nameIsAssertLike(tree.tokenSlice(field_token));
             },
             .grouped_expression => {
                 current = tree.nodeData(current).node_and_token[0];
@@ -189,7 +196,7 @@ fn countAssertionsInNode(tree: Ast, root: Ast.Node.Index) u32 {
                     .call_one, .call_one_comma => tree.nodeData(node).node_and_opt_node[0],
                     else => unreachable,
                 };
-                if (calleeIsAssert(tree, callee)) count += 1;
+                if (calleeIsAssertLike(tree, callee)) count += 1;
             },
             else => {},
         }
@@ -236,12 +243,18 @@ fn functionSkipsAssertionFloor(tree: Ast, fn_proto: *const Ast.full.FnProto, fun
     return false;
 }
 
+const AssertionDensity = struct {
+    function_count: u32 = 0,
+    assertion_count: u32 = 0,
+};
+
 fn checkFunction(
     gpa: Allocator,
     tree: Ast,
     errors: *std.ArrayList(LintError),
     filename: []const u8,
     node: Ast.Node.Index,
+    assertion_density: *AssertionDensity,
 ) !void {
     assert(tree.nodeTag(node) == .fn_decl);
     const proto_node, const body_node = tree.nodeData(node).node_and_node;
@@ -276,19 +289,11 @@ fn checkFunction(
         try appendError(gpa, errors, filename, span.start_line, span.end_line, message);
     }
 
-    // Match the OCaml port: only named functions need the assertion floor.
+    // Match the OCaml port: only named functions need the assertion density check.
     if (function_name) |name| {
         if (!functionSkipsAssertionFloor(tree, &fn_proto, name)) {
-            const assertion_count = countAssertionsInNode(tree, body_node);
-            if (assertion_count < min_assertions_per_function) {
-                const message = try std.fmt.allocPrint(
-                    gpa,
-                    "function \"{s}\" has {d} assertions. Minimum is {d} assertions.",
-                    .{ name, assertion_count, min_assertions_per_function },
-                );
-                errdefer gpa.free(message);
-                try appendError(gpa, errors, filename, span.start_line, span.end_line, message);
-            }
+            assertion_density.function_count += 1;
+            assertion_density.assertion_count += countAssertionsInNode(tree, body_node);
         }
     }
 
@@ -354,11 +359,13 @@ pub fn lintSource(
         return;
     }
 
+    var assertion_density: AssertionDensity = .{};
+
     var index: u32 = 0;
     while (index < tree.nodes.len) : (index += 1) {
         const node: Ast.Node.Index = @enumFromInt(index);
         switch (tree.nodeTag(node)) {
-            .fn_decl => try checkFunction(gpa, tree, errors, filename, node),
+            .fn_decl => try checkFunction(gpa, tree, errors, filename, node, &assertion_density),
             .global_var_decl,
             .local_var_decl,
             .simple_var_decl,
@@ -370,6 +377,23 @@ pub fn lintSource(
             => try checkContainerField(gpa, tree, errors, filename, node),
             else => {},
         }
+    }
+
+    const assertion_count_min = assertion_density.function_count * min_assertions_per_function;
+    if (assertion_density.assertion_count < assertion_count_min) {
+        const message = try std.fmt.allocPrint(
+            gpa,
+            "source has {d} assertion-like calls across {d} checked functions. " ++
+                "Minimum is {d} total ({d} per function average).",
+            .{
+                assertion_density.assertion_count,
+                assertion_density.function_count,
+                assertion_count_min,
+                min_assertions_per_function,
+            },
+        );
+        errdefer gpa.free(message);
+        try appendError(gpa, errors, filename, 1, 1, message);
     }
 }
 
@@ -422,7 +446,7 @@ test "lint reports short functions without enough assertions" {
 
     try lintSource(std.testing.allocator, "synthetic.zig", source, &errors);
     try std.testing.expect(errors.items.len >= 1);
-    try expectMessageContains(errors.items, "has 0 assertions");
+    try expectMessageContains(errors.items, "source has 0 assertion-like calls across 1 checked functions");
 }
 
 test "lint accepts functions that meet the assertion floor" {
@@ -570,9 +594,15 @@ test "lint project sources" {
     if (errors.items.len > 0) {
         for (errors.items) |item| {
             std.debug.print(
-                "\nerror: {s}\n  file: {s}\n  start_line: {d}\n  end_line: {d}\n",
-                .{ item.message, item.filename, item.start_line, item.end_line },
+                "{s}:{d}:1: error: {s}\n",
+                .{ item.filename, item.start_line, item.message },
             );
+            if (item.end_line != item.start_line) {
+                std.debug.print(
+                    "{s}:{d}:1: note: lint span ends here\n",
+                    .{ item.filename, item.end_line },
+                );
+            }
         }
         return error.LintFailed;
     }

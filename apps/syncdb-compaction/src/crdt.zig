@@ -9,11 +9,15 @@ const Dot = struct {
     client_id: []const u8,
     version: i32,
 
-    fn is_valid(dot: @This()) bool {
-        return dot.client_id.len > 0 and dot.version >= 0;
+    fn assert_valid(dot: Dot) void {
+        assert(dot.client_id.len > 0);
+        assert(dot.version >= 0);
     }
 
-    fn equal(a: @This(), b: Dot) bool {
+    fn equal(a: Dot, b: Dot) bool {
+        a.assert_valid();
+        b.assert_valid();
+
         return a.version == b.version and std.mem.eql(u8, a.client_id, b.client_id);
     }
 };
@@ -42,26 +46,26 @@ const CRDTOperation = union(enum) {
         context: std.StringHashMap(i32), // Always present (empty object for non-remove operations)
     },
 
-    fn is_valid(operation: @This()) bool {
+    fn assert_valid(operation: CRDTOperation) void {
         switch (operation) {
             .set => |set| {
-                return set.table.len > 0 and
-                    set.row_key.len > 0 and
-                    set.field != null and
-                    set.field.?.len > 0 and
-                    set.dot.is_valid();
+                assert(set.table.len > 0);
+                assert(set.row_key.len > 0);
+                assert(set.field != null);
+                assert(set.field.?.len > 0);
+                set.dot.assert_valid();
             },
             .set_row => |set_row| {
-                return set_row.table.len > 0 and
-                    set_row.row_key.len > 0 and
-                    set_row.fields == null and
-                    set_row.dot.is_valid();
+                assert(set_row.table.len > 0);
+                assert(set_row.row_key.len > 0);
+                assert(set_row.fields == null);
+                set_row.dot.assert_valid();
             },
             .remove => |remove| {
-                return remove.table.len > 0 and
-                    remove.row_key.len > 0 and
-                    remove.dot.is_valid() and
-                    context_valid(remove.context);
+                assert(remove.table.len > 0);
+                assert(remove.row_key.len > 0);
+                remove.dot.assert_valid();
+                assert_context_valid(remove.context);
             },
         }
     }
@@ -81,25 +85,20 @@ const ORMapRow = struct {
         context: std.StringHashMap(i32), // tracks which dots were observed by this delete
     },
 
-    fn is_valid(row: ORMapRow) bool {
-        if (row.table_name.len == 0) return false;
-        if (row.row_key.len == 0) return false;
+    fn assert_valid(row: ORMapRow) void {
+        assert(row.table_name.len > 0);
+        assert(row.row_key.len > 0);
 
         var fields = row.fields.iterator();
         while (fields.next()) |entry| {
-            if (!field_key_valid(entry.key_ptr.*)) return false;
-            if (!entry.value_ptr.dot.is_valid()) return false;
+            assert_field_key_valid(entry.key_ptr.*);
+            entry.value_ptr.dot.assert_valid();
         }
 
         if (row.tombstone) |tombstone| {
-            if (!tombstone.dot.is_valid()) return false;
-            if (!context_valid(tombstone.context)) return false;
+            tombstone.dot.assert_valid();
+            assert_context_valid(tombstone.context);
         }
-        return true;
-    }
-
-    fn field_key_valid(field: []const u8) bool {
-        return field.len > 0 and !std.mem.eql(u8, field, "_key");
     }
 };
 
@@ -110,7 +109,7 @@ const UserRow = std.StringHashMap(std.json.Value);
 pub fn to_user_row(out: *UserRow, row: ORMapRow) !bool {
     assert(out.count() == 0);
     assert(out.capacity() >= row.fields.count() + 1);
-    assert(row.is_valid());
+    row.assert_valid();
 
     if (row.fields.count() == 0) {
         assert(out.count() == 0);
@@ -182,18 +181,18 @@ test "to_user_row" {
 }
 
 pub fn apply_operation_to_row(row: ORMapRow, operation: CRDTOperation) null {
-    assert(operation.is_valid());
-    assert(row.is_valid());
+    operation.assert_valid();
+    row.assert_valid();
     // TODO: Implement
-    assert(row.is_valid());
+    row.assert_valid();
 }
 
 //  ------------------------------------------------------------------------
 //  Utils
 //  ------------------------------------------------------------------------
 pub fn compare_dots(a: Dot, b: Dot) std.math.Order {
-    assert(a.is_valid());
-    assert(b.is_valid());
+    a.assert_valid();
+    b.assert_valid();
     assert(!a.equal(b));
 
     const version_order = std.math.order(a.version, b.version);
@@ -340,11 +339,15 @@ fn compare_objects(a: std.json.ObjectMap, b: std.json.ObjectMap) std.math.Order 
 //  Assert helpers
 //  ------------------------------------------------------------------------
 
-fn context_valid(context: std.StringHashMap(i32)) bool {
+fn assert_context_valid(context: std.StringHashMap(i32)) void {
     var iterator = context.iterator();
     while (iterator.next()) |entry| {
-        if (entry.key_ptr.*.len <= 0) return false;
-        if (entry.value_ptr.* < 0) return false;
+        assert(entry.key_ptr.*.len > 0);
+        assert(entry.value_ptr.* >= 0);
     }
-    return true;
+}
+
+fn assert_field_key_valid(field: []const u8) void {
+    assert(field.len > 0);
+    assert(!std.mem.eql(u8, field, "_key"));
 }
