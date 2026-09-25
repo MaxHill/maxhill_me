@@ -21,20 +21,13 @@ const Dot = struct {
         assert(dot.version >= 0);
     }
 
-    fn equal(a: Dot, b: Dot) bool {
-        a.assert_valid();
-        b.assert_valid();
+    fn order(self: @This(), target: Dot) std.math.Order {
+        self.assert_valid();
+        target.assert_valid();
 
-        return a.version == b.version and std.mem.eql(u8, a.client_id, b.client_id);
-    }
-
-    fn order(a: @This(), b: Dot) std.math.Order {
-        a.assert_valid();
-        b.assert_valid();
-
-        const version_order = std.math.order(a.version, b.version);
+        const version_order = std.math.order(self.version, target.version);
         return switch (version_order) {
-            .eq => std.mem.order(u8, a.client_id, b.client_id),
+            .eq => std.mem.order(u8, self.client_id, target.client_id),
             else => version_order,
         };
     }
@@ -441,16 +434,9 @@ fn pick_field(
 //  Utils
 //  ------------------------------------------------------------------------
 pub fn compare_dots(a: Dot, b: Dot) std.math.Order {
-    a.assert_valid();
-    b.assert_valid();
-    assert(!a.equal(b));
-
-    const version_order = std.math.order(a.version, b.version);
-    if (version_order != .eq) return version_order;
-
-    const client_order = std.mem.order(u8, a.client_id, b.client_id);
-    assert(client_order != .eq);
-    return client_order;
+    const dot_order = a.order(b);
+    assert(dot_order != .eq);
+    return dot_order;
 }
 
 pub fn compare_values(a: std.json.Value, b: std.json.Value) std.math.Order {
