@@ -1,0 +1,17 @@
+{
+  "name": "@maxhill/stdx",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src"
+  ]
+}

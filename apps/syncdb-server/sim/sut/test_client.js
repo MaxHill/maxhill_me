@@ -7,6 +7,7 @@ import {
   Sync,
 } from "../../../../packages/syncdb/dist/index.js";
 import readline from "node:readline";
+import { assert } from "@maxhill/stdx";
 import "fake-indexeddb/auto";
 
 /* TODO: These should be taken from syncdb */
@@ -47,10 +48,6 @@ const rl = readline.createInterface({
 
 const send = (...msg) => {
   process.stdout.write(`${JSON.stringify(msg)}\n`);
-};
-
-const assert = (cond, msg) => {
-  if (!cond) throw new Error(msg);
 };
 
 async function handleLine(line) {

@@ -5,112 +5,42 @@ open Walker
 let max_function_lines = 70
 let min_assertions_per_function = 2
 
-let rec count_assertions_in_expression (expr : Parsetree.expression) =
-  let nested_count =
-    match expr.pexp_desc with
-    | Pexp_let (_, bindings, body) ->
-      List.fold_left
-        (fun count (binding : Parsetree.value_binding) ->
-           count + count_assertions_in_expression binding.pvb_expr)
-        0
-        bindings
-      + count_assertions_in_expression body
-    | Pexp_function (_, _, body) ->
-      (match body with
-       | Pfunction_cases (cases, _, _) ->
-         List.fold_left
-           (fun count (case : Parsetree.case) ->
-              count + count_assertions_in_expression case.pc_rhs)
-           0
-           cases
-       | Pfunction_body body_expr -> count_assertions_in_expression body_expr)
-    | Pexp_apply (fn, args) ->
-      count_assertions_in_expression fn
-      + List.fold_left
-          (fun count (_, arg) -> count + count_assertions_in_expression arg)
-          0
-          args
-    | Pexp_match (scrutinee, cases) | Pexp_try (scrutinee, cases) ->
-      count_assertions_in_expression scrutinee
-      + List.fold_left
-          (fun count (case : Parsetree.case) ->
-             count + count_assertions_in_expression case.pc_rhs)
-          0
-          cases
-    | Pexp_ifthenelse (cond, then_expr, else_expr) ->
-      count_assertions_in_expression cond
-      + count_assertions_in_expression then_expr
-      +
-        (match else_expr with
-        | None -> 0
-        | Some else_expr -> count_assertions_in_expression else_expr)
-    | Pexp_sequence (a, b) ->
-      count_assertions_in_expression a + count_assertions_in_expression b
-    | Pexp_tuple exprs ->
-      List.fold_left
-        (fun count expr -> count + count_assertions_in_expression expr)
-        0
-        exprs
-    | Pexp_array exprs ->
-      List.fold_left
-        (fun count expr -> count + count_assertions_in_expression expr)
-        0
-        exprs
-    | Pexp_construct (_, maybe_expr) | Pexp_variant (_, maybe_expr) ->
-      (match maybe_expr with
-       | None -> 0
-       | Some expr -> count_assertions_in_expression expr)
-    | Pexp_constraint (expr, _)
-    | Pexp_coerce (expr, _, _)
-    | Pexp_send (expr, _)
-    | Pexp_setinstvar (_, expr)
-    | Pexp_lazy expr
-    | Pexp_poly (expr, _)
-    | Pexp_newtype (_, expr) -> count_assertions_in_expression expr
-    | Pexp_record (fields, default) ->
-      List.fold_left
-        (fun count (_, expr) -> count + count_assertions_in_expression expr)
-        0
-        fields
-      +
-        (match default with
-        | None -> 0
-        | Some default_expr -> count_assertions_in_expression default_expr)
-    | Pexp_field (expr, _) -> count_assertions_in_expression expr
-    | Pexp_setfield (record_expr, _, value_expr) ->
-      count_assertions_in_expression record_expr
-      + count_assertions_in_expression value_expr
-    | Pexp_while (cond_expr, body_expr) ->
-      count_assertions_in_expression cond_expr
-      + count_assertions_in_expression body_expr
-    | Pexp_for (_, start_expr, end_expr, _, body_expr) ->
-      count_assertions_in_expression start_expr
-      + count_assertions_in_expression end_expr
-      + count_assertions_in_expression body_expr
-    | Pexp_override overrides ->
-      List.fold_left
-        (fun count (_, expr) -> count + count_assertions_in_expression expr)
-        0
-        overrides
-    | Pexp_assert expr -> 1 + count_assertions_in_expression expr
-    | Pexp_constant _ | Pexp_ident _ | Pexp_unreachable -> 0
-    | _ -> 0
-  in
-  nested_count
+type assertion_density =
+  { function_count : int
+  ; assertion_count : int
+  }
 ;;
 
-let assertion_count_validator ~kind ~name ~expr =
-  let assertion_count = count_assertions_in_expression expr in
-  if assertion_count < min_assertions_per_function
+let assertion_density_of_structure structure =
+  let function_count = ref 0 in
+  let assertion_count = ref 0 in
+  let iterator =
+    { Ast_iterator.default_iterator with
+      expr =
+        (fun self expr ->
+          (match expr.pexp_desc with
+           | Pexp_function _ -> incr function_count
+           | Pexp_assert _ -> incr assertion_count
+           | _ -> ());
+          Ast_iterator.default_iterator.expr self expr)
+    }
+  in
+  iterator.structure iterator structure;
+  { function_count = !function_count; assertion_count = !assertion_count }
+;;
+
+let assertion_density_validator structure =
+  let { function_count; assertion_count } = assertion_density_of_structure structure in
+  let minimum = function_count * min_assertions_per_function in
+  if assertion_count < minimum
   then
     Some
       (Format.sprintf
-         "%s%s has %d assertions. Minimum is %d assertions."
-         kind
-         (match name with
-          | None -> ""
-          | Some value -> Format.sprintf " \"%s\"" value)
+         ("source has %d assertion-like calls across %d checked functions. "
+          ^^ "Minimum is %d total (%d per function average).")
          assertion_count
+         function_count
+         minimum
          min_assertions_per_function)
   else None
 ;;
@@ -303,13 +233,7 @@ let check_function ~ctx:_ (pat : Parsetree.pattern) (expr : Parsetree.expression
       ~name:function_name
       ~loc:expr.pexp_loc
   in
-  let assertion_count_error =
-    match function_name with
-    | None -> None
-    | Some _ ->
-      assertion_count_validator ~kind:"function" ~name:function_name ~expr
-  in
-  [ naming_error; length_error; assertion_count_error ]
+  [ naming_error; length_error ]
 ;;
 
 let check_module ~ctx:_ ~loc:_ name =
@@ -327,18 +251,12 @@ let check_class ~ctx:_ ~loc:_ name =
   [ naming_error ]
 ;;
 
-let check_class_method ~ctx:_ ~loc name method_expr =
+let check_class_method ~ctx:_ ~loc name _method_expr =
   let naming_error = name_validator name in
   let length_error =
     function_length_validator ~kind:"class method" ~name:(Some name) ~loc
   in
-  let assertion_count_error =
-    match method_expr with
-    | None -> None
-    | Some expr ->
-      assertion_count_validator ~kind:"class method" ~name:(Some name) ~expr
-  in
-  [ naming_error; length_error; assertion_count_error ]
+  [ naming_error; length_error ]
 ;;
 
 let check_class_value ~ctx:_ ~loc:_ name =
@@ -364,12 +282,9 @@ let print_error error =
     | None -> 0, 0
     | Some loc -> loc.loc_start.pos_lnum, loc.loc_end.pos_lnum
   in
-  Printf.printf
-    "\nerror: %s\n  file: %s\n  start_line: %d\n  end_line: %d\n"
-    error.message
-    error.filename
-    start_line
-    end_line
+  Printf.printf "%s:%d:1: error: %s\n" error.filename start_line error.message;
+  if end_line <> start_line
+  then Printf.printf "%s:%d:1: note: lint span ends here\n" error.filename end_line
 ;;
 
 let check_file filename =
@@ -378,6 +293,12 @@ let check_file filename =
   let ast = get_ast filename in
   let ctx = walk_structure ctx ast |> finalize_ctx in
   let errors = List.filter_map (fun error -> error) ctx.errors in
+  let errors =
+    match assertion_density_validator ast with
+    | None -> errors
+    | Some message ->
+      { message; filename; scope_depth = 0; loc = None } :: errors
+  in
   List.iter print_error errors;
   List.length errors
 ;;

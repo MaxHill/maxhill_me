@@ -20,7 +20,7 @@ importers:
         version: link:packages/oxlint-config
       dax:
         specifier: latest
-        version: 0.49.0
+        version: 0.50.0
       oxlint:
         specifier: ^1.80.0
         version: 1.80.0(oxlint-tsgolint@7.0.2001)
@@ -153,6 +153,9 @@ importers:
 
   apps/syncdb-server:
     dependencies:
+      '@maxhill/stdx':
+        specifier: workspace:*
+        version: link:../../packages/ts-stdx
       fake-indexeddb:
         specifier: ^6.2.5
         version: 6.2.5
@@ -245,6 +248,8 @@ importers:
       vitest:
         specifier: ^3.0.0
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.9.1)(jsdom@26.1.0)(tsx@4.22.4)(yaml@2.8.1)
+
+  packages/ts-stdx: {}
 
   packages/web-component-utils:
     devDependencies:
@@ -437,6 +442,12 @@ packages:
 
   '@custom-elements-manifest/find-dependencies@0.0.6':
     resolution: {integrity: sha512-2iVksJ156XuaeeC6jB6oMG6k9ROHS3W1delwJLL804yQMri9NnQW78JDCYMtFfW8b4locUG+3+hrtAHxk+fNGg==}
+
+  '@dsherret/path@0.3.3':
+    resolution: {integrity: sha512-cs32XuF8oZ42KOjfInvTnTyVkf5ZS8xFKqeQNg4w3beIuDoq8o0m6oF2LkqejJN7YGx+Ds8PNuRuuWdb6vGilw==}
+
+  '@dsherret/shell@0.7.0':
+    resolution: {integrity: sha512-8TSnK1z83JEx/t+Nr9TdRyFPQmWEfNnAU7G76SoHmFqHzl1FZNUbM556eQRiuDfMK5aHqFKuxgeEhZ30xA8g1Q==}
 
   '@emmetio/abbreviation@2.3.3':
     resolution: {integrity: sha512-mgv58UrU3rh4YgbE/TzgLQwJ3pFsHHhCLqY20aJq+9comytTXUDNGG/SMtSeMJdkpxgXSXunBGLD8Boka3JyVA==}
@@ -2385,6 +2396,9 @@ packages:
   components@0.1.0:
     resolution: {integrity: sha512-4xKUO3dL9LBs8WiOKy2kvLfnwKZLps9xDT5cFS0GL4UiXrr/dNUYus7Uf1bRPG66cUpEmwFAWVOlE9cxQgG+QA==}
 
+  console-static-text@0.3.4:
+    resolution: {integrity: sha512-Cg0EV1X/gaWVPFID3UazhjGj1NC6KNnHf60h0KspbJeYMrQuTD3T5cGwFd0MbYeTNYkI+TsiVFf7uiJONH01gA==}
+
   content-disposition@0.5.4:
     resolution: {integrity: sha512-FveZTNuGw04cxlAiWbzi6zTAL/lhehaWbTtgluJh4/E95DqMwTmha3KZN1aAWA8cFIhHzMZUvLevkw5Rqk+tSQ==}
     engines: {node: '>= 0.6'}
@@ -2438,8 +2452,8 @@ packages:
     resolution: {integrity: sha512-ZYP5VBHshaDAiVZxjbRVcFJpc+4xGgT0bK3vzy1HLN8jTO975HEbuYzZJcHoQEY5K1a0z8YayJkyVETa08eNTg==}
     engines: {node: '>=18'}
 
-  dax@0.49.0:
-    resolution: {integrity: sha512-KbODyOV8mRQiW7syK1mjlpNqTqliTMAzTZA1VA3VDdw7Q/ivlCzWXtMihXVo2Joxqjx9qkAvuCxYy2l4RrH1/Q==}
+  dax@0.50.0:
+    resolution: {integrity: sha512-mmW2gzYjKNaOAdMv7sUS1b4mUr0LNsUg2BmIOgb+O6rHf3YvUUWTYwEZxGxO/dA70Mzaod8TRg0Oj5isTT+zpA==}
 
   debounce@1.2.1:
     resolution: {integrity: sha512-XRRe6Glud4rd/ZGQfiV1ruXSfbvfJedlV9Y6zOlP+2K04vBYiJEte6stfFkCP03aMnY5tsipamumUjL14fofug==}
@@ -5208,6 +5222,13 @@ snapshots:
     dependencies:
       rs-module-lexer: 2.6.0
 
+  '@dsherret/path@0.3.3': {}
+
+  '@dsherret/shell@0.7.0':
+    dependencies:
+      '@dsherret/path': 0.3.3
+      console-static-text: 0.3.4
+
   '@emmetio/abbreviation@2.3.3':
     dependencies:
       '@emmetio/scanner': 1.0.4
@@ -7096,6 +7117,8 @@ snapshots:
 
   components@0.1.0: {}
 
+  console-static-text@0.3.4: {}
+
   content-disposition@0.5.4:
     dependencies:
       safe-buffer: 5.2.1
@@ -7144,8 +7167,9 @@ snapshots:
       whatwg-mimetype: 4.0.0
       whatwg-url: 14.2.0
 
-  dax@0.49.0:
+  dax@0.50.0:
     dependencies:
+      '@dsherret/shell': 0.7.0
       undici-types: 5.28.4
 
   debounce@1.2.1: {}

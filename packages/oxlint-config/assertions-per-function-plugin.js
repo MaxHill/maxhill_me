@@ -18,7 +18,10 @@ function getChildren(node) {
 
   const children = [];
 
-  for (const value of Object.values(node)) {
+  for (const [key, value] of Object.entries(node)) {
+    if (key === 'parent') {
+      continue;
+    }
     if (!value) {
       continue;
     }
@@ -40,12 +43,27 @@ function getChildren(node) {
   return children;
 }
 
+function isAssertionName(name, assertionFunctions) {
+  return assertionFunctions.includes(name) || name.startsWith('assert_');
+}
+
 function isDirectAssertionCall(node, assertionFunctions) {
-  return (
-    node?.type === 'CallExpression'
-    && node.callee?.type === 'Identifier'
-    && assertionFunctions.includes(node.callee.name)
-  );
+  if (node?.type !== 'CallExpression') {
+    return false;
+  }
+
+  if (node.callee?.type === 'Identifier') {
+    return isAssertionName(node.callee.name, assertionFunctions);
+  }
+
+  if (node.callee?.type === 'MemberExpression' && !node.callee.computed) {
+    return (
+      node.callee.property?.type === 'Identifier'
+      && isAssertionName(node.callee.property.name, assertionFunctions)
+    );
+  }
+
+  return false;
 }
 
 export function countAssertionsInFunction(node, assertionFunctions) {
@@ -70,20 +88,15 @@ export function countAssertionsInFunction(node, assertionFunctions) {
   return visit(node.body ?? node, true);
 }
 
-function getFunctionName(node) {
-  if (node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression') {
-    return node.id?.name ?? '<anonymous>';
-  }
-
-  return '<anonymous>';
-}
-
 function resolveOptions(context) {
   const ruleOptions = context.options[0] ?? {};
   const settingsOptions = context.settings?.assertionsPerFunction ?? {};
 
   return {
-    minAssertions: ruleOptions.minAssertions ?? settingsOptions.minAssertions ?? DEFAULT_OPTIONS.minAssertions,
+    minAssertions:
+      ruleOptions.minAssertions
+      ?? settingsOptions.minAssertions
+      ?? DEFAULT_OPTIONS.minAssertions,
     assertionFunctions:
       ruleOptions.assertionFunctions
       ?? settingsOptions.assertionFunctions
@@ -95,7 +108,8 @@ const assertionsPerFunctionRule = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'require a minimum number of assertions inside each function',
+      description:
+        'require an average minimum number of assertions across each source file',
     },
     schema: [
       {
@@ -112,34 +126,48 @@ const assertionsPerFunctionRule = {
     ],
     messages: {
       tooFewAssertions:
-        "Function '{{name}}' contains {{actual}} assertion{{suffix}}; expected at least {{expected}}.",
+        "Source contains {{actual}} assertion-like calls across {{functions}} "
+        + "checked functions; expected at least {{minimum}} total "
+        + "({{expected}} per function average).",
     },
   },
   create(context) {
     const options = resolveOptions(context);
 
-    function checkFunction(node) {
-      const assertionCount = countAssertionsInFunction(node, options.assertionFunctions);
-      if (assertionCount >= options.minAssertions) {
-        return;
-      }
+    const functions = [];
 
-      context.report({
-        node,
-        messageId: 'tooFewAssertions',
-        data: {
-          name: getFunctionName(node),
-          actual: assertionCount,
-          expected: options.minAssertions,
-          suffix: assertionCount === 1 ? '' : 's',
-        },
-      });
+    function collectFunction(node) {
+      functions.push(node);
     }
 
     return {
-      FunctionDeclaration: checkFunction,
-      FunctionExpression: checkFunction,
-      ArrowFunctionExpression: checkFunction,
+      FunctionDeclaration: collectFunction,
+      FunctionExpression: collectFunction,
+      ArrowFunctionExpression: collectFunction,
+      'Program:exit'(node) {
+        const assertionCount = functions.reduce(
+          (total, functionNode) => total + countAssertionsInFunction(
+            functionNode,
+            options.assertionFunctions,
+          ),
+          0,
+        );
+        const minimum = functions.length * options.minAssertions;
+        if (assertionCount >= minimum) {
+          return;
+        }
+
+        context.report({
+          node,
+          messageId: 'tooFewAssertions',
+          data: {
+            actual: assertionCount,
+            functions: functions.length,
+            minimum,
+            expected: options.minAssertions,
+          },
+        });
+      },
     };
   },
 };
