@@ -4,12 +4,14 @@ const Io = std.Io;
 const assert = std.debug.assert;
 
 pub const crdt = @import("crdt.zig");
+pub const crdt_pools = @import("crdt_pools.zig");
 pub const lint = @import("lint.zig");
 
 test {
     // Pull module tests into the package test binary.
     _ = lint;
     _ = crdt;
+    _ = crdt_pools;
 }
 
 /// This is a documentation comment to explain the `printAnotherMessage` function below.

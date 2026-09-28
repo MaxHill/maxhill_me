@@ -1,18 +1,13 @@
 /// TODO: is i32 the correct type for version and contexts
 ///
-/// TODO: When row/operation/tombstone init functions are implemented, they must
-/// explicitly provision hash map capacity up front. `apply_operation_to_row()`
-/// treats allocation failure as an invariant violation, so each initializer must
-/// guarantee enough capacity for all valid fields in a row, all values in a
-/// set_row operation, and all tombstone context entries. The capacity constants
-/// should be checked at comptime so invalid fixed-buffer sizing fails before
-/// runtime.
+/// TODO: Derive fixed-buffer byte capacities from the hash-map entry bounds
+/// and check the relationship at comptime where Zig's hash-map layout permits.
 const std = @import("std");
 const assert = std.debug.assert;
 
 const object_fields_max = 200;
 
-const Dot = struct {
+pub const Dot = struct {
     client_id: []const u8,
     version: i32,
 
@@ -33,9 +28,9 @@ const Dot = struct {
     }
 };
 
-const ValidKey = []const u8;
+pub const ValidKey = []const u8;
 
-const CRDTOperation = union(enum) {
+pub const CRDTOperation = union(enum) {
     set: struct {
         table: []const u8,
         row_key: []const u8,
@@ -87,21 +82,41 @@ const CRDTOperation = union(enum) {
     }
 };
 
-const LWWField = struct {
+pub const LWWField = struct {
     value: std.json.Value,
     dot: Dot,
 };
 
-const Tombstone = struct {
-    dot: Dot,
+pub const Tombstone = struct {
+    dot: ?Dot,
     context: std.StringHashMap(i32), // tracks which dots were observed by this delete
+
+    pub fn active(tombstone: Tombstone) bool {
+        return tombstone.dot != null;
+    }
+
+    fn assert_valid(tombstone: Tombstone) void {
+        if (tombstone.dot) |dot| {
+            dot.assert_valid();
+            assert_context_valid(tombstone.context);
+        } else {
+            assert(tombstone.context.count() == 0);
+        }
+    }
 
     // Self only wins if it's actually greater than target dot, ties goes to target. This works
     // becuse we'll send the rows tombstone as the second argument to be consistent
     // with the other methods in this file and we need to tiebreak somehow.
     // The tiebreak in this case is that the row wins over the operation.
     fn merge_tombstone(self: *Tombstone, target: Tombstone) void {
-        if (target.dot.order(self.dot) == .gt) self.dot = target.dot;
+        target.assert_valid();
+        if (target.dot) |target_dot| {
+            if (self.dot) |self_dot| {
+                if (target_dot.order(self_dot) == .gt) self.dot = target_dot;
+            } else {
+                self.dot = target_dot;
+            }
+        }
 
         var target_context_iterator = target.context.iterator();
         while (target_context_iterator.next()) |target_context_entry| {
@@ -120,11 +135,11 @@ const Tombstone = struct {
     }
 };
 
-const ORMapRow = struct {
+pub const ORMapRow = struct {
     table_name: []const u8,
     row_key: ValidKey,
     fields: std.StringHashMap(LWWField),
-    tombstone: ?Tombstone,
+    tombstone: Tombstone,
 
     fn assert_valid(row: ORMapRow) void {
         assert(row.table_name.len > 0);
@@ -136,14 +151,11 @@ const ORMapRow = struct {
             entry.value_ptr.dot.assert_valid();
         }
 
-        if (row.tombstone) |tombstone| {
-            tombstone.dot.assert_valid();
-            assert_context_valid(tombstone.context);
-        }
+        row.tombstone.assert_valid();
     }
 };
 
-const UserRow = std.StringHashMap(std.json.Value);
+pub const UserRow = std.StringHashMap(std.json.Value);
 
 /// Converts an internal row to a user-facing row by
 /// constructing an object of field values.
@@ -191,12 +203,15 @@ test "to_user_row" {
     };
     try fields.put("age", age_value);
 
+    var tombstone_context = std.StringHashMap(i32).init(allocator);
+    defer tombstone_context.deinit();
+
     const row_key = "key-1";
     const or_map_row = ORMapRow{
         .table_name = "test",
         .row_key = row_key,
         .fields = fields,
-        .tombstone = null,
+        .tombstone = .{ .dot = null, .context = tombstone_context },
     };
 
     const result = try to_user_row(&user_row, or_map_row);
@@ -228,10 +243,12 @@ test "apply_operation_to_row applies set_row set and remove to same row" {
         .table_name = "test",
         .row_key = "key-1",
         .fields = std.StringHashMap(LWWField).init(allocator),
-        .tombstone = null,
+        .tombstone = .{ .dot = null, .context = std.StringHashMap(i32).init(allocator) },
     };
     defer row.fields.deinit();
+    defer row.tombstone.context.deinit();
     try row.fields.ensureTotalCapacity(2);
+    try row.tombstone.context.ensureTotalCapacity(1);
 
     var set_row_value = std.StringHashMap(std.json.Value).init(allocator);
     defer set_row_value.deinit();
@@ -273,7 +290,7 @@ test "apply_operation_to_row applies set_row set and remove to same row" {
     } });
 
     try std.testing.expectEqual(@as(u32, 0), row.fields.count());
-    try std.testing.expect(row.tombstone != null);
+    try std.testing.expect(row.tombstone.active());
 }
 
 /// Applies one CRDT operation to an existing row.
@@ -292,34 +309,28 @@ pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
 
     switch (operation) {
         .set => |set_operation| {
-            if (row.tombstone) |tombstone| {
-                const seen = tombstone.context.get(set_operation.dot.client_id);
-                if (seen != null and set_operation.dot.version <= seen.?) return; // Tombstone wins
+            if (row.tombstone.active()) {
+                const seen = row.tombstone.context
+                    .get(set_operation.dot.client_id);
+                if (seen != null and set_operation.dot.version <= seen.?) {
+                    return; // Tombstone wins
+                }
             }
 
             const field = set_operation.field.?;
-            if (pick_field(
+            update_fields(
                 .{
-                    .field = field,
+                    .field_key = field,
                     .value = set_operation.value,
                     .dot = set_operation.dot,
                 },
-                row.*,
-            ) == .operation) {
-                row.fields.put(
-                    field,
-                    .{
-                        .value = set_operation.value,
-                        .dot = set_operation.dot,
-                    },
-                ) catch |err| {
-                    std.debug.panic("row fields capacity invariant violated: {}", .{err});
-                };
-            }
+                row,
+            );
         },
         .set_row => |set_row_operation| {
-            if (row.tombstone) |tombstone| {
-                const seen = tombstone.context.get(set_row_operation.dot.client_id);
+            if (row.tombstone.active()) {
+                const seen = row.tombstone.context
+                    .get(set_row_operation.dot.client_id);
                 if (seen != null and set_row_operation.dot.version <= seen.?) {
                     return; // Tombstone wins
                 }
@@ -327,42 +338,27 @@ pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
 
             var value_iterator = set_row_operation.value.iterator();
             while (value_iterator.next()) |field| {
-                if (pick_field(
+                update_fields(
                     .{
-                        .field = field.key_ptr.*,
+                        .field_key = field.key_ptr.*,
                         .value = field.value_ptr.*,
                         .dot = set_row_operation.dot,
                     },
-                    row.*,
-                ) == .operation) {
-                    row.fields.put(
-                        field.key_ptr.*,
-                        .{
-                            .value = field.value_ptr.*,
-                            .dot = set_row_operation.dot,
-                        },
-                    ) catch |err| {
-                        std.debug.panic("row fields capacity invariant violated: {}", .{err});
-                    };
-                }
+                    row,
+                );
             }
         },
         .remove => |remove_operation| {
-            var final_tombstone = remove_operation.tombstone();
-            if (row.tombstone) |row_tombstone| {
-                final_tombstone.merge_tombstone(row_tombstone);
-            }
+            row.tombstone.merge_tombstone(remove_operation.tombstone());
 
             var row_iterator = row.fields.iterator();
             while (row_iterator.next()) |field| {
-                if (final_tombstone.context.get(field.value_ptr.dot.client_id)) |remove_version| {
+                if (row.tombstone.context.get(field.value_ptr.dot.client_id)) |remove_version| {
                     if (field.value_ptr.dot.version <= remove_version) {
                         _ = row.fields.remove(field.key_ptr.*);
                     }
                 }
             }
-
-            row.tombstone = final_tombstone;
         },
     }
 }
@@ -385,32 +381,67 @@ fn assert_capacity_for_operation(row: *const ORMapRow, operation: CRDTOperation)
             assert(row.fields.capacity() >= row.fields.count() + missing_fields);
         },
         .remove => |remove_operation| {
-            if (row.tombstone) |row_tombstone| {
-                var missing_context: @TypeOf(remove_operation.context.count()) = 0;
-                var row_context_iterator = row_tombstone.context.iterator();
-                while (row_context_iterator.next()) |entry| {
-                    if (!remove_operation.context.contains(entry.key_ptr.*)) missing_context += 1;
-                }
-
-                assert(remove_operation.context.capacity() >= remove_operation.context.count() + missing_context);
+            var missing_context: @TypeOf(remove_operation.context.count()) = 0;
+            var remove_context_iterator = remove_operation.context.iterator();
+            while (remove_context_iterator.next()) |entry| {
+                if (!row.tombstone.context.contains(entry.key_ptr.*)) missing_context += 1;
             }
+
+            assert(row.tombstone.context.capacity() >= row.tombstone.context.count() + missing_context);
         },
     }
 }
 
-const FieldPick = enum {
-    operation,
-    row,
-};
+fn update_fields(
+    operation: struct {
+        field_key: []const u8,
+        value: std.json.Value,
+        dot: Dot,
+    },
+    row: *ORMapRow,
+) void {
+    assert(operation.field_key.len > 0);
+    operation.dot.assert_valid();
+    row.assert_valid();
+    defer row.assert_valid();
+
+    if (pick_field(
+        .{
+            .field_key = operation.field_key,
+            .value = operation.value,
+            .dot = operation.dot,
+        },
+        row.*,
+    ) == .operation) {
+        row.fields.put(
+            operation.field_key,
+            .{
+                .value = operation.value,
+                .dot = operation.dot,
+            },
+        ) catch |err| {
+            std.debug.panic("row fields capacity invariant violated: {}", .{err});
+        };
+    }
+}
+
 fn pick_field(
     operation: struct {
-        field: []const u8,
+        field_key: []const u8,
         value: std.json.Value,
         dot: Dot,
     },
     row: ORMapRow,
-) FieldPick {
-    if (row.fields.get(operation.field)) |row_field| {
+) enum {
+    operation,
+    row,
+} {
+    assert(operation.field_key.len > 0);
+    operation.dot.assert_valid();
+    row.assert_valid();
+    defer row.assert_valid();
+
+    if (row.fields.get(operation.field_key)) |row_field| {
         switch (operation.dot.order(row_field.dot)) {
             // Operations dot dominates Rows field, replace the fields value
             .gt => return .operation,
