@@ -6,13 +6,24 @@ const std = @import("std");
 const assert = std.debug.assert;
 
 const object_fields_max = 200;
+const context_max = 200;
+
+pub const ClientId = [16]u8;
+
+pub fn client_id_from_bytes(bytes: []const u8) !ClientId {
+    if (bytes.len != @sizeOf(ClientId)) return error.InvalidClientIdLength;
+
+    var id: ClientId = undefined;
+    @memcpy(&id, bytes);
+    return id;
+}
 
 pub const Dot = struct {
-    client_id: []const u8,
+    client_id: ClientId,
     version: i32,
 
     fn assert_valid(dot: Dot) void {
-        assert(dot.client_id.len > 0);
+        assert(!std.mem.allEqual(u8, &dot.client_id, 0));
         assert(dot.version >= 0);
     }
 
@@ -22,14 +33,45 @@ pub const Dot = struct {
 
         const version_order = std.math.order(self.version, target.version);
         return switch (version_order) {
-            .eq => std.mem.order(u8, self.client_id, target.client_id),
+            .eq => std.mem.order(u8, &self.client_id, &target.client_id),
             else => version_order,
         };
     }
 };
 
-pub const ValidKey = []const u8;
+pub const Context = struct {
+    ids: [context_max]ClientId = undefined,
+    versions: [context_max]i32 = undefined,
+    count: usize = 0,
 
+    pub fn get(c: *const Context, id: ClientId) ?i32 {
+        for (c.ids[0..c.count], c.versions[0..c.count]) |x, v| {
+            if (std.mem.eql(u8, &x, &id)) return v;
+        }
+        return null;
+    }
+
+    pub fn contains(c: *const Context, id: ClientId) bool {
+        return c.get(id) != null;
+    }
+
+    pub fn put_max(self: *@This(), id: ClientId, version: i32) void {
+        assert(version >= 0);
+        for (self.ids[0..self.count], self.versions[0..self.count]) |entry_id, *entry_version| {
+            if (std.mem.eql(u8, &entry_id, &id)) {
+                entry_version.* = @max(entry_version.*, version);
+                return;
+            }
+        }
+
+        assert(self.count < context_max);
+        self.ids[self.count] = id;
+        self.versions[self.count] = version;
+        self.count += 1;
+    }
+};
+
+pub const ValidKey = []const u8;
 pub const CRDTOperation = union(enum) {
     set: struct {
         table: []const u8,
@@ -48,7 +90,7 @@ pub const CRDTOperation = union(enum) {
         table: []const u8,
         row_key: []const u8,
         dot: Dot,
-        context: std.StringHashMap(i32), // Always present (empty object for non-remove operations)
+        context: Context,
 
         fn tombstone(self: @This()) Tombstone {
             return Tombstone{
@@ -89,7 +131,26 @@ pub const LWWField = struct {
 
 pub const Tombstone = struct {
     dot: ?Dot,
-    context: std.StringHashMap(i32), // tracks which dots were observed by this delete
+    context: Context = .{},
+
+    fn covers(t: *const Tombstone, dot: Dot) bool {
+        if (t.dot == null) return false;
+        const seen = t.context.get(dot.client_id) orelse return false;
+        return dot.version <= seen;
+    }
+
+    fn merge(self: *@This(), dot: Dot, context: *const Context) void {
+        if (self.dot == null or dot.order(self.dot.?) == .gt) self.dot = dot;
+        for (context.ids[0..context.count], context.versions[0..context.count]) |id, v|
+            self.context.put_max(id, v);
+    }
+
+    fn merge_tombstone(self: *@This(), tombstone: Tombstone) void {
+        tombstone.assert_valid();
+        if (tombstone.dot) |dot| {
+            self.merge(dot, &tombstone.context);
+        }
+    }
 
     pub fn active(tombstone: Tombstone) bool {
         return tombstone.dot != null;
@@ -100,37 +161,7 @@ pub const Tombstone = struct {
             dot.assert_valid();
             assert_context_valid(tombstone.context);
         } else {
-            assert(tombstone.context.count() == 0);
-        }
-    }
-
-    // Self only wins if it's actually greater than target dot, ties goes to target. This works
-    // becuse we'll send the rows tombstone as the second argument to be consistent
-    // with the other methods in this file and we need to tiebreak somehow.
-    // The tiebreak in this case is that the row wins over the operation.
-    fn merge_tombstone(self: *Tombstone, target: Tombstone) void {
-        target.assert_valid();
-        if (target.dot) |target_dot| {
-            if (self.dot) |self_dot| {
-                if (target_dot.order(self_dot) == .gt) self.dot = target_dot;
-            } else {
-                self.dot = target_dot;
-            }
-        }
-
-        var target_context_iterator = target.context.iterator();
-        while (target_context_iterator.next()) |target_context_entry| {
-            const target_client_id = target_context_entry.key_ptr.*;
-            const target_version = target_context_entry.value_ptr.*;
-            if (self.context.get(target_client_id)) |self_context_version| {
-                self.context.put(target_client_id, @max(target_version, self_context_version)) catch |err| {
-                    std.debug.panic("tombstone context capacity invariant violated: {}", .{err});
-                };
-            } else {
-                self.context.put(target_client_id, target_version) catch |err| {
-                    std.debug.panic("tombstone context capacity invariant violated: {}", .{err});
-                };
-            }
+            assert(tombstone.context.count == 0);
         }
     }
 };
@@ -181,6 +212,14 @@ pub fn to_user_row(out: *UserRow, row: ORMapRow) !bool {
     return true;
 }
 
+fn test_client_id(bytes: []const u8) ClientId {
+    assert(bytes.len <= @sizeOf(ClientId));
+
+    var id = [_]u8{0} ** @sizeOf(ClientId);
+    @memcpy(id[0..bytes.len], bytes);
+    return id;
+}
+
 test "to_user_row" {
     const allocator = std.testing.allocator;
 
@@ -193,25 +232,22 @@ test "to_user_row" {
 
     const name_value = LWWField{
         .value = .{ .string = "max" },
-        .dot = Dot{ .client_id = "client_1", .version = 1 },
+        .dot = Dot{ .client_id = test_client_id("client_1"), .version = 1 },
     };
     try fields.put("name", name_value);
 
     const age_value = LWWField{
         .value = .{ .integer = 31 },
-        .dot = Dot{ .client_id = "client_1", .version = 0 },
+        .dot = Dot{ .client_id = test_client_id("client_1"), .version = 0 },
     };
     try fields.put("age", age_value);
-
-    var tombstone_context = std.StringHashMap(i32).init(allocator);
-    defer tombstone_context.deinit();
 
     const row_key = "key-1";
     const or_map_row = ORMapRow{
         .table_name = "test",
         .row_key = row_key,
         .fields = fields,
-        .tombstone = .{ .dot = null, .context = tombstone_context },
+        .tombstone = .{ .dot = null, .context = .{} },
     };
 
     const result = try to_user_row(&user_row, or_map_row);
@@ -243,12 +279,10 @@ test "apply_operation_to_row applies set_row set and remove to same row" {
         .table_name = "test",
         .row_key = "key-1",
         .fields = std.StringHashMap(LWWField).init(allocator),
-        .tombstone = .{ .dot = null, .context = std.StringHashMap(i32).init(allocator) },
+        .tombstone = .{ .dot = null, .context = .{} },
     };
     defer row.fields.deinit();
-    defer row.tombstone.context.deinit();
     try row.fields.ensureTotalCapacity(2);
-    try row.tombstone.context.ensureTotalCapacity(1);
 
     var set_row_value = std.StringHashMap(std.json.Value).init(allocator);
     defer set_row_value.deinit();
@@ -259,7 +293,7 @@ test "apply_operation_to_row applies set_row set and remove to same row" {
         .table = "test",
         .row_key = "key-1",
         .value = set_row_value,
-        .dot = .{ .client_id = "client_1", .version = 1 },
+        .dot = .{ .client_id = test_client_id("client_1"), .version = 1 },
     } });
 
     try std.testing.expectEqual(@as(u32, 2), row.fields.count());
@@ -271,21 +305,20 @@ test "apply_operation_to_row applies set_row set and remove to same row" {
         .row_key = "key-1",
         .field = "name",
         .value = .{ .string = "maxwell" },
-        .dot = .{ .client_id = "client_1", .version = 2 },
+        .dot = .{ .client_id = test_client_id("client_1"), .version = 2 },
     } });
 
     try std.testing.expectEqual(@as(u32, 2), row.fields.count());
     try std.testing.expectEqualStrings("maxwell", row.fields.get("name").?.value.string);
     try std.testing.expectEqual(@as(i32, 2), row.fields.get("name").?.dot.version);
 
-    var remove_context = std.StringHashMap(i32).init(allocator);
-    defer remove_context.deinit();
-    try remove_context.put("client_1", 2);
+    var remove_context = Context{};
+    remove_context.put_max(test_client_id("client_1"), 2);
 
     apply_operation_to_row(&row, .{ .remove = .{
         .table = "test",
         .row_key = "key-1",
-        .dot = .{ .client_id = "client_1", .version = 3 },
+        .dot = .{ .client_id = test_client_id("client_1"), .version = 3 },
         .context = remove_context,
     } });
 
@@ -381,13 +414,12 @@ fn assert_capacity_for_operation(row: *const ORMapRow, operation: CRDTOperation)
             assert(row.fields.capacity() >= row.fields.count() + missing_fields);
         },
         .remove => |remove_operation| {
-            var missing_context: @TypeOf(remove_operation.context.count()) = 0;
-            var remove_context_iterator = remove_operation.context.iterator();
-            while (remove_context_iterator.next()) |entry| {
-                if (!row.tombstone.context.contains(entry.key_ptr.*)) missing_context += 1;
+            var missing_context: usize = 0;
+            for (remove_operation.context.ids[0..remove_operation.context.count]) |id| {
+                if (!row.tombstone.context.contains(id)) missing_context += 1;
             }
 
-            assert(row.tombstone.context.capacity() >= row.tombstone.context.count() + missing_context);
+            assert(context_max >= row.tombstone.context.count + missing_context);
         },
     }
 }
@@ -606,11 +638,10 @@ fn compare_objects(a: std.json.ObjectMap, b: std.json.ObjectMap) std.math.Order 
 //  Assert helpers
 //  ------------------------------------------------------------------------
 
-fn assert_context_valid(context: std.StringHashMap(i32)) void {
-    var iterator = context.iterator();
-    while (iterator.next()) |entry| {
-        assert(entry.key_ptr.*.len > 0);
-        assert(entry.value_ptr.* >= 0);
+fn assert_context_valid(context: Context) void {
+    for (context.ids[0..context.count], context.versions[0..context.count]) |id, version| {
+        assert(!std.mem.allEqual(u8, &id, 0));
+        assert(version >= 0);
     }
 }
 
