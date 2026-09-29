@@ -455,7 +455,7 @@ fn pick_field(
                 // Both values and dot's are equal, no operation needed
                 return .row;
             },
-            else => return .operation,
+            else => return .row,
         }
     }
     return .operation;

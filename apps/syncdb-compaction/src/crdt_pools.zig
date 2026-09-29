@@ -396,14 +396,16 @@ pub const ORMapRowPool = struct {
 };
 
 pub const UserRowPoolSlot = struct {
-    /// Maximum entries in one user-facing row: every row field plus _key.
+    /// Maximum entries in one user-facing row: every row field plus
+    /// _key.
     pub const entries_capacity = ORMapRowPoolSlot.fields_capacity + 1;
     /// Maximum row-key bytes copied into one user-facing row slot.
     pub const row_key_bytes_capacity = ORMapRowPoolSlot.row_key_bytes_capacity;
     /// Bytes available for one user-facing row's hash map.
     pub const storage_capacity = 32 * 1024;
 
-    /// All memory owned by a user-facing row's hash map comes from this buffer.
+    /// All memory owned by a user-facing row's hash map comes from
+    /// this buffer.
     storage: [storage_capacity]u8 = undefined,
     /// Allocator backed directly by storage.
     fba: std.heap.FixedBufferAllocator = undefined,
