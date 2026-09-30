@@ -5,6 +5,7 @@ const crdt = @import("crdt.zig");
 const Dot = crdt.Dot;
 const Context = crdt.Context;
 const ClientId = crdt.ClientId;
+const Tombstone = crdt.Tombstone;
 const ValidKey = crdt.ValidKey;
 const CRDTOperation = crdt.CRDTOperation;
 const LWWField = crdt.LWWField;
@@ -36,7 +37,6 @@ pub const CRDTOperationPoolSlot = struct {
 
     operation: CRDTOperation,
     set_row_value: std.StringHashMap(std.json.Value),
-    remove_context: Context,
     active_operation: ?std.meta.Tag(CRDTOperation),
     next_free: ?i32,
 
@@ -46,8 +46,6 @@ pub const CRDTOperationPoolSlot = struct {
 
         self.set_row_value = std.StringHashMap(std.json.Value).init(self.allocator());
         try self.set_row_value.ensureTotalCapacity(set_row_fields_capacity);
-
-        self.remove_context = .{};
 
         self.table_name_len = 0;
         self.row_key_len = 0;
@@ -86,20 +84,18 @@ pub const CRDTOperationPoolSlot = struct {
         self: *@This(),
         table: []const u8,
         row_key: []const u8,
-        dot: Dot,
+        tombstone: Tombstone,
     ) !void {
         assert(self.active_operation == null);
-        assert(self.remove_context.count == 0);
+        tombstone.assert_valid();
 
         try self.set_table_name(table);
         try self.set_row_key(row_key);
-        const stored_dot = try self.copy_dot(dot);
 
         self.operation = .{ .remove = .{
             .table = self.table_name_storage[0..self.table_name_len],
             .row_key = self.row_key_storage[0..self.row_key_len],
-            .dot = stored_dot,
-            .context = self.remove_context,
+            .tombstone = tombstone,
         } };
         self.active_operation = .remove;
     }
@@ -128,12 +124,11 @@ pub const CRDTOperationPoolSlot = struct {
             switch (tag) {
                 .set => {},
                 .set_row => self.set_row_value = self.operation.set_row.value,
-                .remove => self.remove_context = self.operation.remove.context,
+                .remove => {},
             }
         }
 
         self.set_row_value.clearRetainingCapacity();
-        self.remove_context = .{};
         self.table_name_len = 0;
         self.row_key_len = 0;
         self.operation = undefined;
@@ -579,7 +574,7 @@ test "pools initialize preallocated slots" {
     defer operation_pool.deinit();
     const operation_slot = operation_pool.acquire().?;
     try std.testing.expect(operation_slot.set_row_value.capacity() >= CRDTOperationPoolSlot.set_row_fields_capacity);
-    try std.testing.expectEqual(@as(usize, 0), operation_slot.remove_context.count);
+    try std.testing.expect(operation_slot.active_operation == null);
     operation_pool.release(operation_slot);
 
     var row_pool = try ORMapRowPool.init(allocator, 2);
@@ -603,8 +598,11 @@ test "pool slots reserve hash map capacity" {
     try std.testing.expect(operation_slot.operation.set_row.value.capacity() >= CRDTOperationPoolSlot.set_row_fields_capacity);
 
     operation_slot.reset();
-    try operation_slot.init_remove("table", "row", .{ .client_id = test_client_id("client"), .version = 1 });
-    try std.testing.expectEqual(@as(usize, 0), operation_slot.operation.remove.context.count);
+    try operation_slot.init_remove("table", "row", .{
+        .dot = .{ .client_id = test_client_id("client"), .version = 1 },
+        .context = .{},
+    });
+    try std.testing.expectEqual(@as(usize, 0), operation_slot.operation.remove.tombstone.context.count);
 
     var row_slot: ORMapRowPoolSlot = undefined;
     try row_slot.init();

@@ -89,15 +89,7 @@ pub const CRDTOperation = union(enum) {
     remove: struct {
         table: []const u8,
         row_key: []const u8,
-        dot: Dot,
-        context: Context,
-
-        fn tombstone(self: @This()) Tombstone {
-            return Tombstone{
-                .dot = self.dot,
-                .context = self.context,
-            };
-        }
+        tombstone: Tombstone,
     },
 
     fn assert_valid(operation: CRDTOperation) void {
@@ -117,8 +109,7 @@ pub const CRDTOperation = union(enum) {
             .remove => |remove| {
                 assert(remove.table.len > 0);
                 assert(remove.row_key.len > 0);
-                remove.dot.assert_valid();
-                assert_context_valid(remove.context);
+                remove.tombstone.assert_valid();
             },
         }
     }
@@ -156,7 +147,7 @@ pub const Tombstone = struct {
         return tombstone.dot != null;
     }
 
-    fn assert_valid(tombstone: Tombstone) void {
+    pub fn assert_valid(tombstone: Tombstone) void {
         if (tombstone.dot) |dot| {
             dot.assert_valid();
             assert_context_valid(tombstone.context);
@@ -318,8 +309,10 @@ test "apply_operation_to_row applies set_row set and remove to same row" {
     apply_operation_to_row(&row, .{ .remove = .{
         .table = "test",
         .row_key = "key-1",
-        .dot = .{ .client_id = test_client_id("client_1"), .version = 3 },
-        .context = remove_context,
+        .tombstone = .{
+            .dot = .{ .client_id = test_client_id("client_1"), .version = 3 },
+            .context = remove_context,
+        },
     } });
 
     try std.testing.expectEqual(@as(u32, 0), row.fields.count());
@@ -382,7 +375,7 @@ pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
             }
         },
         .remove => |remove_operation| {
-            row.tombstone.merge_tombstone(remove_operation.tombstone());
+            row.tombstone.merge_tombstone(remove_operation.tombstone);
 
             var row_iterator = row.fields.iterator();
             while (row_iterator.next()) |field| {
@@ -415,7 +408,8 @@ fn assert_capacity_for_operation(row: *const ORMapRow, operation: CRDTOperation)
         },
         .remove => |remove_operation| {
             var missing_context: usize = 0;
-            for (remove_operation.context.ids[0..remove_operation.context.count]) |id| {
+            const remove_context = remove_operation.tombstone.context;
+            for (remove_context.ids[0..remove_context.count]) |id| {
                 if (!row.tombstone.context.contains(id)) missing_context += 1;
             }
 
