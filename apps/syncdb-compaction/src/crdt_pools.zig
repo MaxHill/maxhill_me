@@ -6,6 +6,7 @@ const Dot = crdt.Dot;
 const Context = crdt.Context;
 const ClientId = crdt.ClientId;
 const Tombstone = crdt.Tombstone;
+const SetRowFields = crdt.SetRowFields;
 const ValidKey = crdt.ValidKey;
 const CRDTOperation = crdt.CRDTOperation;
 const LWWField = crdt.LWWField;
@@ -36,7 +37,7 @@ pub const CRDTOperationPoolSlot = struct {
     row_key_len: usize = 0,
 
     operation: CRDTOperation,
-    set_row_value: std.StringHashMap(std.json.Value),
+    set_row_value: SetRowFields,
     active_operation: ?std.meta.Tag(CRDTOperation),
     next_free: ?i32,
 
@@ -44,8 +45,7 @@ pub const CRDTOperationPoolSlot = struct {
         self.fba = std.heap.FixedBufferAllocator.init(&self.json_storage);
         errdefer self.fba.reset();
 
-        self.set_row_value = std.StringHashMap(std.json.Value).init(self.allocator());
-        try self.set_row_value.ensureTotalCapacity(set_row_fields_capacity);
+        self.set_row_value = .{};
 
         self.table_name_len = 0;
         self.row_key_len = 0;
@@ -64,8 +64,7 @@ pub const CRDTOperationPoolSlot = struct {
         dot: Dot,
     ) !void {
         assert(self.active_operation == null);
-        assert(self.set_row_value.count() == 0);
-        assert(self.set_row_value.capacity() >= set_row_fields_capacity);
+        assert(self.set_row_value.count == 0);
 
         try self.set_table_name(table);
         try self.set_row_key(row_key);
@@ -123,12 +122,12 @@ pub const CRDTOperationPoolSlot = struct {
         if (self.active_operation) |tag| {
             switch (tag) {
                 .set => {},
-                .set_row => self.set_row_value = self.operation.set_row.value,
+                .set_row => {},
                 .remove => {},
             }
         }
 
-        self.set_row_value.clearRetainingCapacity();
+        self.set_row_value = .{};
         self.table_name_len = 0;
         self.row_key_len = 0;
         self.operation = undefined;
@@ -235,8 +234,7 @@ pub const ORMapRowPoolSlot = struct {
         self.fba = std.heap.FixedBufferAllocator.init(&self.storage);
         errdefer self.fba.reset();
 
-        var fields = std.StringHashMap(LWWField).init(self.allocator());
-        try fields.ensureTotalCapacity(fields_capacity);
+        const fields = crdt.ORMapRowFields{};
 
         self.table_name_len = 0;
         self.row_key_len = 0;
@@ -287,7 +285,7 @@ pub const ORMapRowPoolSlot = struct {
 
     fn reset(self: *@This()) void {
         var fields = self.operation.fields;
-        fields.clearRetainingCapacity();
+        fields.clear();
 
         var tombstone = self.operation.tombstone;
         tombstone.dot = null;
@@ -399,8 +397,7 @@ pub const UserRowPoolSlot = struct {
         self.fba = std.heap.FixedBufferAllocator.init(&self.storage);
         errdefer self.fba.reset();
 
-        self.operation = UserRow.init(self.allocator());
-        try self.operation.ensureTotalCapacity(entries_capacity);
+        self.operation = .{};
         self.row_key_len = 0;
         self.next_free = null;
     }
@@ -417,11 +414,11 @@ pub const UserRowPoolSlot = struct {
 
         @memcpy(self.row_key_storage[0..row_key.len], row_key);
         self.row_key_len = row_key.len;
-        try self.operation.put("_key", .{ .string = self.row_key_storage[0..self.row_key_len] });
+        self.operation.put("_key", self.row_key_storage[0..self.row_key_len]);
     }
 
     fn reset(self: *@This()) void {
-        self.operation.clearRetainingCapacity();
+        self.operation.clear();
         self.row_key_len = 0;
         self.next_free = null;
     }
@@ -573,29 +570,29 @@ test "pools initialize preallocated slots" {
     var operation_pool = try CRDTOperationPool.init(allocator, 2);
     defer operation_pool.deinit();
     const operation_slot = operation_pool.acquire().?;
-    try std.testing.expect(operation_slot.set_row_value.capacity() >= CRDTOperationPoolSlot.set_row_fields_capacity);
+    try std.testing.expectEqual(@as(usize, 0), operation_slot.set_row_value.count);
     try std.testing.expect(operation_slot.active_operation == null);
     operation_pool.release(operation_slot);
 
     var row_pool = try ORMapRowPool.init(allocator, 2);
     defer row_pool.deinit();
     const row_slot = row_pool.acquire().?;
-    try std.testing.expect(row_slot.operation.fields.capacity() >= ORMapRowPoolSlot.fields_capacity);
+    try std.testing.expectEqual(@as(usize, 0), row_slot.operation.fields.count);
     try std.testing.expectEqual(@as(usize, 0), row_slot.operation.tombstone.context.count);
     row_pool.release(row_slot);
 
     var user_row_pool = try UserRowPool.init(allocator, 2);
     defer user_row_pool.deinit();
     const user_row_slot = user_row_pool.acquire().?;
-    try std.testing.expect(user_row_slot.operation.capacity() >= UserRowPoolSlot.entries_capacity);
+    try std.testing.expectEqual(@as(usize, 0), user_row_slot.operation.count);
     user_row_pool.release(user_row_slot);
 }
 
-test "pool slots reserve hash map capacity" {
+test "pool slots reserve operation storage" {
     var operation_slot: CRDTOperationPoolSlot = undefined;
     try operation_slot.init();
     try operation_slot.init_set_row("table", "row", .{ .client_id = test_client_id("client"), .version = 1 });
-    try std.testing.expect(operation_slot.operation.set_row.value.capacity() >= CRDTOperationPoolSlot.set_row_fields_capacity);
+    try std.testing.expectEqual(@as(usize, 0), operation_slot.operation.set_row.value.count);
 
     operation_slot.reset();
     try operation_slot.init_remove("table", "row", .{
@@ -607,14 +604,14 @@ test "pool slots reserve hash map capacity" {
     var row_slot: ORMapRowPoolSlot = undefined;
     try row_slot.init();
     try row_slot.init_row("table", "row");
-    try std.testing.expect(row_slot.operation.fields.capacity() >= ORMapRowPoolSlot.fields_capacity);
+    try std.testing.expectEqual(@as(usize, 0), row_slot.operation.fields.count);
     row_slot.init_tombstone(.{ .client_id = test_client_id("client"), .version = 1 });
     try std.testing.expectEqual(@as(usize, 0), row_slot.operation.tombstone.context.count);
 
     var user_row_slot: UserRowPoolSlot = undefined;
     try user_row_slot.init();
     user_row_slot.init_user_row();
-    try std.testing.expect(user_row_slot.operation.capacity() >= UserRowPoolSlot.entries_capacity);
+    try std.testing.expectEqual(@as(usize, 0), user_row_slot.operation.count);
 }
 
 test "operation slot copies operation identity strings" {
@@ -666,5 +663,5 @@ test "user row slot copies row key string" {
 
     @memset(row_key_buffer[0..], 'y');
 
-    try std.testing.expectEqualStrings("row-1", user_row_slot.operation.get("_key").?.string);
+    try std.testing.expectEqualStrings("row-1", user_row_slot.operation.get("_key").?);
 }
