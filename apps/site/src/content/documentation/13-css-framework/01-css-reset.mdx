@@ -5,3 +5,192 @@ date: 2025-11-11
 tags: [css]
 htmlId: doc-css-reset
 ---
+
+import CodeExample from "../../../components/CodeExample.astro";
+
+The reset is the first layer of the CSS framework. It removes browser defaults
+that often fight component styles, but it keeps useful native behavior.
+
+It is not a full theme. It does not set colors, typography tokens, layout, or
+component variants. Those live in later layers.
+
+```css
+@layer reset, foundations, semantics, base, components, layouts, utils;
+```
+
+## What the reset changes
+
+- Uses `border-box` sizing for every element and pseudo-element.
+- Stops browser text-size inflation.
+- Removes default margins from common flow content.
+- Keeps list markers by default, and only removes them from lists marked
+  `role="list"`.
+- Gives `body` a minimum viewport height and readable default line height.
+- Shortens line heights on `h1`–`h4` and common form controls.
+- Balances wrapping on `h1`–`h4`.
+- Makes classless links use the surrounding text color.
+- Makes images and pictures responsive by default.
+- Makes form controls inherit font styles.
+- Gives textareas without `rows` a useful minimum height.
+- Adds target scroll margin for fragment links.
+- Removes opinionated browser button chrome.
+
+## Box sizing
+
+All elements and their pseudo-elements use `box-sizing: border-box`. Width and
+height include padding and borders, which makes layout math predictable.
+
+<CodeExample
+  html={`<div class="reset-sizing-demo">
+  <div class="reset-sizing-card">
+    <strong>240px wide</strong>
+    <span>Padding and border stay inside the declared width.</span>
+  </div>
+</div>`}
+  css={`.reset-sizing-demo {
+  display: grid;
+  gap: var(--size-2);
+}
+
+.reset-sizing-card {
+width: 240px;
+padding: var(--size-3);
+border: var(--border);
+background: var(--color-surface);
+}`}
+/>
+
+## Flow content margins
+
+The reset removes default margins from common text and document elements. Use
+layout primitives or spacing utilities to create intentional rhythm.
+
+<CodeExample
+  html={`<article class="stack" data-gap="2">
+  <h3>Reset margins</h3>
+  <p>Headings and paragraphs start with no browser margin.</p>
+  <p>The space here comes from the parent stack gap.</p>
+</article>`}
+/>
+
+This keeps margin ownership on the parent layout, not on each child.
+
+## Lists
+
+The reset does not remove markers from all lists. It only removes them when a
+list declares `role="list"`, which is a signal that authored styles will handle
+the list presentation.
+
+<CodeExample
+  html={`<div class="grid reset-list-demo" data-cols="2" data-gap="3">
+  <div class="box" data-variant="surface">
+    <h3>Default list</h3>
+    <ul>
+      <li>Markers stay visible.</li>
+      <li>Browser list semantics stay obvious.</li>
+    </ul>
+  </div>
+
+  <div class="box" data-variant="surface">
+    <h3>Role list</h3>
+    <ul role="list" class="stack" data-gap="1">
+      <li class="box">Markers are removed.</li>
+      <li class="box">The component owns layout.</li>
+    </ul>
+  </div>
+</div>`}
+  css={`.reset-list-demo h3 {
+  margin-block-end: var(--size-2);
+}`}
+/>
+
+## Images and pictures
+
+Images are block-level and cannot overflow their container by default.
+
+<CodeExample
+  html={`<div class="reset-media-frame">
+  <img
+    alt="Striped placeholder"
+    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='220' viewBox='0 0 900 220'%3E%3Crect width='900' height='220' fill='%23f3eadf'/%3E%3Cpath d='M0 220 220 0h120L120 220zm240 0L460 0h120L360 220zm240 0L700 0h120L600 220z' fill='%23d2b48c'/%3E%3C/svg%3E"
+  />
+</div>`}
+  css={`
+    .reset-media-frame {
+      width: min(100%, 360px);
+      border: var(--border);
+      overflow: hidden;
+    }
+  `}
+/>
+
+The image file is wider than the frame, but `max-width: 100%` keeps it inside.
+`display: block` removes the inline-image baseline gap.
+
+## Forms and buttons
+
+Form controls inherit the surrounding font. Buttons also lose their default
+browser chrome so component styles can start from a clean element.
+
+<CodeExample
+  html={`<form class="stack reset-form-demo" data-gap="2">
+  <label for="reset-demo-input">Inherited form font</label>
+  <input id="reset-demo-input" value="Input uses the current font" />
+
+<textarea aria-label="Reset textarea">
+  Textarea inherits the same font and has a useful minimum height when rows is
+  omitted.
+</textarea>
+
+  <button type="button">Unstyled native button</button>
+  <button type="button" class="button">Styled component button</button>
+</form>`}
+  css={`.reset-form-demo {
+  max-width: 520px;
+}
+
+.reset-form-demo input,
+.reset-form-demo textarea {
+border: var(--border);
+padding: var(--size-2);
+background: var(--color-background);
+}
+
+.reset-form-demo > button:not(.button) {
+width: fit-content;
+border: var(--border);
+padding: var(--size-2);
+}`}
+/>
+
+Use `.button` from the restyle layer when you need the site button treatment.
+The reset only prepares the native element.
+
+## Links
+
+Classless links keep the current text color. They still behave like links, but
+they do not introduce a surprise browser blue into components.
+
+<CodeExample
+  html={`<div class="stack" data-gap="2">
+  <p>
+    This <a href="#doc-css-reset">classless link</a> uses currentColor.
+  </p>
+
+  <p data-text="mid">
+    This <a href="#doc-css-reset">link inside muted text</a> stays muted.
+  </p>
+</div>`}
+/>
+
+## Use with other layers
+
+The reset gives later layers a stable baseline:
+
+1. Use reset for browser-normalization only.
+2. Use foundation and semantic tokens for raw values.
+3. Use restyle for common element and component treatment.
+4. Use layout primitives and utilities for page structure and spacing.
+
+If a rule depends on design tokens or component variants, it belongs after the
+reset layer.
