@@ -5,7 +5,8 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
-// TODO: object_fields_max is not a good name, it can also not be shared between ORMapRowFields and SetRowFields
+// TODO: object_fields_max is not a good name, it can also not be
+// shared between ORMapRowFields and SetRowFields
 const object_fields_max = 200;
 const user_row_fields_max = object_fields_max + 1;
 const context_max = 200;
@@ -35,9 +36,16 @@ pub const Dot = struct {
         self.assert_valid();
         target.assert_valid();
 
-        const version_order = std.math.order(self.version, target.version);
+        const version_order = std.math.order(
+            self.version,
+            target.version,
+        );
         return switch (version_order) {
-            .eq => std.mem.order(u8, &self.client_id, &target.client_id),
+            .eq => std.mem.order(
+                u8,
+                &self.client_id,
+                &target.client_id,
+            ),
             else => version_order,
         };
     }
@@ -50,7 +58,10 @@ pub const SetRowFields = struct {
 
     pub fn get(self: *const @This(), key: []const u8) ?JsonBytes {
         assert(key.len > 0);
-        for (self.keys[0..self.count], self.values[0..self.count]) |entry_key, value| {
+        for (
+            self.keys[0..self.count],
+            self.values[0..self.count],
+        ) |entry_key, value| {
             if (std.mem.eql(u8, entry_key, key)) return value;
         }
         return null;
@@ -63,7 +74,10 @@ pub const SetRowFields = struct {
 
     pub fn put(self: *@This(), key: []const u8, value: JsonBytes) void {
         assert(key.len > 0);
-        for (self.keys[0..self.count], self.values[0..self.count]) |entry_key, *entry_value| {
+        for (
+            self.keys[0..self.count],
+            self.values[0..self.count],
+        ) |entry_key, *entry_value| {
             if (std.mem.eql(u8, entry_key, key)) {
                 entry_value.* = value;
                 return;
@@ -83,7 +97,10 @@ pub const Context = struct {
     count: usize = 0,
 
     pub fn get(self: *const @This(), id: ClientId) ?i32 {
-        for (self.ids[0..self.count], self.versions[0..self.count]) |x, v| {
+        for (
+            self.ids[0..self.count],
+            self.versions[0..self.count],
+        ) |x, v| {
             if (std.mem.eql(u8, &x, &id)) return v;
         }
         return null;
@@ -95,7 +112,10 @@ pub const Context = struct {
 
     pub fn put_max(self: *@This(), id: ClientId, version: i32) void {
         assert(version >= 0);
-        for (self.ids[0..self.count], self.versions[0..self.count]) |entry_id, *entry_version| {
+        for (
+            self.ids[0..self.count],
+            self.versions[0..self.count],
+        ) |entry_id, *entry_version| {
             if (std.mem.eql(u8, &entry_id, &id)) {
                 entry_version.* = @max(entry_version.*, version);
                 return;
@@ -170,7 +190,10 @@ pub const Tombstone = struct {
 
     fn merge(self: *@This(), dot: Dot, context: *const Context) void {
         if (self.dot == null or dot.order(self.dot.?) == .gt) self.dot = dot;
-        for (context.ids[0..context.count], context.versions[0..context.count]) |id, v|
+        for (
+            context.ids[0..context.count],
+            context.versions[0..context.count],
+        ) |id, v|
             self.context.put_max(id, v);
     }
 
@@ -290,9 +313,18 @@ test "ORMapRowFields put get remove and clear" {
     assert(fields.count == 0);
 
     const client_id = test_client_id("client_1");
-    const first_dot = Dot{ .client_id = client_id, .version = 1 };
-    const second_dot = Dot{ .client_id = client_id, .version = 2 };
-    const third_dot = Dot{ .client_id = client_id, .version = 3 };
+    const first_dot = Dot{
+        .client_id = client_id,
+        .version = 1,
+    };
+    const second_dot = Dot{
+        .client_id = client_id,
+        .version = 2,
+    };
+    const third_dot = Dot{
+        .client_id = client_id,
+        .version = 3,
+    };
 
     fields.put("name", "\"max\"", first_dot);
     fields.put("age", "31", second_dot);
@@ -300,13 +332,25 @@ test "ORMapRowFields put get remove and clear" {
 
     try std.testing.expect(fields.contains("name"));
     try std.testing.expect(fields.contains("age"));
-    try std.testing.expectEqualStrings("\"max\"", fields.get("name").?.value);
-    try std.testing.expectEqualStrings("31", fields.get("age").?.value);
+    try std.testing.expectEqualStrings(
+        "\"max\"",
+        fields.get("name").?.value,
+    );
+    try std.testing.expectEqualStrings(
+        "31",
+        fields.get("age").?.value,
+    );
 
     fields.put("name", "\"maxwell\"", third_dot);
     assert(fields.count == 2);
-    try std.testing.expectEqualStrings("\"maxwell\"", fields.get("name").?.value);
-    try std.testing.expectEqual(@as(i32, 3), fields.get("name").?.dot.version);
+    try std.testing.expectEqualStrings(
+        "\"maxwell\"",
+        fields.get("name").?.value,
+    );
+    try std.testing.expectEqual(
+        @as(i32, 3),
+        fields.get("name").?.dot.version,
+    );
 
     try std.testing.expect(fields.remove("name"));
     assert(fields.count == 1);
@@ -349,7 +393,10 @@ pub const UserRow = struct {
     pub fn get(self: *const @This(), key: []const u8) ?JsonBytes {
         assert(key.len > 0);
         assert(self.count <= user_row_fields_max);
-        for (self.keys[0..self.count], self.values[0..self.count]) |entry_key, value| {
+        for (
+            self.keys[0..self.count],
+            self.values[0..self.count],
+        ) |entry_key, value| {
             if (std.mem.eql(u8, entry_key, key)) return value;
         }
         return null;
@@ -364,7 +411,10 @@ pub const UserRow = struct {
     pub fn put(self: *@This(), key: []const u8, value: JsonBytes) void {
         assert(key.len > 0);
         assert(self.count <= user_row_fields_max);
-        for (self.keys[0..self.count], self.values[0..self.count]) |entry_key, *entry_value| {
+        for (
+            self.keys[0..self.count],
+            self.values[0..self.count],
+        ) |entry_key, *entry_value| {
             if (std.mem.eql(u8, entry_key, key)) {
                 entry_value.* = value;
                 return;
@@ -426,12 +476,18 @@ test "to_user_row" {
     fields.put(
         "name",
         "\"max\"",
-        .{ .client_id = test_client_id("client_1"), .version = 1 },
+        .{
+            .client_id = test_client_id("client_1"),
+            .version = 1,
+        },
     );
     fields.put(
         "age",
         "31",
-        .{ .client_id = test_client_id("client_1"), .version = 0 },
+        .{
+            .client_id = test_client_id("client_1"),
+            .version = 0,
+        },
     );
 
     const row_key = "key-1";
@@ -476,7 +532,7 @@ test "apply_operation_to_row applies set_row set and remove to same row" {
     set_row_value.put("name", "\"max\"");
     set_row_value.put("age", "31");
 
-    apply_operation_to_row(std.testing.allocator, &row, .{ .set_row = .{
+    apply_operation_to_row(&row, .{ .set_row = .{
         .table = "test",
         .row_key = "key-1",
         .value = set_row_value,
@@ -487,7 +543,7 @@ test "apply_operation_to_row applies set_row set and remove to same row" {
     try std.testing.expectEqualStrings("\"max\"", row.fields.get("name").?.value);
     try std.testing.expectEqualStrings("31", row.fields.get("age").?.value);
 
-    apply_operation_to_row(std.testing.allocator, &row, .{ .set = .{
+    apply_operation_to_row(&row, .{ .set = .{
         .table = "test",
         .row_key = "key-1",
         .field = "name",
@@ -502,7 +558,7 @@ test "apply_operation_to_row applies set_row set and remove to same row" {
     var remove_context = Context{};
     remove_context.put_max(test_client_id("client_1"), 2);
 
-    apply_operation_to_row(std.testing.allocator, &row, .{ .remove = .{
+    apply_operation_to_row(&row, .{ .remove = .{
         .table = "test",
         .row_key = "key-1",
         .tombstone = .{
@@ -519,11 +575,11 @@ test "apply_operation_to_row applies set_row set and remove to same row" {
 ///
 /// Capacity invariant: rows passed to this function must be initialized with
 /// enough field and tombstone-context capacity for all valid operations. This
-/// function does not return allocation errors. A failed `put` means the caller
-/// violated that capacity contract, or the fixed backing storage was sized
-/// incorrectly, so allocation failure is treated as a bug instead of a
+/// function does not return capacity errors. A failed capacity assertion means
+/// the caller violated that capacity contract, or the fixed backing storage was
+/// sized incorrectly, so capacity exhaustion is treated as a bug instead of a
 /// recoverable condition.
-pub fn apply_operation_to_row(scratch_allocator: std.mem.Allocator, row: *ORMapRow, operation: CRDTOperation) void {
+pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
     operation.assert_valid();
     row.assert_valid();
     assert_capacity_for_operation(row, operation);
@@ -546,7 +602,6 @@ pub fn apply_operation_to_row(scratch_allocator: std.mem.Allocator, row: *ORMapR
                     .value = set_operation.value,
                     .dot = set_operation.dot,
                 },
-                scratch_allocator,
                 row,
             );
         },
@@ -569,7 +624,6 @@ pub fn apply_operation_to_row(scratch_allocator: std.mem.Allocator, row: *ORMapR
                         .value = value,
                         .dot = set_row_operation.dot,
                     },
-                    scratch_allocator,
                     row,
                 );
             }
@@ -601,7 +655,9 @@ fn assert_capacity_for_operation(row: *const ORMapRow, operation: CRDTOperation)
         },
         .set_row => |set_row_operation| {
             var missing_fields: @TypeOf(row.fields.count) = 0;
-            for (set_row_operation.value.keys[0..set_row_operation.value.count]) |field_key| {
+            for (
+                set_row_operation.value.keys[0..set_row_operation.value.count],
+            ) |field_key| {
                 if (!row.fields.contains(field_key)) missing_fields += 1;
             }
 
@@ -625,7 +681,6 @@ fn update_fields(
         value: JsonBytes,
         dot: Dot,
     },
-    scratch_allocator: std.mem.Allocator,
     row: *ORMapRow,
 ) void {
     assert(operation.field_key.len > 0);
@@ -639,7 +694,6 @@ fn update_fields(
             .value = operation.value,
             .dot = operation.dot,
         },
-        scratch_allocator,
         row.*,
     ) == .operation) {
         row.fields.put(
@@ -656,7 +710,6 @@ fn pick_field(
         value: JsonBytes,
         dot: Dot,
     },
-    scratch_allocator: std.mem.Allocator,
     row: ORMapRow,
 ) enum {
     operation,
@@ -671,19 +724,10 @@ fn pick_field(
         switch (operation.dot.order(row_field.dot)) {
             // Operations dot dominates Rows field, replace the fields value
             .gt => return .operation,
-            // Rows dot and operations dot are equal but operation wins by value tiebreaking
-            .eq => if (compare_values(
-                scratch_allocator,
-                operation.value,
-                row_field.value,
-            ) catch |parse_error| {
-                std.debug.panic("CRDT value comparison failed: {}", .{parse_error});
-            } == .gt) {
-                return .operation;
-            } else {
-                // Both values and dot's are equal, no operation needed
-                return .row;
-            },
+            .eq => std.debug.panic(
+                "CRDT invariant violated: duplicate dot for field {s}",
+                .{operation.field_key},
+            ),
             else => return .row,
         }
     }
@@ -700,10 +744,20 @@ pub fn compare_dots(a: Dot, b: Dot) std.math.Order {
 }
 
 pub fn compare_values(scratch_allocator: std.mem.Allocator, a: JsonBytes, b: JsonBytes) !std.math.Order {
-    var parsed_a = try std.json.parseFromSlice(std.json.Value, scratch_allocator, a, .{});
+    var parsed_a = try std.json.parseFromSlice(
+        std.json.Value,
+        scratch_allocator,
+        a,
+        .{},
+    );
     defer parsed_a.deinit();
 
-    var parsed_b = try std.json.parseFromSlice(std.json.Value, scratch_allocator, b, .{});
+    var parsed_b = try std.json.parseFromSlice(
+        std.json.Value,
+        scratch_allocator,
+        b,
+        .{},
+    );
     defer parsed_b.deinit();
 
     return compare_json_values(parsed_a.value, parsed_b.value);
@@ -715,17 +769,34 @@ fn compare_json_values(a: std.json.Value, b: std.json.Value) std.math.Order {
 
     ord = switch (a) {
         .null => .eq,
-        .bool => |a_bool| std.math.order(@intFromBool(a_bool), @intFromBool(b.bool)),
+        .bool => |a_bool| std.math.order(
+            @intFromBool(a_bool),
+            @intFromBool(b.bool),
+        ),
         .integer => |a_integer| std.math.order(a_integer, b.integer),
         .float => |a_float| {
             assert(!std.math.isNan(a_float));
             assert(!std.math.isNan(b.float));
             return std.math.order(a_float, b.float);
         },
-        .number_string => |a_number_string| std.mem.order(u8, a_number_string, b.number_string),
-        .string => |a_string| std.mem.order(u8, a_string, b.string),
-        .array => |a_array| compare_arrays(a_array, b.array),
-        .object => |a_object| compare_objects(a_object, b.object),
+        .number_string => |a_number_string| std.mem.order(
+            u8,
+            a_number_string,
+            b.number_string,
+        ),
+        .string => |a_string| std.mem.order(
+            u8,
+            a_string,
+            b.string,
+        ),
+        .array => |a_array| compare_arrays(
+            a_array,
+            b.array,
+        ),
+        .object => |a_object| compare_objects(
+            a_object,
+            b.object,
+        ),
     };
 
     return ord;
@@ -734,12 +805,28 @@ fn compare_json_values(a: std.json.Value, b: std.json.Value) std.math.Order {
 test "compare_values sanity checks" {
     const allocator = std.testing.allocator;
 
-    try std.testing.expect(try compare_values(allocator, "1", "2") == .lt);
-    try std.testing.expect(try compare_values(allocator, "\"abcd\"", "\"abc\"") == .gt);
-    try std.testing.expect(try compare_values(allocator, "false", "true") == .lt);
+    try std.testing.expect(try compare_values(
+        allocator,
+        "1",
+        "2",
+    ) == .lt);
+    try std.testing.expect(try compare_values(
+        allocator,
+        "\"abcd\"",
+        "\"abc\"",
+    ) == .gt);
+    try std.testing.expect(try compare_values(
+        allocator,
+        "false",
+        "true",
+    ) == .lt);
 
     // Type order check: integer < string
-    try std.testing.expect(try compare_values(allocator, "1", "\"1\"") == .lt);
+    try std.testing.expect(try compare_values(
+        allocator,
+        "1",
+        "\"1\"",
+    ) == .lt);
 }
 
 fn value_type_rank(value: std.json.Value) u8 {
@@ -755,11 +842,9 @@ fn value_type_rank(value: std.json.Value) u8 {
     };
 }
 
-// This test is a duplication by design
-// because we should never change the
-// ordering of types since that
-// will change determinism
-// semantics.
+// This test is a duplication by design because we should never
+// change the ordering of types since that will change
+// determinism semantics.
 test "value_type_rank" {
     var array = std.json.Array.init(std.testing.allocator);
     defer array.deinit();
