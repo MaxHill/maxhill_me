@@ -383,83 +383,27 @@ pub const ORMapRow = struct {
 
         row.tombstone.assert_valid();
     }
-};
 
-pub const UserRow = struct {
-    keys: [user_row_fields_max][]const u8 = undefined,
-    values: [user_row_fields_max]JsonBytes = undefined,
-    count: usize = 0,
+    const UserRowView = struct {
+        row: *const ORMapRow,
 
-    pub fn get(self: *const @This(), key: []const u8) ?JsonBytes {
-        assert(key.len > 0);
-        assert(self.count <= user_row_fields_max);
-        for (
-            self.keys[0..self.count],
-            self.values[0..self.count],
-        ) |entry_key, value| {
-            if (std.mem.eql(u8, entry_key, key)) return value;
-        }
-        return null;
-    }
-
-    pub fn contains(self: *const @This(), key: []const u8) bool {
-        assert(key.len > 0);
-        assert(self.count <= user_row_fields_max);
-        return self.get(key) != null;
-    }
-
-    pub fn put(self: *@This(), key: []const u8, value: JsonBytes) void {
-        assert(key.len > 0);
-        assert(self.count <= user_row_fields_max);
-        for (
-            self.keys[0..self.count],
-            self.values[0..self.count],
-        ) |entry_key, *entry_value| {
-            if (std.mem.eql(u8, entry_key, key)) {
-                entry_value.* = value;
-                return;
+        pub fn get(self: @This(), key: []const u8) ?JsonBytes {
+            if (std.mem.eql(u8, key, "_key")) {
+                return self.row.row_key;
             }
+
+            if (self.row.fields.get(key)) |field| {
+                return field.value;
+            }
+
+            return null;
         }
+    };
 
-        assert(self.count < user_row_fields_max);
-        self.keys[self.count] = key;
-        self.values[self.count] = value;
-        self.count += 1;
-    }
-
-    pub fn clear(self: *@This()) void {
-        assert(self.count <= user_row_fields_max);
-        self.count = 0;
+    pub fn user_row_view(self: *const @This()) UserRowView {
+        return .{ .row = self };
     }
 };
-
-/// Converts an internal row to a user-facing row by
-/// constructing an object of field values
-pub fn to_user_row(out: *UserRow, row: ORMapRow) !bool {
-    assert(out.count == 0);
-    assert(user_row_fields_max >= row.fields.count + 1);
-    row.assert_valid();
-
-    if (row.fields.count == 0) {
-        assert(out.count == 0);
-        return false;
-    }
-
-    out.put("_key", row.row_key);
-
-    for (
-        row.fields.keys[0..row.fields.count],
-        row.fields.values[0..row.fields.count],
-    ) |field_key, value| {
-        // UserRow is a borrowed view: this copies the key and value slices,
-        // not their backing bytes.
-        out.put(field_key, value);
-    }
-
-    assert(out.count == row.fields.count + 1);
-    assert(out.contains("_key"));
-    return true;
-}
 
 fn test_client_id(bytes: []const u8) ClientId {
     assert(bytes.len <= @sizeOf(ClientId));
@@ -468,10 +412,7 @@ fn test_client_id(bytes: []const u8) ClientId {
     @memcpy(id[0..bytes.len], bytes);
     return id;
 }
-
 test "to_user_row" {
-    var user_row = UserRow{};
-
     var fields = ORMapRowFields{};
     fields.put(
         "name",
@@ -498,8 +439,7 @@ test "to_user_row" {
         .tombstone = .{ .dot = null, .context = .{} },
     };
 
-    const result = try to_user_row(&user_row, or_map_row);
-    try std.testing.expect(result);
+    const user_row = or_map_row.user_row_view();
 
     if (user_row.get("name")) |actual| {
         try std.testing.expectEqualStrings("\"max\"", actual);
@@ -518,57 +458,6 @@ test "to_user_row" {
     } else {
         @panic("missing '_key' field");
     }
-}
-
-test "apply_operation_to_row applies set_row set and remove to same row" {
-    var row = ORMapRow{
-        .table_name = "test",
-        .row_key = "key-1",
-        .fields = .{},
-        .tombstone = .{ .dot = null, .context = .{} },
-    };
-
-    var set_row_value = SetRowFields{};
-    set_row_value.put("name", "\"max\"");
-    set_row_value.put("age", "31");
-
-    apply_operation_to_row(&row, .{ .set_row = .{
-        .table = "test",
-        .row_key = "key-1",
-        .value = set_row_value,
-        .dot = .{ .client_id = test_client_id("client_1"), .version = 1 },
-    } });
-
-    try std.testing.expectEqual(@as(usize, 2), row.fields.count);
-    try std.testing.expectEqualStrings("\"max\"", row.fields.get("name").?.value);
-    try std.testing.expectEqualStrings("31", row.fields.get("age").?.value);
-
-    apply_operation_to_row(&row, .{ .set = .{
-        .table = "test",
-        .row_key = "key-1",
-        .field = "name",
-        .value = "\"maxwell\"",
-        .dot = .{ .client_id = test_client_id("client_1"), .version = 2 },
-    } });
-
-    try std.testing.expectEqual(@as(usize, 2), row.fields.count);
-    try std.testing.expectEqualStrings("\"maxwell\"", row.fields.get("name").?.value);
-    try std.testing.expectEqual(@as(i32, 2), row.fields.get("name").?.dot.version);
-
-    var remove_context = Context{};
-    remove_context.put_max(test_client_id("client_1"), 2);
-
-    apply_operation_to_row(&row, .{ .remove = .{
-        .table = "test",
-        .row_key = "key-1",
-        .tombstone = .{
-            .dot = .{ .client_id = test_client_id("client_1"), .version = 3 },
-            .context = remove_context,
-        },
-    } });
-
-    try std.testing.expectEqual(@as(usize, 0), row.fields.count);
-    try std.testing.expect(row.tombstone.active());
 }
 
 /// Applies one CRDT operation to an existing row.
@@ -676,11 +565,7 @@ fn assert_capacity_for_operation(row: *const ORMapRow, operation: CRDTOperation)
 }
 
 fn update_fields(
-    operation: struct {
-        field_key: []const u8,
-        value: JsonBytes,
-        dot: Dot,
-    },
+    operation: struct { field_key: []const u8, value: JsonBytes, dot: Dot },
     row: *ORMapRow,
 ) void {
     assert(operation.field_key.len > 0);
@@ -733,6 +618,56 @@ fn pick_field(
     }
     return .operation;
 }
+test "apply_operation_to_row applies set_row set and remove to same row" {
+    var row = ORMapRow{
+        .table_name = "test",
+        .row_key = "key-1",
+        .fields = .{},
+        .tombstone = .{ .dot = null, .context = .{} },
+    };
+
+    var set_row_value = SetRowFields{};
+    set_row_value.put("name", "\"max\"");
+    set_row_value.put("age", "31");
+
+    apply_operation_to_row(&row, .{ .set_row = .{
+        .table = "test",
+        .row_key = "key-1",
+        .value = set_row_value,
+        .dot = .{ .client_id = test_client_id("client_1"), .version = 1 },
+    } });
+
+    try std.testing.expectEqual(@as(usize, 2), row.fields.count);
+    try std.testing.expectEqualStrings("\"max\"", row.fields.get("name").?.value);
+    try std.testing.expectEqualStrings("31", row.fields.get("age").?.value);
+
+    apply_operation_to_row(&row, .{ .set = .{
+        .table = "test",
+        .row_key = "key-1",
+        .field = "name",
+        .value = "\"maxwell\"",
+        .dot = .{ .client_id = test_client_id("client_1"), .version = 2 },
+    } });
+
+    try std.testing.expectEqual(@as(usize, 2), row.fields.count);
+    try std.testing.expectEqualStrings("\"maxwell\"", row.fields.get("name").?.value);
+    try std.testing.expectEqual(@as(i32, 2), row.fields.get("name").?.dot.version);
+
+    var remove_context = Context{};
+    remove_context.put_max(test_client_id("client_1"), 2);
+
+    apply_operation_to_row(&row, .{ .remove = .{
+        .table = "test",
+        .row_key = "key-1",
+        .tombstone = .{
+            .dot = .{ .client_id = test_client_id("client_1"), .version = 3 },
+            .context = remove_context,
+        },
+    } });
+
+    try std.testing.expectEqual(@as(usize, 0), row.fields.count);
+    try std.testing.expect(row.tombstone.active());
+}
 
 //  ------------------------------------------------------------------------
 //  Utils
@@ -741,191 +676,6 @@ pub fn compare_dots(a: Dot, b: Dot) std.math.Order {
     const dot_order = a.order(b);
     assert(dot_order != .eq);
     return dot_order;
-}
-
-pub fn compare_values(scratch_allocator: std.mem.Allocator, a: JsonBytes, b: JsonBytes) !std.math.Order {
-    var parsed_a = try std.json.parseFromSlice(
-        std.json.Value,
-        scratch_allocator,
-        a,
-        .{},
-    );
-    defer parsed_a.deinit();
-
-    var parsed_b = try std.json.parseFromSlice(
-        std.json.Value,
-        scratch_allocator,
-        b,
-        .{},
-    );
-    defer parsed_b.deinit();
-
-    return compare_json_values(parsed_a.value, parsed_b.value);
-}
-
-fn compare_json_values(a: std.json.Value, b: std.json.Value) std.math.Order {
-    var ord = compare_value_type(a, b);
-    if (ord != .eq) return ord;
-
-    ord = switch (a) {
-        .null => .eq,
-        .bool => |a_bool| std.math.order(
-            @intFromBool(a_bool),
-            @intFromBool(b.bool),
-        ),
-        .integer => |a_integer| std.math.order(a_integer, b.integer),
-        .float => |a_float| {
-            assert(!std.math.isNan(a_float));
-            assert(!std.math.isNan(b.float));
-            return std.math.order(a_float, b.float);
-        },
-        .number_string => |a_number_string| std.mem.order(
-            u8,
-            a_number_string,
-            b.number_string,
-        ),
-        .string => |a_string| std.mem.order(
-            u8,
-            a_string,
-            b.string,
-        ),
-        .array => |a_array| compare_arrays(
-            a_array,
-            b.array,
-        ),
-        .object => |a_object| compare_objects(
-            a_object,
-            b.object,
-        ),
-    };
-
-    return ord;
-}
-
-test "compare_values sanity checks" {
-    const allocator = std.testing.allocator;
-
-    try std.testing.expect(try compare_values(
-        allocator,
-        "1",
-        "2",
-    ) == .lt);
-    try std.testing.expect(try compare_values(
-        allocator,
-        "\"abcd\"",
-        "\"abc\"",
-    ) == .gt);
-    try std.testing.expect(try compare_values(
-        allocator,
-        "false",
-        "true",
-    ) == .lt);
-
-    // Type order check: integer < string
-    try std.testing.expect(try compare_values(
-        allocator,
-        "1",
-        "\"1\"",
-    ) == .lt);
-}
-
-fn value_type_rank(value: std.json.Value) u8 {
-    return switch (value) {
-        .null => 0,
-        .bool => 1,
-        .integer => 2,
-        .float => 3,
-        .number_string => 4,
-        .string => 5,
-        .array => 6,
-        .object => 7,
-    };
-}
-
-// This test is a duplication by design because we should never
-// change the ordering of types since that will change
-// determinism semantics.
-test "value_type_rank" {
-    var array = std.json.Array.init(std.testing.allocator);
-    defer array.deinit();
-
-    const object: std.json.ObjectMap = .{};
-
-    assert(value_type_rank(.null) == 0);
-    assert(value_type_rank(.{ .bool = false }) == 1);
-    assert(value_type_rank(.{ .integer = 1 }) == 2);
-    assert(value_type_rank(.{ .float = 1 }) == 3);
-    assert(value_type_rank(.{ .number_string = "1" }) == 4);
-    assert(value_type_rank(.{ .string = "str" }) == 5);
-    assert(value_type_rank(.{ .array = array }) == 6);
-    assert(value_type_rank(.{ .object = object }) == 7);
-}
-
-/// Compare json types with the following order:
-/// null < bool < integer < float < number_string < string < array < object
-pub fn compare_value_type(a: std.json.Value, b: std.json.Value) std.math.Order {
-    return std.math.order(value_type_rank(a), value_type_rank(b));
-}
-
-fn compare_arrays(a: std.json.Array, b: std.json.Array) std.math.Order {
-    const n = @min(a.items.len, b.items.len);
-    var i: usize = 0;
-    while (i < n) : (i += 1) {
-        const o = compare_json_values(a.items[i], b.items[i]); // TODO: remove recursion
-        if (o != .eq) return o;
-    }
-    return std.math.order(a.items.len, b.items.len);
-}
-
-fn next_object_key_after(object_map: std.json.ObjectMap, previous_key: ?[]const u8) ?[]const u8 {
-    var iterator = object_map.iterator();
-    var best: ?[]const u8 = null;
-
-    while (iterator.next()) |entry| {
-        const key = entry.key_ptr.*;
-        if (previous_key) |previous| {
-            if (std.mem.order(u8, key, previous) != .gt) continue;
-        }
-        if (best == null or std.mem.order(u8, key, best.?) == .lt) {
-            best = key;
-        }
-    }
-    return best;
-}
-
-/// Note that this function is O(n^2) to avoids allocations.
-/// This should be fine since most values should be tie
-/// broken before getting to this stage.
-fn compare_objects(a: std.json.ObjectMap, b: std.json.ObjectMap) std.math.Order {
-    assert(a.count() <= object_fields_max);
-    assert(b.count() <= object_fields_max);
-    var previous: ?[]const u8 = null;
-
-    while (true) {
-        const ka = next_object_key_after(a, previous);
-        const kb = next_object_key_after(b, previous);
-
-        if (ka == null and kb == null) return .eq;
-        if (ka == null) return .lt;
-        if (kb == null) return .gt;
-
-        const ko = std.mem.order(u8, ka.?, kb.?);
-        if (ko != .eq) return ko;
-
-        const va = a.get(ka.?) orelse {
-            assert(false);
-            unreachable;
-        };
-        const vb = b.get(kb.?) orelse {
-            assert(false);
-            unreachable;
-        };
-
-        const vo = compare_json_values(va, vb);
-        if (vo != .eq) return vo;
-
-        previous = ka.?;
-    }
 }
 
 //  ------------------------------------------------------------------------
