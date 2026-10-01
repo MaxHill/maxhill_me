@@ -122,7 +122,7 @@ let assert_remove_roundtrip_and_fetch_for_second_client () =
   in
   assert (List.length response.operations = 2)
 
-let assert_reject_non_contiguous_versions () =
+let assert_accept_non_contiguous_versions () =
   with_connection @@ fun conn ->
   (match Sync.Repository.init_schema conn with
   | Error err -> failwith (Sync.Repository.error_to_string err)
@@ -132,8 +132,22 @@ let assert_reject_non_contiguous_versions () =
       "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"table\":\"todos\",\"rowKey\":\"r1\",\"field\":\"title\",\"value\":\"A\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}},{\"type\":\"set\",\"table\":\"todos\",\"rowKey\":\"r2\",\"field\":\"title\",\"value\":\"B\",\"dot\":{\"clientId\":\"client-1\",\"version\":3}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
   match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" request with
-  | Ok _ -> failwith "expected non-contiguous rejection"
-  | Error _ -> ()
+  | Error err -> fail_with_sync_error "non-contiguous request failed: " err
+  | Ok _ -> ()
+
+let assert_reject_versions_that_go_backwards () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error err -> failwith (Sync.Repository.error_to_string err)
+  | Ok () -> ());
+  let request =
+    decode_with_valid_hash
+      "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"table\":\"todos\",\"rowKey\":\"r1\",\"field\":\"title\",\"value\":\"A\",\"dot\":{\"clientId\":\"client-1\",\"version\":3}},{\"type\":\"set\",\"table\":\"todos\",\"rowKey\":\"r2\",\"field\":\"title\",\"value\":\"B\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
+  in
+  match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" request with
+  | Error (Sync.Sync_engine.Non_monotonic_versions "client-1") -> ()
+  | Error err -> fail_with_sync_error "expected non-monotonic rejection, got: " err
+  | Ok _ -> failwith "expected non-monotonic rejection"
 
 let assert_reject_remove_context_unseen_dot () =
   with_connection @@ fun conn ->
@@ -197,7 +211,8 @@ let () =
   assert_set_roundtrip_and_fetch_for_second_client ();
   assert_set_row_roundtrip_and_fetch_for_second_client ();
   assert_remove_roundtrip_and_fetch_for_second_client ();
-  assert_reject_non_contiguous_versions ();
+  assert_accept_non_contiguous_versions ();
+  assert_reject_versions_that_go_backwards ();
   assert_reject_remove_context_unseen_dot ();
   assert_reject_invalid_request_hash ();
   assert_tenant_isolation_between_streams ()

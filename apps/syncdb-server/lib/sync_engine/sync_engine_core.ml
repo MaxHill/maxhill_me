@@ -32,7 +32,7 @@ type sync_response = {
 type sync_error =
   | Request_integrity_failed
   | Client_state_out_of_sync of { last_seen : int64; max_server : int64 }
-  | Non_contiguous_versions of string
+  | Non_monotonic_versions of string
   | Remove_context_unseen_dot of { client_id : string; version : int64 }
   | Storage_error of string
   | Decode_error of string
@@ -42,8 +42,8 @@ let sync_error_to_string = function
   | Client_state_out_of_sync { last_seen; max_server } ->
       Printf.sprintf "client state out of sync: lastSeen=%Ld max=%Ld" last_seen
         max_server
-  | Non_contiguous_versions client_id ->
-      Printf.sprintf "request versions not contiguous for client %s" client_id
+  | Non_monotonic_versions client_id ->
+      Printf.sprintf "request versions went backwards for client %s" client_id
   | Remove_context_unseen_dot { client_id; version } ->
       Printf.sprintf "remove context references unseen dot %s#%Ld" client_id
         version

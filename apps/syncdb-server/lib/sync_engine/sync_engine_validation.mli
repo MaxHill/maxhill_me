@@ -10,7 +10,7 @@ val ensure_client_not_ahead
   -> (unit, sync_error) result
 
 (** Preserve per-client causality so merge semantics stay deterministic. *)
-val ensure_versions_contiguous : crdt_operation list -> (unit, sync_error) result
+val ensure_versions_monotonic : crdt_operation list -> (unit, sync_error) result
 
 (** Reject tombstones that reference dots we cannot prove are known. *)
 val ensure_remove_context_known
