@@ -81,16 +81,6 @@ export function compareDots(a: Dot, b: Dot): number {
   return a.clientId.localeCompare(b.clientId);
 }
 
-/**
- * Deterministic comparison of values for tiebreaking when dots are equal.
- * Uses JSON serialization for consistent ordering.
- */
-function compareValues(a: any, b: any): number {
-  const aStr = JSON.stringify(a);
-  const bStr = JSON.stringify(b);
-  return aStr.localeCompare(bStr);
-}
-
 export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): void {
   row = validateRow(row);
   operation = validateOperation(operation);
@@ -120,11 +110,12 @@ export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): vo
       if (cmp > 0) {
         // New dot is higher, replace
         row.fields[field] = { value: operation.value, dot: operation.dot };
-      } else if (cmp === 0 && compareValues(operation.value, existing.value) > 0) {
-        // Dots are equal, use value tiebreaker for deterministic convergence
-        row.fields[field] = { value: operation.value, dot: operation.dot };
+      } else if (cmp === 0) {
+        throw new Error(
+          `CRDT invariant violated: duplicate dot for field "${field}"`,
+        );
       }
-      // Otherwise keep existing (cmp < 0 or cmp === 0 with lower value)
+      // Otherwise keep existing (cmp < 0)
     }
   } else if (operation.type === "setRow") {
     // Check if tombstone dominates
@@ -146,11 +137,12 @@ export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): vo
         if (cmp > 0) {
           // New dot is higher, replace
           row.fields[field] = { value, dot: operation.dot };
-        } else if (cmp === 0 && compareValues(value, existing.value) > 0) {
-          // Dots are equal, use value tiebreaker for deterministic convergence
-          row.fields[field] = { value, dot: operation.dot };
+        } else if (cmp === 0) {
+          throw new Error(
+            `CRDT invariant violated: duplicate dot for field "${field}"`,
+          );
         }
-        // Otherwise keep existing (cmp < 0 or cmp === 0 with lower value)
+        // Otherwise keep existing (cmp < 0)
       }
     }
   } else if (operation.type === "remove") {

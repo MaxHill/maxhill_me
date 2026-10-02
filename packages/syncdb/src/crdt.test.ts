@@ -260,6 +260,28 @@ describe("applyOpToRow", () => {
       expect(row.fields.name.dot.clientId).toBe("client2");
     });
 
+    it("should reject duplicate dots for the same field", () => {
+      const row: ORMapRow = {
+        [TABLE_NAME]: "test",
+        [ROW_KEY]: "row1",
+        fields: {
+          value: { value: "z", dot: { clientId: "client1", version: 1 } },
+        },
+      };
+      const op: CRDTOperation = {
+        type: "set",
+        table: "test",
+        rowKey: "row1",
+        field: "value",
+        value: {},
+        dot: { clientId: "client1", version: 1 },
+      };
+
+      expect(() => applyOperationToRow(row, op)).toThrow(
+        'CRDT invariant violated: duplicate dot for field "value"',
+      );
+    });
+
     it("should throw error when field is missing in set operation", () => {
       const row: ORMapRow = { [TABLE_NAME]: "test", [ROW_KEY]: "row1", fields: {} };
       const op: CRDTOperation = {
@@ -358,16 +380,24 @@ describe("applyOpToRow", () => {
           generateORMapRow(),
           fc.array(generateSetOperation(), { minLength: 2, maxLength: 5 }),
           (initialRow, operations) => {
-            // Ensure all ops target the same field
+            // Ensure all ops target the same field. Duplicate dots for the
+            // same field are invalid CRDT input, so skip those cases.
             const field = "testField";
             const normalizedOperations = operations.map((operation) => ({ ...operation, field }));
+            fc.pre(
+              new Set(normalizedOperations.map((operation) =>
+                `${operation.dot.clientId}:${operation.dot.version}`
+              )).size === normalizedOperations.length,
+            );
 
             // Apply in original order
             const row1: ORMapRow = JSON.parse(JSON.stringify(initialRow));
+            delete row1.fields[field];
             normalizedOperations.forEach((operation) => applyOperationToRow(row1, operation));
 
             // Apply in reverse order
             const row2: ORMapRow = JSON.parse(JSON.stringify(initialRow));
+            delete row2.fields[field];
             [...normalizedOperations].reverse().forEach((operation) =>
               applyOperationToRow(row2, operation)
             );
