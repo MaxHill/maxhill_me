@@ -1,26 +1,21 @@
-/// TODO: is i32 the correct type for version and contexts
-///
-/// TODO: Derive fixed-buffer byte capacities from the hash-map entry bounds
-/// and check the relationship at comptime where Zig's hash-map layout permits.
 const std = @import("std");
 const assert = std.debug.assert;
 
-// TODO: object_fields_max is not a good name, it can also not be
-// shared between ORMapRowFields and SetRowFields
-const object_fields_max = 200;
-const user_row_fields_max = object_fields_max + 1;
-const context_max = 200;
+const set_row_fields_count_max = 200;
+const row_field_registers_count_max = 200;
+const context_entries_count_max = 200;
 
-pub const JsonBytes = []const u8;
+pub const JsonValueBytes = []const u8;
 
 pub const ClientId = [16]u8;
+pub fn client_id_from_bytes(client_id_bytes: []const u8) !ClientId {
+    if (client_id_bytes.len != @sizeOf(ClientId)) {
+        return error.InvalidClientIdLength;
+    }
 
-pub fn client_id_from_bytes(bytes: []const u8) !ClientId {
-    if (bytes.len != @sizeOf(ClientId)) return error.InvalidClientIdLength;
-
-    var id: ClientId = undefined;
-    @memcpy(&id, bytes);
-    return id;
+    var client_id: ClientId = undefined;
+    @memcpy(&client_id, client_id_bytes);
+    return client_id;
 }
 
 pub const Dot = struct {
@@ -32,120 +27,122 @@ pub const Dot = struct {
         assert(dot.version >= 0);
     }
 
-    fn order(self: @This(), target: Dot) std.math.Order {
+    fn compare(self: @This(), other_dot: Dot) std.math.Order {
         self.assert_valid();
-        target.assert_valid();
+        other_dot.assert_valid();
 
         const version_order = std.math.order(
             self.version,
-            target.version,
+            other_dot.version,
         );
         return switch (version_order) {
             .eq => std.mem.order(
                 u8,
                 &self.client_id,
-                &target.client_id,
+                &other_dot.client_id,
             ),
             else => version_order,
         };
     }
 };
 
-pub const SetRowFields = struct {
-    keys: [object_fields_max][]const u8 = undefined,
-    values: [object_fields_max]JsonBytes = undefined,
+pub const SetRowOperationFields = struct {
+    field_keys: [set_row_fields_count_max][]const u8 = undefined,
+    json_values: [set_row_fields_count_max]JsonValueBytes = undefined,
     count: usize = 0,
 
-    pub fn get(self: *const @This(), key: []const u8) ?JsonBytes {
-        assert(key.len > 0);
+    pub fn get(self: *const @This(), field_key: []const u8) ?JsonValueBytes {
+        assert(field_key.len > 0);
         for (
-            self.keys[0..self.count],
-            self.values[0..self.count],
+            self.field_keys[0..self.count],
+            self.json_values[0..self.count],
         ) |entry_key, value| {
-            if (std.mem.eql(u8, entry_key, key)) return value;
+            if (std.mem.eql(u8, entry_key, field_key)) return value;
         }
         return null;
     }
 
-    pub fn contains(self: *const @This(), key: []const u8) bool {
-        assert(key.len > 0);
-        return self.get(key) != null;
+    pub fn contains(self: *const @This(), field_key: []const u8) bool {
+        assert(field_key.len > 0);
+        return self.get(field_key) != null;
     }
 
-    pub fn put(self: *@This(), key: []const u8, value: JsonBytes) void {
-        assert(key.len > 0);
+    pub fn put(self: *@This(), field_key: []const u8, json_value: JsonValueBytes) void {
+        assert(field_key.len > 0);
         for (
-            self.keys[0..self.count],
-            self.values[0..self.count],
+            self.field_keys[0..self.count],
+            self.json_values[0..self.count],
         ) |entry_key, *entry_value| {
-            if (std.mem.eql(u8, entry_key, key)) {
-                entry_value.* = value;
+            if (std.mem.eql(u8, entry_key, field_key)) {
+                entry_value.* = json_value;
                 return;
             }
         }
 
-        assert(self.count < object_fields_max);
-        self.keys[self.count] = key;
-        self.values[self.count] = value;
+        assert(self.count < set_row_fields_count_max);
+        self.field_keys[self.count] = field_key;
+        self.json_values[self.count] = json_value;
         self.count += 1;
     }
 };
 
 pub const Context = struct {
-    ids: [context_max]ClientId = undefined,
-    versions: [context_max]i32 = undefined,
+    ids: [context_entries_count_max]ClientId = undefined,
+    versions: [context_entries_count_max]i32 = undefined,
     count: usize = 0,
 
-    pub fn get(self: *const @This(), id: ClientId) ?i32 {
+    pub fn get(self: *const @This(), client_id: ClientId) ?i32 {
         for (
             self.ids[0..self.count],
             self.versions[0..self.count],
-        ) |x, v| {
-            if (std.mem.eql(u8, &x, &id)) return v;
+        ) |entry_client_id, entry_client_version| {
+            if (std.mem.eql(u8, &entry_client_id, &client_id)) {
+                return entry_client_version;
+            }
         }
         return null;
     }
 
-    pub fn contains(self: *const @This(), id: ClientId) bool {
-        return self.get(id) != null;
+    pub fn contains(self: *const @This(), client_id: ClientId) bool {
+        return self.get(client_id) != null;
     }
 
-    pub fn put_max(self: *@This(), id: ClientId, version: i32) void {
+    pub fn put_max(self: *@This(), client_id: ClientId, version: i32) void {
         assert(version >= 0);
         for (
             self.ids[0..self.count],
             self.versions[0..self.count],
         ) |entry_id, *entry_version| {
-            if (std.mem.eql(u8, &entry_id, &id)) {
+            if (std.mem.eql(u8, &entry_id, &client_id)) {
                 entry_version.* = @max(entry_version.*, version);
                 return;
             }
         }
 
-        assert(self.count < context_max);
-        self.ids[self.count] = id;
+        assert(self.count < context_entries_count_max);
+        self.ids[self.count] = client_id;
         self.versions[self.count] = version;
         self.count += 1;
     }
 };
 
-pub const ValidKey = []const u8;
+pub const RowKey = []const u8;
 pub const CRDTOperation = union(enum) {
     set: struct {
-        table: []const u8,
-        row_key: []const u8,
-        field: ?[]const u8,
-        value: JsonBytes,
+        table: []const u8, // TODO: rename to table_name
+        row_key: RowKey,
+        field: ?[]const u8, // TODO: Rename to field_key
+        value: JsonValueBytes,
         dot: Dot,
     },
     set_row: struct {
-        table: []const u8,
-        row_key: []const u8,
-        value: SetRowFields,
+        table: []const u8, // TODO: Rename to table_name
+        row_key: RowKey,
+        value: SetRowOperationFields, // TODO: Rename value to fields
         dot: Dot,
     },
-    remove: struct {
-        table: []const u8,
+    remove: struct { // TODO: Rename to remove_row
+        table: []const u8, // TODO: Rename to table_name
         row_key: []const u8,
         tombstone: Tombstone,
     },
@@ -173,8 +170,8 @@ pub const CRDTOperation = union(enum) {
     }
 };
 
-pub const LWWField = struct {
-    value: JsonBytes,
+pub const LWWRegister = struct {
+    value: JsonValueBytes,
     dot: Dot,
 };
 
@@ -182,29 +179,27 @@ pub const Tombstone = struct {
     dot: ?Dot,
     context: Context = .{},
 
-    fn covers(t: *const Tombstone, dot: Dot) bool {
-        if (t.dot == null) return false;
-        const seen = t.context.get(dot.client_id) orelse return false;
+    fn covers(self: *const @This(), dot: Dot) bool {
+        if (self.dot == null) return false;
+        const seen = self.context.get(dot.client_id) orelse return false;
         return dot.version <= seen;
-    }
-
-    fn merge(self: *@This(), dot: Dot, context: *const Context) void {
-        if (self.dot == null or dot.order(self.dot.?) == .gt) self.dot = dot;
-        for (
-            context.ids[0..context.count],
-            context.versions[0..context.count],
-        ) |id, v|
-            self.context.put_max(id, v);
     }
 
     fn merge_tombstone(self: *@This(), tombstone: Tombstone) void {
         tombstone.assert_valid();
+
         if (tombstone.dot) |dot| {
-            self.merge(dot, &tombstone.context);
+            if (self.dot == null or dot.compare(self.dot.?) == .gt) self.dot = dot;
+            for (
+                tombstone.context.ids[0..tombstone.context.count],
+                tombstone.context.versions[0..tombstone.context.count],
+            ) |client_id, version| {
+                self.context.put_max(client_id, version);
+            }
         }
     }
 
-    pub fn active(tombstone: Tombstone) bool {
+    pub fn is_active(tombstone: Tombstone) bool {
         return tombstone.dot != null;
     }
 
@@ -218,84 +213,83 @@ pub const Tombstone = struct {
     }
 };
 
-// This probably replaces or should be the LWWField type
-pub const ORMapRowFields = struct {
-    keys: [object_fields_max][]const u8 = undefined,
-    values: [object_fields_max]JsonBytes = undefined,
-    dots: [object_fields_max]Dot = undefined,
+pub const RowFieldRegisters = struct {
+    field_keys: [row_field_registers_count_max][]const u8 = undefined,
+    json_values: [row_field_registers_count_max]JsonValueBytes = undefined,
+    field_dots: [row_field_registers_count_max]Dot = undefined,
     count: usize = 0,
 
-    pub fn get_index(self: *const @This(), key: []const u8) ?usize {
-        assert(key.len > 0);
-        assert(self.count <= object_fields_max);
+    pub fn get_index(self: *const @This(), field_key: []const u8) ?usize {
+        assert(field_key.len > 0);
+        assert(self.count <= row_field_registers_count_max);
         for (
-            self.keys[0..self.count],
+            self.field_keys[0..self.count],
             0..self.count,
         ) |entry_key, index| {
-            if (std.mem.eql(u8, entry_key, key)) return index;
+            if (std.mem.eql(u8, entry_key, field_key)) return index;
         }
         return null;
     }
 
-    pub fn get(self: *const @This(), key: []const u8) ?LWWField {
-        assert(key.len > 0);
-        assert(self.count <= object_fields_max);
-        if (self.get_index(key)) |index| {
-            return LWWField{
-                .value = self.values[index],
-                .dot = self.dots[index],
+    pub fn get(self: *const @This(), field_key: []const u8) ?LWWRegister {
+        assert(field_key.len > 0);
+        assert(self.count <= row_field_registers_count_max);
+        if (self.get_index(field_key)) |index| {
+            return LWWRegister{
+                .value = self.json_values[index],
+                .dot = self.field_dots[index],
             };
         }
         return null;
     }
 
-    pub fn contains(self: *const @This(), key: []const u8) bool {
-        assert(key.len > 0);
-        assert(self.count <= object_fields_max);
-        return self.get_index(key) != null;
+    pub fn contains(self: *const @This(), field_key: []const u8) bool {
+        assert(field_key.len > 0);
+        assert(self.count <= row_field_registers_count_max);
+        return self.get_index(field_key) != null;
     }
 
     pub fn put(
         self: *@This(),
-        key: []const u8,
-        value: JsonBytes,
+        field_key: []const u8,
+        json_value: JsonValueBytes,
         dot: Dot,
     ) void {
-        assert(key.len > 0);
-        assert(self.count <= object_fields_max);
+        assert(field_key.len > 0);
+        assert(self.count <= row_field_registers_count_max);
         dot.assert_valid();
 
         for (
-            self.keys[0..self.count],
-            self.values[0..self.count],
-            self.dots[0..self.count],
+            self.field_keys[0..self.count],
+            self.json_values[0..self.count],
+            self.field_dots[0..self.count],
         ) |entry_key, *entry_value, *entry_dot| {
-            if (std.mem.eql(u8, entry_key, key)) {
-                entry_value.* = value;
+            if (std.mem.eql(u8, entry_key, field_key)) {
+                entry_value.* = json_value;
                 entry_dot.* = dot;
                 return;
             }
         }
 
-        assert(self.count < object_fields_max);
-        self.keys[self.count] = key;
-        self.values[self.count] = value;
-        self.dots[self.count] = dot;
+        assert(self.count < row_field_registers_count_max);
+        self.field_keys[self.count] = field_key;
+        self.json_values[self.count] = json_value;
+        self.field_dots[self.count] = dot;
         self.count += 1;
     }
 
-    pub fn remove(self: *@This(), key: []const u8) bool {
-        assert(key.len > 0);
-        assert(self.count <= object_fields_max);
+    pub fn remove(self: *@This(), field_key: []const u8) bool {
+        assert(field_key.len > 0);
+        assert(self.count <= row_field_registers_count_max);
 
-        const index = self.get_index(key) orelse return false;
+        const index = self.get_index(field_key) orelse return false;
         assert(index < self.count);
 
         var shift_index = index;
         while (shift_index + 1 < self.count) : (shift_index += 1) {
-            self.keys[shift_index] = self.keys[shift_index + 1];
-            self.values[shift_index] = self.values[shift_index + 1];
-            self.dots[shift_index] = self.dots[shift_index + 1];
+            self.field_keys[shift_index] = self.field_keys[shift_index + 1];
+            self.json_values[shift_index] = self.json_values[shift_index + 1];
+            self.field_dots[shift_index] = self.field_dots[shift_index + 1];
         }
 
         self.count -= 1;
@@ -303,13 +297,13 @@ pub const ORMapRowFields = struct {
     }
 
     pub fn clear(self: *@This()) void {
-        assert(self.count <= object_fields_max);
+        assert(self.count <= row_field_registers_count_max);
         self.count = 0;
     }
 };
 
-test "ORMapRowFields put get remove and clear" {
-    var fields = ORMapRowFields{};
+test "RowFieldRegisters put get remove and clear" {
+    var fields = RowFieldRegisters{};
     assert(fields.count == 0);
 
     const client_id = test_client_id("client_1");
@@ -365,8 +359,8 @@ test "ORMapRowFields put get remove and clear" {
 
 pub const ORMapRow = struct {
     table_name: []const u8,
-    row_key: ValidKey,
-    fields: ORMapRowFields,
+    row_key: RowKey,
+    fields: RowFieldRegisters,
     tombstone: Tombstone,
 
     fn assert_valid(row: ORMapRow) void {
@@ -374,8 +368,8 @@ pub const ORMapRow = struct {
         assert(row.row_key.len > 0);
 
         for (
-            row.fields.keys[0..row.fields.count],
-            row.fields.dots[0..row.fields.count],
+            row.fields.field_keys[0..row.fields.count],
+            row.fields.field_dots[0..row.fields.count],
         ) |key, dot| {
             assert_field_key_valid(key);
             dot.assert_valid();
@@ -387,7 +381,7 @@ pub const ORMapRow = struct {
     const UserRowView = struct {
         row: *const ORMapRow,
 
-        pub fn get(self: @This(), key: []const u8) ?JsonBytes {
+        pub fn get(self: @This(), key: []const u8) ?JsonValueBytes {
             if (std.mem.eql(u8, key, "_key")) {
                 return self.row.row_key;
             }
@@ -405,15 +399,15 @@ pub const ORMapRow = struct {
     }
 };
 
-fn test_client_id(bytes: []const u8) ClientId {
-    assert(bytes.len <= @sizeOf(ClientId));
+fn test_client_id(client_id_bytes: []const u8) ClientId {
+    assert(client_id_bytes.len <= @sizeOf(ClientId));
 
-    var id = [_]u8{0} ** @sizeOf(ClientId);
-    @memcpy(id[0..bytes.len], bytes);
-    return id;
+    var client_id = [_]u8{0} ** @sizeOf(ClientId);
+    @memcpy(client_id[0..client_id_bytes.len], client_id_bytes);
+    return client_id;
 }
 test "to_user_row" {
-    var fields = ORMapRowFields{};
+    var fields = RowFieldRegisters{};
     fields.put(
         "name",
         "\"max\"",
@@ -432,14 +426,14 @@ test "to_user_row" {
     );
 
     const row_key = "key-1";
-    const or_map_row = ORMapRow{
+    const row = ORMapRow{
         .table_name = "test",
         .row_key = row_key,
         .fields = fields,
         .tombstone = .{ .dot = null, .context = .{} },
     };
 
-    const user_row = or_map_row.user_row_view();
+    const user_row = row.user_row_view();
 
     if (user_row.get("name")) |actual| {
         try std.testing.expectEqualStrings("\"max\"", actual);
@@ -476,7 +470,7 @@ pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
 
     switch (operation) {
         .set => |set_operation| {
-            if (row.tombstone.active()) {
+            if (row.tombstone.is_active()) {
                 const seen = row.tombstone.context
                     .get(set_operation.dot.client_id);
                 if (seen != null and set_operation.dot.version <= seen.?) {
@@ -485,7 +479,7 @@ pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
             }
 
             const field = set_operation.field.?;
-            update_fields(
+            update_field(
                 .{
                     .field_key = field,
                     .value = set_operation.value,
@@ -495,7 +489,7 @@ pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
             );
         },
         .set_row => |set_row_operation| {
-            if (row.tombstone.active()) {
+            if (row.tombstone.is_active()) {
                 const seen = row.tombstone.context
                     .get(set_row_operation.dot.client_id);
                 if (seen != null and set_row_operation.dot.version <= seen.?) {
@@ -504,13 +498,13 @@ pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
             }
 
             for (
-                set_row_operation.value.keys[0..set_row_operation.value.count],
-                set_row_operation.value.values[0..set_row_operation.value.count],
-            ) |field_key, value| {
-                update_fields(
+                set_row_operation.value.field_keys[0..set_row_operation.value.count],
+                set_row_operation.value.json_values[0..set_row_operation.value.count],
+            ) |field_key, json_value| {
+                update_field(
                     .{
                         .field_key = field_key,
-                        .value = value,
+                        .value = json_value,
                         .dot = set_row_operation.dot,
                     },
                     row,
@@ -521,11 +515,11 @@ pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
             row.tombstone.merge_tombstone(remove_operation.tombstone);
 
             for (
-                row.fields.keys[0..row.fields.count],
-                row.fields.dots[0..row.fields.count],
+                row.fields.field_keys[0..row.fields.count],
+                row.fields.field_dots[0..row.fields.count],
             ) |key, dot| {
-                if (row.tombstone.context.get(dot.client_id)) |remove_version| {
-                    if (dot.version <= remove_version) {
+                if (row.tombstone.context.get(dot.client_id)) |remove_version_max| {
+                    if (dot.version <= remove_version_max) {
                         _ = row.fields.remove(key);
                     }
                 }
@@ -539,84 +533,84 @@ fn assert_capacity_for_operation(row: *const ORMapRow, operation: CRDTOperation)
         .set => |set_operation| {
             const field = set_operation.field.?;
             if (!row.fields.contains(field)) {
-                assert(object_fields_max >= row.fields.count + 1);
+                assert(row_field_registers_count_max >= row.fields.count + 1);
             }
         },
         .set_row => |set_row_operation| {
-            var missing_fields: @TypeOf(row.fields.count) = 0;
+            var missing_fields_count: @TypeOf(row.fields.count) = 0;
             for (
-                set_row_operation.value.keys[0..set_row_operation.value.count],
+                set_row_operation.value.field_keys[0..set_row_operation.value.count],
             ) |field_key| {
-                if (!row.fields.contains(field_key)) missing_fields += 1;
+                if (!row.fields.contains(field_key)) missing_fields_count += 1;
             }
 
-            assert(object_fields_max >= row.fields.count + missing_fields);
+            assert(row_field_registers_count_max >= row.fields.count + missing_fields_count);
         },
         .remove => |remove_operation| {
-            var missing_context: usize = 0;
+            var missing_context_entries_count: usize = 0;
             const remove_context = remove_operation.tombstone.context;
-            for (remove_context.ids[0..remove_context.count]) |id| {
-                if (!row.tombstone.context.contains(id)) missing_context += 1;
+            for (remove_context.ids[0..remove_context.count]) |client_id| {
+                if (!row.tombstone.context.contains(client_id)) missing_context_entries_count += 1;
             }
 
-            assert(context_max >= row.tombstone.context.count + missing_context);
+            assert(context_entries_count_max >= row.tombstone.context.count + missing_context_entries_count);
         },
     }
 }
 
-fn update_fields(
-    operation: struct { field_key: []const u8, value: JsonBytes, dot: Dot },
+fn update_field(
+    field_update: struct { field_key: []const u8, value: JsonValueBytes, dot: Dot },
     row: *ORMapRow,
 ) void {
-    assert(operation.field_key.len > 0);
-    operation.dot.assert_valid();
+    assert(field_update.field_key.len > 0);
+    field_update.dot.assert_valid();
     row.assert_valid();
     defer row.assert_valid();
 
-    if (pick_field(
+    if (pick_field_winner(
         .{
-            .field_key = operation.field_key,
-            .value = operation.value,
-            .dot = operation.dot,
+            .field_key = field_update.field_key,
+            .value = field_update.value,
+            .dot = field_update.dot,
         },
         row.*,
-    ) == .operation) {
+    ) == .incoming) {
         row.fields.put(
-            operation.field_key,
-            operation.value,
-            operation.dot,
+            field_update.field_key,
+            field_update.value,
+            field_update.dot,
         );
     }
 }
 
-fn pick_field(
-    operation: struct {
+fn pick_field_winner(
+    field_update: struct {
         field_key: []const u8,
-        value: JsonBytes,
+        value: JsonValueBytes,
         dot: Dot,
     },
     row: ORMapRow,
 ) enum {
-    operation,
-    row,
+    incoming,
+    existing,
 } {
-    assert(operation.field_key.len > 0);
-    operation.dot.assert_valid();
+    assert(field_update.field_key.len > 0);
+    field_update.dot.assert_valid();
     row.assert_valid();
     defer row.assert_valid();
 
-    if (row.fields.get(operation.field_key)) |row_field| {
-        switch (operation.dot.order(row_field.dot)) {
-            // Operations dot dominates Rows field, replace the fields value
-            .gt => return .operation,
+    if (row.fields.get(field_update.field_key)) |existing_field| {
+        switch (field_update.dot.compare(existing_field.dot)) {
+            // Operation dot dominates row field; replace the field value.
+            .gt => return .incoming,
             .eq => std.debug.panic(
                 "CRDT invariant violated: duplicate dot for field {s}",
-                .{operation.field_key},
+                .{field_update.field_key},
             ),
-            else => return .row,
+            else => return .existing,
         }
     }
-    return .operation;
+    return .incoming;
 }
 test "apply_operation_to_row applies set_row set and remove to same row" {
     var row = ORMapRow{
@@ -626,7 +620,7 @@ test "apply_operation_to_row applies set_row set and remove to same row" {
         .tombstone = .{ .dot = null, .context = .{} },
     };
 
-    var set_row_value = SetRowFields{};
+    var set_row_value = SetRowOperationFields{};
     set_row_value.put("name", "\"max\"");
     set_row_value.put("age", "31");
 
@@ -666,16 +660,7 @@ test "apply_operation_to_row applies set_row set and remove to same row" {
     } });
 
     try std.testing.expectEqual(@as(usize, 0), row.fields.count);
-    try std.testing.expect(row.tombstone.active());
-}
-
-//  ------------------------------------------------------------------------
-//  Utils
-//  ------------------------------------------------------------------------
-pub fn compare_dots(a: Dot, b: Dot) std.math.Order {
-    const dot_order = a.order(b);
-    assert(dot_order != .eq);
-    return dot_order;
+    try std.testing.expect(row.tombstone.is_active());
 }
 
 //  ------------------------------------------------------------------------
@@ -689,7 +674,7 @@ fn assert_context_valid(context: Context) void {
     }
 }
 
-fn assert_field_key_valid(field: []const u8) void {
-    assert(field.len > 0);
-    assert(!std.mem.eql(u8, field, "_key"));
+fn assert_field_key_valid(field_key: []const u8) void {
+    assert(field_key.len > 0);
+    assert(!std.mem.eql(u8, field_key, "_key"));
 }
