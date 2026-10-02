@@ -127,4 +127,80 @@ describe("Lifecycle", () => {
     expect(storeNames).toContain(CLIENT_STATE_STORE);
     expect(lifecycle.db!.version).toBe(2);
   });
+
+  it("migrates old sync protocol records during open", async () => {
+    await new Promise<void>((resolve, reject) => {
+      const req = indexedDB.open(dbName, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        db.createObjectStore(ROWS_STORE, { keyPath: ["table_name", "row_key"] });
+        db.createObjectStore(OPERATIONS_STORE, {
+          keyPath: ["op.dot.clientId", "op.dot.version"],
+        });
+        db.createObjectStore(CLIENT_STATE_STORE);
+      };
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction([ROWS_STORE, OPERATIONS_STORE], "readwrite");
+        tx.objectStore(ROWS_STORE).put({
+          table_name: "clubs",
+          row_key: "driver",
+          fields: {},
+          tombstone: {
+            dot: { clientId: "client-1", version: 2 },
+            context: { "client-1": 1 },
+          },
+        });
+        tx.objectStore(OPERATIONS_STORE).put({
+          op: {
+            type: "remove",
+            table: "clubs",
+            rowKey: "driver",
+            dot: { clientId: "client-1", version: 2 },
+            context: { "client-1": 1 },
+          },
+          synced: 0,
+        });
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        tx.onerror = () => reject(tx.error);
+      };
+      req.onerror = () => reject(req.error);
+    });
+
+    lifecycle = new Lifecycle();
+    await lifecycle.open(dbName);
+
+    const tx = lifecycle.transaction([ROWS_STORE, OPERATIONS_STORE, CLIENT_STATE_STORE], "readonly");
+    const row = await new Promise<any>((resolve, reject) => {
+      const req = tx.objectStore(ROWS_STORE).get(["clubs", "driver"]);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    const operationRecord = await new Promise<any>((resolve, reject) => {
+      const req = tx.objectStore(OPERATIONS_STORE).get(["client-1", 2]);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    const protocolVersion = await new Promise<any>((resolve, reject) => {
+      const req = tx.objectStore(CLIENT_STATE_STORE).get("syncProtocolVersion");
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+
+    expect(row.tombstone).toEqual({
+      dot: { clientId: "client-1", version: 2 },
+      versionVector: { "client-1": 1 },
+    });
+    expect(operationRecord.op).toEqual({
+      type: "removeRow",
+      tableName: "clubs",
+      rowKey: "driver",
+      dot: { clientId: "client-1", version: 2 },
+      versionVector: { "client-1": 1 },
+    });
+    expect(protocolVersion).toBe(2);
+  });
 });

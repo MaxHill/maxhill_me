@@ -9,9 +9,9 @@ type db_crdt_operation = {
   op_type : string;
   table_name : string;
   row_key : string;
-  field : string option;
-  value : string option;
-  context : string option;
+  field_key : string option;
+  json_value : string option;
+  version_vector : string option;
 }
 
 type error =

@@ -11,42 +11,47 @@ let decode_dot json =
 let decode_operation json =
   let open Yojson.Safe.Util in
   let operation_type = json |> member "type" |> to_string in
-  let table = json |> member "table" |> to_string in
+  let table_name = json |> member "tableName" |> to_string in
   let row_key = json |> member "rowKey" |> to_string in
   let dot = json |> member "dot" |> decode_dot in
   match operation_type with
   | "set" ->
       if
-        (not (has_key "field" json))
-        || (not (has_key "value" json))
-        || has_key "context" json
+        (not (has_key "fieldKey" json))
+        || (not (has_key "jsonValue" json))
+        || has_key "versionVector" json || has_key "table" json
+        || has_key "field" json || has_key "value" json || has_key "context" json
       then Error "set payload shape mismatch"
       else
-        let field = json |> member "field" |> to_string in
-        let value = json |> member "value" in
-        Ok { table; row_key; dot; payload = Set { field; value } }
+        let field_key = json |> member "fieldKey" |> to_string in
+        let json_value = json |> member "jsonValue" in
+        Ok { table_name; row_key; dot; payload = Set { field_key; json_value } }
   | "setRow" ->
       if
-        (not (has_key "value" json))
-        || has_key "field" json || has_key "context" json
+        (not (has_key "fields" json))
+        || has_key "fieldKey" json || has_key "jsonValue" json
+        || has_key "versionVector" json || has_key "table" json
+        || has_key "field" json || has_key "value" json || has_key "context" json
       then Error "setRow payload shape mismatch"
       else
-        let value = json |> member "value" in
-        Ok { table; row_key; dot; payload = Set_row { value } }
-  | "remove" ->
+        let fields = json |> member "fields" in
+        Ok { table_name; row_key; dot; payload = Set_row { fields } }
+  | "removeRow" ->
       if
-        (not (has_key "context" json))
-        || has_key "field" json || has_key "value" json
-      then Error "remove payload shape mismatch"
+        (not (has_key "versionVector" json))
+        || has_key "fieldKey" json || has_key "jsonValue" json
+        || has_key "fields" json || has_key "table" json || has_key "field" json
+        || has_key "value" json || has_key "context" json
+      then Error "removeRow payload shape mismatch"
       else
-        let context_json = json |> member "context" |> to_assoc in
-        let context =
+        let version_vector_json = json |> member "versionVector" |> to_assoc in
+        let version_vector =
           List.map
             (fun (client_id, version_json) ->
               (client_id, int64_of_json version_json))
-            context_json
+            version_vector_json
         in
-        Ok { table; row_key; dot; payload = Remove { context } }
+        Ok { table_name; row_key; dot; payload = Remove_row { version_vector } }
   | _ -> Error ("unsupported operation type: " ^ operation_type)
 
 let decode_sync_request raw =
@@ -88,24 +93,26 @@ let encode_operation operation =
   let base_fields =
     [
       ("type", `String (operation_type operation.payload));
-      ("table", `String operation.table);
+      ("tableName", `String operation.table_name);
       ("rowKey", `String operation.row_key);
       ("dot", encode_dot operation.dot);
     ]
   in
   match operation.payload with
-  | Set { field; value } ->
-      `Assoc (base_fields @ [ ("field", `String field); ("value", value) ])
-  | Set_row { value } -> `Assoc (base_fields @ [ ("value", value) ])
-  | Remove { context } ->
-      let context_json =
+  | Set { field_key; json_value } ->
+      `Assoc
+        (base_fields
+        @ [ ("fieldKey", `String field_key); ("jsonValue", json_value) ])
+  | Set_row { fields } -> `Assoc (base_fields @ [ ("fields", fields) ])
+  | Remove_row { version_vector } ->
+      let version_vector_json =
         `Assoc
           (List.map
              (fun (client_id, version) ->
                (client_id, `Intlit (Int64.to_string version)))
-             context)
+             version_vector)
       in
-      `Assoc (base_fields @ [ ("context", context_json) ])
+      `Assoc (base_fields @ [ ("versionVector", version_vector_json) ])
 
 let encode_sync_response response =
   let json =

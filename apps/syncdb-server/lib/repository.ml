@@ -9,9 +9,9 @@ type db_crdt_operation = {
   op_type : string;
   table_name : string;
   row_key : string;
-  field : string option;
-  value : string option;
-  context : string option;
+  field_key : string option;
+  json_value : string option;
+  version_vector : string option;
 }
 
 type error =
@@ -42,9 +42,9 @@ let schema_sql =
     type TEXT NOT NULL,
     table_name TEXT NOT NULL,
     row_key TEXT NOT NULL,
-    field TEXT,
-    value TEXT,  -- JSON stored as TEXT in SQLite
-    context TEXT,  -- JSON stored as TEXT in SQLite
+    field_key TEXT,
+    json_value TEXT,  -- JSON stored as TEXT in SQLite
+    version_vector TEXT,  -- JSON stored as TEXT in SQLite
 
     -- Ensure each Dot is unique per tenant
     UNIQUE(db_name, client_id, version)
@@ -71,9 +71,9 @@ let of_row
       op_type,
       table_name,
       row_key,
-      field,
-      value,
-      context ) =
+      field_key,
+      json_value,
+      version_vector ) =
   {
     server_version;
     db_name;
@@ -82,9 +82,9 @@ let of_row
     op_type;
     table_name;
     row_key;
-    field;
-    value;
-    context;
+    field_key;
+    json_value;
+    version_vector;
   }
 
 let init_schema_query =
@@ -99,27 +99,59 @@ let count_operations_query =
 let insert_operation_query =
   let open Caqti_request.Infix in
   (db_params_type ->! Caqti_type.int64)
-    "INSERT INTO crdt_operations (db_name, client_id, version, type, table_name, row_key, field, value, context) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING server_version"
+    "INSERT INTO crdt_operations (db_name, client_id, version, type, table_name, row_key, field_key, json_value, version_vector) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING server_version"
 
 let get_operations_since_query =
   let open Caqti_request.Infix in
   (Caqti_type.(t4 string int64 string int) ->* db_row_type)
-    "SELECT server_version, db_name, client_id, version, type, table_name, row_key, field, value, context FROM crdt_operations WHERE db_name = ? AND server_version > ? AND client_id != ? ORDER BY server_version ASC LIMIT ?"
+    "SELECT server_version, db_name, client_id, version, type, table_name, row_key, field_key, json_value, version_vector FROM crdt_operations WHERE db_name = ? AND server_version > ? AND client_id != ? ORDER BY server_version ASC LIMIT ?"
 
 let find_by_dot_query =
   let open Caqti_request.Infix in
   (Caqti_type.(t3 string string int64) ->? db_row_type)
-    "SELECT server_version, db_name, client_id, version, type, table_name, row_key, field, value, context FROM crdt_operations WHERE db_name = ? AND client_id = ? AND version = ?"
+    "SELECT server_version, db_name, client_id, version, type, table_name, row_key, field_key, json_value, version_vector FROM crdt_operations WHERE db_name = ? AND client_id = ? AND version = ?"
 
 let get_max_server_version_query =
   let open Caqti_request.Infix in
   (Caqti_type.string ->! Caqti_type.int64)
     "SELECT COALESCE(MAX(server_version), -1) FROM crdt_operations WHERE db_name = ?"
 
-let init_schema (module Db : Caqti_eio.CONNECTION) =
-  match Db.exec init_schema_query () with
+let rename_field_column_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.unit ->. Caqti_type.unit)
+    "ALTER TABLE crdt_operations RENAME COLUMN field TO field_key"
+
+let rename_value_column_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.unit ->. Caqti_type.unit)
+    "ALTER TABLE crdt_operations RENAME COLUMN value TO json_value"
+
+let rename_context_column_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.unit ->. Caqti_type.unit)
+    "ALTER TABLE crdt_operations RENAME COLUMN context TO version_vector"
+
+let migrate_remove_type_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.unit ->. Caqti_type.unit)
+    "UPDATE crdt_operations SET type = 'removeRow' WHERE type = 'remove'"
+
+let exec_ignore_error (module Db : Caqti_eio.CONNECTION) query =
+  match Db.exec query () with Ok () -> () | Error _ -> ()
+
+let migrate_schema (module Db : Caqti_eio.CONNECTION) =
+  let conn = (module Db : Caqti_eio.CONNECTION) in
+  exec_ignore_error conn rename_field_column_query;
+  exec_ignore_error conn rename_value_column_query;
+  exec_ignore_error conn rename_context_column_query;
+  match Db.exec migrate_remove_type_query () with
   | Ok () -> Ok ()
   | Error err -> Error (Database (Caqti_error.show err))
+
+let init_schema (module Db : Caqti_eio.CONNECTION) =
+  match Db.exec init_schema_query () with
+  | Error err -> Error (Database (Caqti_error.show err))
+  | Ok () -> migrate_schema (module Db : Caqti_eio.CONNECTION)
 
 let count_operations (module Db : Caqti_eio.CONNECTION) ~db_name =
   match Db.find count_operations_query db_name with
@@ -146,9 +178,9 @@ let equivalent_operation a b =
   && a.op_type = b.op_type
   && a.table_name = b.table_name
   && a.row_key = b.row_key
-  && a.field = b.field
-  && a.value = b.value
-  && a.context = b.context
+  && a.field_key = b.field_key
+  && a.json_value = b.json_value
+  && a.version_vector = b.version_vector
 
 let insert_crdt_operation (module Db : Caqti_eio.CONNECTION) operation =
   match
@@ -159,9 +191,9 @@ let insert_crdt_operation (module Db : Caqti_eio.CONNECTION) operation =
         operation.op_type,
         operation.table_name,
         operation.row_key,
-        operation.field,
-        operation.value,
-        operation.context )
+        operation.field_key,
+        operation.json_value,
+        operation.version_vector )
   with
   | Ok server_version -> Ok server_version
   | Error err ->

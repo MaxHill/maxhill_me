@@ -24,9 +24,9 @@ let make_op ?(db_name = tenant_a) ?(value = "\"Buy milk\"") () :
     op_type = "set";
     table_name = "todos";
     row_key = "r1";
-    field = Some "title";
-    value = Some value;
-    context = None;
+    field_key = Some "title";
+    json_value = Some value;
+    version_vector = None;
   }
 
 let assert_init_schema_and_count_empty () =

@@ -2,7 +2,7 @@ open Sync_engine_core
 
 let db_operation_of_crdt_operation ~db_name operation =
   match operation.payload with
-  | Set { field; value } ->
+  | Set { field_key; json_value } ->
       Ok
         {
           Repository.server_version = 0L;
@@ -10,13 +10,13 @@ let db_operation_of_crdt_operation ~db_name operation =
           client_id = operation.dot.client_id;
           version = operation.dot.version;
           op_type = "set";
-          table_name = operation.table;
+          table_name = operation.table_name;
           row_key = operation.row_key;
-          field = Some field;
-          value = Some (Yojson.Safe.to_string value);
-          context = None;
+          field_key = Some field_key;
+          json_value = Some (Yojson.Safe.to_string json_value);
+          version_vector = None;
         }
-  | Set_row { value } ->
+  | Set_row { fields } ->
       Ok
         {
           Repository.server_version = 0L;
@@ -24,25 +24,25 @@ let db_operation_of_crdt_operation ~db_name operation =
           client_id = operation.dot.client_id;
           version = operation.dot.version;
           op_type = "setRow";
-          table_name = operation.table;
+          table_name = operation.table_name;
           row_key = operation.row_key;
-          field = None;
-          value = Some (Yojson.Safe.to_string value);
-          context = None;
+          field_key = None;
+          json_value = Some (Yojson.Safe.to_string fields);
+          version_vector = None;
         }
-  | Remove { context } ->
+  | Remove_row { version_vector } ->
       Ok
         {
           Repository.server_version = 0L;
           db_name;
           client_id = operation.dot.client_id;
           version = operation.dot.version;
-          op_type = "remove";
-          table_name = operation.table;
+          op_type = "removeRow";
+          table_name = operation.table_name;
           row_key = operation.row_key;
-          field = None;
-          value = None;
-          context = Some (canonical_context_json context);
+          field_key = None;
+          json_value = None;
+          version_vector = Some (canonical_version_vector_json version_vector);
         }
 
 let db_operations_of_crdt_operations ~db_name operations =
@@ -57,64 +57,67 @@ let db_operations_of_crdt_operations ~db_name operations =
 let crdt_operation_of_db_operation operation =
   match operation.Repository.op_type with
   | "set" -> (
-      match (operation.field, operation.value) with
-      | Some field, Some value ->
+      match (operation.field_key, operation.json_value) with
+      | Some field_key, Some json_value ->
           Ok
             {
-              table = operation.table_name;
+              table_name = operation.table_name;
               row_key = operation.row_key;
               dot =
                 { client_id = operation.client_id; version = operation.version };
-              payload = Set { field; value = Yojson.Safe.from_string value };
+              payload =
+                Set { field_key; json_value = Yojson.Safe.from_string json_value };
             }
-      | _ -> Error "stored set operation missing field/value")
+      | _ -> Error "stored set operation missing field_key/json_value")
   | "setRow" -> (
-      match operation.value with
-      | Some value ->
+      match operation.json_value with
+      | Some fields ->
           Ok
             {
-              table = operation.table_name;
+              table_name = operation.table_name;
               row_key = operation.row_key;
               dot =
                 { client_id = operation.client_id; version = operation.version };
-              payload = Set_row { value = Yojson.Safe.from_string value };
+              payload = Set_row { fields = Yojson.Safe.from_string fields };
             }
-      | None -> Error "stored setRow operation missing value")
-  | "remove" -> (
-      match operation.context with
-      | Some context_json -> (
-          match Yojson.Safe.from_string context_json with
+      | None -> Error "stored setRow operation missing fields")
+  | "removeRow" -> (
+      match operation.version_vector with
+      | Some version_vector_json -> (
+          match Yojson.Safe.from_string version_vector_json with
           | `Assoc fields ->
-              let context =
+              let version_vector =
                 List.map
                   (fun (client_id, version_json) ->
                     match version_json with
                     | `Int value -> (client_id, Int64.of_int value)
                     | `Intlit value -> (client_id, Int64.of_string value)
                     | _ ->
-                        raise (Invalid_argument "invalid remove context value"))
+                        raise
+                          (Invalid_argument
+                             "invalid removeRow versionVector value"))
                   fields
               in
               Ok
                 {
-                  table = operation.table_name;
+                  table_name = operation.table_name;
                   row_key = operation.row_key;
                   dot =
                     {
                       client_id = operation.client_id;
                       version = operation.version;
                     };
-                  payload = Remove { context };
+                  payload = Remove_row { version_vector };
                 }
-          | _ -> Error "stored remove operation has non-object context")
+          | _ -> Error "stored removeRow operation has non-object versionVector")
       | None ->
           Ok
             {
-              table = operation.table_name;
+              table_name = operation.table_name;
               row_key = operation.row_key;
               dot =
                 { client_id = operation.client_id; version = operation.version };
-              payload = Remove { context = [] };
+              payload = Remove_row { version_vector = [] };
             })
   | unknown -> Error ("unknown stored operation type: " ^ unknown)
 

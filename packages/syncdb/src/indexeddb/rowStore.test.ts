@@ -28,7 +28,7 @@ describe("RowStore", () => {
       [TABLE_NAME]: "users",
       [ROW_KEY]: "user1",
       fields: {
-        name: { value: "Alice", dot: { clientId: "c1", version: 1 } },
+        name: { jsonValue: "Alice", dot: { clientId: "c1", version: 1 } },
       },
     };
 
@@ -56,7 +56,7 @@ describe("RowStore", () => {
       [TABLE_NAME]: "users",
       [ROW_KEY]: "user1",
       fields: {
-        name: { value: "Alice", dot: { clientId: "c1", version: 1 } },
+        name: { jsonValue: "Alice", dot: { clientId: "c1", version: 1 } },
       },
     };
 

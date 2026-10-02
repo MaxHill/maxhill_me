@@ -76,9 +76,9 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
         const dot = await this.nextDot(tx);
         const op: CRDTOperation = {
             type: "setRow",
-            table: this.tableName,
+            tableName: this.tableName,
             rowKey,
-            value,
+            fields: value,
             dot,
         };
 
@@ -106,10 +106,10 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
         const dot = await this.nextDot(tx);
         const op: CRDTOperation = {
             type: "set",
-            table: this.tableName,
+            tableName: this.tableName,
             rowKey,
-            field,
-            value,
+            fieldKey: field,
+            jsonValue: value,
             dot,
         };
 
@@ -127,20 +127,20 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
         const tx = this.lifecycle.transaction(["clientState", "rows", "operations"], "readwrite");
         const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
 
-        // Build context from current fields
-        const context: Record<string, number> = {};
+        // Build version vector from current fields.
+        const versionVector: Record<string, number> = {};
         for (const fieldState of Object.values(row.fields)) {
             const clientId = fieldState.dot.clientId;
-            context[clientId] = Math.max(context[clientId] ?? 0, fieldState.dot.version);
+            versionVector[clientId] = Math.max(versionVector[clientId] ?? 0, fieldState.dot.version);
         }
 
         const dot = await this.nextDot(tx);
         const op: CRDTOperation = {
-            type: "remove",
-            table: this.tableName,
+            type: "removeRow",
+            tableName: this.tableName,
             rowKey,
             dot,
-            context,
+            versionVector,
         };
 
         applyOperationToRow(row, op);

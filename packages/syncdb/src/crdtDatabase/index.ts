@@ -159,7 +159,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
       await this.lifecycle.commit(writeTx);
 
       const changedTables = new Set(
-        response.operations.map((operation) => operation.table),
+        response.operations.map((operation) => operation.tableName),
       );
       for (const table of changedTables) {
         this.tableSubscriptions.notify(table, "remote");
