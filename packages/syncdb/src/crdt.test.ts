@@ -43,7 +43,7 @@ const generateORMapRow = (): fc.Arbitrary<ORMapRow> =>
     tombstone: fc.option(
       fc.record({
         dot: generateDot(),
-        context: fc.dictionary(generateClientId(), fc.nat({ max: 1000 })),
+        versionVector: fc.dictionary(generateClientId(), fc.nat({ max: 1000 })),
       }),
       { nil: undefined },
     ),
@@ -52,19 +52,19 @@ const generateORMapRow = (): fc.Arbitrary<ORMapRow> =>
 const generateSetOperation = (): fc.Arbitrary<CRDTOperation> =>
   fc.record({
     type: fc.constant("set" as const),
-    table: fc.constant("test_table"),
+    tableName: fc.constant("test_table"),
     rowKey: fc.string(),
-    field: generateSafeFieldName(),
-    value: fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
+    fieldKey: generateSafeFieldName(),
+    jsonValue: fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
     dot: generateDot(),
   });
 
 const generateSetRowOperation = (): fc.Arbitrary<CRDTOperation> =>
   fc.record({
     type: fc.constant("setRow" as const),
-    table: fc.constant("test_table"),
+    tableName: fc.constant("test_table"),
     rowKey: fc.string(),
-    value: fc.dictionary(
+    fields: fc.dictionary(
       generateSafeFieldName(),
       fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
     ),
@@ -73,11 +73,11 @@ const generateSetRowOperation = (): fc.Arbitrary<CRDTOperation> =>
 
 const generateRemoveOperation = (): fc.Arbitrary<CRDTOperation> =>
   fc.record({
-    type: fc.constant("remove" as const),
-    table: fc.constant("test_table"),
+    type: fc.constant("removeRow" as const),
+    tableName: fc.constant("test_table"),
     rowKey: fc.string(),
     dot: generateDot(),
-    context: fc.dictionary(generateClientId(), fc.nat({ max: 1000 })),
+    versionVector: fc.dictionary(generateClientId(), fc.nat({ max: 1000 })),
   });
 
 const generateCRDTOperation = (): fc.Arbitrary<CRDTOperation> =>
@@ -175,10 +175,10 @@ describe("applyOpToRow", () => {
       const row: ORMapRow = { [TABLE_NAME]: "test", [ROW_KEY]: "row1", fields: {} };
       const op: CRDTOperation = {
         type: "set",
-        table: "test",
+        tableName: "test",
         rowKey: "row1",
-        field: "name",
-        value: "Alice",
+        fieldKey: "name",
+        jsonValue: "Alice",
         dot: { clientId: "client1", version: 1 },
       };
 
@@ -200,10 +200,10 @@ describe("applyOpToRow", () => {
       };
       const op: CRDTOperation = {
         type: "set",
-        table: "test",
+        tableName: "test",
         rowKey: "row1",
-        field: "name",
-        value: "Bob",
+        fieldKey: "name",
+        jsonValue: "Bob",
         dot: { clientId: "client1", version: 2 },
       };
 
@@ -223,10 +223,10 @@ describe("applyOpToRow", () => {
       };
       const op: CRDTOperation = {
         type: "set",
-        table: "test",
+        tableName: "test",
         rowKey: "row1",
-        field: "name",
-        value: "Alice",
+        fieldKey: "name",
+        jsonValue: "Alice",
         dot: { clientId: "client1", version: 3 },
       };
 
@@ -246,10 +246,10 @@ describe("applyOpToRow", () => {
       };
       const op: CRDTOperation = {
         type: "set",
-        table: "test",
+        tableName: "test",
         rowKey: "row1",
-        field: "name",
-        value: "Bob",
+        fieldKey: "name",
+        jsonValue: "Bob",
         dot: { clientId: "client2", version: 5 },
       };
 
@@ -270,10 +270,10 @@ describe("applyOpToRow", () => {
       };
       const op: CRDTOperation = {
         type: "set",
-        table: "test",
+        tableName: "test",
         rowKey: "row1",
-        field: "value",
-        value: {},
+        fieldKey: "value",
+        jsonValue: {},
         dot: { clientId: "client1", version: 1 },
       };
 
@@ -286,14 +286,14 @@ describe("applyOpToRow", () => {
       const row: ORMapRow = { [TABLE_NAME]: "test", [ROW_KEY]: "row1", fields: {} };
       const op: CRDTOperation = {
         type: "set",
-        table: "test",
+        tableName: "test",
         rowKey: "row1",
-        field: undefined as any,
-        value: "Alice",
+        fieldKey: undefined as any,
+        jsonValue: "Alice",
         dot: { clientId: "client1", version: 1 },
       };
 
-      expect(() => applyOperationToRow(row, op)).toThrow("Set operation is missing field");
+      expect(() => applyOperationToRow(row, op)).toThrow("Set operation is missing fieldKey");
     });
 
     it("should reject set dominated by tombstone", () => {
@@ -303,15 +303,15 @@ describe("applyOpToRow", () => {
         fields: {},
         tombstone: {
           dot: { clientId: "client1", version: 10 },
-          context: { client1: 5 },
+          versionVector: { client1: 5 },
         },
       };
       const op: CRDTOperation = {
         type: "set",
-        table: "test",
+        tableName: "test",
         rowKey: "row1",
-        field: "name",
-        value: "Alice",
+        fieldKey: "name",
+        jsonValue: "Alice",
         dot: { clientId: "client1", version: 5 },
       };
 
@@ -327,15 +327,15 @@ describe("applyOpToRow", () => {
         fields: {},
         tombstone: {
           dot: { clientId: "client1", version: 10 },
-          context: { client1: 5 },
+          versionVector: { client1: 5 },
         },
       };
       const op: CRDTOperation = {
         type: "set",
-        table: "test",
+        tableName: "test",
         rowKey: "row1",
-        field: "name",
-        value: "Alice",
+        fieldKey: "name",
+        jsonValue: "Alice",
         dot: { clientId: "client1", version: 6 },
       };
 
@@ -354,15 +354,15 @@ describe("applyOpToRow", () => {
         fields: {},
         tombstone: {
           dot: { clientId: "client1", version: 10 },
-          context: { client1: 5 },
+          versionVector: { client1: 5 },
         },
       };
       const op: CRDTOperation = {
         type: "set",
-        table: "test",
+        tableName: "test",
         rowKey: "row1",
-        field: "name",
-        value: "Alice",
+        fieldKey: "name",
+        jsonValue: "Alice",
         dot: { clientId: "client2", version: 1 },
       };
 
@@ -415,9 +415,9 @@ describe("applyOpToRow", () => {
       const row: ORMapRow = { [TABLE_NAME]: "test", [ROW_KEY]: "row1", fields: {} };
       const operation: CRDTOperation = {
         type: "setRow",
-        table: "test",
+        tableName: "test",
         rowKey: "row1",
-        value: { name: "Alice", age: 30 },
+        fields: { name: "Alice", age: 30 },
         dot: { clientId: "client1", version: 1 },
       };
 
@@ -444,9 +444,9 @@ describe("applyOpToRow", () => {
       };
       const op: CRDTOperation = {
         type: "setRow",
-        table: "test",
+        tableName: "test",
         rowKey: "row1",
-        value: { name: "Alice", age: 30 },
+        fields: { name: "Alice", age: 30 },
         dot: { clientId: "client1", version: 3 },
       };
 
@@ -465,14 +465,14 @@ describe("applyOpToRow", () => {
         fields: {},
         tombstone: {
           dot: { clientId: "client1", version: 10 },
-          context: { client1: 5 },
+          versionVector: { client1: 5 },
         },
       };
       const op: CRDTOperation = {
         type: "setRow",
-        table: "test",
+        tableName: "test",
         rowKey: "row1",
-        value: { name: "Alice", age: 30 },
+        fields: { name: "Alice", age: 30 },
         dot: { clientId: "client1", version: 5 },
       };
 
@@ -516,11 +516,11 @@ describe("applyOpToRow", () => {
         },
       };
       const op: CRDTOperation = {
-        type: "remove",
-        table: "test",
+        type: "removeRow",
+        tableName: "test",
         rowKey: "row1",
         dot: { clientId: "client1", version: 10 },
-        context: { client1: 5, client2: 2 },
+        versionVector: { client1: 5, client2: 2 },
       };
 
       applyOperationToRow(row, op);
@@ -530,7 +530,7 @@ describe("applyOpToRow", () => {
       expect(row.fields.age).toBeUndefined();
       expect(row.tombstone).toEqual({
         dot: { clientId: "client1", version: 10 },
-        context: { client1: 5, client2: 2 },
+        versionVector: { client1: 5, client2: 2 },
       });
     });
 
@@ -544,11 +544,11 @@ describe("applyOpToRow", () => {
         },
       };
       const op: CRDTOperation = {
-        type: "remove",
-        table: "test",
+        type: "removeRow",
+        tableName: "test",
         rowKey: "row1",
         dot: { clientId: "client1", version: 10 },
-        context: { client1: 5, client2: 2 },
+        versionVector: { client1: 5, client2: 2 },
       };
 
       applyOperationToRow(row, op);
@@ -571,11 +571,11 @@ describe("applyOpToRow", () => {
         },
       };
       const op: CRDTOperation = {
-        type: "remove",
-        table: "test",
+        type: "removeRow",
+        tableName: "test",
         rowKey: "row1",
         dot: { clientId: "client1", version: 10 },
-        context: { client1: 5 },
+        versionVector: { client1: 5 },
       };
 
       applyOperationToRow(row, op);
@@ -599,8 +599,8 @@ describe("applyOpToRow", () => {
             // Apply all sets with versions <= context
             const dominatedSets = setOps.map((op) => {
               const clientId = op.dot.clientId;
-              if (removeOp.type !== "remove") throw new Error("Type should be remove");
-              const contextVersion = removeOp.context[clientId];
+              if (removeOp.type !== "removeRow") throw new Error("Type should be remove");
+              const contextVersion = removeOp.versionVector[clientId];
               if (contextVersion !== undefined) {
                 return {
                   ...op,
@@ -615,8 +615,8 @@ describe("applyOpToRow", () => {
 
             // All fields from clients in context with version <= context should be gone
             Object.values(row.fields).forEach((field) => {
-              if (removeOp.type !== "remove") throw new Error("Type should be remove");
-              const contextVersion = removeOp.context[field.dot.clientId];
+              if (removeOp.type !== "removeRow") throw new Error("Type should be remove");
+              const contextVersion = removeOp.versionVector[field.dot.clientId];
               if (contextVersion !== undefined) {
                 expect(field.dot.version).toBeGreaterThan(contextVersion);
               }
@@ -639,7 +639,7 @@ describe("applyOpToRow", () => {
             applyOperationToRow(row, removeOp);
 
             // Check the FINAL merged context after remove operation
-            const finalContext = row.tombstone?.context ?? {};
+            const finalContext = row.tombstone?.versionVector ?? {};
             const clientId = setOp.dot.clientId;
             const contextVersion = finalContext[clientId] ?? 0;
 
@@ -652,8 +652,8 @@ describe("applyOpToRow", () => {
             applyOperationToRow(row, resurrectOp);
 
             // Field should exist because version is higher than context
-            if (resurrectOp.type === "set" && resurrectOp.field) {
-              expect(row.fields[resurrectOp.field]).toBeDefined();
+            if (resurrectOp.type === "set" && resurrectOp.fieldKeyKey) {
+              expect(row.fields[resurrectOp.fieldKey]).toBeDefined();
             }
           },
         ),

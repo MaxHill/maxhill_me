@@ -12,25 +12,25 @@ export type ValidKey = string;
 export type CRDTOperation =
   | {
     type: "set";
-    table: string;
+    tableName: string;
     rowKey: string;
-    field?: string;
-    value: any;
+    fieldKey?: string;
+    jsonValue: any;
     dot: Dot;
   }
   | {
     type: "setRow";
-    table: string;
+    tableName: string;
     rowKey: ValidKey;
-    value: Record<string, any>;
+    fields: Record<string, any>;
     dot: Dot;
   }
   | {
-    type: "remove";
-    table: string;
+    type: "removeRow";
+    tableName: string;
     rowKey: ValidKey;
     dot: Dot;
-    context: Record<string, number>; // Always present (empty object for non-remove operations)
+    versionVector: Record<string, number>;
   };
 
 export type LWWField = {
@@ -46,7 +46,7 @@ export type ORMapRow = {
   fields: Record<string, LWWField>;
   tombstone?: {
     dot: Dot;
-    context: Record<string, number>; // tracks which dots were observed by this delete
+    versionVector: Record<string, number>;
   };
 };
 
@@ -87,32 +87,32 @@ export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): vo
 
   if (operation.type === "set") {
     // Check if this set operation is dominated by an existing tombstone.
-    // Tombstones track a "context" - a map of clientId → highest version seen at delete time.
-    // If this set's dot.version is <= the context version for its client, the delete happened
+    // Tombstones track a version vector: a map of clientId → highest version seen at delete time.
+    // If this set's dot.version is <= the version-vector entry for its client, the delete happened
     // after this write from the deleter's perspective, so we ignore the set (delete wins).
     // This prevents "resurrection" of deleted fields by late-arriving concurrent writes.
     if (row.tombstone) {
-      const seen = row.tombstone.context[operation.dot.clientId];
-      if (seen !== undefined && operation.dot.version <= seen) {
+      const seenVersion = row.tombstone.versionVector[operation.dot.clientId];
+      if (seenVersion !== undefined && operation.dot.version <= seenVersion) {
         return; // Tombstone wins
       }
     }
 
     // This casting is safe since this is already validated in validateOperation()
-    const field = operation.field as string;
-    const existing = row.fields[field];
+    const fieldKey = operation.fieldKey as string;
+    const existing = row.fields[fieldKey];
 
     if (!existing) {
       // No existing value, just set it
-      row.fields[field] = { value: operation.value, dot: operation.dot };
+      row.fields[fieldKey] = { value: operation.jsonValue, dot: operation.dot };
     } else {
       const cmp = compareDots(operation.dot, existing.dot);
       if (cmp > 0) {
         // New dot is higher, replace
-        row.fields[field] = { value: operation.value, dot: operation.dot };
+        row.fields[fieldKey] = { value: operation.jsonValue, dot: operation.dot };
       } else if (cmp === 0) {
         throw new Error(
-          `CRDT invariant violated: duplicate dot for field "${field}"`,
+          `CRDT invariant violated: duplicate dot for field "${fieldKey}"`,
         );
       }
       // Otherwise keep existing (cmp < 0)
@@ -120,13 +120,13 @@ export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): vo
   } else if (operation.type === "setRow") {
     // Check if tombstone dominates
     if (row.tombstone) {
-      const seen = row.tombstone.context[operation.dot.clientId];
-      if (seen !== undefined && operation.dot.version <= seen) {
+      const seenVersion = row.tombstone.versionVector[operation.dot.clientId];
+      if (seenVersion !== undefined && operation.dot.version <= seenVersion) {
         return; // Tombstone wins
       }
     }
 
-    for (const [field, value] of Object.entries(operation.value)) {
+    for (const [field, value] of Object.entries(operation.fields)) {
       const existing = row.fields[field];
 
       if (!existing) {
@@ -145,34 +145,34 @@ export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): vo
         // Otherwise keep existing (cmp < 0)
       }
     }
-  } else if (operation.type === "remove") {
+  } else if (operation.type === "removeRow") {
     // Merge with existing tombstone if present
-    let finalTombstone: { dot: Dot; context: Record<string, number> };
+    let finalTombstone: { dot: Dot; versionVector: Record<string, number> };
 
     if (row.tombstone) {
-      // Use LWW for tombstone dots, and merge contexts
+      // Use LWW for tombstone dots, and merge version vectors.
       const cmp = compareDots(operation.dot, row.tombstone.dot);
       const winningDot = cmp > 0 ? operation.dot : row.tombstone.dot;
 
-      // When merging two tombstones (concurrent deletes), we need to merge their contexts.
-      // The merged context tracks the maximum version seen from each client across both deletes.
+      // When merging two tombstones (concurrent deletes), we need to merge their version vectors.
+      // The merged version vector tracks the maximum version seen from each client across both deletes.
       // This ensures the resulting tombstone dominates all writes that EITHER delete observed.
       // Example: Delete A saw client1:v5, Delete B saw client1:v7 → merged sees client1:v7
-      const mergedContext: Record<string, number> = { ...row.tombstone.context };
-      for (const [clientId, version] of Object.entries(operation.context)) {
-        const existing = mergedContext[clientId];
-        mergedContext[clientId] = existing !== undefined ? Math.max(existing, version) : version;
+      const mergedVersionVector: Record<string, number> = { ...row.tombstone.versionVector };
+      for (const [clientId, version] of Object.entries(operation.versionVector)) {
+        const existing = mergedVersionVector[clientId];
+        mergedVersionVector[clientId] = existing !== undefined ? Math.max(existing, version) : version;
       }
 
-      finalTombstone = { dot: winningDot, context: mergedContext };
+      finalTombstone = { dot: winningDot, versionVector: mergedVersionVector };
     } else {
-      finalTombstone = { dot: operation.dot, context: operation.context };
+      finalTombstone = { dot: operation.dot, versionVector: operation.versionVector };
     }
 
     // Keep only fields NOT dominated by the final tombstone
     const newFields: Record<string, LWWField> = {};
     for (const [field, fieldState] of Object.entries(row.fields)) {
-      const seenCounter = finalTombstone.context[fieldState.dot.clientId];
+      const seenCounter = finalTombstone.versionVector[fieldState.dot.clientId];
       if (seenCounter === undefined || fieldState.dot.version > seenCounter) {
         newFields[field] = fieldState;
       }
@@ -211,18 +211,18 @@ export function validateOperation(operation: CRDTOperation): CRDTOperation {
     throw new Error("Operation.dot.clientId must be defined");
   }
   if (operation.type === "set") {
-    if (!operation.field) {
-      throw new Error("Set operation is missing field");
+    if (!operation.fieldKey) {
+      throw new Error("Set operation is missing fieldKey");
     }
-    if (!isSerializable(operation.value)) {
-      throw new Error(`Set operation has non-serializable value: ${typeof operation.value}`);
+    if (!isSerializable(operation.jsonValue)) {
+      throw new Error(`Set operation has non-serializable jsonValue: ${typeof operation.jsonValue}`);
     }
   }
 
-  if (operation.type === "remove") {
-    for (const [clientId, version] of Object.entries(operation.context)) {
+  if (operation.type === "removeRow") {
+    for (const [clientId, version] of Object.entries(operation.versionVector)) {
       if (version < 0) {
-        throw new Error(`Invalid context version for ${clientId}: ${version}`);
+        throw new Error(`Invalid versionVector version for ${clientId}: ${version}`);
       }
     }
   }

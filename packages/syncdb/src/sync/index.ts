@@ -302,29 +302,33 @@ export class Sync {
     // Validate operations before processing to fail fast on corrupted data
     for (const op of operations) {
       if (op.type === "set") {
-        if (typeof op.field !== "string" || op.field === "") {
+        if (typeof op.fieldKey !== "string" || op.fieldKey === "") {
           throw new Error(
-            `Invalid set operation: field must be a non-empty string, got ${typeof op.field}`,
+            `Invalid set operation: field must be a non-empty string, got ${typeof op.fieldKey}`,
           );
         }
-        if (op.value === undefined || op.value === null) {
-          throw new Error(`Invalid set operation: value must be defined, got ${op.value}`);
+        if (op.jsonValue === undefined || op.jsonValue === null) {
+          throw new Error(`Invalid set operation: value must be defined, got ${op.jsonValue}`);
         }
-        if (op.value["_key"]) {
+        if (op.jsonValue["_key"]) {
           throw new Error(
             `Operation: ${op.dot} contained illegal _key property. _key should always be stripped out`,
           );
         }
       } else if (op.type === "setRow") {
-        if (typeof op.value !== "object" || op.value === null || Array.isArray(op.value)) {
+        if (typeof op.fields !== "object" || op.fields === null || Array.isArray(op.fields)) {
           throw new Error(
-            `Invalid setRow operation: value must be a plain object, got ${typeof op.value}`,
+            `Invalid setRow operation: fields must be a plain object, got ${typeof op.fields}`,
           );
         }
-      } else if (op.type === "remove") {
-        if (typeof op.context !== "object" || op.context === null || Array.isArray(op.context)) {
+      } else if (op.type === "removeRow") {
+        if (
+          typeof op.versionVector !== "object" ||
+          op.versionVector === null ||
+          Array.isArray(op.versionVector)
+        ) {
           throw new Error(
-            `Invalid remove operation: context must be a plain object, got ${typeof op.context}`,
+            `Invalid removeRow operation: versionVector must be a plain object, got ${typeof op.versionVector}`,
           );
         }
       }
@@ -334,7 +338,7 @@ export class Sync {
     const operationsByRow = new Map<string, CRDTOperation[]>();
 
     for (const operation of operations) {
-      const key = `${operation.table}:${String(operation.rowKey)}`;
+      const key = `${operation.tableName}:${String(operation.rowKey)}`;
       if (!operationsByRow.has(key)) {
         operationsByRow.set(key, []);
       }
@@ -364,7 +368,7 @@ export class Sync {
         const firstOp = rowOperations[0];
         const row = await this.rowStore.getRow(
           tx,
-          firstOp.table,
+          firstOp.tableName,
           firstOp.rowKey,
         );
         return { row, rowOperations };
@@ -399,20 +403,20 @@ export class Sync {
       let valueKey = "null";
 
       if (op.type === "set") {
-        value = JSON.stringify(op.value);
-        valueKey = op.field ?? "null";
+        value = JSON.stringify(op.jsonValue);
+        valueKey = op.fieldKey ?? "null";
       }
 
       if (op.type === "setRow") {
-        value = JSON.stringify(op.value);
+        value = JSON.stringify(op.fields);
       }
 
-      // op.type === "remove"
+      // op.type === "removeRow"
       // value & valueKey stay "null" (matches Go)
 
       parts.push(
         String(op.rowKey),
-        op.table,
+        op.tableName,
         op.type,
         value,
         valueKey,
@@ -436,26 +440,26 @@ export class Sync {
     // Add operation fields - must match server hash logic exactly
     for (const operation of response.operations) {
       parts.push(operation.type);
-      parts.push(operation.table);
+      parts.push(operation.tableName);
       parts.push(String(operation.rowKey));
       parts.push(operation.dot.clientId);
       parts.push(String(operation.dot.version));
 
       // Include operation-specific fields
       if (operation.type === "set") {
-        parts.push(operation.field ?? "null");
-        parts.push(JSON.stringify(operation.value));
+        parts.push(operation.fieldKey ?? "null");
+        parts.push(JSON.stringify(operation.jsonValue));
       } else if (operation.type === "setRow") {
         parts.push("null"); // field placeholder for consistency
-        parts.push(JSON.stringify(operation.value));
-      } else if (operation.type === "remove") {
+        parts.push(JSON.stringify(operation.fields));
+      } else if (operation.type === "removeRow") {
         parts.push("null"); // field placeholder
         parts.push("null"); // value placeholder
-        // Add context for remove operations
-        const contextKeys = Object.keys(operation.context).sort();
+        // Add context for removeRow operations
+        const contextKeys = Object.keys(operation.versionVector).sort();
         for (const key of contextKeys) {
           parts.push(key);
-          parts.push(String(operation.context[key]));
+          parts.push(String(operation.versionVector[key]));
         }
       }
     }

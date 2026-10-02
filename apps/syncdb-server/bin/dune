@@ -2,7 +2,17 @@
  (name main)
  (public_name sync)
  (modules main)
- (libraries sync eio_main logs logs.fmt fmt caqti caqti-eio caqti-eio.unix caqti-driver-sqlite3 uri))
+ (libraries
+  sync
+  eio_main
+  logs
+  logs.fmt
+  fmt
+  caqti
+  caqti-eio
+  caqti-eio.unix
+  caqti-driver-sqlite3
+  uri))
 
 (executable
  (name simulator)

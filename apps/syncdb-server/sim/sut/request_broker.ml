@@ -100,7 +100,7 @@ let add_seen_operations_from_response ~(client : Client.t)
   let seen_from_response : Client.operation_record list =
     List.map
       (fun (op : Sync.Sync_engine.crdt_operation) ->
-        ({ Client.key = op.row_key; Client.table = op.table }
+        ({ Client.key = op.row_key; Client.table = op.table_name }
           : Client.operation_record))
       response.operations
   in
