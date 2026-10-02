@@ -22,7 +22,7 @@ module Log = (val Logs.src_log src : Logs.LOG)
 let status_of_sync_error = function
   | Sync_engine.Request_integrity_failed
   | Sync_engine.Client_state_out_of_sync _
-  | Sync_engine.Non_contiguous_versions _
+  | Sync_engine.Non_monotonic_versions _
   | Sync_engine.Remove_context_unseen_dot _ ->
       `Bad_request
   | Sync_engine.Storage_error _ | Sync_engine.Decode_error _ ->

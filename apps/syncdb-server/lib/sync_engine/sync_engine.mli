@@ -31,7 +31,7 @@ type sync_response = {
 type sync_error =
   | Request_integrity_failed
   | Client_state_out_of_sync of { last_seen : int64; max_server : int64 }
-  | Non_contiguous_versions of string
+  | Non_monotonic_versions of string
   | Remove_context_unseen_dot of { client_id : string; version : int64 }
   | Storage_error of string
   | Decode_error of string

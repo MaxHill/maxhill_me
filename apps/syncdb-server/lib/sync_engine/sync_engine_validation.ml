@@ -10,34 +10,24 @@ let ensure_client_not_ahead ~last_seen ~max_server =
     Error (Client_state_out_of_sync { last_seen; max_server })
   else Ok ()
 
-let ensure_versions_contiguous operations =
+let ensure_versions_monotonic operations =
   let module M = Map.Make (String) in
-  let add_version acc operation =
-    let versions =
-      match M.find_opt operation.dot.client_id acc with
-      | Some existing -> operation.dot.version :: existing
-      | None -> [ operation.dot.version ]
-    in
-    M.add operation.dot.client_id versions acc
+  let check_operation acc operation =
+    let client_id = operation.dot.client_id in
+    let version = operation.dot.version in
+    match M.find_opt client_id acc with
+    | Some previous when version <= previous ->
+        Error (Non_monotonic_versions client_id)
+    | _ -> Ok (M.add client_id version acc)
   in
-  let grouped = List.fold_left add_version M.empty operations in
-  let check_versions client_id versions =
-    let sorted = List.sort Int64.compare versions in
-    let rec loop = function
-      | a :: (b :: _ as rest) ->
-          if Int64.succ a = b then loop rest
-          else Error (Non_contiguous_versions client_id)
-      | _ -> Ok ()
-    in
-    loop sorted
-  in
-  grouped |> M.bindings
+  operations
   |> List.fold_left
-       (fun acc (client_id, versions) ->
-         match acc with
-         | Error _ -> acc
-         | Ok () -> check_versions client_id versions)
-       (Ok ())
+       (fun result operation ->
+         match result with
+         | Error _ -> result
+         | Ok acc -> check_operation acc operation)
+       (Ok M.empty)
+  |> Result.map ignore
 
 let ensure_remove_context_known connection ~db_name operations =
   let known_in_request = incoming_dot_set operations in

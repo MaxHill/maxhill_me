@@ -33,7 +33,7 @@ let process_sync_request_with_connection connection ~db_name request =
   Repository.with_transaction connection
     ~map_tx_error:(fun err -> Storage_error (Repository.error_to_string err))
     (fun conn ->
-      let* () = ensure_versions_contiguous request.operations in
+      let* () = ensure_versions_monotonic request.operations in
       let* () =
         ensure_remove_context_known conn ~db_name request.operations
       in
