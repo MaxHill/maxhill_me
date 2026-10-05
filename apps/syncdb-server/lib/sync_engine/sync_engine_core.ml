@@ -1,12 +1,12 @@
 type dot = { client_id : string; version : int64 }
 
 type op_payload =
-  | Set of { field : string; value : Yojson.Safe.t }
-  | Set_row of { value : Yojson.Safe.t }
-  | Remove of { context : (string * int64) list }
+  | Set of { field_key : string; json_value : Yojson.Safe.t }
+  | Set_row of { fields : Yojson.Safe.t }
+  | Remove_row of { version_vector : (string * int64) list }
 
 type crdt_operation = {
-  table : string;
+  table_name : string;
   row_key : string;
   dot : dot;
   payload : op_payload;
@@ -53,7 +53,7 @@ let sync_error_to_string = function
 let operation_type = function
   | Set _ -> "set"
   | Set_row _ -> "setRow"
-  | Remove _ -> "remove"
+  | Remove_row _ -> "removeRow"
 
 let int64_of_json = function
   | `Int value -> Int64.of_int value
@@ -67,8 +67,8 @@ let has_key key = function
   | `Assoc fields -> List.mem_assoc key fields
   | _ -> false
 
-let canonical_context_json context =
-  let sorted = List.sort (fun (a, _) (b, _) -> String.compare a b) context in
+let canonical_version_vector_json version_vector =
+  let sorted = List.sort (fun (a, _) (b, _) -> String.compare a b) version_vector in
   `Assoc
     (List.map
        (fun (client_id, version) ->

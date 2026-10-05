@@ -6,6 +6,7 @@ import {
 } from "../indexes.ts";
 import { promisifyIDBRequest, validateTransactionStores } from "../utils.ts";
 import { ROW_KEY, TABLE_NAME } from "../crdt.ts";
+import { migrate_v2 } from "./migrations.ts";
 
 // Stores
 export const ROWS_STORE = "rows";
@@ -82,7 +83,9 @@ export class Lifecycle {
       request.onsuccess = async () => {
         var db = request.result;
 
-        const missingStores = REQUIRED_STORES.filter((store) => !db.objectStoreNames.contains(store));
+        const missingStores = REQUIRED_STORES.filter((store) =>
+          !db.objectStoreNames.contains(store)
+        );
         if (missingStores.length > 0 && version) {
           db.close();
           throw new Error(
@@ -106,6 +109,7 @@ export class Lifecycle {
         }
 
         this.db = db;
+        await migrate_v2(this.db);
         resolve(this.db);
       };
 
@@ -158,6 +162,7 @@ export class Lifecycle {
       };
     });
   }
+
 
   close(): void {
     if (!this.db) {

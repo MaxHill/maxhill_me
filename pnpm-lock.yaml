@@ -226,6 +226,9 @@ importers:
 
   packages/syncdb:
     dependencies:
+      '@maxhill/stdx':
+        specifier: workspace:*
+        version: link:../ts-stdx
       idb:
         specifier: ^8.0.3
         version: 8.0.3

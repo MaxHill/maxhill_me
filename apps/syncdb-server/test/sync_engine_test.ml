@@ -1,6 +1,6 @@
 let assert_decode_set_operation_request () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"table\":\"todos\",\"rowKey\":\"r1\",\"field\":\"title\",\"value\":\"Buy milk\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fieldKey\":\"title\",\"jsonValue\":\"Buy milk\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
   in
   match Sync.Sync_engine.decode_sync_request request_json with
   | Error msg -> failwith ("expected decode success, got error: " ^ msg)
@@ -9,14 +9,14 @@ let assert_decode_set_operation_request () =
       | [ operation ] -> (
           match operation.payload with
           | Sync.Sync_engine.Set payload ->
-              assert (payload.field = "title");
-              assert (Yojson.Safe.to_string payload.value = "\"Buy milk\"")
+              assert (payload.field_key = "title");
+              assert (Yojson.Safe.to_string payload.json_value = "\"Buy milk\"")
           | _ -> failwith "expected Set payload")
       | _ -> failwith "expected exactly one operation")
 
 let assert_decode_set_row_operation_request () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"table\":\"todos\",\"rowKey\":\"r1\",\"value\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
   in
   match Sync.Sync_engine.decode_sync_request request_json with
   | Error msg -> failwith ("expected decode success, got error: " ^ msg)
@@ -25,7 +25,7 @@ let assert_decode_set_row_operation_request () =
       | [ operation ] -> (
           match operation.payload with
           | Sync.Sync_engine.Set_row payload ->
-              assert (Yojson.Safe.to_string payload.value = "{\"title\":\"Buy milk\"}")
+              assert (Yojson.Safe.to_string payload.fields = "{\"title\":\"Buy milk\"}")
           | _ -> failwith "expected Set_row payload")
       | _ -> failwith "expected exactly one operation")
 
@@ -56,7 +56,7 @@ let assert_hash_sync_request_mismatch_detected () =
 
 let assert_decode_remove_operation_request () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"remove\",\"table\":\"todos\",\"rowKey\":\"r1\",\"context\":{\"client-1\":1,\"client-2\":3},\"dot\":{\"clientId\":\"client-1\",\"version\":2}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"removeRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"versionVector\":{\"client-1\":1,\"client-2\":3},\"dot\":{\"clientId\":\"client-1\",\"version\":2}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
   in
   match Sync.Sync_engine.decode_sync_request request_json with
   | Error msg -> failwith ("expected decode success, got error: " ^ msg)
@@ -64,15 +64,15 @@ let assert_decode_remove_operation_request () =
       match request.operations with
       | [ operation ] -> (
           match operation.payload with
-          | Sync.Sync_engine.Remove payload ->
-              assert (List.assoc "client-1" payload.context = 1L);
-              assert (List.assoc "client-2" payload.context = 3L)
-          | _ -> failwith "expected Remove payload")
+          | Sync.Sync_engine.Remove_row payload ->
+              assert (List.assoc "client-1" payload.version_vector = 1L);
+              assert (List.assoc "client-2" payload.version_vector = 3L)
+          | _ -> failwith "expected Remove_row payload")
       | _ -> failwith "expected exactly one operation")
 
 let assert_reject_set_row_with_field () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"table\":\"todos\",\"rowKey\":\"r1\",\"field\":\"title\",\"value\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fieldKey\":\"title\",\"jsonValue\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
   in
   match Sync.Sync_engine.decode_sync_request request_json with
   | Ok _ -> failwith "expected mismatch decode error"
@@ -80,7 +80,7 @@ let assert_reject_set_row_with_field () =
 
 let assert_reject_set_with_context () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"table\":\"todos\",\"rowKey\":\"r1\",\"field\":\"title\",\"value\":\"Buy milk\",\"context\":{\"client-1\":1},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fieldKey\":\"title\",\"jsonValue\":\"Buy milk\",\"versionVector\":{\"client-1\":1},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
   in
   match Sync.Sync_engine.decode_sync_request request_json with
   | Ok _ -> failwith "expected mismatch decode error"
@@ -96,7 +96,7 @@ let assert_reject_invalid_db_name () =
 
 let assert_hash_sync_request_matches_expected_for_set () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"table\":\"todos\",\"rowKey\":\"r1\",\"field\":\"title\",\"value\":\"Buy milk\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"3f005d177f08ee8c356fda9a8daff40abd7f38abae391f9e91d671d99d599616\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fieldKey\":\"title\",\"jsonValue\":\"Buy milk\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"3f005d177f08ee8c356fda9a8daff40abd7f38abae391f9e91d671d99d599616\"}"
   in
   let request =
     match Sync.Sync_engine.decode_sync_request request_json with
@@ -109,7 +109,7 @@ let assert_hash_sync_request_matches_expected_for_set () =
 
 let assert_hash_sync_request_matches_expected_for_set_row () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"table\":\"todos\",\"rowKey\":\"r1\",\"value\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"3bb9f2e08c455c6da0664d246563b8fd2aa6ca4daf31f2eecc18f8b60d3b3605\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"3bb9f2e08c455c6da0664d246563b8fd2aa6ca4daf31f2eecc18f8b60d3b3605\"}"
   in
   let request =
     match Sync.Sync_engine.decode_sync_request request_json with
@@ -122,7 +122,7 @@ let assert_hash_sync_request_matches_expected_for_set_row () =
 
 let assert_hash_sync_request_matches_expected_for_remove () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"remove\",\"table\":\"todos\",\"rowKey\":\"r1\",\"context\":{\"client-1\":1,\"client-2\":3},\"dot\":{\"clientId\":\"client-1\",\"version\":2}}],\"lastSeenServerVersion\":0,\"requestHash\":\"a81af44882b465fcb9d8b124b678133bce038b4cc3c6db632bafd3d1baf8f338\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"removeRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"versionVector\":{\"client-1\":1,\"client-2\":3},\"dot\":{\"clientId\":\"client-1\",\"version\":2}}],\"lastSeenServerVersion\":0,\"requestHash\":\"d30be6870a193c65c0dd56409ceed24017197a0d7d325652df6b014bda207b29\"}"
   in
   let request =
     match Sync.Sync_engine.decode_sync_request request_json with
@@ -131,11 +131,11 @@ let assert_hash_sync_request_matches_expected_for_remove () =
   in
   assert
     (Sync.Sync_engine.hash_sync_request request
-    = "a81af44882b465fcb9d8b124b678133bce038b4cc3c6db632bafd3d1baf8f338")
+    = "d30be6870a193c65c0dd56409ceed24017197a0d7d325652df6b014bda207b29")
 
 let assert_hash_sync_request_matches_expected_for_multi_operation () =
   let request_json =
-    "{\"clientId\":\"client-abc\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"table\":\"posts\",\"rowKey\":\"p1\",\"field\":\"title\",\"value\":\"Hello\",\"dot\":{\"clientId\":\"client-abc\",\"version\":6}},{\"type\":\"remove\",\"table\":\"posts\",\"rowKey\":\"p2\",\"context\":{\"client-abc\":7},\"dot\":{\"clientId\":\"client-abc\",\"version\":7}}],\"lastSeenServerVersion\":5,\"requestHash\":\"eb6eaaaff4162c85883b8bd0552915acf7b114313c002e46f6c7ed9d0b12470a\"}"
+    "{\"clientId\":\"client-abc\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"tableName\":\"posts\",\"rowKey\":\"p1\",\"fieldKey\":\"title\",\"jsonValue\":\"Hello\",\"dot\":{\"clientId\":\"client-abc\",\"version\":6}},{\"type\":\"removeRow\",\"tableName\":\"posts\",\"rowKey\":\"p2\",\"versionVector\":{\"client-abc\":7},\"dot\":{\"clientId\":\"client-abc\",\"version\":7}}],\"lastSeenServerVersion\":5,\"requestHash\":\"436f5aa7e31f6a742ed464f4637aa49d61134b248c31ec5f2d75f4b7fa66b20e\"}"
   in
   let request =
     match Sync.Sync_engine.decode_sync_request request_json with
@@ -144,7 +144,7 @@ let assert_hash_sync_request_matches_expected_for_multi_operation () =
   in
   assert
     (Sync.Sync_engine.hash_sync_request request
-    = "eb6eaaaff4162c85883b8bd0552915acf7b114313c002e46f6c7ed9d0b12470a")
+    = "436f5aa7e31f6a742ed464f4637aa49d61134b248c31ec5f2d75f4b7fa66b20e")
 
 let assert_encode_sync_response_matches_go_bytes_for_empty_case () =
   let response =
@@ -165,10 +165,10 @@ let assert_encode_sync_response_matches_go_bytes_for_empty_case () =
 let assert_encode_sync_response_includes_set_operation_shape () =
   let op =
     {
-      Sync.Sync_engine.table = "todos";
+      Sync.Sync_engine.table_name = "todos";
       row_key = "r1";
       dot = { client_id = "client-1"; version = 1L };
-      payload = Set { field = "title"; value = `String "Buy milk" };
+      payload = Set { field_key = "title"; json_value = `String "Buy milk" };
     }
   in
   let response =
@@ -187,9 +187,9 @@ let assert_encode_sync_response_includes_set_operation_shape () =
   match operations with
   | [ first ] ->
       assert (first |> member "type" |> to_string = "set");
-      assert (first |> member "field" |> to_string = "title");
+      assert (first |> member "fieldKey" |> to_string = "title");
       let keys = first |> to_assoc |> List.map fst in
-      assert (not (List.mem "context" keys))
+      assert (not (List.mem "versionVector" keys))
   | _ -> failwith "expected one operation"
 
 let () =

@@ -49,8 +49,8 @@ let ensure_remove_context_known connection ~db_name operations =
     | [] -> Ok ()
     | operation :: rest -> (
         match operation.payload with
-        | Remove { context } -> (
-            match validate_context context with
+        | Remove_row { version_vector } -> (
+            match validate_context version_vector with
             | Error _ as err -> err
             | Ok () -> validate_operations rest)
         | Set _ | Set_row _ -> validate_operations rest)

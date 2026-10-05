@@ -25,10 +25,10 @@ describe("OperationLog", () => {
   it("saves an operation and retrieves it as unsynced", async () => {
     const op: CRDTOperation = {
       type: "set",
-      table: "users",
+      tableName: "users",
       rowKey: "u1",
-      field: "name",
-      value: "Alice",
+      fieldKey: "name",
+      jsonValue: "Alice",
       dot: { clientId: "c1", version: 1 },
     };
 
@@ -47,10 +47,10 @@ describe("OperationLog", () => {
   it("marks an operation as synced so it no longer appears in unsynced", async () => {
     const op: CRDTOperation = {
       type: "set",
-      table: "users",
+      tableName: "users",
       rowKey: "u1",
-      field: "name",
-      value: "Alice",
+      fieldKey: "name",
+      jsonValue: "Alice",
       dot: { clientId: "c1", version: 1 },
     };
 
@@ -71,9 +71,9 @@ describe("OperationLog", () => {
 
   it("batch saves operations and counts unsynced", async () => {
     const ops: CRDTOperation[] = [
-      { type: "set", table: "users", rowKey: "u1", field: "name", value: "A", dot: { clientId: "c1", version: 1 } },
-      { type: "set", table: "users", rowKey: "u2", field: "name", value: "B", dot: { clientId: "c1", version: 2 } },
-      { type: "set", table: "users", rowKey: "u3", field: "name", value: "C", dot: { clientId: "c1", version: 3 } },
+      { type: "set", tableName: "users", rowKey: "u1", fieldKey: "name", jsonValue: "A", dot: { clientId: "c1", version: 1 } },
+      { type: "set", tableName: "users", rowKey: "u2", fieldKey: "name", jsonValue: "B", dot: { clientId: "c1", version: 2 } },
+      { type: "set", tableName: "users", rowKey: "u3", fieldKey: "name", jsonValue: "C", dot: { clientId: "c1", version: 3 } },
     ];
 
     const saveTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
@@ -89,7 +89,7 @@ describe("OperationLog", () => {
 
   it("resets sync state clearing all operations", async () => {
     const op: CRDTOperation = {
-      type: "set", table: "users", rowKey: "u1", field: "name", value: "A",
+      type: "set", tableName: "users", rowKey: "u1", fieldKey: "name", jsonValue: "A",
       dot: { clientId: "c1", version: 1 },
     };
 

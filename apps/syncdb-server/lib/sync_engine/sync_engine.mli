@@ -1,12 +1,12 @@
 type dot = { client_id : string; version : int64 }
 
 type op_payload =
-  | Set of { field : string; value : Yojson.Safe.t }
-  | Set_row of { value : Yojson.Safe.t }
-  | Remove of { context : (string * int64) list }
+  | Set of { field_key : string; json_value : Yojson.Safe.t }
+  | Set_row of { fields : Yojson.Safe.t }
+  | Remove_row of { version_vector : (string * int64) list }
 
 type crdt_operation = {
-  table : string;
+  table_name : string;
   row_key : string;
   dot : dot;
   payload : op_payload;
