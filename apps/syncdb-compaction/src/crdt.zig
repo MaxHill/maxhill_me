@@ -39,6 +39,13 @@ comptime {
     assert(set_row_fields_count_max > 0);
     assert(row_field_registers_count_max > 0);
     assert(version_vector_entries_count_max > 0);
+
+    // Not sure these are needed?
+    assert(@sizeOf(ClientId) == 16);
+    assert(@sizeOf(VersionVector) > @sizeOf(ClientId));
+    assert(@sizeOf(Dot) >= @sizeOf(ClientId));
+    assert(@sizeOf(RowKey) == @sizeOf([]const u8));
+    assert(@sizeOf(LWWRegister) >= @sizeOf(Dot));
 }
 
 pub const JsonValueBytes = []const u8;

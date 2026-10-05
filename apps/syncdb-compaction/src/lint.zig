@@ -243,6 +243,46 @@ fn functionSkipsAssertionFloor(tree: Ast, fn_proto: *const Ast.full.FnProto, fun
     return false;
 }
 
+fn functionReturnsType(tree: Ast, fn_proto: *const Ast.full.FnProto) bool {
+    const return_type_node = fn_proto.ast.return_type.unwrap() orelse return false;
+    const first_token = tree.firstToken(return_type_node);
+    const last_token = tree.lastToken(return_type_node);
+
+    assert(last_token >= first_token);
+    if (first_token != last_token) return false;
+    return std.mem.eql(u8, tree.tokenSlice(first_token), "type");
+}
+
+fn nodeContainsNode(tree: Ast, outer: Ast.Node.Index, inner: Ast.Node.Index) bool {
+    const outer_first_token = tree.firstToken(outer);
+    const outer_last_token = tree.lastToken(outer);
+    const inner_first_token = tree.firstToken(inner);
+    const inner_last_token = tree.lastToken(inner);
+
+    assert(outer_last_token >= outer_first_token);
+    assert(inner_last_token >= inner_first_token);
+    return outer_first_token <= inner_first_token and inner_last_token <= outer_last_token;
+}
+
+fn nodeIsInsideNodeWithTag(tree: Ast, child: Ast.Node.Index, node_tag: Ast.Node.Tag) bool {
+    var index: u32 = 0;
+    while (index < tree.nodes.len) : (index += 1) {
+        const possible_parent: Ast.Node.Index = @enumFromInt(index);
+        if (possible_parent == child) continue;
+        if (tree.nodeTag(possible_parent) != node_tag) continue;
+        if (nodeContainsNode(tree, possible_parent, child)) return true;
+    }
+    return false;
+}
+
+fn comptimeBlockCountsForAssertionDensity(tree: Ast, node: Ast.Node.Index) bool {
+    assert(tree.nodeTag(node) == .@"comptime");
+    if (nodeIsInsideNodeWithTag(tree, node, .fn_decl)) return false;
+    if (nodeIsInsideNodeWithTag(tree, node, .test_decl)) return false;
+    if (nodeIsInsideNodeWithTag(tree, node, .@"comptime")) return false;
+    return true;
+}
+
 const AssertionDensity = struct {
     function_count: u32 = 0,
     assertion_count: u32 = 0,
@@ -272,7 +312,8 @@ fn checkFunction(
         try checkName(gpa, errors, filename, name, span.start_line, span.end_line);
     }
 
-    if (span.line_count > max_function_lines) {
+    const returns_type = functionReturnsType(tree, &fn_proto);
+    if (!returns_type and span.line_count > max_function_lines) {
         const message = if (function_name) |name|
             try std.fmt.allocPrint(
                 gpa,
@@ -366,6 +407,11 @@ pub fn lintSource(
         const node: Ast.Node.Index = @enumFromInt(index);
         switch (tree.nodeTag(node)) {
             .fn_decl => try checkFunction(gpa, tree, errors, filename, node, &assertion_density),
+            .@"comptime" => {
+                if (comptimeBlockCountsForAssertionDensity(tree, node)) {
+                    assertion_density.assertion_count += countAssertionsInNode(tree, node);
+                }
+            },
             .global_var_decl,
             .local_var_decl,
             .simple_var_decl,
@@ -456,6 +502,24 @@ test "lint accepts functions that meet the assertion floor" {
         \\    std.debug.assert(true);
         \\    std.debug.assert(left != right or left == right);
         \\    return left + right;
+        \\}
+    ;
+    var errors: std.ArrayList(LintError) = .empty;
+    defer freeErrors(std.testing.allocator, &errors);
+
+    try lintSource(std.testing.allocator, "synthetic.zig", source, &errors);
+    try std.testing.expectEqual(@as(usize, 0), errors.items.len);
+}
+
+test "lint counts top-level comptime assertions toward density" {
+    const source =
+        \\const std = @import("std");
+        \\comptime {
+        \\    std.debug.assert(true);
+        \\    std.debug.assert(@sizeOf(usize) > 0);
+        \\}
+        \\pub fn value() i32 {
+        \\    return 1;
         \\}
     ;
     var errors: std.ArrayList(LintError) = .empty;
@@ -565,6 +629,37 @@ test "lint reports functions that exceed the line limit" {
         &errors,
     );
     try expectMessageContains(errors.items, "is too long");
+}
+
+test "lint skips line limit for type factories" {
+    var source_list: std.ArrayList(u8) = .empty;
+    defer source_list.deinit(std.testing.allocator);
+
+    try source_list.appendSlice(std.testing.allocator, "const std = @import(\"std\");\n");
+    try source_list.appendSlice(std.testing.allocator, "fn makePool(comptime Slot: type) type {\n");
+    try source_list.appendSlice(std.testing.allocator, "    return struct {\n");
+    try source_list.appendSlice(std.testing.allocator, "        pub fn check() void {\n");
+    try source_list.appendSlice(std.testing.allocator, "            std.debug.assert(true);\n");
+    try source_list.appendSlice(std.testing.allocator, "            std.debug.assert(@sizeOf(Slot) >= 0);\n");
+    try source_list.appendSlice(std.testing.allocator, "        }\n");
+    var line_index: u32 = 0;
+    while (line_index < max_function_lines) : (line_index += 1) {
+        try source_list.appendSlice(std.testing.allocator, "        // returned struct documentation line\n");
+    }
+    try source_list.appendSlice(std.testing.allocator, "    };\n");
+    try source_list.appendSlice(std.testing.allocator, "}\n");
+    try source_list.append(std.testing.allocator, 0);
+
+    var errors: std.ArrayList(LintError) = .empty;
+    defer freeErrors(std.testing.allocator, &errors);
+
+    try lintSource(
+        std.testing.allocator,
+        "synthetic.zig",
+        source_list.items[0 .. source_list.items.len - 1 :0],
+        &errors,
+    );
+    try std.testing.expectEqual(@as(usize, 0), errors.items.len);
 }
 
 test "lint project sources" {

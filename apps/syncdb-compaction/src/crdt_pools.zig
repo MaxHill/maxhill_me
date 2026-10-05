@@ -165,85 +165,6 @@ pub const CRDTOperationPoolSlot = struct {
         self.pool_state = .acquired;
     }
 };
-pub const CRDTOperationPool = struct {
-    allocator: std.mem.Allocator,
-    slots: []CRDTOperationPoolSlot,
-    free_head_index: ?i32,
-
-    pub fn init(allocator: std.mem.Allocator, slot_count: i32) !@This() {
-        assert(slot_count > 0);
-        assert(slot_count < std.math.maxInt(i32));
-
-        const slots = try allocator.alloc(
-            CRDTOperationPoolSlot,
-            @intCast(slot_count),
-        );
-        errdefer allocator.free(slots);
-
-        var previous_index: ?i32 = null;
-        for (slots, 0..) |*slot, index| {
-            assert(index < @as(usize, @intCast(slot_count)));
-
-            try slot.init();
-            slot.pool_state = if (previous_index) |next_free|
-                .{ .next_free = next_free }
-            else
-                .free_list_end;
-            previous_index = @intCast(index);
-        }
-
-        return .{
-            .allocator = allocator,
-            .slots = slots,
-            .free_head_index = previous_index,
-        };
-    }
-
-    pub fn deinit(self: *@This()) void {
-        self.allocator.free(self.slots);
-    }
-
-    pub fn acquire(self: *@This()) !*CRDTOperationPoolSlot {
-        const index = self.free_head_index orelse {
-            return PoolError.PoolExhausted;
-        };
-
-        const slot = &self.slots[@intCast(index)];
-        self.free_head_index = switch (slot.pool_state) {
-            .next_free => |next_free| next_free,
-            .free_list_end => null,
-            .acquired => unreachable,
-        };
-        slot.pool_state = .acquired;
-
-        return slot;
-    }
-    pub fn release(self: *@This(), slot: *CRDTOperationPoolSlot) void {
-        const index = self.index_of(slot);
-        assert(slot.pool_state == .acquired);
-
-        slot.reset();
-        slot.pool_state = if (self.free_head_index) |next_free|
-            .{ .next_free = next_free }
-        else
-            .free_list_end;
-        self.free_head_index = index;
-    }
-
-    fn index_of(self: *@This(), slot: *CRDTOperationPoolSlot) i32 {
-        const pool_start_address = @intFromPtr(self.slots.ptr);
-        const pool_end_address = pool_start_address + self.slots.len * @sizeOf(CRDTOperationPoolSlot);
-        const slot_address = @intFromPtr(slot);
-
-        assert(slot_address >= pool_start_address);
-        assert(slot_address < pool_end_address);
-
-        const offset_bytes = slot_address - pool_start_address;
-        assert(offset_bytes % @sizeOf(CRDTOperationPoolSlot) == 0);
-
-        return @intCast(offset_bytes / @sizeOf(CRDTOperationPoolSlot));
-    }
-};
 
 pub const ORMapRowPoolSlot = struct {
     pub const row_field_registers_count_max = 200;
@@ -377,93 +298,96 @@ pub const ORMapRowPoolSlot = struct {
         self.pool_state = .acquired;
     }
 };
-pub const ORMapRowPool = struct {
-    allocator: std.mem.Allocator,
-    slots: []ORMapRowPoolSlot,
-    free_head_index: ?i32,
 
-    pub fn init(allocator: std.mem.Allocator, slot_count: i32) !@This() {
-        assert(slot_count > 0);
-        assert(slot_count < std.math.maxInt(i32));
+pub const CRDTOperationPool = slot_pool(CRDTOperationPoolSlot);
+pub const ORMapRowPool = slot_pool(ORMapRowPoolSlot);
 
-        const slots = try allocator.alloc(
-            ORMapRowPoolSlot,
-            @intCast(slot_count),
-        );
-        errdefer allocator.free(slots);
+fn slot_pool(comptime Slot: type) type {
+    return struct {
+        allocator: std.mem.Allocator,
+        slots: []Slot,
+        free_head_index: ?i32,
 
-        var previous_index: ?i32 = null;
-        for (slots, 0..) |*slot, index| {
-            assert(index < @as(usize, @intCast(slot_count)));
+        pub fn init(allocator: std.mem.Allocator, slot_count: i32) !@This() {
+            assert(slot_count > 0);
+            assert(slot_count < std.math.maxInt(i32));
 
-            try slot.init();
-            slot.pool_state = if (previous_index) |next_free|
+            const slots = try allocator.alloc(
+                Slot,
+                @intCast(slot_count),
+            );
+            errdefer allocator.free(slots);
+
+            var previous_index: ?i32 = null;
+            for (slots, 0..) |*slot, index| {
+                assert(index < @as(usize, @intCast(slot_count)));
+
+                try slot.init();
+                slot.pool_state = if (previous_index) |next_free|
+                    .{ .next_free = next_free }
+                else
+                    .free_list_end;
+                previous_index = @intCast(index);
+            }
+
+            return .{
+                .allocator = allocator,
+                .slots = slots,
+                .free_head_index = previous_index,
+            };
+        }
+
+        pub fn deinit(self: *@This()) void {
+            self.allocator.free(self.slots);
+        }
+
+        pub fn acquire(self: *@This()) !*Slot {
+            const index = self.free_head_index orelse {
+                return PoolError.PoolExhausted;
+            };
+
+            const slot = &self.slots[@intCast(index)];
+            self.free_head_index = switch (slot.pool_state) {
+                .next_free => |next_free| next_free,
+                .free_list_end => null,
+                .acquired => unreachable,
+            };
+            slot.pool_state = .acquired;
+
+            return slot;
+        }
+        pub fn release(self: *@This(), slot: *Slot) void {
+            const index = self.index_of(slot);
+            assert(slot.pool_state == .acquired);
+
+            slot.reset();
+            slot.pool_state = if (self.free_head_index) |next_free|
                 .{ .next_free = next_free }
             else
                 .free_list_end;
-            previous_index = @intCast(index);
+            self.free_head_index = index;
         }
 
-        return .{
-            .allocator = allocator,
-            .slots = slots,
-            .free_head_index = previous_index,
-        };
-    }
+        fn index_of(self: *@This(), slot: *Slot) i32 {
+            const pool_start_address = @intFromPtr(self.slots.ptr);
+            const pool_end_address = pool_start_address + self.slots.len * @sizeOf(Slot);
+            const slot_address = @intFromPtr(slot);
 
-    pub fn deinit(self: *@This()) void {
-        self.allocator.free(self.slots);
-    }
+            assert(slot_address >= pool_start_address);
+            assert(slot_address < pool_end_address);
 
-    pub fn acquire(self: *@This()) !*ORMapRowPoolSlot {
-        const index = self.free_head_index orelse {
-            return PoolError.PoolExhausted;
-        };
+            const offset_bytes = slot_address - pool_start_address;
+            assert(offset_bytes % @sizeOf(Slot) == 0);
 
-        const slot = &self.slots[@intCast(index)];
-        self.free_head_index = switch (slot.pool_state) {
-            .next_free => |next_free| next_free,
-            .free_list_end => null,
-            .acquired => unreachable,
-        };
-        slot.pool_state = .acquired;
+            return @intCast(offset_bytes / @sizeOf(Slot));
+        }
+    };
+}
 
-        return slot;
-    }
-    pub fn release(
-        self: *@This(),
-        slot: *ORMapRowPoolSlot,
-    ) void {
-        const index = self.index_of(slot);
-        assert(slot.pool_state == .acquired);
-
-        slot.reset();
-        slot.pool_state = if (self.free_head_index) |next_free|
-            .{ .next_free = next_free }
-        else
-            .free_list_end;
-        self.free_head_index = index;
-    }
-
-    fn index_of(
-        self: *@This(),
-        slot: *ORMapRowPoolSlot,
-    ) i32 {
-        const pool_start_address = @intFromPtr(self.slots.ptr);
-        const pool_end_address = pool_start_address + self.slots.len * @sizeOf(ORMapRowPoolSlot);
-        const slot_address = @intFromPtr(slot);
-
-        assert(slot_address >= pool_start_address);
-        assert(slot_address < pool_end_address);
-
-        const offset_bytes = slot_address - pool_start_address;
-        assert(offset_bytes % @sizeOf(ORMapRowPoolSlot) == 0);
-
-        return @intCast(offset_bytes / @sizeOf(ORMapRowPoolSlot));
-    }
-};
-
-fn assert_pool_constants_valid() void {
+//  ------------------------------------------------------------------
+//  Assert helpers
+//  ------------------------------------------------------------------
+comptime {
     assert(CRDTOperationPoolSlot.set_row_fields_count_max > 0);
     assert(CRDTOperationPoolSlot.tombstone_version_vector_entries_count_max > 0);
     assert(CRDTOperationPoolSlot.table_name_bytes_capacity > 0);
@@ -496,14 +420,8 @@ fn assert_pool_constants_valid() void {
     assert(CRDTOperationPoolSlot.set_row_fields_count_max == ORMapRowPoolSlot.row_field_registers_count_max);
     assert(@sizeOf(CRDTOperationPoolSlot) > @sizeOf(crdt.CRDTOperation));
     assert(@sizeOf(ORMapRowPoolSlot) > @sizeOf(crdt.ORMapRow));
-    assert(@sizeOf(crdt.ClientId) == 16);
-    assert(@sizeOf(crdt.VersionVector) > @sizeOf(crdt.ClientId));
-    assert(@sizeOf(crdt.Dot) >= @sizeOf(crdt.ClientId));
-    assert(@sizeOf(crdt.RowKey) == @sizeOf([]const u8));
-    assert(@sizeOf(crdt.LWWRegister) >= @sizeOf(crdt.Dot));
-}
 
-fn assert_pool_exact_constants_valid() void {
+    // assert_pool_exact_constants_valid
     assert(CRDTOperationPoolSlot.table_name_bytes_capacity >= 16);
     assert(CRDTOperationPoolSlot.row_key_bytes_capacity >= 16);
     assert(ORMapRowPoolSlot.table_name_bytes_capacity >= 16);
@@ -526,6 +444,9 @@ fn assert_pool_exact_constants_valid() void {
     assert(ORMapRowPoolSlot.tombstone_version_vector_entries_count_max == 200);
 }
 
+//  ------------------------------------------------------------------
+//  Tests
+//  ------------------------------------------------------------------
 fn test_client_id(client_id_bytes: []const u8) crdt.ClientId {
     assert(client_id_bytes.len <= @sizeOf(crdt.ClientId));
 
@@ -535,9 +456,6 @@ fn test_client_id(client_id_bytes: []const u8) crdt.ClientId {
 }
 
 test "pools initialize preallocated slots" {
-    assert_pool_constants_valid();
-    assert_pool_exact_constants_valid();
-
     const allocator = std.testing.allocator;
 
     var operation_pool = try CRDTOperationPool.init(allocator, 2);
