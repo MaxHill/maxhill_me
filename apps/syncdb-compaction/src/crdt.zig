@@ -30,15 +30,9 @@
 ///
 const std = @import("std");
 const assert = std.debug.assert;
-
-const set_row_fields_count_max = 200;
-const row_field_registers_count_max = 200;
-const version_vector_entries_count_max = 200;
+const constants = @import("config.zig").constants;
 
 comptime {
-    assert(set_row_fields_count_max > 0);
-    assert(row_field_registers_count_max > 0);
-    assert(version_vector_entries_count_max > 0);
 
     // Not sure these are needed?
     assert(@sizeOf(ClientId) == 16);
@@ -52,7 +46,9 @@ pub const JsonValueBytes = []const u8;
 
 pub const ClientId = [16]u8;
 pub fn client_id_from_bytes(client_id_bytes: []const u8) !ClientId {
-    if (client_id_bytes.len != @sizeOf(ClientId)) return error.InvalidClientIdLength;
+    if (client_id_bytes.len != @sizeOf(ClientId)) {
+        return error.InvalidClientIdLength;
+    }
 
     var client_id: ClientId = undefined;
     @memcpy(&client_id, client_id_bytes);
@@ -81,13 +77,13 @@ pub const Dot = struct {
 };
 
 pub const SetRowOperationFields = struct {
-    field_keys: [set_row_fields_count_max][]const u8 = undefined,
-    json_values: [set_row_fields_count_max]JsonValueBytes = undefined,
+    field_keys: [constants.crdt_fields_count_max][]const u8 = undefined,
+    json_values: [constants.crdt_fields_count_max]JsonValueBytes = undefined,
     count: usize = 0,
 
     pub fn get(self: *const @This(), field_key: []const u8) ?JsonValueBytes {
         assert_field_key_valid(field_key);
-        assert(self.count <= set_row_fields_count_max);
+        assert(self.count <= constants.crdt_fields_count_max);
         for (self.field_keys[0..self.count], self.json_values[0..self.count]) |entry_key, json_value| {
             if (std.mem.eql(u8, entry_key, field_key)) return json_value;
         }
@@ -101,7 +97,7 @@ pub const SetRowOperationFields = struct {
 
     pub fn put(self: *@This(), field_key: []const u8, json_value: JsonValueBytes) void {
         assert_field_key_valid(field_key);
-        assert(self.count <= set_row_fields_count_max);
+        assert(self.count <= constants.crdt_fields_count_max);
         for (self.field_keys[0..self.count], self.json_values[0..self.count]) |entry_key, *entry_value| {
             if (std.mem.eql(u8, entry_key, field_key)) {
                 entry_value.* = json_value;
@@ -109,22 +105,22 @@ pub const SetRowOperationFields = struct {
             }
         }
 
-        assert(self.count < set_row_fields_count_max);
+        assert(self.count < constants.crdt_fields_count_max);
         self.field_keys[self.count] = field_key;
         self.json_values[self.count] = json_value;
         self.count += 1;
-        assert(self.count <= set_row_fields_count_max);
+        assert(self.count <= constants.crdt_fields_count_max);
     }
 };
 
 pub const VersionVector = struct {
-    client_ids: [version_vector_entries_count_max]ClientId = undefined,
-    client_versions: [version_vector_entries_count_max]i32 = undefined,
+    client_ids: [constants.crdt_tombstone_vectors_count_max]ClientId = undefined,
+    client_versions: [constants.crdt_tombstone_vectors_count_max]i32 = undefined,
     count: usize = 0,
 
     pub fn get(self: *const @This(), client_id: ClientId) ?i32 {
         assert(!std.mem.allEqual(u8, &client_id, 0));
-        assert(self.count <= version_vector_entries_count_max);
+        assert(self.count <= constants.crdt_tombstone_vectors_count_max);
         for (self.client_ids[0..self.count], self.client_versions[0..self.count]) |entry_client_id, entry_client_version| {
             if (std.mem.eql(u8, &entry_client_id, &client_id)) return entry_client_version;
         }
@@ -139,7 +135,7 @@ pub const VersionVector = struct {
     pub fn put_client_version_max(self: *@This(), client_id: ClientId, version: i32) void {
         assert(!std.mem.allEqual(u8, &client_id, 0));
         assert(version >= 0);
-        assert(self.count <= version_vector_entries_count_max);
+        assert(self.count <= constants.crdt_tombstone_vectors_count_max);
         for (self.client_ids[0..self.count], self.client_versions[0..self.count]) |entry_client_id, *entry_version| {
             if (std.mem.eql(u8, &entry_client_id, &client_id)) {
                 entry_version.* = @max(entry_version.*, version);
@@ -147,11 +143,11 @@ pub const VersionVector = struct {
             }
         }
 
-        assert(self.count < version_vector_entries_count_max);
+        assert(self.count < constants.crdt_tombstone_vectors_count_max);
         self.client_ids[self.count] = client_id;
         self.client_versions[self.count] = version;
         self.count += 1;
-        assert(self.count <= version_vector_entries_count_max);
+        assert(self.count <= constants.crdt_tombstone_vectors_count_max);
     }
 };
 
@@ -174,7 +170,7 @@ pub const CRDTOperation = union(enum) {
             .set_row => |set_row| {
                 assert(set_row.table_name.len > 0);
                 assert(set_row.row_key.len > 0);
-                assert(set_row.fields.count <= set_row_fields_count_max);
+                assert(set_row.fields.count <= constants.crdt_fields_count_max);
                 for (set_row.fields.field_keys[0..set_row.fields.count]) |field_key| {
                     assert_field_key_valid(field_key);
                 }
@@ -227,14 +223,14 @@ pub const Tombstone = struct {
 };
 
 pub const RowFieldRegisters = struct {
-    field_keys: [row_field_registers_count_max][]const u8 = undefined,
-    json_values: [row_field_registers_count_max]JsonValueBytes = undefined,
-    field_dots: [row_field_registers_count_max]Dot = undefined,
+    field_keys: [constants.crdt_fields_count_max][]const u8 = undefined,
+    json_values: [constants.crdt_fields_count_max]JsonValueBytes = undefined,
+    field_dots: [constants.crdt_fields_count_max]Dot = undefined,
     count: usize = 0,
 
     pub fn get_index(self: *const @This(), field_key: []const u8) ?usize {
         assert(field_key.len > 0);
-        assert(self.count <= row_field_registers_count_max);
+        assert(self.count <= constants.crdt_fields_count_max);
         for (self.field_keys[0..self.count], 0..self.count) |entry_key, index| {
             if (std.mem.eql(u8, entry_key, field_key)) return index;
         }
@@ -243,7 +239,7 @@ pub const RowFieldRegisters = struct {
 
     pub fn get(self: *const @This(), field_key: []const u8) ?LWWRegister {
         assert(field_key.len > 0);
-        assert(self.count <= row_field_registers_count_max);
+        assert(self.count <= constants.crdt_fields_count_max);
         if (self.get_index(field_key)) |index| {
             assert(index < self.count);
             return .{ .value = self.json_values[index], .dot = self.field_dots[index] };
@@ -253,13 +249,14 @@ pub const RowFieldRegisters = struct {
 
     pub fn contains(self: *const @This(), field_key: []const u8) bool {
         assert(field_key.len > 0);
-        assert(self.count <= row_field_registers_count_max);
+        assert(self.count <= constants.crdt_fields_count_max);
         return self.get_index(field_key) != null;
     }
 
     pub fn put(self: *@This(), field_key: []const u8, json_value: JsonValueBytes, dot: Dot) void {
         assert(field_key.len > 0);
-        assert(self.count <= row_field_registers_count_max);
+        assert(self.count <= constants.crdt_fields_count_max);
+
         dot.assert_valid();
 
         for (self.field_keys[0..self.count], self.json_values[0..self.count], self.field_dots[0..self.count]) |entry_key, *entry_value, *entry_dot| {
@@ -270,17 +267,17 @@ pub const RowFieldRegisters = struct {
             }
         }
 
-        assert(self.count < row_field_registers_count_max);
+        assert(self.count < constants.crdt_fields_count_max);
         self.field_keys[self.count] = field_key;
         self.json_values[self.count] = json_value;
         self.field_dots[self.count] = dot;
         self.count += 1;
-        assert(self.count <= row_field_registers_count_max);
+        assert(self.count <= constants.crdt_fields_count_max);
     }
 
     pub fn remove(self: *@This(), field_key: []const u8) bool {
         assert(field_key.len > 0);
-        assert(self.count <= row_field_registers_count_max);
+        assert(self.count <= constants.crdt_fields_count_max);
 
         const index = self.get_index(field_key) orelse return false;
         assert(index < self.count);
@@ -293,12 +290,12 @@ pub const RowFieldRegisters = struct {
         }
 
         self.count -= 1;
-        assert(self.count <= row_field_registers_count_max);
+        assert(self.count <= constants.crdt_fields_count_max);
         return true;
     }
 
     pub fn clear(self: *@This()) void {
-        assert(self.count <= row_field_registers_count_max);
+        assert(self.count <= constants.crdt_fields_count_max);
         self.count = 0;
     }
 };
@@ -312,7 +309,7 @@ pub const ORMapRow = struct {
     fn assert_valid(row: ORMapRow) void {
         assert(row.table_name.len > 0);
         assert(row.row_key.len > 0);
-        assert(row.fields.count <= row_field_registers_count_max);
+        assert(row.fields.count <= constants.crdt_fields_count_max);
         for (row.fields.field_keys[0..row.fields.count], row.fields.field_dots[0..row.fields.count]) |field_key, dot| {
             assert_field_key_valid(field_key);
             dot.assert_valid();
@@ -453,7 +450,7 @@ fn assert_capacity_for_operation(row: *const ORMapRow, operation: CRDTOperation)
             for (set_row_operation.fields.field_keys[0..set_row_operation.fields.count]) |field_key| {
                 if (!row.fields.contains(field_key)) missing_fields_count += 1;
             }
-            assert(row_field_registers_count_max >= row.fields.count + missing_fields_count);
+            assert(constants.crdt_fields_count_max >= row.fields.count + missing_fields_count);
         },
         .remove_row => |remove_row_operation| {
             var missing_version_vector_entries_count: usize = 0;
@@ -461,7 +458,7 @@ fn assert_capacity_for_operation(row: *const ORMapRow, operation: CRDTOperation)
             for (remove_version_vector.client_ids[0..remove_version_vector.count]) |client_id| {
                 if (!row.tombstone.version_vector.contains(client_id)) missing_version_vector_entries_count += 1;
             }
-            assert(version_vector_entries_count_max >= row.tombstone.version_vector.count + missing_version_vector_entries_count);
+            assert(constants.crdt_tombstone_vectors_count_max >= row.tombstone.version_vector.count + missing_version_vector_entries_count);
         },
     }
 }

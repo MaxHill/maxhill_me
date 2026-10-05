@@ -1,6 +1,7 @@
 const std = @import("std");
 const assert = std.debug.assert;
 const crdt = @import("crdt.zig");
+const constants = @import("config.zig").constants;
 
 const PoolError = error{
     PoolExhausted,
@@ -13,23 +14,16 @@ const PoolSlotState = union(enum) {
 };
 
 pub const CRDTOperationPoolSlot = struct {
-    pub const set_row_fields_count_max = 200;
-    pub const tombstone_version_vector_entries_count_max = 200;
-    pub const table_name_bytes_capacity = 64;
-    pub const row_key_bytes_capacity = 256;
-    pub const field_key_bytes_capacity = 8 * 1024;
-    pub const json_value_bytes_capacity = 32 * 1024;
-
-    table_name_storage: [table_name_bytes_capacity]u8 = undefined,
+    table_name_storage: [constants.crdt_table_name_byte_capacity]u8 = undefined,
     table_name_bytes_count: usize = 0,
 
-    row_key_storage: [row_key_bytes_capacity]u8 = undefined,
+    row_key_storage: [constants.crdt_row_key_byte_capacity]u8 = undefined,
     row_key_bytes_count: usize = 0,
 
-    field_key_storage: [field_key_bytes_capacity]u8 = undefined,
+    field_key_storage: [constants.crdt_field_key_byte_capacity]u8 = undefined,
     field_key_bytes_count: usize = 0,
 
-    json_value_storage: [json_value_bytes_capacity]u8 = undefined,
+    json_value_storage: [constants.crdt_json_value_byte_capacity]u8 = undefined,
     json_value_bytes_count: usize = 0,
 
     operation: crdt.CRDTOperation,
@@ -77,7 +71,7 @@ pub const CRDTOperationPoolSlot = struct {
         json_value: crdt.JsonValueBytes,
     ) !void {
         assert(self.active_operation == .set_row);
-        assert(self.set_row_fields.count < set_row_fields_count_max);
+        assert(self.set_row_fields.count < constants.crdt_fields_count_max);
 
         const stored_field_key = try self.copy_field_key(field_key);
         const stored_json_value = try self.copy_json_value(json_value);
@@ -167,24 +161,16 @@ pub const CRDTOperationPoolSlot = struct {
 };
 
 pub const ORMapRowPoolSlot = struct {
-    pub const row_field_registers_count_max = 200;
-    pub const tombstone_version_vector_entries_count_max = 200;
-
-    pub const table_name_bytes_capacity = 64;
-    pub const row_key_bytes_capacity = 256;
-    pub const field_key_bytes_capacity = 8 * 1024;
-    pub const json_value_bytes_capacity = 32 * 1024;
-
-    table_name_storage: [table_name_bytes_capacity]u8 = undefined,
+    table_name_storage: [constants.crdt_table_name_byte_capacity]u8 = undefined,
     table_name_bytes_count: usize = 0,
 
-    row_key_storage: [row_key_bytes_capacity]u8 = undefined,
+    row_key_storage: [constants.crdt_row_key_byte_capacity]u8 = undefined,
     row_key_bytes_count: usize = 0,
 
-    field_key_storage: [field_key_bytes_capacity]u8 = undefined,
+    field_key_storage: [constants.crdt_field_key_byte_capacity]u8 = undefined,
     field_key_bytes_count: usize = 0,
 
-    json_value_storage: [json_value_bytes_capacity]u8 = undefined,
+    json_value_storage: [constants.crdt_json_value_byte_capacity]u8 = undefined,
     json_value_bytes_count: usize = 0,
 
     row: crdt.ORMapRow,
@@ -240,7 +226,7 @@ pub const ORMapRowPoolSlot = struct {
     ) !void {
         assert(self.row.table_name.len > 0);
         assert(self.row.row_key.len > 0);
-        assert(self.row.fields.count < row_field_registers_count_max);
+        assert(self.row.fields.count < constants.crdt_fields_count_max);
 
         const stored_field_key = try self.copy_field_key(field_key);
         const stored_json_value = try self.copy_json_value(json_value);
@@ -388,60 +374,30 @@ fn slot_pool(comptime Slot: type) type {
 //  Assert helpers
 //  ------------------------------------------------------------------
 comptime {
-    assert(CRDTOperationPoolSlot.set_row_fields_count_max > 0);
-    assert(CRDTOperationPoolSlot.tombstone_version_vector_entries_count_max > 0);
-    assert(CRDTOperationPoolSlot.table_name_bytes_capacity > 0);
-    assert(CRDTOperationPoolSlot.row_key_bytes_capacity > 0);
-    assert(CRDTOperationPoolSlot.field_key_bytes_capacity > 0);
-    assert(CRDTOperationPoolSlot.json_value_bytes_capacity > 0);
-    assert(CRDTOperationPoolSlot.set_row_fields_count_max <= 200);
-    assert(CRDTOperationPoolSlot.tombstone_version_vector_entries_count_max <= 200);
-    assert(CRDTOperationPoolSlot.table_name_bytes_capacity <= 1024);
-    assert(CRDTOperationPoolSlot.row_key_bytes_capacity <= 1024);
-    assert(CRDTOperationPoolSlot.field_key_bytes_capacity >= 1024);
-    assert(CRDTOperationPoolSlot.json_value_bytes_capacity >= 1024);
-    assert(ORMapRowPoolSlot.row_field_registers_count_max > 0);
-    assert(ORMapRowPoolSlot.tombstone_version_vector_entries_count_max > 0);
-    assert(ORMapRowPoolSlot.table_name_bytes_capacity > 0);
-    assert(ORMapRowPoolSlot.row_key_bytes_capacity > 0);
-    assert(ORMapRowPoolSlot.field_key_bytes_capacity > 0);
-    assert(ORMapRowPoolSlot.json_value_bytes_capacity > 0);
-    assert(ORMapRowPoolSlot.row_field_registers_count_max <= 200);
-    assert(ORMapRowPoolSlot.tombstone_version_vector_entries_count_max <= 200);
-    assert(ORMapRowPoolSlot.table_name_bytes_capacity <= 1024);
-    assert(ORMapRowPoolSlot.row_key_bytes_capacity <= 1024);
-    assert(ORMapRowPoolSlot.field_key_bytes_capacity >= 1024);
-    assert(ORMapRowPoolSlot.json_value_bytes_capacity >= 1024);
-    assert(CRDTOperationPoolSlot.table_name_bytes_capacity == ORMapRowPoolSlot.table_name_bytes_capacity);
-    assert(CRDTOperationPoolSlot.row_key_bytes_capacity == ORMapRowPoolSlot.row_key_bytes_capacity);
-    assert(CRDTOperationPoolSlot.field_key_bytes_capacity == ORMapRowPoolSlot.field_key_bytes_capacity);
-    assert(CRDTOperationPoolSlot.json_value_bytes_capacity == ORMapRowPoolSlot.json_value_bytes_capacity);
-    assert(CRDTOperationPoolSlot.tombstone_version_vector_entries_count_max == ORMapRowPoolSlot.tombstone_version_vector_entries_count_max);
-    assert(CRDTOperationPoolSlot.set_row_fields_count_max == ORMapRowPoolSlot.row_field_registers_count_max);
+    assert(constants.crdt_fields_count_max > 0);
+    assert(constants.crdt_tombstone_vectors_count_max > 0);
+    assert(constants.crdt_table_name_byte_capacity > 0);
+    assert(constants.crdt_row_key_byte_capacity > 0);
+    assert(constants.crdt_field_key_byte_capacity > 0);
+    assert(constants.crdt_json_value_byte_capacity > 0);
+    assert(constants.crdt_fields_count_max <= 200);
+    assert(constants.crdt_tombstone_vectors_count_max <= 200);
+    assert(constants.crdt_table_name_byte_capacity >= 16);
+    assert(constants.crdt_table_name_byte_capacity <= 1024);
+    assert(constants.crdt_row_key_byte_capacity >= 16);
+    assert(constants.crdt_row_key_byte_capacity <= 1024);
+    assert(constants.crdt_field_key_byte_capacity >= 16);
+    assert(constants.crdt_json_value_byte_capacity >= 1024);
+    assert(constants.crdt_fields_count_max == constants.crdt_tombstone_vectors_count_max);
+    assert(constants.crdt_table_name_byte_capacity <= constants.crdt_row_key_byte_capacity);
+    assert(constants.crdt_field_key_byte_capacity == constants.crdt_row_key_byte_capacity);
+    assert(constants.crdt_json_value_byte_capacity >= constants.crdt_field_key_byte_capacity);
+    assert(constants.crdt_json_value_byte_capacity >= constants.crdt_row_key_byte_capacity);
+    assert(constants.crdt_json_value_byte_capacity >= constants.crdt_table_name_byte_capacity);
     assert(@sizeOf(CRDTOperationPoolSlot) > @sizeOf(crdt.CRDTOperation));
     assert(@sizeOf(ORMapRowPoolSlot) > @sizeOf(crdt.ORMapRow));
-
-    // assert_pool_exact_constants_valid
-    assert(CRDTOperationPoolSlot.table_name_bytes_capacity >= 16);
-    assert(CRDTOperationPoolSlot.row_key_bytes_capacity >= 16);
-    assert(ORMapRowPoolSlot.table_name_bytes_capacity >= 16);
-    assert(ORMapRowPoolSlot.row_key_bytes_capacity >= 16);
-    assert(CRDTOperationPoolSlot.set_row_fields_count_max == 200);
-    assert(CRDTOperationPoolSlot.table_name_bytes_capacity == 64);
-    assert(CRDTOperationPoolSlot.row_key_bytes_capacity == 256);
-    assert(CRDTOperationPoolSlot.field_key_bytes_capacity == 8 * 1024);
-    assert(CRDTOperationPoolSlot.json_value_bytes_capacity == 32 * 1024);
-    assert(ORMapRowPoolSlot.row_field_registers_count_max == 200);
-    assert(ORMapRowPoolSlot.table_name_bytes_capacity == 64);
-    assert(ORMapRowPoolSlot.row_key_bytes_capacity == 256);
-    assert(ORMapRowPoolSlot.field_key_bytes_capacity == 8 * 1024);
-    assert(ORMapRowPoolSlot.json_value_bytes_capacity == 32 * 1024);
-    assert(CRDTOperationPoolSlot.set_row_fields_count_max == CRDTOperationPoolSlot.tombstone_version_vector_entries_count_max);
-    assert(ORMapRowPoolSlot.row_field_registers_count_max == ORMapRowPoolSlot.tombstone_version_vector_entries_count_max);
     assert(@sizeOf(CRDTOperationPoolSlot) < 64 * 1024);
     assert(@sizeOf(ORMapRowPoolSlot) < 64 * 1024);
-    assert(CRDTOperationPoolSlot.tombstone_version_vector_entries_count_max == 200);
-    assert(ORMapRowPoolSlot.tombstone_version_vector_entries_count_max == 200);
 }
 
 //  ------------------------------------------------------------------
