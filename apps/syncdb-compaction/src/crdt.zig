@@ -1,3 +1,33 @@
+/// CRDT.zig
+///
+/// A CRDT is a Conflict-free Replicated Data Type.
+///
+/// A CRDT is a data structure that replicas can update independently.
+/// Later, those replicas can merge their changes deterministically.
+///
+/// This file implements an operation-based CRDT, also called a CmRDT.
+/// The primary data is a log of operations, similar to a write-ahead log.
+///
+/// Applying those operations produces an OR-Map, or Observed-Remove Map.
+/// Each field in the map uses Last-Write-Wins conflict resolution.
+///
+/// A dot is essential to both the OR-Map and Last-Write-Wins rules.
+/// The merge rules use dots to identify operations. A dot is a pair:
+///     { client_id, version }
+/// The `client_id` identifies the replica that created the operation.
+/// For a tombstone, it identifies the replica that observed the delete.
+///
+/// The `version` is that replica's Lamport clock value at the time.
+/// Together, the `client_id` and `version` give each operation a stable
+/// identity across replicas.
+///
+/// Deletes use tombstones. A tombstone records that a replica observed a
+/// delete for a field. This lets other replicas merge the delete with writes
+/// they may have seen in a different order.
+///
+/// Read more about the theory here:
+/// https://inria.hal.science/inria-00609399/document
+///
 const std = @import("std");
 const assert = std.debug.assert;
 
@@ -309,19 +339,49 @@ pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
     switch (operation) {
         .set_row => |set_row_operation| {
             if (row.tombstone.is_active()) {
-                const seen_version = row.tombstone.version_vector.get(set_row_operation.dot.client_id);
-                if (seen_version != null and set_row_operation.dot.version <= seen_version.?) return;
+                const seen_version = row.tombstone.version_vector
+                    .get(set_row_operation.dot.client_id);
+                if (seen_version != null and
+                    set_row_operation.dot.version <= seen_version.?)
+                {
+                    return;
+                }
             }
 
-            for (set_row_operation.fields.field_keys[0..set_row_operation.fields.count], set_row_operation.fields.json_values[0..set_row_operation.fields.count]) |field_key, json_value| {
-                update_field(.{ .field_key = field_key, .json_value = json_value, .dot = set_row_operation.dot }, row);
+            for (
+                set_row_operation.fields.field_keys[0..set_row_operation.fields.count],
+                set_row_operation.fields.json_values[0..set_row_operation.fields.count],
+            ) |field_key, json_value| {
+                update_field(
+                    .{
+                        .field_key = field_key,
+                        .json_value = json_value,
+                        .dot = set_row_operation.dot,
+                    },
+                    row,
+                );
             }
         },
         .remove_row => |remove_row_operation| {
             row.tombstone.merge_tombstone(remove_row_operation.tombstone);
-            for (row.fields.field_keys[0..row.fields.count], row.fields.field_dots[0..row.fields.count]) |field_key, dot| {
-                if (row.tombstone.version_vector.get(dot.client_id)) |remove_version_max| {
-                    if (dot.version <= remove_version_max) _ = row.fields.remove(field_key);
+
+            var index: usize = 0;
+            while (index < row.fields.count) {
+                const field_key = row.fields.field_keys[index];
+                const dot = row.fields.field_dots[index];
+
+                const should_delete =
+                    if (row.tombstone.version_vector
+                        .get(dot.client_id)) |remove_version_max|
+                        dot.version <= remove_version_max
+                    else
+                        false;
+
+                if (should_delete) {
+                    _ = row.fields.remove(field_key);
+                    // Do not increment, a new index shifted into this index
+                } else {
+                    index += 1;
                 }
             }
         },
@@ -340,29 +400,6 @@ fn assert_operation_targets_row(row: *const ORMapRow, operation: CRDTOperation) 
         .remove_row => |remove_row_operation| {
             assert(std.mem.eql(u8, row.table_name, remove_row_operation.table_name));
             assert(std.mem.eql(u8, row.row_key, remove_row_operation.row_key));
-        },
-    }
-}
-
-fn assert_capacity_for_operation(row: *const ORMapRow, operation: CRDTOperation) void {
-    row.assert_valid();
-    operation.assert_valid();
-
-    switch (operation) {
-        .set_row => |set_row_operation| {
-            var missing_fields_count: @TypeOf(row.fields.count) = 0;
-            for (set_row_operation.fields.field_keys[0..set_row_operation.fields.count]) |field_key| {
-                if (!row.fields.contains(field_key)) missing_fields_count += 1;
-            }
-            assert(row_field_registers_count_max >= row.fields.count + missing_fields_count);
-        },
-        .remove_row => |remove_row_operation| {
-            var missing_version_vector_entries_count: usize = 0;
-            const remove_version_vector = remove_row_operation.tombstone.version_vector;
-            for (remove_version_vector.client_ids[0..remove_version_vector.count]) |client_id| {
-                if (!row.tombstone.version_vector.contains(client_id)) missing_version_vector_entries_count += 1;
-            }
-            assert(version_vector_entries_count_max >= row.tombstone.version_vector.count + missing_version_vector_entries_count);
         },
     }
 }
@@ -396,11 +433,81 @@ fn pick_field_winner(field_update: FieldUpdate, row: ORMapRow) enum { incoming, 
     return .incoming;
 }
 
+//  ------------------------------------------------------------------
+//  Assert helpers
+//  ------------------------------------------------------------------
+fn assert_capacity_for_operation(row: *const ORMapRow, operation: CRDTOperation) void {
+    row.assert_valid();
+    operation.assert_valid();
+
+    switch (operation) {
+        .set_row => |set_row_operation| {
+            var missing_fields_count: @TypeOf(row.fields.count) = 0;
+            for (set_row_operation.fields.field_keys[0..set_row_operation.fields.count]) |field_key| {
+                if (!row.fields.contains(field_key)) missing_fields_count += 1;
+            }
+            assert(row_field_registers_count_max >= row.fields.count + missing_fields_count);
+        },
+        .remove_row => |remove_row_operation| {
+            var missing_version_vector_entries_count: usize = 0;
+            const remove_version_vector = remove_row_operation.tombstone.version_vector;
+            for (remove_version_vector.client_ids[0..remove_version_vector.count]) |client_id| {
+                if (!row.tombstone.version_vector.contains(client_id)) missing_version_vector_entries_count += 1;
+            }
+            assert(version_vector_entries_count_max >= row.tombstone.version_vector.count + missing_version_vector_entries_count);
+        },
+    }
+}
+fn assert_version_vector_valid(version_vector: VersionVector) void {
+    for (version_vector.client_ids[0..version_vector.count], version_vector.client_versions[0..version_vector.count]) |client_id, version| {
+        assert(!std.mem.allEqual(u8, &client_id, 0));
+        assert(version >= 0);
+    }
+}
+
+fn assert_field_key_valid(field_key: []const u8) void {
+    assert(field_key.len > 0);
+    assert(!std.mem.eql(u8, field_key, "_key"));
+}
+
+//  ------------------------------------------------------------------
+//  Tests
+//  ------------------------------------------------------------------
 fn test_client_id(client_id_bytes: []const u8) ClientId {
     assert(client_id_bytes.len <= @sizeOf(ClientId));
     var client_id = [_]u8{0} ** @sizeOf(ClientId);
     @memcpy(client_id[0..client_id_bytes.len], client_id_bytes);
     return client_id;
+}
+
+test "remove_row removes adjacent observed fields" {
+    const client_a = test_client_id("client_a");
+    const remover = test_client_id("remover");
+
+    var row = ORMapRow{
+        .table_name = "users",
+        .row_key = "row-1",
+        .fields = .{},
+        .tombstone = .{ .dot = null, .version_vector = .{} },
+    };
+
+    row.fields.put("name", "\"Max\"", .{ .client_id = client_a, .version = 1 });
+    row.fields.put("age", "42", .{ .client_id = client_a, .version = 2 });
+    row.fields.put("city", "\"London\"", .{ .client_id = client_a, .version = 3 });
+
+    var tombstone = Tombstone{
+        .dot = .{ .client_id = remover, .version = 1 },
+        .version_vector = .{},
+    };
+    tombstone.version_vector.put_client_version_max(client_a, 3);
+
+    apply_operation_to_row(&row, .{ .remove_row = .{
+        .table_name = "users",
+        .row_key = "row-1",
+        .tombstone = tombstone,
+    } });
+
+    try std.testing.expectEqual(@as(usize, 0), row.fields.count);
 }
 
 test "RowFieldRegisters put get remove and clear" {
@@ -500,16 +607,4 @@ test "apply_operation_to_row applies set_row set and remove_row to same row" {
 
     try std.testing.expectEqual(@as(usize, 0), row.fields.count);
     try std.testing.expect(row.tombstone.is_active());
-}
-
-fn assert_version_vector_valid(version_vector: VersionVector) void {
-    for (version_vector.client_ids[0..version_vector.count], version_vector.client_versions[0..version_vector.count]) |client_id, version| {
-        assert(!std.mem.allEqual(u8, &client_id, 0));
-        assert(version >= 0);
-    }
-}
-
-fn assert_field_key_valid(field_key: []const u8) void {
-    assert(field_key.len > 0);
-    assert(!std.mem.eql(u8, field_key, "_key"));
 }

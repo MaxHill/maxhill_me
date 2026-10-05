@@ -6,6 +6,12 @@ const PoolError = error{
     PoolExhausted,
 };
 
+const PoolSlotState = union(enum) {
+    acquired,
+    free_list_end,
+    next_free: i32,
+};
+
 pub const CRDTOperationPoolSlot = struct {
     pub const set_row_fields_count_max = 200;
     pub const tombstone_version_vector_entries_count_max = 200;
@@ -29,7 +35,7 @@ pub const CRDTOperationPoolSlot = struct {
     operation: crdt.CRDTOperation,
     set_row_fields: crdt.SetRowOperationFields,
     active_operation: ?std.meta.Tag(crdt.CRDTOperation),
-    next_free_index: ?i32,
+    pool_state: PoolSlotState,
 
     fn init(self: *@This()) !void {
         self.set_row_fields = .{};
@@ -40,7 +46,7 @@ pub const CRDTOperationPoolSlot = struct {
         self.json_value_bytes_count = 0;
         self.operation = undefined;
         self.active_operation = null;
-        self.next_free_index = null;
+        self.pool_state = .acquired;
     }
 
     pub fn put_set_row_operation(
@@ -156,7 +162,7 @@ pub const CRDTOperationPoolSlot = struct {
         self.json_value_bytes_count = 0;
         self.operation = undefined;
         self.active_operation = null;
-        self.next_free_index = null;
+        self.pool_state = .acquired;
     }
 };
 pub const CRDTOperationPool = struct {
@@ -179,7 +185,10 @@ pub const CRDTOperationPool = struct {
             assert(index < @as(usize, @intCast(slot_count)));
 
             try slot.init();
-            slot.next_free_index = previous_index;
+            slot.pool_state = if (previous_index) |next_free|
+                .{ .next_free = next_free }
+            else
+                .free_list_end;
             previous_index = @intCast(index);
         }
 
@@ -200,23 +209,37 @@ pub const CRDTOperationPool = struct {
         };
 
         const slot = &self.slots[@intCast(index)];
-        self.free_head_index = slot.next_free_index;
-        slot.next_free_index = null;
+        self.free_head_index = switch (slot.pool_state) {
+            .next_free => |next_free| next_free,
+            .free_list_end => null,
+            .acquired => unreachable,
+        };
+        slot.pool_state = .acquired;
 
         return slot;
     }
     pub fn release(self: *@This(), slot: *CRDTOperationPoolSlot) void {
         const index = self.index_of(slot);
+        assert(slot.pool_state == .acquired);
 
         slot.reset();
-        slot.next_free_index = self.free_head_index;
+        slot.pool_state = if (self.free_head_index) |next_free|
+            .{ .next_free = next_free }
+        else
+            .free_list_end;
         self.free_head_index = index;
     }
 
     fn index_of(self: *@This(), slot: *CRDTOperationPoolSlot) i32 {
         const pool_start_address = @intFromPtr(self.slots.ptr);
+        const pool_end_address = pool_start_address + self.slots.len * @sizeOf(CRDTOperationPoolSlot);
         const slot_address = @intFromPtr(slot);
+
+        assert(slot_address >= pool_start_address);
+        assert(slot_address < pool_end_address);
+
         const offset_bytes = slot_address - pool_start_address;
+        assert(offset_bytes % @sizeOf(CRDTOperationPoolSlot) == 0);
 
         return @intCast(offset_bytes / @sizeOf(CRDTOperationPoolSlot));
     }
@@ -244,7 +267,7 @@ pub const ORMapRowPoolSlot = struct {
     json_value_bytes_count: usize = 0,
 
     row: crdt.ORMapRow,
-    next_free_index: ?i32,
+    pool_state: PoolSlotState,
 
     fn init(self: *@This()) !void {
         const fields = crdt.RowFieldRegisters{};
@@ -259,7 +282,7 @@ pub const ORMapRowPoolSlot = struct {
             .fields = fields,
             .tombstone = .{ .dot = null, .version_vector = .{} },
         };
-        self.next_free_index = null;
+        self.pool_state = .acquired;
     }
 
     pub fn put_row(
@@ -351,7 +374,7 @@ pub const ORMapRowPoolSlot = struct {
             .fields = fields,
             .tombstone = tombstone,
         };
-        self.next_free_index = null;
+        self.pool_state = .acquired;
     }
 };
 pub const ORMapRowPool = struct {
@@ -374,7 +397,10 @@ pub const ORMapRowPool = struct {
             assert(index < @as(usize, @intCast(slot_count)));
 
             try slot.init();
-            slot.next_free_index = previous_index;
+            slot.pool_state = if (previous_index) |next_free|
+                .{ .next_free = next_free }
+            else
+                .free_list_end;
             previous_index = @intCast(index);
         }
 
@@ -395,8 +421,12 @@ pub const ORMapRowPool = struct {
         };
 
         const slot = &self.slots[@intCast(index)];
-        self.free_head_index = slot.next_free_index;
-        slot.next_free_index = null;
+        self.free_head_index = switch (slot.pool_state) {
+            .next_free => |next_free| next_free,
+            .free_list_end => null,
+            .acquired => unreachable,
+        };
+        slot.pool_state = .acquired;
 
         return slot;
     }
@@ -405,10 +435,13 @@ pub const ORMapRowPool = struct {
         slot: *ORMapRowPoolSlot,
     ) void {
         const index = self.index_of(slot);
+        assert(slot.pool_state == .acquired);
 
         slot.reset();
-
-        slot.next_free_index = self.free_head_index;
+        slot.pool_state = if (self.free_head_index) |next_free|
+            .{ .next_free = next_free }
+        else
+            .free_list_end;
         self.free_head_index = index;
     }
 
@@ -417,8 +450,14 @@ pub const ORMapRowPool = struct {
         slot: *ORMapRowPoolSlot,
     ) i32 {
         const pool_start_address = @intFromPtr(self.slots.ptr);
+        const pool_end_address = pool_start_address + self.slots.len * @sizeOf(ORMapRowPoolSlot);
         const slot_address = @intFromPtr(slot);
+
+        assert(slot_address >= pool_start_address);
+        assert(slot_address < pool_end_address);
+
         const offset_bytes = slot_address - pool_start_address;
+        assert(offset_bytes % @sizeOf(ORMapRowPoolSlot) == 0);
 
         return @intCast(offset_bytes / @sizeOf(ORMapRowPoolSlot));
     }
@@ -514,6 +553,38 @@ test "pools initialize preallocated slots" {
     try std.testing.expectEqual(@as(usize, 0), row_slot.row.fields.count);
     try std.testing.expectEqual(@as(usize, 0), row_slot.row.tombstone.version_vector.count);
     row_pool.release(row_slot);
+}
+
+test "operation pool marks acquired and free slots explicitly" {
+    const allocator = std.testing.allocator;
+
+    var operation_pool = try CRDTOperationPool.init(allocator, 2);
+    defer operation_pool.deinit();
+
+    const first_slot = try operation_pool.acquire();
+    const second_slot = try operation_pool.acquire();
+    try std.testing.expect(first_slot.pool_state == .acquired);
+    try std.testing.expect(second_slot.pool_state == .acquired);
+    try std.testing.expect(first_slot != second_slot);
+
+    operation_pool.release(first_slot);
+    try std.testing.expect(first_slot.pool_state == .free_list_end);
+}
+
+test "row pool marks acquired and free slots explicitly" {
+    const allocator = std.testing.allocator;
+
+    var row_pool = try ORMapRowPool.init(allocator, 2);
+    defer row_pool.deinit();
+
+    const first_slot = try row_pool.acquire();
+    const second_slot = try row_pool.acquire();
+    try std.testing.expect(first_slot.pool_state == .acquired);
+    try std.testing.expect(second_slot.pool_state == .acquired);
+    try std.testing.expect(first_slot != second_slot);
+
+    row_pool.release(first_slot);
+    try std.testing.expect(first_slot.pool_state == .free_list_end);
 }
 
 test "pool slots reserve operation storage" {
