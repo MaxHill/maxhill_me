@@ -1,3 +1,5 @@
+import { assert } from "@maxhill/stdx";
+
 //  ------------------------------------------------------------------------
 //  Types
 //  ------------------------------------------------------------------------
@@ -110,10 +112,8 @@ export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): vo
       if (cmp > 0) {
         // New dot is higher, replace
         row.fields[fieldKey] = { value: operation.jsonValue, dot: operation.dot };
-      } else if (cmp === 0) {
-        throw new Error(
-          `CRDT invariant violated: duplicate dot for field "${fieldKey}"`,
-        );
+      } else {
+        assert(cmp !== 0, `CRDT invariant violated: duplicate dot for field "${fieldKey}"`);
       }
       // Otherwise keep existing (cmp < 0)
     }
@@ -137,10 +137,8 @@ export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): vo
         if (cmp > 0) {
           // New dot is higher, replace
           row.fields[field] = { value, dot: operation.dot };
-        } else if (cmp === 0) {
-          throw new Error(
-            `CRDT invariant violated: duplicate dot for field "${field}"`,
-          );
+        } else {
+          assert(cmp !== 0, `CRDT invariant violated: duplicate dot for field "${field}"`);
         }
         // Otherwise keep existing (cmp < 0)
       }
@@ -187,43 +185,32 @@ export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): vo
 //  Validation
 //  ------------------------------------------------------------------------
 export function validateRow(row: ORMapRow) {
-  if (!row) {
-    throw new Error("Row must be defined");
-  }
-  if (!row.fields) {
-    throw new Error("Row.fields must be defined");
-  }
+  assert(row, "Row must be defined");
+  assert(row.fields, "Row.fields must be defined");
 
   return row;
 }
 
 export function validateOperation(operation: CRDTOperation): CRDTOperation {
-  if (!operation) {
-    throw new Error("Operation must be defined");
-  }
-  if (!operation.dot) {
-    throw new Error("Operation.dot must be defined");
-  }
-  if (typeof operation.dot.version !== "number" || operation.dot.version < 0) {
-    throw new Error(`Invalid dot version: ${operation.dot.version}`);
-  }
-  if (!operation.dot.clientId) {
-    throw new Error("Operation.dot.clientId must be defined");
-  }
+  assert(operation, "Operation must be defined");
+  assert(operation.dot, "Operation.dot must be defined");
+  assert(
+    typeof operation.dot.version === "number",
+    `Invalid dot version: ${operation.dot.version}`,
+  );
+  assert(operation.dot.version >= 0, `Invalid dot version: ${operation.dot.version}`);
+  assert(operation.dot.clientId, "Operation.dot.clientId must be defined");
   if (operation.type === "set") {
-    if (!operation.fieldKey) {
-      throw new Error("Set operation is missing fieldKey");
-    }
-    if (!isSerializable(operation.jsonValue)) {
-      throw new Error(`Set operation has non-serializable jsonValue: ${typeof operation.jsonValue}`);
-    }
+    assert(operation.fieldKey, "Set operation is missing fieldKey");
+    assert(
+      isSerializable(operation.jsonValue),
+      `Set operation has non-serializable jsonValue: ${typeof operation.jsonValue}`,
+    );
   }
 
   if (operation.type === "removeRow") {
     for (const [clientId, version] of Object.entries(operation.versionVector)) {
-      if (version < 0) {
-        throw new Error(`Invalid versionVector version for ${clientId}: ${version}`);
-      }
+      assert(version >= 0, `Invalid versionVector version for ${clientId}: ${version}`);
     }
   }
 

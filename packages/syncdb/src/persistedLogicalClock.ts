@@ -1,3 +1,4 @@
+import { assert } from "@maxhill/stdx";
 import { ClientState } from "./indexeddb/clientState.ts";
 
 /**
@@ -38,18 +39,17 @@ export class PersistedLogicalClock {
    * @returns The new clock value after incrementing
    */
   async tick(tx: IDBTransaction): Promise<number> {
-    if (!tx.objectStoreNames.contains("clientState")) {
-      throw new Error("Transaction is missing clientState objectStore");
-    }
+    assert(
+      tx.objectStoreNames.contains("clientState"),
+      "Transaction is missing clientState objectStore",
+    );
 
     const currentVersion = await this.clientState.getVersion(tx);
 
     const newVersion = currentVersion + 1;
     await this.clientState.setVersion(tx, newVersion);
 
-    if (newVersion < 0) {
-      throw new Error("Version could never be less than 0 after ticking. Got: " + newVersion);
-    }
+    assert(newVersion >= 0, "Version could never be less than 0 after ticking. Got: " + newVersion);
     return newVersion;
   }
 
@@ -67,12 +67,11 @@ export class PersistedLogicalClock {
    * @returns The new clock value after synchronization
    */
   async sync(tx: IDBTransaction, otherVersion: number): Promise<number> {
-    if (!tx.objectStoreNames.contains("clientState")) {
-      throw new Error("Transaction is missing clientState objectStore");
-    }
-    if (otherVersion < -1) {
-      throw new Error(`Cannot sync with invalid version: ${otherVersion}`);
-    }
+    assert(
+      tx.objectStoreNames.contains("clientState"),
+      "Transaction is missing clientState objectStore",
+    );
+    assert(otherVersion >= -1, `Cannot sync with invalid version: ${otherVersion}`);
 
     // Read current version
     const currentVersion = await this.clientState.getVersion(tx);
@@ -81,9 +80,10 @@ export class PersistedLogicalClock {
     // Write new version atomically
     await this.clientState.setVersion(tx, newVersion);
 
-    if (newVersion < -1) {
-      throw new Error("Version could never be less than initialized value -1. Got: " + newVersion);
-    }
+    assert(
+      newVersion >= -1,
+      "Version could never be less than initialized value -1. Got: " + newVersion,
+    );
     return newVersion;
   }
 }

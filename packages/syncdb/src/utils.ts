@@ -1,3 +1,5 @@
+import { assert } from "@maxhill/stdx";
+
 /**
  * Wrap a IDBRequest in a promise for convenience
  * @param tx - Transaction to use.
@@ -6,7 +8,7 @@
 export function promisifyIDBRequest<T>(req: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     req.onsuccess = (event) => {
-      if (!event.target) return reject("No event target returned");
+      assert(event.target, "No event target returned");
       return resolve((event.target as IDBRequest).result);
     };
     req.onerror = (event) => {
@@ -50,21 +52,19 @@ export function validateTransactionStores(
   requiredMode?: IDBTransactionMode,
 ): void {
   const missing = requiredStores.filter((s) => !tx.objectStoreNames.contains(s));
-  if (missing.length > 0) {
-    throw new Error(
-      `Transaction missing required stores: ${missing.join(", ")}.\n` +
-        `Required: [${requiredStores.join(", ")}]\n` +
-        `Available: [${[...tx.objectStoreNames].join(", ")}]\n` +
-        `Create transaction with: repository.transaction([${requiredStores.join(", ")}], "${
-          requiredMode || "readonly"
-        }")`,
-    );
-  }
+  assert(
+    missing.length === 0,
+    `Transaction missing required stores: ${missing.join(", ")}.\n` +
+      `Required: [${requiredStores.join(", ")}]\n` +
+      `Available: [${[...tx.objectStoreNames].join(", ")}]\n` +
+      `Create transaction with: repository.transaction([${requiredStores.join(", ")}], "${
+        requiredMode || "readonly"
+      }")`,
+  );
 
-  if (requiredMode && tx.mode !== requiredMode) {
-    throw new Error(
-      `Transaction mode is "${tx.mode}" but "${requiredMode}" required.\n` +
-        `This method modifies data and needs write access.`,
-    );
-  }
+  assert(
+    !requiredMode || tx.mode === requiredMode,
+    `Transaction mode is "${tx.mode}" but "${requiredMode}" required.\n` +
+      `This method modifies data and needs write access.`,
+  );
 }

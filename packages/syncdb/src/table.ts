@@ -1,9 +1,9 @@
 import { applyOperationToRow, CRDTOperation, Dot, toUserRow, ValidKey } from "./crdt.ts";
 import {
-    CLIENT_STATE_STORE,
-    Lifecycle,
-    OPERATIONS_STORE,
-    ROWS_STORE,
+  CLIENT_STATE_STORE,
+  Lifecycle,
+  OPERATIONS_STORE,
+  ROWS_STORE,
 } from "./indexeddb/lifecycle.ts";
 import { RowStore } from "./indexeddb/rowStore.ts";
 import { OperationLog } from "./indexeddb/operationLog.ts";
@@ -11,195 +11,198 @@ import { Index, QueryCondition } from "./indexes.ts";
 import { asc, Direction, resolveQueryArgs } from "./direction.ts";
 import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
 import {
-    type SourceFilter,
-    SubscriptionCallbackHandler,
-    TableSubscriptions,
+  type SourceFilter,
+  SubscriptionCallbackHandler,
+  TableSubscriptions,
 } from "./tableSubscriptions.ts";
+import { assert } from "@maxhill/stdx";
 
 export class Table<TIndexes extends Record<string, string[]> = Record<string, string[]>> {
-    private tableName: string;
-    private indexes: Map<string, string[]>;
-    private lifecycle: Lifecycle;
-    private rowStore: RowStore;
-    private operationLog: OperationLog;
-    private clientId: string;
-    private logicalClock: PersistedLogicalClock;
-    private tableSubscriptions: TableSubscriptions;
+  private tableName: string;
+  private indexes: Map<string, string[]>;
+  private lifecycle: Lifecycle;
+  private rowStore: RowStore;
+  private operationLog: OperationLog;
+  private clientId: string;
+  private logicalClock: PersistedLogicalClock;
+  private tableSubscriptions: TableSubscriptions;
 
-    constructor(
-        tableName: string,
-        indexes: Map<string, string[]>,
-        lifecycle: Lifecycle,
-        rowStore: RowStore,
-        operationLog: OperationLog,
-        clientId: string,
-        logicalClock: PersistedLogicalClock,
-        tableSubscriptions: TableSubscriptions,
-    ) {
-        this.tableName = tableName;
-        this.indexes = indexes;
-        this.lifecycle = lifecycle;
-        this.rowStore = rowStore;
-        this.operationLog = operationLog;
-        this.clientId = clientId;
-        this.logicalClock = logicalClock;
-        this.tableSubscriptions = tableSubscriptions;
+  constructor(
+    tableName: string,
+    indexes: Map<string, string[]>,
+    lifecycle: Lifecycle,
+    rowStore: RowStore,
+    operationLog: OperationLog,
+    clientId: string,
+    logicalClock: PersistedLogicalClock,
+    tableSubscriptions: TableSubscriptions,
+  ) {
+    this.tableName = tableName;
+    this.indexes = indexes;
+    this.lifecycle = lifecycle;
+    this.rowStore = rowStore;
+    this.operationLog = operationLog;
+    this.clientId = clientId;
+    this.logicalClock = logicalClock;
+    this.tableSubscriptions = tableSubscriptions;
+  }
+
+  subscribe(
+    handler: SubscriptionCallbackHandler,
+    source: SourceFilter = "all",
+  ): () => void {
+    return this.tableSubscriptions.subscribe(this.tableName, handler, source);
+  }
+
+  async setRow(rowKey: ValidKey, value: any): Promise<void> {
+    if (value._key) {
+      assert(
+        value._key === rowKey,
+        `Cannot set _key to a different value than the row key. ` +
+          `Expected '_key' to be '${rowKey}' but got '${value._key}'. ` +
+          `The _key field is reserved and managed automatically.`,
+      );
+      // Strip _key before storing
+      const { _key, ...cleanData } = value;
+      value = cleanData;
     }
 
-    subscribe(
-        handler: SubscriptionCallbackHandler,
-        source: SourceFilter = "all",
-    ): () => void {
-        return this.tableSubscriptions.subscribe(this.tableName, handler, source);
+    const tx = this.lifecycle.transaction(
+      [CLIENT_STATE_STORE, ROWS_STORE, OPERATIONS_STORE],
+      "readwrite",
+    );
+    const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
+
+    const dot = await this.nextDot(tx);
+    const op: CRDTOperation = {
+      type: "setRow",
+      tableName: this.tableName,
+      rowKey,
+      fields: value,
+      dot,
+    };
+
+    applyOperationToRow(row, op);
+
+    await Promise.all([
+      this.rowStore.saveRow(tx, row),
+      this.operationLog.saveOperation(tx, op),
+    ]);
+    await this.lifecycle.commit(tx);
+    this.tableSubscriptions.notify(this.tableName, "local");
+  }
+
+  async setField(rowKey: ValidKey, field: any, value: any): Promise<void> {
+    assert(
+      field !== "_key",
+      `Cannot set _key field directly. ` +
+        `The _key field is reserved and managed automatically.`,
+    );
+
+    const tx = this.lifecycle.transaction(
+      ["clientState", "rows", "operations"],
+      "readwrite",
+    );
+    const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
+
+    const dot = await this.nextDot(tx);
+    const op: CRDTOperation = {
+      type: "set",
+      tableName: this.tableName,
+      rowKey,
+      fieldKey: field,
+      jsonValue: value,
+      dot,
+    };
+
+    applyOperationToRow(row, op);
+
+    await Promise.all([
+      this.rowStore.saveRow(tx, row),
+      this.operationLog.saveOperation(tx, op),
+    ]);
+    await this.lifecycle.commit(tx);
+    this.tableSubscriptions.notify(this.tableName, "local");
+  }
+
+  async deleteRow(rowKey: ValidKey) {
+    const tx = this.lifecycle.transaction(["clientState", "rows", "operations"], "readwrite");
+    const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
+
+    // Build version vector from current fields.
+    const versionVector: Record<string, number> = {};
+    for (const fieldState of Object.values(row.fields)) {
+      const clientId = fieldState.dot.clientId;
+      versionVector[clientId] = Math.max(versionVector[clientId] ?? 0, fieldState.dot.version);
     }
 
-    async setRow(rowKey: ValidKey, value: any): Promise<void> {
-        if (value._key) {
-            if (value._key !== rowKey) {
-                throw new Error(
-                    `Cannot set _key to a different value than the row key. ` +
-                    `Expected '_key' to be '${rowKey}' but got '${value._key}'. ` +
-                    `The _key field is reserved and managed automatically.`,
-                );
-            }
-            // Strip _key before storing
-            const { _key, ...cleanData } = value;
-            value = cleanData;
-        }
+    const dot = await this.nextDot(tx);
+    const op: CRDTOperation = {
+      type: "removeRow",
+      tableName: this.tableName,
+      rowKey,
+      dot,
+      versionVector,
+    };
 
-        const tx = this.lifecycle.transaction(
-            [CLIENT_STATE_STORE, ROWS_STORE, OPERATIONS_STORE],
-            "readwrite",
-        );
-        const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
+    applyOperationToRow(row, op);
 
-        const dot = await this.nextDot(tx);
-        const op: CRDTOperation = {
-            type: "setRow",
-            tableName: this.tableName,
-            rowKey,
-            fields: value,
-            dot,
-        };
+    await Promise.all([
+      this.rowStore.saveRow(tx, row),
+      this.operationLog.saveOperation(tx, op),
+    ]);
+    await this.lifecycle.commit(tx);
+    this.tableSubscriptions.notify(this.tableName, "local");
+  }
 
-        applyOperationToRow(row, op);
+  //  ------------------------------------------------------------------------
+  //  Access
+  //  ------------------------------------------------------------------------
+  async get(rowKey: ValidKey): Promise<Record<string, any> | undefined> {
+    const tx = this.lifecycle.transaction(["rows"], "readonly");
+    const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
 
-        await Promise.all([
-            this.rowStore.saveRow(tx, row),
-            this.operationLog.saveOperation(tx, op),
-        ]);
-        await this.lifecycle.commit(tx);
-        this.tableSubscriptions.notify(this.tableName, "local");
+    return toUserRow(row);
+  }
+
+  async *query(
+    conditionOrDirection: QueryCondition | Direction = { type: "all" },
+    direction: Direction = asc,
+  ): AsyncGenerator<Record<string, any>, void, unknown> {
+    const { condition, idbDirection } = resolveQueryArgs(conditionOrDirection, direction);
+
+    const tx = this.lifecycle.transaction([ROWS_STORE], "readonly");
+    const queryIterator = this.rowStore.query(
+      tx,
+      this.tableName,
+      condition,
+      undefined,
+      idbDirection,
+    );
+
+    for await (const row of queryIterator) {
+      const result = toUserRow(row);
+      if (!result) {
+        continue;
+      }
+      yield result;
     }
+  }
 
-    async setField(rowKey: ValidKey, field: any, value: any): Promise<void> {
-        if (field === "_key") {
-            throw new Error(
-                `Cannot set _key field directly. ` +
-                `The _key field is reserved and managed automatically.`,
-            );
-        }
+  index<TIndexName extends keyof TIndexes & string>(indexName: TIndexName): Index {
+    assert(
+      this.indexes.has(indexName),
+      `Table ${this.tableName} does not have an index called ${indexName}`,
+    );
+    return new Index(this.tableName, indexName, this.lifecycle);
+  }
 
-        const tx = this.lifecycle.transaction(["clientState", "rows", "operations"], "readwrite");
-        const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
-
-        const dot = await this.nextDot(tx);
-        const op: CRDTOperation = {
-            type: "set",
-            tableName: this.tableName,
-            rowKey,
-            fieldKey: field,
-            jsonValue: value,
-            dot,
-        };
-
-        applyOperationToRow(row, op);
-
-        await Promise.all([
-            this.rowStore.saveRow(tx, row),
-            this.operationLog.saveOperation(tx, op),
-        ]);
-        await this.lifecycle.commit(tx);
-        this.tableSubscriptions.notify(this.tableName, "local");
-    }
-
-    async deleteRow(rowKey: ValidKey) {
-        const tx = this.lifecycle.transaction(["clientState", "rows", "operations"], "readwrite");
-        const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
-
-        // Build version vector from current fields.
-        const versionVector: Record<string, number> = {};
-        for (const fieldState of Object.values(row.fields)) {
-            const clientId = fieldState.dot.clientId;
-            versionVector[clientId] = Math.max(versionVector[clientId] ?? 0, fieldState.dot.version);
-        }
-
-        const dot = await this.nextDot(tx);
-        const op: CRDTOperation = {
-            type: "removeRow",
-            tableName: this.tableName,
-            rowKey,
-            dot,
-            versionVector,
-        };
-
-        applyOperationToRow(row, op);
-
-        await Promise.all([
-            this.rowStore.saveRow(tx, row),
-            this.operationLog.saveOperation(tx, op),
-        ]);
-        await this.lifecycle.commit(tx);
-        this.tableSubscriptions.notify(this.tableName, "local");
-    }
-
-    //  ------------------------------------------------------------------------
-    //  Access
-    //  ------------------------------------------------------------------------
-    async get(rowKey: ValidKey): Promise<Record<string, any> | undefined> {
-        const tx = this.lifecycle.transaction(["rows"], "readonly");
-        const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
-
-        return toUserRow(row);
-    }
-
-    async *query(
-        conditionOrDirection: QueryCondition | Direction = { type: "all" },
-        direction: Direction = asc,
-    ): AsyncGenerator<Record<string, any>, void, unknown> {
-        const { condition, idbDirection } = resolveQueryArgs(conditionOrDirection, direction);
-
-        const tx = this.lifecycle.transaction([ROWS_STORE], "readonly");
-        const queryIterator = this.rowStore.query(
-            tx,
-            this.tableName,
-            condition,
-            undefined,
-            idbDirection,
-        );
-
-        for await (const row of queryIterator) {
-            const result = toUserRow(row);
-            if (!result) {
-                continue;
-            }
-            yield result;
-        }
-    }
-
-    index<TIndexName extends keyof TIndexes & string>(indexName: TIndexName): Index {
-        if (!this.indexes.has(indexName)) {
-            throw new Error(`Table ${this.tableName} does not have an index called ${indexName}`);
-        }
-        return new Index(this.tableName, indexName, this.lifecycle);
-    }
-
-    //  ------------------------------------------------------------------------
-    //  Private
-    //  ------------------------------------------------------------------------
-    //  TODO: Move nextDot function to logicalClock
-    private async nextDot(tx: IDBTransaction): Promise<Dot> {
-        const version = await this.logicalClock.tick(tx);
-        return { clientId: this.clientId, version };
-    }
+  //  ------------------------------------------------------------------------
+  //  Private
+  //  ------------------------------------------------------------------------
+  //  TODO: Move nextDot function to logicalClock
+  private async nextDot(tx: IDBTransaction): Promise<Dot> {
+    const version = await this.logicalClock.tick(tx);
+    return { clientId: this.clientId, version };
+  }
 }

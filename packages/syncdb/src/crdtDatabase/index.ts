@@ -93,7 +93,8 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
     if (!indexes) {
       const available = Array.from(this.tables.keys()).join(", ");
       throw new Error(
-        `Database is not setup to have the table ${tableName}. Available tables: ${available}`,
+        `Database is not setup to have the table ${tableName}.` +
+          `Available tables: ${available}`,
       );
     }
     return new Table(

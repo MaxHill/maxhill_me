@@ -1,3 +1,4 @@
+import { assert } from "@maxhill/stdx";
 import { promisifyIDBRequest, validateTransactionStores } from "../utils.ts";
 import { CLIENT_STATE_STORE } from "./lifecycle.ts";
 
@@ -37,12 +38,11 @@ export class ClientState {
     const store = tx.objectStore(CLIENT_STATE_STORE);
     const version = await promisifyIDBRequest(store.get(LOGICAL_CLOCK));
 
-    if (version === undefined) {
-      throw new Error("Version should never be undefined since it's initialized to -1");
-    }
-    if (version < -1) {
-      throw new Error("Version could never be less than initialized value -1. Got: " + version);
-    }
+    assert(version !== undefined, "Version should never be undefined since it's initialized to -1");
+    assert(
+      version >= -1,
+      "Version could never be less than initialized value -1. Got: " + version,
+    );
     return version;
   }
 

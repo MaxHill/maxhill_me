@@ -1,3 +1,4 @@
+import { assert } from "@maxhill/stdx";
 import { CRDTOperation, Dot } from "../crdt.ts";
 import { asyncCursorIterator, promisifyIDBRequest, validateTransactionStores } from "../utils.ts";
 import { OPERATIONS_STORE, CLIENT_STATE_STORE } from "./lifecycle.ts";
@@ -14,9 +15,7 @@ const LAST_SEEN_SERVER_VERSION = "lastSeenServerVersion";
 export class OperationLog {
   async saveOperation(tx: IDBTransaction, operation: CRDTOperation): Promise<void> {
     validateTransactionStores(tx, [OPERATIONS_STORE]);
-    if (!operation) {
-      throw new Error("CRDTOperation must be set when saving row");
-    }
+    assert(operation, "CRDTOperation must be set when saving row");
 
     const store = tx.objectStore(OPERATIONS_STORE);
     await promisifyIDBRequest(store.add({

@@ -1,3 +1,4 @@
+import { assert } from "@maxhill/stdx";
 import { ORMapRow, ROW_KEY, TABLE_NAME, ValidKey } from "../crdt.ts";
 import {
   createIndexName,
@@ -17,14 +18,12 @@ export class RowStore {
 
   async saveRow(tx: IDBTransaction, row: ORMapRow): Promise<void> {
     validateTransactionStores(tx, [ROWS_STORE]);
-    if (row[TABLE_NAME].length <= 0 || !row[TABLE_NAME]) {
-      throw new Error("table name must be set when saving row");
-    }
-    if (row[ROW_KEY].length <= 0 || !row[ROW_KEY]) {
-      throw new Error("row key must be set when saving row");
-    }
-    if (!row) throw new Error("Row must be set when saving a row");
-    if (!row.fields) throw new Error("Row must have fields when saving a row");
+    assert(row, "Row must be set when saving a row");
+    assert(row.fields, "Row must have fields when saving a row");
+    assert(row[TABLE_NAME], "table name must be set when saving row");
+    assert(row[TABLE_NAME].length > 0, "table name must be set when saving row");
+    assert(row[ROW_KEY], "row key must be set when saving row");
+    assert(row[ROW_KEY].length > 0, "row key must be set when saving row");
 
     const store = tx.objectStore(ROWS_STORE);
 
@@ -41,10 +40,9 @@ export class RowStore {
 
   async getRow(tx: IDBTransaction, tableName: string, rowKey: ValidKey): Promise<ORMapRow> {
     validateTransactionStores(tx, [ROWS_STORE]);
-    if (tableName.length <= 0 || !tableName) {
-      throw new Error("tableName must be set when getting row");
-    }
-    if (!rowKey) throw new Error("RowKey must be set when getting Row");
+    assert(tableName, "tableName must be set when getting row");
+    assert(tableName.length > 0, "tableName must be set when getting row");
+    assert(rowKey, "RowKey must be set when getting Row");
 
     const store = tx.objectStore(ROWS_STORE);
     const result = await promisifyIDBRequest(store.get([
@@ -64,13 +62,12 @@ export class RowStore {
   ): AsyncIterableIterator<ORMapRow> {
     validateTransactionStores(tx, [ROWS_STORE]);
     const indexNames = (this.indexes || []).map((index) => index.name);
-    if (indexName && !indexNames.includes(indexName)) {
-      throw new Error(
-        `Specified index ${indexName} does not exist in indexes:/n${
-          indexNames.map((index) => `   ${index} /n`)
-        }`,
-      );
-    }
+    assert(
+      !indexName || indexNames.includes(indexName),
+      `Specified index ${indexName} does not exist in indexes:/n${
+        indexNames.map((index) => `   ${index} /n`)
+      }`,
+    );
 
     let source: IDBObjectStore | IDBIndex = tx.objectStore(ROWS_STORE);
     if (indexName) {

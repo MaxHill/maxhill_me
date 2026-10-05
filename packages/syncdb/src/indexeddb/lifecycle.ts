@@ -1,3 +1,4 @@
+import { assert } from "@maxhill/stdx";
 import {
   hashIndexDefinitions,
   IndexDefinition,
@@ -42,31 +43,26 @@ export class Lifecycle {
       indexNames.indexOf(tableAndName) !== index
     );
 
-    if (duplicateIndexNames.length > 0) {
-      throw new Error(
-        `Index names must be unique per table, found the following duplicates: \n   ${
-          duplicateIndexNames.join("\n  ")
-        }`,
-      );
-    }
+    assert(
+      duplicateIndexNames.length === 0,
+      `Index names must be unique per table, found the following duplicates: \n   ${
+        duplicateIndexNames.join("\n  ")
+      }`,
+    );
 
     for (const index of this.indexes) {
-      if (!index.name || index.name.trim() === "") {
-        throw new Error("Index name cannot be empty");
-      }
+      assert(index.name, "Index name cannot be empty");
+      assert(index.name.trim() !== "", "Index name cannot be empty");
 
-      if (!index.table || index.table.trim() === "") {
-        throw new Error(`Index "${index.name}": table name cannot be empty`);
-      }
+      assert(index.table, `Index "${index.name}": table name cannot be empty`);
+      assert(index.table.trim() !== "", `Index "${index.name}": table name cannot be empty`);
 
-      if (!index.keys || index.keys.length === 0) {
-        throw new Error(`Index "${index.name}": keys array cannot be empty`);
-      }
+      assert(index.keys, `Index "${index.name}": keys array cannot be empty`);
+      assert(index.keys.length > 0, `Index "${index.name}": keys array cannot be empty`);
 
       for (const key of index.keys) {
-        if (!key || key.trim() === "") {
-          throw new Error(`Index "${index.name}": key name cannot be empty`);
-        }
+        assert(key, `Index "${index.name}": key name cannot be empty`);
+        assert(key.trim() !== "", `Index "${index.name}": key name cannot be empty`);
       }
     }
   }
@@ -88,7 +84,8 @@ export class Lifecycle {
         );
         if (missingStores.length > 0 && version) {
           db.close();
-          throw new Error(
+          assert(
+            false,
             `Database is missing required object stores [${missingStores.join(", ")}]. ` +
               `Open with explicit version ${version} cannot auto-upgrade.`,
           );
@@ -100,7 +97,8 @@ export class Lifecycle {
         const tx = db.transaction([CLIENT_STATE_STORE], "readonly");
         const upgradeNeeded = await needIndexUpdate(tx, this.indexes);
         if (upgradeNeeded && version) {
-          throw new Error(
+          assert(
+            false,
             "Database indexes where not successfully updated, got a new version and non-matching indexes",
           );
         } else if (upgradeNeeded) {
@@ -165,12 +163,11 @@ export class Lifecycle {
 
 
   close(): void {
-    if (!this.db) {
-      throw new Error(
-        `Cannot close database - db is undefined. ` +
-          `This indicates open() was never called or failed silently.`,
-      );
-    }
+    assert(
+      this.db,
+      `Cannot close database - db is undefined. ` +
+        `This indicates open() was never called or failed silently.`,
+    );
     this.db.close();
   }
 
@@ -179,13 +176,12 @@ export class Lifecycle {
     mode?: IDBTransactionMode,
     options?: IDBTransactionOptions,
   ): IDBTransaction {
-    if (!this.db) {
-      throw new Error(
-        `Cannot open transaction - database not initialized. ` +
-          `Requested stores: ${JSON.stringify([...storeNames])}, mode: ${mode}. ` +
-          `Call await repository.open(dbName) first.`,
-      );
-    }
+    assert(
+      this.db,
+      `Cannot open transaction - database not initialized. ` +
+        `Requested stores: ${JSON.stringify([...storeNames])}, mode: ${mode}. ` +
+        `Call await repository.open(dbName) first.`,
+    );
     return this.db.transaction(storeNames, mode, options);
   }
 

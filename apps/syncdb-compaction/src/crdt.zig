@@ -5,6 +5,12 @@ const set_row_fields_count_max = 200;
 const row_field_registers_count_max = 200;
 const version_vector_entries_count_max = 200;
 
+comptime {
+    assert(set_row_fields_count_max > 0);
+    assert(row_field_registers_count_max > 0);
+    assert(version_vector_entries_count_max > 0);
+}
+
 pub const JsonValueBytes = []const u8;
 
 pub const ClientId = [16]u8;
@@ -43,7 +49,8 @@ pub const SetRowOperationFields = struct {
     count: usize = 0,
 
     pub fn get(self: *const @This(), field_key: []const u8) ?JsonValueBytes {
-        assert(field_key.len > 0);
+        assert_field_key_valid(field_key);
+        assert(self.count <= set_row_fields_count_max);
         for (self.field_keys[0..self.count], self.json_values[0..self.count]) |entry_key, json_value| {
             if (std.mem.eql(u8, entry_key, field_key)) return json_value;
         }
@@ -51,12 +58,13 @@ pub const SetRowOperationFields = struct {
     }
 
     pub fn contains(self: *const @This(), field_key: []const u8) bool {
-        assert(field_key.len > 0);
+        assert_field_key_valid(field_key);
         return self.get(field_key) != null;
     }
 
     pub fn put(self: *@This(), field_key: []const u8, json_value: JsonValueBytes) void {
-        assert(field_key.len > 0);
+        assert_field_key_valid(field_key);
+        assert(self.count <= set_row_fields_count_max);
         for (self.field_keys[0..self.count], self.json_values[0..self.count]) |entry_key, *entry_value| {
             if (std.mem.eql(u8, entry_key, field_key)) {
                 entry_value.* = json_value;
@@ -68,6 +76,7 @@ pub const SetRowOperationFields = struct {
         self.field_keys[self.count] = field_key;
         self.json_values[self.count] = json_value;
         self.count += 1;
+        assert(self.count <= set_row_fields_count_max);
     }
 };
 
@@ -77,6 +86,8 @@ pub const VersionVector = struct {
     count: usize = 0,
 
     pub fn get(self: *const @This(), client_id: ClientId) ?i32 {
+        assert(!std.mem.allEqual(u8, &client_id, 0));
+        assert(self.count <= version_vector_entries_count_max);
         for (self.client_ids[0..self.count], self.client_versions[0..self.count]) |entry_client_id, entry_client_version| {
             if (std.mem.eql(u8, &entry_client_id, &client_id)) return entry_client_version;
         }
@@ -84,11 +95,14 @@ pub const VersionVector = struct {
     }
 
     pub fn contains(self: *const @This(), client_id: ClientId) bool {
+        assert(!std.mem.allEqual(u8, &client_id, 0));
         return self.get(client_id) != null;
     }
 
     pub fn put_client_version_max(self: *@This(), client_id: ClientId, version: i32) void {
+        assert(!std.mem.allEqual(u8, &client_id, 0));
         assert(version >= 0);
+        assert(self.count <= version_vector_entries_count_max);
         for (self.client_ids[0..self.count], self.client_versions[0..self.count]) |entry_client_id, *entry_version| {
             if (std.mem.eql(u8, &entry_client_id, &client_id)) {
                 entry_version.* = @max(entry_version.*, version);
@@ -100,6 +114,7 @@ pub const VersionVector = struct {
         self.client_ids[self.count] = client_id;
         self.client_versions[self.count] = version;
         self.count += 1;
+        assert(self.count <= version_vector_entries_count_max);
     }
 };
 
@@ -130,17 +145,22 @@ pub const CRDTOperation = union(enum) {
                 assert(set.table_name.len > 0);
                 assert(set.row_key.len > 0);
                 assert(set.field_key != null);
-                assert(set.field_key.?.len > 0);
+                assert_field_key_valid(set.field_key.?);
                 set.dot.assert_valid();
             },
             .set_row => |set_row| {
                 assert(set_row.table_name.len > 0);
                 assert(set_row.row_key.len > 0);
+                assert(set_row.fields.count <= set_row_fields_count_max);
+                for (set_row.fields.field_keys[0..set_row.fields.count]) |field_key| {
+                    assert_field_key_valid(field_key);
+                }
                 set_row.dot.assert_valid();
             },
             .remove_row => |remove_row| {
                 assert(remove_row.table_name.len > 0);
                 assert(remove_row.row_key.len > 0);
+                assert(remove_row.tombstone.is_active());
                 remove_row.tombstone.assert_valid();
             },
         }
@@ -157,7 +177,10 @@ pub const Tombstone = struct {
     version_vector: VersionVector = .{},
 
     fn merge_tombstone(self: *@This(), tombstone: Tombstone) void {
+        self.assert_valid();
         tombstone.assert_valid();
+        defer self.assert_valid();
+
         if (tombstone.dot) |dot| {
             if (self.dot == null or dot.compare(self.dot.?) == .gt) self.dot = dot;
             for (tombstone.version_vector.client_ids[0..tombstone.version_vector.count], tombstone.version_vector.client_versions[0..tombstone.version_vector.count]) |client_id, version| {
@@ -199,6 +222,7 @@ pub const RowFieldRegisters = struct {
         assert(field_key.len > 0);
         assert(self.count <= row_field_registers_count_max);
         if (self.get_index(field_key)) |index| {
+            assert(index < self.count);
             return .{ .value = self.json_values[index], .dot = self.field_dots[index] };
         }
         return null;
@@ -228,6 +252,7 @@ pub const RowFieldRegisters = struct {
         self.json_values[self.count] = json_value;
         self.field_dots[self.count] = dot;
         self.count += 1;
+        assert(self.count <= row_field_registers_count_max);
     }
 
     pub fn remove(self: *@This(), field_key: []const u8) bool {
@@ -245,6 +270,7 @@ pub const RowFieldRegisters = struct {
         }
 
         self.count -= 1;
+        assert(self.count <= row_field_registers_count_max);
         return true;
     }
 
@@ -263,6 +289,7 @@ pub const ORMapRow = struct {
     fn assert_valid(row: ORMapRow) void {
         assert(row.table_name.len > 0);
         assert(row.row_key.len > 0);
+        assert(row.fields.count <= row_field_registers_count_max);
         for (row.fields.field_keys[0..row.fields.count], row.fields.field_dots[0..row.fields.count]) |field_key, dot| {
             assert_field_key_valid(field_key);
             dot.assert_valid();
@@ -274,6 +301,7 @@ pub const ORMapRow = struct {
         row: *const ORMapRow,
 
         pub fn get(self: @This(), field_key: []const u8) ?JsonValueBytes {
+            assert(field_key.len > 0);
             if (std.mem.eql(u8, field_key, "_key")) return self.row.row_key;
             if (self.row.fields.get(field_key)) |field| return field.value;
             return null;
@@ -288,6 +316,7 @@ pub const ORMapRow = struct {
 pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
     operation.assert_valid();
     row.assert_valid();
+    assert_operation_targets_row(row, operation);
     assert_capacity_for_operation(row, operation);
     defer row.assert_valid();
 
@@ -325,7 +354,30 @@ pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
     }
 }
 
+fn assert_operation_targets_row(row: *const ORMapRow, operation: CRDTOperation) void {
+    row.assert_valid();
+    operation.assert_valid();
+
+    switch (operation) {
+        .set => |set_operation| {
+            assert(std.mem.eql(u8, row.table_name, set_operation.table_name));
+            assert(std.mem.eql(u8, row.row_key, set_operation.row_key));
+        },
+        .set_row => |set_row_operation| {
+            assert(std.mem.eql(u8, row.table_name, set_row_operation.table_name));
+            assert(std.mem.eql(u8, row.row_key, set_row_operation.row_key));
+        },
+        .remove_row => |remove_row_operation| {
+            assert(std.mem.eql(u8, row.table_name, remove_row_operation.table_name));
+            assert(std.mem.eql(u8, row.row_key, remove_row_operation.row_key));
+        },
+    }
+}
+
 fn assert_capacity_for_operation(row: *const ORMapRow, operation: CRDTOperation) void {
+    row.assert_valid();
+    operation.assert_valid();
+
     switch (operation) {
         .set => |set_operation| {
             const field_key = set_operation.field_key.?;
@@ -352,7 +404,7 @@ fn assert_capacity_for_operation(row: *const ORMapRow, operation: CRDTOperation)
 const FieldUpdate = struct { field_key: []const u8, json_value: JsonValueBytes, dot: Dot };
 
 fn update_field(field_update: FieldUpdate, row: *ORMapRow) void {
-    assert(field_update.field_key.len > 0);
+    assert_field_key_valid(field_update.field_key);
     field_update.dot.assert_valid();
     row.assert_valid();
     defer row.assert_valid();
@@ -363,7 +415,7 @@ fn update_field(field_update: FieldUpdate, row: *ORMapRow) void {
 }
 
 fn pick_field_winner(field_update: FieldUpdate, row: ORMapRow) enum { incoming, existing } {
-    assert(field_update.field_key.len > 0);
+    assert_field_key_valid(field_update.field_key);
     field_update.dot.assert_valid();
     row.assert_valid();
     defer row.assert_valid();
