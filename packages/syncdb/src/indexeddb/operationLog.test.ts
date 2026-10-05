@@ -24,11 +24,10 @@ describe("OperationLog", () => {
 
   it("saves an operation and retrieves it as unsynced", async () => {
     const op: CRDTOperation = {
-      type: "set",
+      type: "setRow",
       tableName: "users",
       rowKey: "u1",
-      fieldKey: "name",
-      jsonValue: "Alice",
+      fields: { ["name"]: "Alice" },
       dot: { clientId: "c1", version: 1 },
     };
 
@@ -46,11 +45,10 @@ describe("OperationLog", () => {
 
   it("marks an operation as synced so it no longer appears in unsynced", async () => {
     const op: CRDTOperation = {
-      type: "set",
+      type: "setRow",
       tableName: "users",
       rowKey: "u1",
-      fieldKey: "name",
-      jsonValue: "Alice",
+      fields: { ["name"]: "Alice" },
       dot: { clientId: "c1", version: 1 },
     };
 
@@ -71,9 +69,9 @@ describe("OperationLog", () => {
 
   it("batch saves operations and counts unsynced", async () => {
     const ops: CRDTOperation[] = [
-      { type: "set", tableName: "users", rowKey: "u1", fieldKey: "name", jsonValue: "A", dot: { clientId: "c1", version: 1 } },
-      { type: "set", tableName: "users", rowKey: "u2", fieldKey: "name", jsonValue: "B", dot: { clientId: "c1", version: 2 } },
-      { type: "set", tableName: "users", rowKey: "u3", fieldKey: "name", jsonValue: "C", dot: { clientId: "c1", version: 3 } },
+      { type: "setRow", tableName: "users", rowKey: "u1", fields: { name: "A" }, dot: { clientId: "c1", version: 1 } },
+      { type: "setRow", tableName: "users", rowKey: "u2", fields: { name: "B" }, dot: { clientId: "c1", version: 2 } },
+      { type: "setRow", tableName: "users", rowKey: "u3", fields: { name: "C" }, dot: { clientId: "c1", version: 3 } },
     ];
 
     const saveTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
@@ -89,7 +87,7 @@ describe("OperationLog", () => {
 
   it("resets sync state clearing all operations", async () => {
     const op: CRDTOperation = {
-      type: "set", tableName: "users", rowKey: "u1", fieldKey: "name", jsonValue: "A",
+      type: "setRow", tableName: "users", rowKey: "u1", fields: { name: "A" },
       dot: { clientId: "c1", version: 1 },
     };
 

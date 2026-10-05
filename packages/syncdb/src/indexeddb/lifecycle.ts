@@ -7,7 +7,7 @@ import {
 } from "../indexes.ts";
 import { promisifyIDBRequest, validateTransactionStores } from "../utils.ts";
 import { ROW_KEY, TABLE_NAME } from "../crdt.ts";
-import { migrate_v2 } from "./migrations.ts";
+import { migrate } from "./migrations.ts";
 
 // Stores
 export const ROWS_STORE = "rows";
@@ -107,7 +107,7 @@ export class Lifecycle {
         }
 
         this.db = db;
-        await migrate_v2(this.db);
+        await migrate(this.db);
         resolve(this.db);
       };
 

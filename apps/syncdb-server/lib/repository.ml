@@ -136,8 +136,43 @@ let migrate_remove_type_query =
   (Caqti_type.unit ->. Caqti_type.unit)
     "UPDATE crdt_operations SET type = 'removeRow' WHERE type = 'remove'"
 
+let get_set_operations_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.unit ->* db_row_type)
+    "SELECT server_version, db_name, client_id, version, type, table_name, row_key, field_key, json_value, version_vector FROM crdt_operations WHERE type = 'set'"
+
+let update_set_operation_to_set_row_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.(t2 string int64) ->. Caqti_type.unit)
+    "UPDATE crdt_operations SET type = 'setRow', field_key = NULL, json_value = ? WHERE server_version = ?"
+
 let exec_ignore_error (module Db : Caqti_eio.CONNECTION) query =
   match Db.exec query () with Ok () -> () | Error _ -> ()
+
+let migrate_set_operations (module Db : Caqti_eio.CONNECTION) =
+  let migrate_operation operation =
+    match (operation.field_key, operation.json_value) with
+    | Some field_key, Some json_value ->
+        let fields_json =
+          `Assoc [ (field_key, Yojson.Safe.from_string json_value) ]
+          |> Yojson.Safe.to_string
+        in
+        Db.exec update_set_operation_to_set_row_query
+          (fields_json, operation.server_version)
+    | _ -> Ok ()
+  in
+  match Db.collect_list get_set_operations_query () with
+  | Error err -> Error (Database (Caqti_error.show err))
+  | Ok rows ->
+      let rec loop = function
+        | [] -> Ok ()
+        | row :: rest -> (
+            let operation = of_row row in
+            match migrate_operation operation with
+            | Ok () -> loop rest
+            | Error err -> Error (Database (Caqti_error.show err)))
+      in
+      loop rows
 
 let migrate_schema (module Db : Caqti_eio.CONNECTION) =
   let conn = (module Db : Caqti_eio.CONNECTION) in
@@ -145,8 +180,8 @@ let migrate_schema (module Db : Caqti_eio.CONNECTION) =
   exec_ignore_error conn rename_value_column_query;
   exec_ignore_error conn rename_context_column_query;
   match Db.exec migrate_remove_type_query () with
-  | Ok () -> Ok ()
   | Error err -> Error (Database (Caqti_error.show err))
+  | Ok () -> migrate_set_operations (module Db : Caqti_eio.CONNECTION)
 
 let init_schema (module Db : Caqti_eio.CONNECTION) =
   match Db.exec init_schema_query () with

@@ -53,6 +53,6 @@ let ensure_remove_context_known connection ~db_name operations =
             match validate_context version_vector with
             | Error _ as err -> err
             | Ok () -> validate_operations rest)
-        | Set _ | Set_row _ -> validate_operations rest)
+        | Set_row _ -> validate_operations rest)
   in
   validate_operations operations

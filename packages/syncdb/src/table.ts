@@ -107,11 +107,10 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
 
     const dot = await this.nextDot(tx);
     const op: CRDTOperation = {
-      type: "set",
+      type: "setRow",
       tableName: this.tableName,
       rowKey,
-      fieldKey: field,
-      jsonValue: value,
+      fields: { [field]: value },
       dot,
     };
 

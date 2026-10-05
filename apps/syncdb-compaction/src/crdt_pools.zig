@@ -43,34 +43,6 @@ pub const CRDTOperationPoolSlot = struct {
         self.next_free_index = null;
     }
 
-    pub fn put_set_operation(
-        self: *@This(),
-        table: []const u8,
-        row_key: []const u8,
-        field_key: []const u8,
-        json_value: crdt.JsonValueBytes,
-        dot: crdt.Dot,
-    ) !void {
-        assert(self.active_operation == null);
-        assert(self.field_key_bytes_count == 0);
-        assert(self.json_value_bytes_count == 0);
-
-        try self.put_table_name(table);
-        try self.put_row_key(row_key);
-        const stored_field_key = try self.copy_field_key(field_key);
-        const stored_json_value = try self.copy_json_value(json_value);
-        const stored_dot = try self.copy_dot(dot);
-
-        self.operation = .{ .set = .{
-            .table_name = self.table_name_storage[0..self.table_name_bytes_count],
-            .row_key = self.row_key_storage[0..self.row_key_bytes_count],
-            .field_key = stored_field_key,
-            .json_value = stored_json_value,
-            .dot = stored_dot,
-        } };
-        self.active_operation = .set;
-    }
-
     pub fn put_set_row_operation(
         self: *@This(),
         table: []const u8,
@@ -172,7 +144,6 @@ pub const CRDTOperationPoolSlot = struct {
     fn reset(self: *@This()) void {
         if (self.active_operation) |tag| {
             switch (tag) {
-                .set => {},
                 .set_row => {},
                 .remove_row => {},
             }
@@ -598,28 +569,6 @@ test "operation slot copies operation identity strings" {
         operation_slot.operation.set_row.fields.get("title").?,
     );
     try std.testing.expectEqualSlices(u8, &expected_client_id, &operation_slot.operation.set_row.dot.client_id);
-}
-
-test "operation slot copies set field and value strings" {
-    var operation_slot: CRDTOperationPoolSlot = undefined;
-    try operation_slot.init();
-
-    var field_key_buffer = [_]u8{ 'n', 'a', 'm', 'e' };
-    var json_value_buffer = [_]u8{ '"', 'm', 'a', 'x', '"' };
-
-    try operation_slot.put_set_operation(
-        "table",
-        "row",
-        field_key_buffer[0..],
-        json_value_buffer[0..],
-        .{ .client_id = test_client_id("client"), .version = 1 },
-    );
-
-    @memset(field_key_buffer[0..], 'f');
-    @memset(json_value_buffer[0..], 'v');
-
-    try std.testing.expectEqualStrings("name", operation_slot.operation.set.field_key.?);
-    try std.testing.expectEqualStrings("\"max\"", operation_slot.operation.set.json_value);
 }
 
 test "row slot copies row identity strings" {

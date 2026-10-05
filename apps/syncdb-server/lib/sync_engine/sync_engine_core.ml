@@ -1,7 +1,6 @@
 type dot = { client_id : string; version : int64 }
 
 type op_payload =
-  | Set of { field_key : string; json_value : Yojson.Safe.t }
   | Set_row of { fields : Yojson.Safe.t }
   | Remove_row of { version_vector : (string * int64) list }
 
@@ -51,7 +50,6 @@ let sync_error_to_string = function
   | Decode_error msg -> msg
 
 let operation_type = function
-  | Set _ -> "set"
   | Set_row _ -> "setRow"
   | Remove_row _ -> "removeRow"
 

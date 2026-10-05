@@ -30,7 +30,7 @@ let assert_set_roundtrip_and_fetch_for_second_client () =
   | Ok () -> ());
   let request_1 =
     decode_with_valid_hash
-      "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fieldKey\":\"title\",\"jsonValue\":\"Buy milk\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
+      "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
   let response_1 =
     match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" request_1 with
@@ -55,11 +55,11 @@ let assert_set_roundtrip_and_fetch_for_second_client () =
   match response_2.operations with
   | [ op ] -> (
       match op.payload with
-      | Sync.Sync_engine.Set payload ->
+      | Sync.Sync_engine.Set_row payload ->
           assert (op.table_name = "todos");
           assert (op.row_key = "r1");
-          assert (payload.field_key = "title")
-      | _ -> failwith "expected set payload")
+          assert (Yojson.Safe.to_string payload.fields = "{\"title\":\"Buy milk\"}")
+      | _ -> failwith "expected setRow payload")
   | _ -> failwith "expected exactly one unseen operation"
 
 let assert_set_row_roundtrip_and_fetch_for_second_client () =
@@ -99,7 +99,7 @@ let assert_remove_roundtrip_and_fetch_for_second_client () =
   | Ok () -> ());
   let seed_request =
     decode_with_valid_hash
-      "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fieldKey\":\"title\",\"jsonValue\":\"Buy milk\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
+      "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
   (match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" seed_request with
   | Error err -> fail_with_sync_error "seed request failed: " err
@@ -129,7 +129,7 @@ let assert_accept_non_contiguous_versions () =
   | Ok () -> ());
   let request =
     decode_with_valid_hash
-      "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fieldKey\":\"title\",\"jsonValue\":\"A\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}},{\"type\":\"set\",\"tableName\":\"todos\",\"rowKey\":\"r2\",\"fieldKey\":\"title\",\"jsonValue\":\"B\",\"dot\":{\"clientId\":\"client-1\",\"version\":3}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
+      "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"A\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}},{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r2\",\"fields\":{\"title\":\"B\"},\"dot\":{\"clientId\":\"client-1\",\"version\":3}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
   match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" request with
   | Error err -> fail_with_sync_error "non-contiguous request failed: " err
@@ -142,7 +142,7 @@ let assert_reject_versions_that_go_backwards () =
   | Ok () -> ());
   let request =
     decode_with_valid_hash
-      "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fieldKey\":\"title\",\"jsonValue\":\"A\",\"dot\":{\"clientId\":\"client-1\",\"version\":3}},{\"type\":\"set\",\"tableName\":\"todos\",\"rowKey\":\"r2\",\"fieldKey\":\"title\",\"jsonValue\":\"B\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
+      "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"A\"},\"dot\":{\"clientId\":\"client-1\",\"version\":3}},{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r2\",\"fields\":{\"title\":\"B\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
   match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" request with
   | Error (Sync.Sync_engine.Non_monotonic_versions "client-1") -> ()
@@ -169,7 +169,7 @@ let assert_tenant_isolation_between_streams () =
   | Ok () -> ());
   let request_1 =
     decode_with_valid_hash
-      "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fieldKey\":\"title\",\"jsonValue\":\"Buy milk\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
+      "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
   (match
      Sync.Sync_engine.process_sync_request_with_connection conn

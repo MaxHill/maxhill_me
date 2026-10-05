@@ -120,13 +120,6 @@ pub const VersionVector = struct {
 
 pub const RowKey = []const u8;
 pub const CRDTOperation = union(enum) {
-    set: struct {
-        table_name: []const u8,
-        row_key: RowKey,
-        field_key: ?[]const u8,
-        json_value: JsonValueBytes,
-        dot: Dot,
-    },
     set_row: struct {
         table_name: []const u8,
         row_key: RowKey,
@@ -141,13 +134,6 @@ pub const CRDTOperation = union(enum) {
 
     fn assert_valid(operation: CRDTOperation) void {
         switch (operation) {
-            .set => |set| {
-                assert(set.table_name.len > 0);
-                assert(set.row_key.len > 0);
-                assert(set.field_key != null);
-                assert_field_key_valid(set.field_key.?);
-                set.dot.assert_valid();
-            },
             .set_row => |set_row| {
                 assert(set_row.table_name.len > 0);
                 assert(set_row.row_key.len > 0);
@@ -321,18 +307,6 @@ pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
     defer row.assert_valid();
 
     switch (operation) {
-        .set => |set_operation| {
-            if (row.tombstone.is_active()) {
-                const seen_version = row.tombstone.version_vector.get(set_operation.dot.client_id);
-                if (seen_version != null and set_operation.dot.version <= seen_version.?) return;
-            }
-
-            update_field(.{
-                .field_key = set_operation.field_key.?,
-                .json_value = set_operation.json_value,
-                .dot = set_operation.dot,
-            }, row);
-        },
         .set_row => |set_row_operation| {
             if (row.tombstone.is_active()) {
                 const seen_version = row.tombstone.version_vector.get(set_row_operation.dot.client_id);
@@ -359,10 +333,6 @@ fn assert_operation_targets_row(row: *const ORMapRow, operation: CRDTOperation) 
     operation.assert_valid();
 
     switch (operation) {
-        .set => |set_operation| {
-            assert(std.mem.eql(u8, row.table_name, set_operation.table_name));
-            assert(std.mem.eql(u8, row.row_key, set_operation.row_key));
-        },
         .set_row => |set_row_operation| {
             assert(std.mem.eql(u8, row.table_name, set_row_operation.table_name));
             assert(std.mem.eql(u8, row.row_key, set_row_operation.row_key));
@@ -379,10 +349,6 @@ fn assert_capacity_for_operation(row: *const ORMapRow, operation: CRDTOperation)
     operation.assert_valid();
 
     switch (operation) {
-        .set => |set_operation| {
-            const field_key = set_operation.field_key.?;
-            if (!row.fields.contains(field_key)) assert(row_field_registers_count_max >= row.fields.count + 1);
-        },
         .set_row => |set_row_operation| {
             var missing_fields_count: @TypeOf(row.fields.count) = 0;
             for (set_row_operation.fields.field_keys[0..set_row_operation.fields.count]) |field_key| {
@@ -508,11 +474,12 @@ test "apply_operation_to_row applies set_row set and remove_row to same row" {
     try std.testing.expectEqualStrings("\"max\"", row.fields.get("name").?.value);
     try std.testing.expectEqualStrings("31", row.fields.get("age").?.value);
 
-    apply_operation_to_row(&row, .{ .set = .{
+    var patch_fields = SetRowOperationFields{};
+    patch_fields.put("name", "\"maxwell\"");
+    apply_operation_to_row(&row, .{ .set_row = .{
         .table_name = "test",
         .row_key = "key-1",
-        .field_key = "name",
-        .json_value = "\"maxwell\"",
+        .fields = patch_fields,
         .dot = .{ .client_id = test_client_id("client_1"), .version = 2 },
     } });
 

@@ -11,8 +11,6 @@ let hash_sync_request request =
   let push_operation operation =
     let op_type, value, value_key =
       match operation.payload with
-      | Set { field_key; json_value } ->
-          ("set", Yojson.Safe.to_string json_value, field_key)
       | Set_row { fields } -> ("setRow", Yojson.Safe.to_string fields, "null")
       | Remove_row _ -> ("removeRow", "null", "null")
     in
@@ -43,9 +41,6 @@ let hash_sync_response response =
     push operation.dot.client_id;
     push (Int64.to_string operation.dot.version);
     match operation.payload with
-    | Set { field_key; json_value } ->
-        push field_key;
-        push (Yojson.Safe.to_string json_value)
     | Set_row { fields } ->
         push "null";
         push (Yojson.Safe.to_string fields)

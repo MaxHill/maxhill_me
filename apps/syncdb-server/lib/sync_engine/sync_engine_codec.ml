@@ -15,17 +15,7 @@ let decode_operation json =
   let row_key = json |> member "rowKey" |> to_string in
   let dot = json |> member "dot" |> decode_dot in
   match operation_type with
-  | "set" ->
-      if
-        (not (has_key "fieldKey" json))
-        || (not (has_key "jsonValue" json))
-        || has_key "versionVector" json || has_key "table" json
-        || has_key "field" json || has_key "value" json || has_key "context" json
-      then Error "set payload shape mismatch"
-      else
-        let field_key = json |> member "fieldKey" |> to_string in
-        let json_value = json |> member "jsonValue" in
-        Ok { table_name; row_key; dot; payload = Set { field_key; json_value } }
+  | "set" -> Error "unsupported operation type: set"
   | "setRow" ->
       if
         (not (has_key "fields" json))
@@ -99,10 +89,6 @@ let encode_operation operation =
     ]
   in
   match operation.payload with
-  | Set { field_key; json_value } ->
-      `Assoc
-        (base_fields
-        @ [ ("fieldKey", `String field_key); ("jsonValue", json_value) ])
   | Set_row { fields } -> `Assoc (base_fields @ [ ("fields", fields) ])
   | Remove_row { version_vector } ->
       let version_vector_json =

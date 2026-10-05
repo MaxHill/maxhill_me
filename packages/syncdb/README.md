@@ -63,6 +63,9 @@ Update one field without rewriting the whole row:
 await clubs.setField("driver", "loft", 9.5);
 ```
 
+`setField` is a convenience API. Internally, syncdb stores and syncs this as
+an additive one-field `setRow` operation.
+
 Remove a row:
 
 ```ts
@@ -254,7 +257,7 @@ db.subscribe(handler, "all");
 
 | `source` | When it fires |
 | --- | --- |
-| `local` | `setRow`, `setField`, or `deleteRow` on this replica |
+| `local` | `setRow`, `setField`, or `deleteRow` on this replica. `setField` syncs as a one-field `setRow`. |
 | `remote` | `db.sync()` applied operations from other replicas |
 | `all` | Both (default) |
 

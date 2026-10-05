@@ -201,6 +201,69 @@ describe("Lifecycle", () => {
       dot: { clientId: "client-1", version: 2 },
       versionVector: { "client-1": 1 },
     });
-    expect(protocolVersion).toBe(2);
+    expect(protocolVersion).toBe(3);
+  });
+
+  it("migrates protocol-v2 set operations to protocol-v3 setRow operations", async () => {
+    await new Promise<void>((resolve, reject) => {
+      const req = indexedDB.open(dbName, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        db.createObjectStore(ROWS_STORE, { keyPath: ["table_name", "row_key"] });
+        db.createObjectStore(OPERATIONS_STORE, {
+          keyPath: ["op.dot.clientId", "op.dot.version"],
+        });
+        db.createObjectStore(CLIENT_STATE_STORE);
+      };
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction([OPERATIONS_STORE, CLIENT_STATE_STORE], "readwrite");
+        tx.objectStore(CLIENT_STATE_STORE).put(2, "syncProtocolVersion");
+        tx.objectStore(OPERATIONS_STORE).put({
+          op: {
+            type: "set",
+            tableName: "clubs",
+            rowKey: "driver",
+            fieldKey: "loft",
+            jsonValue: 9.5,
+            dot: { clientId: "client-1", version: 3 },
+          },
+          synced: 1,
+        });
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        tx.onerror = () => reject(tx.error);
+      };
+      req.onerror = () => reject(req.error);
+    });
+
+    lifecycle = new Lifecycle();
+    await lifecycle.open(dbName);
+
+    const tx = lifecycle.transaction([OPERATIONS_STORE, CLIENT_STATE_STORE], "readonly");
+    const operationRecord = await new Promise<any>((resolve, reject) => {
+      const req = tx.objectStore(OPERATIONS_STORE).get(["client-1", 3]);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    const protocolVersion = await new Promise<any>((resolve, reject) => {
+      const req = tx.objectStore(CLIENT_STATE_STORE).get("syncProtocolVersion");
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+
+    expect(operationRecord).toEqual({
+      op: {
+        type: "setRow",
+        tableName: "clubs",
+        rowKey: "driver",
+        fields: { loft: 9.5 },
+        dot: { clientId: "client-1", version: 3 },
+      },
+      synced: 1,
+    });
+    expect(protocolVersion).toBe(3);
   });
 });
