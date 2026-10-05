@@ -217,6 +217,26 @@ describe("CRDTDatabase", () => {
       expect(handler).toHaveBeenCalledTimes(1);
     });
 
+    it("should save setField writes as setRow operations", async () => {
+      const users = db.table("users");
+
+      await users.setField("u1", "age", 26);
+
+      const tx = lifecycle.transaction(["operations"], "readonly");
+      const operations = await new Promise<any[]>((resolve, reject) => {
+        const req = tx.objectStore("operations").getAll();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+
+      expect(operations.at(-1)?.op).toMatchObject({
+        type: "setRow",
+        tableName: "users",
+        rowKey: "u1",
+        fields: { age: 26 },
+      });
+    });
+
     it("should notify subscribers when deleteRow is called", async () => {
       const users = db.table("users");
       const handler = vi.fn();

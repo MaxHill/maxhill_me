@@ -301,24 +301,15 @@ export class Sync {
   ): Promise<void> {
     // Validate operations before processing to fail fast on corrupted data
     for (const op of operations) {
-      if (op.type === "set") {
-        if (typeof op.fieldKey !== "string" || op.fieldKey === "") {
-          throw new Error(
-            `Invalid set operation: field must be a non-empty string, got ${typeof op.fieldKey}`,
-          );
-        }
-        if (op.jsonValue === undefined || op.jsonValue === null) {
-          throw new Error(`Invalid set operation: value must be defined, got ${op.jsonValue}`);
-        }
-        if (op.jsonValue["_key"]) {
-          throw new Error(
-            `Operation: ${op.dot} contained illegal _key property. _key should always be stripped out`,
-          );
-        }
-      } else if (op.type === "setRow") {
+      if (op.type === "setRow") {
         if (typeof op.fields !== "object" || op.fields === null || Array.isArray(op.fields)) {
           throw new Error(
             `Invalid setRow operation: fields must be a plain object, got ${typeof op.fields}`,
+          );
+        }
+        if (Object.prototype.hasOwnProperty.call(op.fields, "_key")) {
+          throw new Error(
+            `Operation: ${op.dot} contained illegal _key property. _key should always be stripped out`,
           );
         }
       } else if (op.type === "removeRow") {
@@ -331,6 +322,8 @@ export class Sync {
             `Invalid removeRow operation: versionVector must be a plain object, got ${typeof op.versionVector}`,
           );
         }
+      } else {
+        throw new Error(`Unsupported operation type: ${(op as { type?: unknown }).type}`);
       }
     }
 
@@ -402,11 +395,6 @@ export class Sync {
       let value = "null";
       let valueKey = "null";
 
-      if (op.type === "set") {
-        value = JSON.stringify(op.jsonValue);
-        valueKey = op.fieldKey ?? "null";
-      }
-
       if (op.type === "setRow") {
         value = JSON.stringify(op.fields);
       }
@@ -446,10 +434,7 @@ export class Sync {
       parts.push(String(operation.dot.version));
 
       // Include operation-specific fields
-      if (operation.type === "set") {
-        parts.push(operation.fieldKey ?? "null");
-        parts.push(JSON.stringify(operation.jsonValue));
-      } else if (operation.type === "setRow") {
+      if (operation.type === "setRow") {
         parts.push("null"); // field placeholder for consistency
         parts.push(JSON.stringify(operation.fields));
       } else if (operation.type === "removeRow") {

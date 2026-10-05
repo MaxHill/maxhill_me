@@ -2,20 +2,6 @@ open Sync_engine_core
 
 let db_operation_of_crdt_operation ~db_name operation =
   match operation.payload with
-  | Set { field_key; json_value } ->
-      Ok
-        {
-          Repository.server_version = 0L;
-          db_name;
-          client_id = operation.dot.client_id;
-          version = operation.dot.version;
-          op_type = "set";
-          table_name = operation.table_name;
-          row_key = operation.row_key;
-          field_key = Some field_key;
-          json_value = Some (Yojson.Safe.to_string json_value);
-          version_vector = None;
-        }
   | Set_row { fields } ->
       Ok
         {
@@ -56,19 +42,6 @@ let db_operations_of_crdt_operations ~db_name operations =
 
 let crdt_operation_of_db_operation operation =
   match operation.Repository.op_type with
-  | "set" -> (
-      match (operation.field_key, operation.json_value) with
-      | Some field_key, Some json_value ->
-          Ok
-            {
-              table_name = operation.table_name;
-              row_key = operation.row_key;
-              dot =
-                { client_id = operation.client_id; version = operation.version };
-              payload =
-                Set { field_key; json_value = Yojson.Safe.from_string json_value };
-            }
-      | _ -> Error "stored set operation missing field_key/json_value")
   | "setRow" -> (
       match operation.json_value with
       | Some fields ->

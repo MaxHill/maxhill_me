@@ -50,14 +50,18 @@ const generateORMapRow = (): fc.Arbitrary<ORMapRow> =>
   });
 
 const generateSetOperation = (): fc.Arbitrary<CRDTOperation> =>
-  fc.record({
-    type: fc.constant("set" as const),
-    tableName: fc.constant("test_table"),
-    rowKey: fc.string(),
-    fieldKey: generateSafeFieldName(),
-    jsonValue: fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
-    dot: generateDot(),
-  });
+  fc.tuple(
+    generateSafeFieldName(),
+    fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
+    generateDot(),
+    fc.string(),
+  ).map(([fieldKey, value, dot, rowKey]) => ({
+    type: "setRow" as const,
+    tableName: "test_table",
+    rowKey,
+    fields: { [fieldKey]: value },
+    dot,
+  }));
 
 const generateSetRowOperation = (): fc.Arbitrary<CRDTOperation> =>
   fc.record({
@@ -174,11 +178,10 @@ describe("applyOpToRow", () => {
     it("should apply set to empty row", () => {
       const row: ORMapRow = { [TABLE_NAME]: "test", [ROW_KEY]: "row1", fields: {} };
       const op: CRDTOperation = {
-        type: "set",
+        type: "setRow",
         tableName: "test",
         rowKey: "row1",
-        fieldKey: "name",
-        jsonValue: "Alice",
+        fields: { ["name"]: "Alice" },
         dot: { clientId: "client1", version: 1 },
       };
 
@@ -199,11 +202,10 @@ describe("applyOpToRow", () => {
         },
       };
       const op: CRDTOperation = {
-        type: "set",
+        type: "setRow",
         tableName: "test",
         rowKey: "row1",
-        fieldKey: "name",
-        jsonValue: "Bob",
+        fields: { ["name"]: "Bob" },
         dot: { clientId: "client1", version: 2 },
       };
 
@@ -222,11 +224,10 @@ describe("applyOpToRow", () => {
         },
       };
       const op: CRDTOperation = {
-        type: "set",
+        type: "setRow",
         tableName: "test",
         rowKey: "row1",
-        fieldKey: "name",
-        jsonValue: "Alice",
+        fields: { ["name"]: "Alice" },
         dot: { clientId: "client1", version: 3 },
       };
 
@@ -245,11 +246,10 @@ describe("applyOpToRow", () => {
         },
       };
       const op: CRDTOperation = {
-        type: "set",
+        type: "setRow",
         tableName: "test",
         rowKey: "row1",
-        fieldKey: "name",
-        jsonValue: "Bob",
+        fields: { ["name"]: "Bob" },
         dot: { clientId: "client2", version: 5 },
       };
 
@@ -269,11 +269,10 @@ describe("applyOpToRow", () => {
         },
       };
       const op: CRDTOperation = {
-        type: "set",
+        type: "setRow",
         tableName: "test",
         rowKey: "row1",
-        fieldKey: "value",
-        jsonValue: {},
+        fields: { ["value"]: {} },
         dot: { clientId: "client1", version: 1 },
       };
 
@@ -285,15 +284,14 @@ describe("applyOpToRow", () => {
     it("should throw error when field is missing in set operation", () => {
       const row: ORMapRow = { [TABLE_NAME]: "test", [ROW_KEY]: "row1", fields: {} };
       const op: CRDTOperation = {
-        type: "set",
+        type: "setRow",
         tableName: "test",
         rowKey: "row1",
-        fieldKey: undefined as any,
-        jsonValue: "Alice",
+        fields: undefined as any,
         dot: { clientId: "client1", version: 1 },
       };
 
-      expect(() => applyOperationToRow(row, op)).toThrow("Set operation is missing fieldKey");
+      expect(() => applyOperationToRow(row, op)).toThrow("SetRow operation fields must be a plain object");
     });
 
     it("should reject set dominated by tombstone", () => {
@@ -307,11 +305,10 @@ describe("applyOpToRow", () => {
         },
       };
       const op: CRDTOperation = {
-        type: "set",
+        type: "setRow",
         tableName: "test",
         rowKey: "row1",
-        fieldKey: "name",
-        jsonValue: "Alice",
+        fields: { ["name"]: "Alice" },
         dot: { clientId: "client1", version: 5 },
       };
 
@@ -331,11 +328,10 @@ describe("applyOpToRow", () => {
         },
       };
       const op: CRDTOperation = {
-        type: "set",
+        type: "setRow",
         tableName: "test",
         rowKey: "row1",
-        fieldKey: "name",
-        jsonValue: "Alice",
+        fields: { ["name"]: "Alice" },
         dot: { clientId: "client1", version: 6 },
       };
 
@@ -358,11 +354,10 @@ describe("applyOpToRow", () => {
         },
       };
       const op: CRDTOperation = {
-        type: "set",
+        type: "setRow",
         tableName: "test",
         rowKey: "row1",
-        fieldKey: "name",
-        jsonValue: "Alice",
+        fields: { ["name"]: "Alice" },
         dot: { clientId: "client2", version: 1 },
       };
 
@@ -652,8 +647,10 @@ describe("applyOpToRow", () => {
             applyOperationToRow(row, resurrectOp);
 
             // Field should exist because version is higher than context
-            if (resurrectOp.type === "set" && resurrectOp.fieldKeyKey) {
-              expect(row.fields[resurrectOp.fieldKey]).toBeDefined();
+            if (resurrectOp.type === "setRow") {
+              for (const fieldKey of Object.keys(resurrectOp.fields)) {
+                expect(row.fields[fieldKey]).toBeDefined();
+              }
             }
           },
         ),

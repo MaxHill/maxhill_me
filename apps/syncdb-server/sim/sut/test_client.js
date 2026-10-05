@@ -32,6 +32,8 @@ const dbName = process.argv[2];
 const clientSuffix = process.argv[3] || dbName;
 const deterministicClientId = `sim-client-${clientSuffix}`;
 
+await seedProtocolV2SetOperation(dbName, deterministicClientId);
+
 const db = await newDatabase(dbName)
   .withCustomStorageRepository(testLifecycle)
   .withCustomSync(syncManager)
@@ -40,6 +42,51 @@ const db = await newDatabase(dbName)
   .addTable("users", { user_age_index: ["age"] })
   .build()
   .open();
+
+async function seedProtocolV2SetOperation(name, clientId) {
+  await new Promise((resolve, reject) => {
+    const request = indexedDB.open(name, 1);
+    request.onupgradeneeded = () => {
+      const seedDb = request.result;
+      seedDb.createObjectStore("rows", { keyPath: ["table_name", "row_key"] });
+      seedDb.createObjectStore("operations", {
+        keyPath: ["op.dot.clientId", "op.dot.version"],
+      });
+      seedDb.createObjectStore("clientState");
+    };
+    request.onsuccess = () => {
+      const seedDb = request.result;
+      const tx = seedDb.transaction(["rows", "operations", "clientState"], "readwrite");
+      const dot = { clientId, version: 1 };
+      tx.objectStore("clientState").put(clientId, "clientId");
+      tx.objectStore("clientState").put(1, "logicalClock");
+      tx.objectStore("clientState").put(-1, "lastSeenServerVersion");
+      tx.objectStore("clientState").put(2, "syncProtocolVersion");
+      tx.objectStore("rows").put({
+        table_name: "users",
+        row_key: "seed-user",
+        fields: { name: { value: "seed", dot } },
+      });
+      tx.objectStore("operations").put({
+        op: {
+          type: "set",
+          tableName: "users",
+          rowKey: "seed-user",
+          fieldKey: "name",
+          jsonValue: "seed",
+          dot,
+        },
+        synced: 0,
+      });
+      tx.oncomplete = () => {
+        seedDb.close();
+        resolve();
+      };
+      tx.onerror = () => reject(tx.error);
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
 
 const rl = readline.createInterface({
   input: process.stdin,

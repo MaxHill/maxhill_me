@@ -1,18 +1,10 @@
-let assert_decode_set_operation_request () =
+let assert_reject_set_operation_request () =
   let request_json =
     "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fieldKey\":\"title\",\"jsonValue\":\"Buy milk\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
   in
   match Sync.Sync_engine.decode_sync_request request_json with
-  | Error msg -> failwith ("expected decode success, got error: " ^ msg)
-  | Ok request -> (
-      match request.operations with
-      | [ operation ] -> (
-          match operation.payload with
-          | Sync.Sync_engine.Set payload ->
-              assert (payload.field_key = "title");
-              assert (Yojson.Safe.to_string payload.json_value = "\"Buy milk\"")
-          | _ -> failwith "expected Set payload")
-      | _ -> failwith "expected exactly one operation")
+  | Ok _ -> failwith "expected set decode rejection"
+  | Error msg -> assert (msg = "unsupported operation type: set")
 
 let assert_decode_set_row_operation_request () =
   let request_json =
@@ -25,7 +17,7 @@ let assert_decode_set_row_operation_request () =
       | [ operation ] -> (
           match operation.payload with
           | Sync.Sync_engine.Set_row payload ->
-              assert (Yojson.Safe.to_string payload.fields = "{\"title\":\"Buy milk\"}")
+              assert (Yojson.Safe.to_string payload.fields = "{\"title\":\"Buy milk\"}" )
           | _ -> failwith "expected Set_row payload")
       | _ -> failwith "expected exactly one operation")
 
@@ -78,14 +70,6 @@ let assert_reject_set_row_with_field () =
   | Ok _ -> failwith "expected mismatch decode error"
   | Error _ -> ()
 
-let assert_reject_set_with_context () =
-  let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fieldKey\":\"title\",\"jsonValue\":\"Buy milk\",\"versionVector\":{\"client-1\":1},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
-  in
-  match Sync.Sync_engine.decode_sync_request request_json with
-  | Ok _ -> failwith "expected mismatch decode error"
-  | Error _ -> ()
-
 let assert_reject_invalid_db_name () =
   let request_json =
     "{\"clientId\":\"client-1\",\"dbName\":\"bad db\",\"operations\":[],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
@@ -93,19 +77,6 @@ let assert_reject_invalid_db_name () =
   match Sync.Sync_engine.decode_sync_request request_json with
   | Ok _ -> failwith "expected invalid dbName decode error"
   | Error _ -> ()
-
-let assert_hash_sync_request_matches_expected_for_set () =
-  let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fieldKey\":\"title\",\"jsonValue\":\"Buy milk\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"3f005d177f08ee8c356fda9a8daff40abd7f38abae391f9e91d671d99d599616\"}"
-  in
-  let request =
-    match Sync.Sync_engine.decode_sync_request request_json with
-    | Error msg -> failwith ("unexpected decode error: " ^ msg)
-    | Ok value -> value
-  in
-  assert
-    (Sync.Sync_engine.hash_sync_request request
-    = "3f005d177f08ee8c356fda9a8daff40abd7f38abae391f9e91d671d99d599616")
 
 let assert_hash_sync_request_matches_expected_for_set_row () =
   let request_json =
@@ -135,16 +106,14 @@ let assert_hash_sync_request_matches_expected_for_remove () =
 
 let assert_hash_sync_request_matches_expected_for_multi_operation () =
   let request_json =
-    "{\"clientId\":\"client-abc\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"tableName\":\"posts\",\"rowKey\":\"p1\",\"fieldKey\":\"title\",\"jsonValue\":\"Hello\",\"dot\":{\"clientId\":\"client-abc\",\"version\":6}},{\"type\":\"removeRow\",\"tableName\":\"posts\",\"rowKey\":\"p2\",\"versionVector\":{\"client-abc\":7},\"dot\":{\"clientId\":\"client-abc\",\"version\":7}}],\"lastSeenServerVersion\":5,\"requestHash\":\"436f5aa7e31f6a742ed464f4637aa49d61134b248c31ec5f2d75f4b7fa66b20e\"}"
+    "{\"clientId\":\"client-abc\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"posts\",\"rowKey\":\"p1\",\"fields\":{\"title\":\"Hello\"},\"dot\":{\"clientId\":\"client-abc\",\"version\":6}},{\"type\":\"removeRow\",\"tableName\":\"posts\",\"rowKey\":\"p2\",\"versionVector\":{\"client-abc\":7},\"dot\":{\"clientId\":\"client-abc\",\"version\":7}}],\"lastSeenServerVersion\":5,\"requestHash\":\"e9bbcc78f4771c714b9f6a1925feb0a34ccd556f9d523c5f0068d9d2275418c2\"}"
   in
   let request =
     match Sync.Sync_engine.decode_sync_request request_json with
     | Error msg -> failwith ("unexpected decode error: " ^ msg)
     | Ok value -> value
   in
-  assert
-    (Sync.Sync_engine.hash_sync_request request
-    = "436f5aa7e31f6a742ed464f4637aa49d61134b248c31ec5f2d75f4b7fa66b20e")
+  assert (Sync.Sync_engine.hash_sync_request request = "e9bbcc78f4771c714b9f6a1925feb0a34ccd556f9d523c5f0068d9d2275418c2")
 
 let assert_encode_sync_response_matches_go_bytes_for_empty_case () =
   let response =
@@ -162,13 +131,13 @@ let assert_encode_sync_response_matches_go_bytes_for_empty_case () =
   in
   assert (encoded = expected)
 
-let assert_encode_sync_response_includes_set_operation_shape () =
+let assert_encode_sync_response_includes_set_row_operation_shape () =
   let op =
     {
       Sync.Sync_engine.table_name = "todos";
       row_key = "r1";
       dot = { client_id = "client-1"; version = 1L };
-      payload = Set { field_key = "title"; json_value = `String "Buy milk" };
+      payload = Set_row { fields = `Assoc [ ("title", `String "Buy milk") ] };
     }
   in
   let response =
@@ -186,24 +155,23 @@ let assert_encode_sync_response_includes_set_operation_shape () =
   let operations = json |> member "operations" |> to_list in
   match operations with
   | [ first ] ->
-      assert (first |> member "type" |> to_string = "set");
-      assert (first |> member "fieldKey" |> to_string = "title");
+      assert (first |> member "type" |> to_string = "setRow");
+      assert (first |> member "fields" |> Yojson.Safe.to_string = "{\"title\":\"Buy milk\"}");
       let keys = first |> to_assoc |> List.map fst in
+      assert (not (List.mem "fieldKey" keys));
       assert (not (List.mem "versionVector" keys))
   | _ -> failwith "expected one operation"
 
 let () =
-  assert_decode_set_operation_request ();
+  assert_reject_set_operation_request ();
   assert_decode_set_row_operation_request ();
   assert_decode_remove_operation_request ();
   assert_reject_set_row_with_field ();
-  assert_reject_set_with_context ();
   assert_reject_invalid_db_name ();
   assert_hash_sync_response_matches_expected_for_empty_case ();
   assert_hash_sync_request_mismatch_detected ();
-  assert_hash_sync_request_matches_expected_for_set ();
   assert_hash_sync_request_matches_expected_for_set_row ();
   assert_hash_sync_request_matches_expected_for_remove ();
   assert_hash_sync_request_matches_expected_for_multi_operation ();
   assert_encode_sync_response_matches_go_bytes_for_empty_case ();
-  assert_encode_sync_response_includes_set_operation_shape ()
+  assert_encode_sync_response_includes_set_row_operation_shape ()

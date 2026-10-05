@@ -44,11 +44,10 @@ describe("CRDTDatabase sync transaction liveness", () => {
       latestServerVersion: 0,
       operations: [
         {
-          type: "set" as const,
+          type: "setRow" as const,
           tableName: "users",
           rowKey: "u1",
-          fieldKey: "name",
-          jsonValue: "Alice",
+          fields: { ["name"]: "Alice" },
           dot: { clientId: "server", version: 0 },
         },
       ],

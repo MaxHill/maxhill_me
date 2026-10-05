@@ -13,14 +13,6 @@ export type ValidKey = string;
 
 export type CRDTOperation =
   | {
-    type: "set";
-    tableName: string;
-    rowKey: string;
-    fieldKey?: string;
-    jsonValue: any;
-    dot: Dot;
-  }
-  | {
     type: "setRow";
     tableName: string;
     rowKey: ValidKey;
@@ -87,37 +79,7 @@ export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): vo
   row = validateRow(row);
   operation = validateOperation(operation);
 
-  if (operation.type === "set") {
-    // Check if this set operation is dominated by an existing tombstone.
-    // Tombstones track a version vector: a map of clientId → highest version seen at delete time.
-    // If this set's dot.version is <= the version-vector entry for its client, the delete happened
-    // after this write from the deleter's perspective, so we ignore the set (delete wins).
-    // This prevents "resurrection" of deleted fields by late-arriving concurrent writes.
-    if (row.tombstone) {
-      const seenVersion = row.tombstone.versionVector[operation.dot.clientId];
-      if (seenVersion !== undefined && operation.dot.version <= seenVersion) {
-        return; // Tombstone wins
-      }
-    }
-
-    // This casting is safe since this is already validated in validateOperation()
-    const fieldKey = operation.fieldKey as string;
-    const existing = row.fields[fieldKey];
-
-    if (!existing) {
-      // No existing value, just set it
-      row.fields[fieldKey] = { value: operation.jsonValue, dot: operation.dot };
-    } else {
-      const cmp = compareDots(operation.dot, existing.dot);
-      if (cmp > 0) {
-        // New dot is higher, replace
-        row.fields[fieldKey] = { value: operation.jsonValue, dot: operation.dot };
-      } else {
-        assert(cmp !== 0, `CRDT invariant violated: duplicate dot for field "${fieldKey}"`);
-      }
-      // Otherwise keep existing (cmp < 0)
-    }
-  } else if (operation.type === "setRow") {
+  if (operation.type === "setRow") {
     // Check if tombstone dominates
     if (row.tombstone) {
       const seenVersion = row.tombstone.versionVector[operation.dot.clientId];
@@ -200,12 +162,18 @@ export function validateOperation(operation: CRDTOperation): CRDTOperation {
   );
   assert(operation.dot.version >= 0, `Invalid dot version: ${operation.dot.version}`);
   assert(operation.dot.clientId, "Operation.dot.clientId must be defined");
-  if (operation.type === "set") {
-    assert(operation.fieldKey, "Set operation is missing fieldKey");
+  if (operation.type === "setRow") {
     assert(
-      isSerializable(operation.jsonValue),
-      `Set operation has non-serializable jsonValue: ${typeof operation.jsonValue}`,
+      typeof operation.fields === "object" && operation.fields !== null && !Array.isArray(operation.fields),
+      `SetRow operation fields must be a plain object: ${typeof operation.fields}`,
     );
+    for (const [fieldKey, value] of Object.entries(operation.fields)) {
+      assert(fieldKey !== "_key", "SetRow operation cannot set reserved _key field");
+      assert(
+        isSerializable(value),
+        `SetRow operation has non-serializable field "${fieldKey}": ${typeof value}`,
+      );
+    }
   }
 
   if (operation.type === "removeRow") {
