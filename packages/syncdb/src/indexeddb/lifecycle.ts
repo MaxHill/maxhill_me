@@ -6,6 +6,7 @@ import {
 } from "../indexes.ts";
 import { promisifyIDBRequest, validateTransactionStores } from "../utils.ts";
 import { ROW_KEY, TABLE_NAME } from "../crdt.ts";
+import { migrate_v2 } from "./migrations.ts";
 
 // Stores
 export const ROWS_STORE = "rows";
@@ -21,47 +22,7 @@ const REQUIRED_STORES = [ROWS_STORE, OPERATIONS_STORE, CLIENT_STATE_STORE] as co
 // Client state keys
 const LOGICAL_CLOCK = "logicalClock";
 const LAST_SEEN_SERVER_VERSION = "lastSeenServerVersion";
-const SYNC_PROTOCOL_VERSION = "syncProtocolVersion";
-const SYNC_PROTOCOL_VERSION_CURRENT = 2;
 export const INDEXES_HASH = "indexesHash";
-
-function migrateOperationToProtocolV2(operation: any): any {
-  if (!operation || typeof operation !== "object") return operation;
-  if ("tableName" in operation) return operation;
-
-  if (operation.type === "set") {
-    return {
-      type: "set",
-      tableName: operation.table,
-      rowKey: operation.rowKey,
-      fieldKey: operation.field,
-      jsonValue: operation.value,
-      dot: operation.dot,
-    };
-  }
-
-  if (operation.type === "setRow") {
-    return {
-      type: "setRow",
-      tableName: operation.table,
-      rowKey: operation.rowKey,
-      fields: operation.value,
-      dot: operation.dot,
-    };
-  }
-
-  if (operation.type === "remove") {
-    return {
-      type: "removeRow",
-      tableName: operation.table,
-      rowKey: operation.rowKey,
-      dot: operation.dot,
-      versionVector: operation.context,
-    };
-  }
-
-  return operation;
-}
 
 export class Lifecycle {
   db: IDBDatabase | undefined;
@@ -122,7 +83,9 @@ export class Lifecycle {
       request.onsuccess = async () => {
         var db = request.result;
 
-        const missingStores = REQUIRED_STORES.filter((store) => !db.objectStoreNames.contains(store));
+        const missingStores = REQUIRED_STORES.filter((store) =>
+          !db.objectStoreNames.contains(store)
+        );
         if (missingStores.length > 0 && version) {
           db.close();
           throw new Error(
@@ -146,7 +109,7 @@ export class Lifecycle {
         }
 
         this.db = db;
-        await this.migrateSyncProtocol();
+        await migrate_v2(this.db);
         resolve(this.db);
       };
 
@@ -200,70 +163,6 @@ export class Lifecycle {
     });
   }
 
-  private async migrateSyncProtocol(): Promise<void> {
-    if (!this.db) {
-      throw new Error("Cannot migrate sync protocol before database is initialized.");
-    }
-
-    const tx = this.db.transaction(
-      [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE],
-      "readwrite",
-    );
-    const clientStateStore = tx.objectStore(CLIENT_STATE_STORE);
-    const currentVersion = await promisifyIDBRequest(
-      clientStateStore.get(SYNC_PROTOCOL_VERSION),
-    );
-
-    if (currentVersion === SYNC_PROTOCOL_VERSION_CURRENT) {
-      return;
-    }
-
-    await this.migrateOperationRecords(tx.objectStore(OPERATIONS_STORE));
-    await this.migrateRowRecords(tx.objectStore(ROWS_STORE));
-    await promisifyIDBRequest(
-      clientStateStore.put(SYNC_PROTOCOL_VERSION_CURRENT, SYNC_PROTOCOL_VERSION),
-    );
-  }
-
-  private async migrateOperationRecords(store: IDBObjectStore): Promise<void> {
-    await this.updateCursorRecords(store, (record: any) => {
-      if (!record?.op) return record;
-
-      const nextOperation = migrateOperationToProtocolV2(record.op);
-      if (nextOperation === record.op) return record;
-
-      return { ...record, op: nextOperation };
-    });
-  }
-
-  private async migrateRowRecords(store: IDBObjectStore): Promise<void> {
-    await this.updateCursorRecords(store, (row: any) => {
-      if (!row?.tombstone?.context) return row;
-
-      const { context, ...tombstoneRest } = row.tombstone;
-      return {
-        ...row,
-        tombstone: {
-          ...tombstoneRest,
-          versionVector: context,
-        },
-      };
-    });
-  }
-
-  private async updateCursorRecords(
-    store: IDBObjectStore,
-    migrateRecord: (record: any) => any,
-  ): Promise<void> {
-    const records = await promisifyIDBRequest(store.getAll());
-
-    for (const record of records) {
-      const nextRecord = migrateRecord(record);
-      if (nextRecord !== record) {
-        await promisifyIDBRequest(store.put(nextRecord));
-      }
-    }
-  }
 
   close(): void {
     if (!this.db) {
