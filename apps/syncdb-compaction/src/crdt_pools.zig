@@ -285,10 +285,10 @@ pub const ORMapRowPoolSlot = struct {
     }
 };
 
-pub const CRDTOperationPool = slot_pool(CRDTOperationPoolSlot);
-pub const ORMapRowPool = slot_pool(ORMapRowPoolSlot);
+pub const CRDTOperationPool = SlotPoolType(CRDTOperationPoolSlot);
+pub const ORMapRowPool = SlotPoolType(ORMapRowPoolSlot);
 
-fn slot_pool(comptime Slot: type) type {
+fn SlotPoolType(comptime Slot: type) type {
     return struct {
         allocator: std.mem.Allocator,
         slots: []Slot,

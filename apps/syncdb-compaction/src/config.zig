@@ -3,7 +3,6 @@ const stdx = @import("stdx.zig");
 const assert = std.debug.assert;
 
 const KiB = stdx.KiB;
-const GiB = stdx.GiB;
 
 const Config = struct {
     crdt: CRDT = .{},
