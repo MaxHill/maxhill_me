@@ -115,6 +115,46 @@ pub fn build(b: *std.Build) void {
         run_cmd.addArgs(args);
     }
 
+    const fuzz_sut = b.addExecutable(.{
+        .name = "syncdb_compaction_fuzzer_sut",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/fuzz_sut.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "syncdb_compaction", .module = mod },
+            },
+        }),
+    });
+    b.installArtifact(fuzz_sut);
+
+    const fuzz = b.addExecutable(.{
+        .name = "syncdb_compaction_fuzzer",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/fuzz.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "syncdb_compaction", .module = mod },
+            },
+        }),
+    });
+    b.installArtifact(fuzz);
+
+    const fuzz_step = b.step("fuzz", "Fuzz the app");
+    const fuzz_cmd = b.addRunArtifact(fuzz);
+
+    fuzz_step.dependOn(&fuzz_cmd.step);
+    fuzz_cmd.step.dependOn(b.getInstallStep());
+
+    // This line makes the fuzz executable depend on fuzz_sut and also passes
+    // the fuzz_sut bin path as the first argument to fuzz
+    fuzz_cmd.addFileArg(fuzz_sut.getEmittedBin());
+
+    if (b.args) |args| {
+        fuzz_cmd.addArgs(args);
+    }
+
     // Creates an executable that will run `test` blocks from the provided module.
     // Here `mod` needs to define a target, which is why earlier we made sure to
     // set the releative field.

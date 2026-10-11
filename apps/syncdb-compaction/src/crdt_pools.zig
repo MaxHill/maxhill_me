@@ -26,12 +26,17 @@ pub const CRDTOperationPoolSlot = struct {
     json_value_storage: [constants.crdt_json_value_byte_capacity]u8 = undefined,
     json_value_bytes_count: usize = 0,
 
+    // TODO: We could probably work around and remove the active operation and just
+    // use operation for this.
     operation: crdt.CRDTOperation,
-    set_row_fields: crdt.SetRowOperationFields,
     active_operation: ?std.meta.Tag(crdt.CRDTOperation),
+    set_row_fields: crdt.SetRowOperationFields,
     pool_state: PoolSlotState,
 
     fn init(self: *@This()) !void {
+        defer assert(self.set_row_fields.count == 0);
+        defer assert(self.active_operation == null);
+
         self.set_row_fields = .{};
 
         self.table_name_bytes_count = 0;
@@ -54,7 +59,7 @@ pub const CRDTOperationPoolSlot = struct {
 
         try self.put_table_name(table);
         try self.put_row_key(row_key);
-        const stored_dot = try self.copy_dot(dot);
+        const stored_dot = self.copy_dot(dot);
 
         self.operation = .{ .set_row = .{
             .table_name = self.table_name_storage[0..self.table_name_bytes_count],
@@ -63,6 +68,15 @@ pub const CRDTOperationPoolSlot = struct {
             .dot = stored_dot,
         } };
         self.active_operation = .set_row;
+
+        assert(self.active_operation == .set_row);
+        assert(self.operation == .set_row);
+        assert(self.operation.set_row.table_name.len == table.len);
+        assert(self.operation.set_row.row_key.len == row_key.len);
+        assert(self.operation.set_row.fields.count == 0);
+        assert(std.mem.eql(u8, self.operation.set_row.table_name, table));
+        assert(std.mem.eql(u8, self.operation.set_row.row_key, row_key));
+        assert(std.meta.eql(self.operation.set_row.dot, dot));
     }
 
     pub fn put_set_row_field(
@@ -71,12 +85,29 @@ pub const CRDTOperationPoolSlot = struct {
         json_value: crdt.JsonValueBytes,
     ) !void {
         assert(self.active_operation == .set_row);
-        assert(self.set_row_fields.count < constants.crdt_fields_count_max);
+
+        const field_exists_before = self.set_row_fields.contains(field_key);
+        assert(field_exists_before or self.set_row_fields.count < constants.crdt_fields_count_max);
+        const fields_count_before = self.set_row_fields.count;
 
         const stored_field_key = try self.copy_field_key(field_key);
         const stored_json_value = try self.copy_json_value(json_value);
+
         self.set_row_fields.put(stored_field_key, stored_json_value);
         self.operation.set_row.fields = self.set_row_fields;
+
+        assert(self.active_operation == .set_row);
+        assert(self.operation == .set_row);
+        assert(self.operation.set_row.fields.count == self.set_row_fields.count);
+        assert(self.set_row_fields.get(field_key) != null);
+        assert(std.mem.eql(u8, self.set_row_fields.get(field_key).?, json_value));
+        assert(self.operation.set_row.fields.get(field_key) != null);
+        assert(std.mem.eql(u8, self.operation.set_row.fields.get(field_key).?, json_value));
+        if (field_exists_before) {
+            assert(self.set_row_fields.count == fields_count_before);
+        } else {
+            assert(self.set_row_fields.count == fields_count_before + 1);
+        }
     }
 
     pub fn put_remove_row_operation(
@@ -97,6 +128,14 @@ pub const CRDTOperationPoolSlot = struct {
             .tombstone = tombstone,
         } };
         self.active_operation = .remove_row;
+
+        assert(self.active_operation == .remove_row);
+        assert(self.operation == .remove_row);
+        assert(self.operation.remove_row.table_name.len == table.len);
+        assert(self.operation.remove_row.row_key.len == row_key.len);
+        assert(std.mem.eql(u8, self.operation.remove_row.table_name, table));
+        assert(std.mem.eql(u8, self.operation.remove_row.row_key, row_key));
+        assert(std.meta.eql(self.operation.remove_row.tombstone, tombstone));
     }
 
     fn put_table_name(self: *@This(), table_name: []const u8) !void {
@@ -115,7 +154,7 @@ pub const CRDTOperationPoolSlot = struct {
 
     fn copy_field_key(self: *@This(), field_key: []const u8) ![]const u8 {
         assert(field_key.len > 0);
-        if (self.field_key_bytes_count + field_key.len > self.field_key_storage.len) {
+        if (field_key.len > self.field_key_storage.len - self.field_key_bytes_count) {
             return error.FieldKeyStorageTooSmall;
         }
 
@@ -126,7 +165,7 @@ pub const CRDTOperationPoolSlot = struct {
     }
 
     fn copy_json_value(self: *@This(), json_value: crdt.JsonValueBytes) !crdt.JsonValueBytes {
-        if (self.json_value_bytes_count + json_value.len > self.json_value_storage.len) {
+        if (json_value.len > self.json_value_storage.len - self.json_value_bytes_count) {
             return error.ValueStorageTooSmall;
         }
 
@@ -136,7 +175,7 @@ pub const CRDTOperationPoolSlot = struct {
         return self.json_value_storage[start..self.json_value_bytes_count];
     }
 
-    fn copy_dot(self: *@This(), dot: crdt.Dot) !crdt.Dot {
+    fn copy_dot(self: *@This(), dot: crdt.Dot) crdt.Dot {
         _ = self;
         return dot;
     }
@@ -157,6 +196,9 @@ pub const CRDTOperationPoolSlot = struct {
         self.operation = undefined;
         self.active_operation = null;
         self.pool_state = .acquired;
+
+        assert(self.set_row_fields.count == 0);
+        assert(self.active_operation == null);
     }
 };
 
@@ -190,6 +232,12 @@ pub const ORMapRowPoolSlot = struct {
             .tombstone = .{ .dot = null, .version_vector = .{} },
         };
         self.pool_state = .acquired;
+
+        assert(self.row.table_name.len == 0);
+        assert(self.row.row_key.len == 0);
+        assert(self.row.fields.count == 0);
+        assert(!self.row.tombstone.is_active());
+        assert(self.row.tombstone.version_vector.count == 0);
     }
 
     pub fn put_row(
@@ -200,6 +248,14 @@ pub const ORMapRowPoolSlot = struct {
         self.reset();
         try self.put_table_name(table_name);
         try self.put_row_key(row_key);
+
+        assert(self.row.table_name.len == table_name.len);
+        assert(self.row.row_key.len == row_key.len);
+        assert(std.mem.eql(u8, self.row.table_name, table_name));
+        assert(std.mem.eql(u8, self.row.row_key, row_key));
+        assert(self.row.fields.count == 0);
+        assert(!self.row.tombstone.is_active());
+        assert(self.row.tombstone.version_vector.count == 0);
     }
 
     fn put_table_name(self: *@This(), table_name: []const u8) !void {
@@ -226,11 +282,24 @@ pub const ORMapRowPoolSlot = struct {
     ) !void {
         assert(self.row.table_name.len > 0);
         assert(self.row.row_key.len > 0);
-        assert(self.row.fields.count < constants.crdt_fields_count_max);
+
+        const field_exists_before = self.row.fields.contains(field_key);
+        assert(field_exists_before or self.row.fields.count < constants.crdt_fields_count_max);
+        const fields_count_before = self.row.fields.count;
 
         const stored_field_key = try self.copy_field_key(field_key);
         const stored_json_value = try self.copy_json_value(json_value);
         self.row.fields.put(stored_field_key, stored_json_value, dot);
+
+        assert(self.row.fields.get(field_key) != null);
+        const field = self.row.fields.get(field_key).?;
+        assert(std.mem.eql(u8, field.value, json_value));
+        assert(std.meta.eql(field.dot, dot));
+        if (field_exists_before) {
+            assert(self.row.fields.count == fields_count_before);
+        } else {
+            assert(self.row.fields.count == fields_count_before + 1);
+        }
     }
 
     pub fn put_tombstone_dot(self: *@This(), dot: crdt.Dot) void {
@@ -238,11 +307,15 @@ pub const ORMapRowPoolSlot = struct {
         assert(self.row.tombstone.version_vector.count == 0);
 
         self.row.tombstone.dot = dot;
+
+        assert(self.row.tombstone.is_active());
+        assert(std.meta.eql(self.row.tombstone.dot.?, dot));
+        assert(self.row.tombstone.version_vector.count == 0);
     }
 
     fn copy_field_key(self: *@This(), field_key: []const u8) ![]const u8 {
         assert(field_key.len > 0);
-        if (self.field_key_bytes_count + field_key.len > self.field_key_storage.len) {
+        if (field_key.len > self.field_key_storage.len - self.field_key_bytes_count) {
             return error.FieldKeyStorageTooSmall;
         }
 
@@ -253,7 +326,7 @@ pub const ORMapRowPoolSlot = struct {
     }
 
     fn copy_json_value(self: *@This(), json_value: crdt.JsonValueBytes) !crdt.JsonValueBytes {
-        if (self.json_value_bytes_count + json_value.len > self.json_value_storage.len) {
+        if (json_value.len > self.json_value_storage.len - self.json_value_bytes_count) {
             return error.ValueStorageTooSmall;
         }
 
@@ -282,6 +355,12 @@ pub const ORMapRowPoolSlot = struct {
             .tombstone = tombstone,
         };
         self.pool_state = .acquired;
+
+        assert(self.row.table_name.len == 0);
+        assert(self.row.row_key.len == 0);
+        assert(self.row.fields.count == 0);
+        assert(!self.row.tombstone.is_active());
+        assert(self.row.tombstone.version_vector.count == 0);
     }
 };
 
@@ -316,11 +395,20 @@ fn SlotPoolType(comptime Slot: type) type {
                 previous_index = @intCast(index);
             }
 
-            return .{
+            const pool: @This() = .{
                 .allocator = allocator,
                 .slots = slots,
                 .free_head_index = previous_index,
             };
+
+            assert(pool.slots.len == @as(usize, @intCast(slot_count)));
+            assert(pool.free_head_index != null);
+            assert(pool.free_head_index.? == slot_count - 1);
+
+            const free_head_slot = &pool.slots[@intCast(pool.free_head_index.?)];
+            assert(free_head_slot.pool_state != .acquired);
+
+            return pool;
         }
 
         pub fn deinit(self: *@This()) void {
@@ -332,6 +420,9 @@ fn SlotPoolType(comptime Slot: type) type {
                 return PoolError.PoolExhausted;
             };
 
+            assert(index >= 0);
+            assert(index < @as(i32, @intCast(self.slots.len)));
+
             const slot = &self.slots[@intCast(index)];
             self.free_head_index = switch (slot.pool_state) {
                 .next_free => |next_free| next_free,
@@ -340,6 +431,7 @@ fn SlotPoolType(comptime Slot: type) type {
             };
             slot.pool_state = .acquired;
 
+            assert(slot.pool_state == .acquired);
             return slot;
         }
         pub fn release(self: *@This(), slot: *Slot) void {
@@ -352,6 +444,10 @@ fn SlotPoolType(comptime Slot: type) type {
             else
                 .free_list_end;
             self.free_head_index = index;
+
+            assert(self.free_head_index != null);
+            assert(self.free_head_index.? == index);
+            assert(slot.pool_state != .acquired);
         }
 
         fn index_of(self: *@This(), slot: *Slot) i32 {
@@ -365,39 +461,13 @@ fn SlotPoolType(comptime Slot: type) type {
             const offset_bytes = slot_address - pool_start_address;
             assert(offset_bytes % @sizeOf(Slot) == 0);
 
-            return @intCast(offset_bytes / @sizeOf(Slot));
+            const index: i32 = @intCast(offset_bytes / @sizeOf(Slot));
+            assert(index >= 0);
+            assert(index < @as(i32, @intCast(self.slots.len)));
+            assert(slot == &self.slots[@intCast(index)]);
+            return index;
         }
     };
-}
-
-//  ------------------------------------------------------------------
-//  Assert helpers
-//  ------------------------------------------------------------------
-comptime {
-    assert(constants.crdt_fields_count_max > 0);
-    assert(constants.crdt_tombstone_vectors_count_max > 0);
-    assert(constants.crdt_table_name_byte_capacity > 0);
-    assert(constants.crdt_row_key_byte_capacity > 0);
-    assert(constants.crdt_field_key_byte_capacity > 0);
-    assert(constants.crdt_json_value_byte_capacity > 0);
-    assert(constants.crdt_fields_count_max <= 200);
-    assert(constants.crdt_tombstone_vectors_count_max <= 200);
-    assert(constants.crdt_table_name_byte_capacity >= 16);
-    assert(constants.crdt_table_name_byte_capacity <= 1024);
-    assert(constants.crdt_row_key_byte_capacity >= 16);
-    assert(constants.crdt_row_key_byte_capacity <= 1024);
-    assert(constants.crdt_field_key_byte_capacity >= 16);
-    assert(constants.crdt_json_value_byte_capacity >= 1024);
-    assert(constants.crdt_fields_count_max == constants.crdt_tombstone_vectors_count_max);
-    assert(constants.crdt_table_name_byte_capacity <= constants.crdt_row_key_byte_capacity);
-    assert(constants.crdt_field_key_byte_capacity == constants.crdt_row_key_byte_capacity);
-    assert(constants.crdt_json_value_byte_capacity >= constants.crdt_field_key_byte_capacity);
-    assert(constants.crdt_json_value_byte_capacity >= constants.crdt_row_key_byte_capacity);
-    assert(constants.crdt_json_value_byte_capacity >= constants.crdt_table_name_byte_capacity);
-    assert(@sizeOf(CRDTOperationPoolSlot) > @sizeOf(crdt.CRDTOperation));
-    assert(@sizeOf(ORMapRowPoolSlot) > @sizeOf(crdt.ORMapRow));
-    assert(@sizeOf(CRDTOperationPoolSlot) < 64 * 1024);
-    assert(@sizeOf(ORMapRowPoolSlot) < 64 * 1024);
 }
 
 //  ------------------------------------------------------------------

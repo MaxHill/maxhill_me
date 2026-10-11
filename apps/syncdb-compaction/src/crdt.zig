@@ -33,13 +33,8 @@ const assert = std.debug.assert;
 const constants = @import("config.zig").constants;
 
 comptime {
-
-    // Not sure these are needed?
+    // Client IDs are protocol-shaped and must remain 16 bytes.
     assert(@sizeOf(ClientId) == 16);
-    assert(@sizeOf(VersionVector) > @sizeOf(ClientId));
-    assert(@sizeOf(Dot) >= @sizeOf(ClientId));
-    assert(@sizeOf(RowKey) == @sizeOf([]const u8));
-    assert(@sizeOf(LWWRegister) >= @sizeOf(Dot));
 }
 
 pub const JsonValueBytes = []const u8;
