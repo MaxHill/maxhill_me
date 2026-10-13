@@ -1,5 +1,8 @@
 const std = @import("std");
+const stdx = @import("stdx");
 const assert = std.debug.assert;
+
+const MiB = stdx.MiB;
 
 entropy: []const u8,
 
@@ -113,7 +116,7 @@ pub const Driver = struct {
             replay: struct { size: u32, seed: u64 },
             search: struct {
                 attempts: u32 = 100,
-                size_max: u32 = 4 * 1024 * 1024,
+                size_max: u32 = 4 * MiB,
             },
         },
     ) !void {
@@ -164,7 +167,7 @@ pub const Driver = struct {
         for (0..1024) |_| {
             if (step == 0) break;
             const size_next = if (pass) size + step else size -| step;
-            if (size > driver.buffer.len) break;
+            if (size_next > driver.buffer.len) break;
 
             const outcome = try driver.run_multiple(.{
                 .size = size_next,

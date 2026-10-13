@@ -28,6 +28,11 @@ pub fn build(b: *std.Build) void {
     // to our consumers. We must give it a name because a Zig package can expose
     // multiple modules and consumers will need to be able to specify which
     // module they want to access.
+    const stdx = b.createModule(.{
+        .root_source_file = b.path("src/stdx.zig"),
+        .target = target,
+    });
+
     const mod = b.addModule("syncdb_compaction", .{
         // The root source file is the "entry point" of this module. Users of
         // this module will only be able to access public declarations contained
@@ -39,6 +44,7 @@ pub fn build(b: *std.Build) void {
         // Later on we'll use this module as the root module of a test executable
         // which requires us to specify a target.
         .target = target,
+        .imports = &.{.{ .name = "stdx", .module = stdx }},
     });
 
     // Here we define an executable. An executable needs to have a root module
@@ -73,6 +79,7 @@ pub fn build(b: *std.Build) void {
             // List of modules available for import in source files part of the
             // root module.
             .imports = &.{
+                .{ .name = "stdx", .module = stdx },
                 // Here "syncdb_compaction" is the name you will use in your source code to
                 // import this module (e.g. `@import("syncdb_compaction")`). The name is
                 // repeated because you are allowed to rename your imports, which
@@ -123,6 +130,7 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
             .imports = &.{
                 .{ .name = "syncdb_compaction", .module = mod },
+                .{ .name = "stdx", .module = stdx },
             },
         }),
     });
@@ -136,6 +144,7 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
             .imports = &.{
                 .{ .name = "syncdb_compaction", .module = mod },
+                .{ .name = "stdx", .module = stdx },
             },
         }),
     });

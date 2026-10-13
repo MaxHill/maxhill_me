@@ -19,3 +19,6 @@ run = 'echo "no-op" && exit 0'
 [tasks.deploy]
 description = "Deploy syncdb-compaction."
 run = 'echo "no deploy target configured" && exit 0'
+
+[tools]
+zig = "0.16"

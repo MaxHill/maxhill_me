@@ -1,6 +1,9 @@
 const std = @import("std");
+const stdx = @import("stdx");
 const Io = std.Io;
 const Driver = @import("testing/FRNG.zig").Driver;
+
+const MiB = stdx.MiB;
 
 const syncdb_compaction = @import("syncdb_compaction");
 
@@ -17,6 +20,10 @@ pub fn main(init: std.process.Init) !void {
     const sut_path = arguments[1];
 
     try Driver.main(arena, init.io, sut_path, .{ .search = .{} });
+    // try Driver.main(arena, init.io, sut_path, .{ .replay = .{
+    //     .size = 1 * MiB,
+    //     .seed = 1234,
+    // } });
 
     // Stdout is for the actual output of your application, for example if you
     // are implementing gzip, then only the compressed bytes should be sent to
