@@ -2,10 +2,13 @@ const std = @import("std");
 const stdx = @import("stdx");
 const Io = std.Io;
 const Driver = @import("testing/FRNG.zig").Driver;
+const syncdb_compaction = @import("syncdb_compaction");
 
 const MiB = stdx.MiB;
 
-const syncdb_compaction = @import("syncdb_compaction");
+const SubCommands = enum {
+    search,
+};
 
 pub fn main(init: std.process.Init) !void {
     // This is appropriate for anything that lives as long as the process.
@@ -19,11 +22,16 @@ pub fn main(init: std.process.Init) !void {
     if (arguments.len < 2) return error.MissingSutPath;
     const sut_path = arguments[1];
 
-    try Driver.main(arena, init.io, sut_path, .{ .search = .{} });
-    // try Driver.main(arena, init.io, sut_path, .{ .replay = .{
-    //     .size = 1 * MiB,
-    //     .seed = 1234,
-    // } });
+    if (arguments.len < 3) return error.MissingSubCommand;
+    const sub_command = std.meta.stringToEnum(enum {
+        search,
+    }, arguments[2]) orelse return error.InvalidChoice;
+
+    switch (sub_command) {
+        .search => try Driver.main(arena, init.io, sut_path, .{
+            .search = .{},
+        }),
+    }
 
     // Stdout is for the actual output of your application, for example if you
     // are implementing gzip, then only the compressed bytes should be sent to
