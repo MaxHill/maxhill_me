@@ -22,7 +22,7 @@ Monorepo for Max Hill's personal website and services.
 
 ```bash
 pnpm install                # Install dependencies
-mise run dev:all            # Start every workspace project in dev mode (mprocs)
+mise run dev:all            # Start every workspace project in dev mode (dekit mprocs)
 mise run generate           # Code-gen via plop
 ```
 

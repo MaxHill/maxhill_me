@@ -65,12 +65,12 @@ for d in apps/*/ packages/*/; do
 done
 """
 
-# --- dev:all — run every workspace project's `run` task in parallel (mprocs) ---
+# --- dev:all — run every workspace project's `run` task in parallel (dekit mprocs) ---
 
 [tasks."run"]
-description = "Run every workspace project's `run` task in parallel (mprocs)."
+description = "Run every workspace project's `run` task in parallel (dekit mprocs)."
 run = """
-mprocs --names 'syncdb,css,oxlint-config,web-component-utils,components,auth,golf,site,syncdb-server' \
+dekit mprocs --names 'syncdb,css,oxlint-config,web-component-utils,components,auth,golf,site,syncdb-server' \
   'mise --cd packages/syncdb run run' \
   'mise --cd packages/css run run' \
   'mise --cd packages/oxlint-config run run' \
