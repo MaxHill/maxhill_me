@@ -30,7 +30,7 @@
 ///
 const std = @import("std");
 const assert = std.debug.assert;
-const constants = @import("config.zig").constants;
+const constants = @import("config").constants;
 
 comptime {
     // Client IDs are protocol-shaped and must remain 16 bytes.
@@ -348,11 +348,32 @@ pub const ORMapRow = struct {
     fields: RowFieldRegisters,
     tombstone: Tombstone,
 
+    pub fn tombstone_for_remove(row: *const @This(), dot: Dot) Tombstone {
+        row.assert_valid();
+        dot.assert_valid();
+
+        var version_vector: VersionVector = .{};
+        for (
+            row.tombstone.version_vector.client_ids[0..row.tombstone.version_vector.count],
+            row.tombstone.version_vector.client_versions[0..row.tombstone.version_vector.count],
+        ) |client_id, version| {
+            version_vector.put_client_version_max(client_id, version);
+        }
+        for (row.fields.field_dots[0..row.fields.count]) |field_dot| {
+            version_vector.put_client_version_max(field_dot.client_id, field_dot.version);
+        }
+
+        return .{ .dot = dot, .version_vector = version_vector };
+    }
+
     pub fn assert_valid(row: ORMapRow) void {
         assert(row.table_name.len > 0);
         assert(row.row_key.len > 0);
         assert(row.fields.count <= constants.crdt_fields_count_max);
-        for (row.fields.field_keys[0..row.fields.count], row.fields.field_dots[0..row.fields.count]) |field_key, dot| {
+        for (
+            row.fields.field_keys[0..row.fields.count],
+            row.fields.field_dots[0..row.fields.count],
+        ) |field_key, dot| {
             assert_field_key_valid(field_key);
             dot.assert_valid();
         }

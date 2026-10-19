@@ -1,7 +1,7 @@
 const std = @import("std");
 const assert = std.debug.assert;
 const crdt = @import("crdt.zig");
-const constants = @import("config.zig").constants;
+const constants = @import("config").constants;
 
 const PoolError = error{
     PoolExhausted,
@@ -26,18 +26,12 @@ pub const CRDTOperationPoolSlot = struct {
     json_value_storage: [constants.crdt_json_value_byte_capacity]u8 = undefined,
     json_value_bytes_count: usize = 0,
 
-    // TODO: We could probably work around and remove the active operation and just
-    // use operation for this.
     operation: crdt.CRDTOperation,
     active_operation: ?std.meta.Tag(crdt.CRDTOperation),
-    set_row_fields: crdt.SetRowOperationFields,
     pool_state: PoolSlotState,
 
     fn init(self: *@This()) !void {
-        defer assert(self.set_row_fields.count == 0);
         defer assert(self.active_operation == null);
-
-        self.set_row_fields = .{};
 
         self.table_name_bytes_count = 0;
         self.row_key_bytes_count = 0;
@@ -48,14 +42,18 @@ pub const CRDTOperationPoolSlot = struct {
         self.pool_state = .acquired;
     }
 
-    pub fn put_set_row_operation(
+    pub fn init_set_row_operation(
         self: *@This(),
         table: []const u8,
         row_key: []const u8,
         dot: crdt.Dot,
+        fields: []const struct {
+            field_key: []const u8,
+            json_value: crdt.JsonValueBytes,
+        },
     ) !void {
         assert(self.active_operation == null);
-        assert(self.set_row_fields.count == 0);
+        assert(fields.len <= constants.crdt_fields_count_max);
 
         try self.put_table_name(table);
         try self.put_row_key(row_key);
@@ -64,53 +62,54 @@ pub const CRDTOperationPoolSlot = struct {
         self.operation = .{ .set_row = .{
             .table_name = self.table_name_storage[0..self.table_name_bytes_count],
             .row_key = self.row_key_storage[0..self.row_key_bytes_count],
-            .fields = self.set_row_fields,
+            .fields = .{},
             .dot = stored_dot,
         } };
         self.active_operation = .set_row;
+
+        for (fields) |field| {
+            try self.put_set_row_field(field.field_key, field.json_value);
+        }
 
         assert(self.active_operation == .set_row);
         assert(self.operation == .set_row);
         assert(self.operation.set_row.table_name.len == table.len);
         assert(self.operation.set_row.row_key.len == row_key.len);
-        assert(self.operation.set_row.fields.count == 0);
+        assert(self.operation.set_row.fields.count <= fields.len);
         assert(std.mem.eql(u8, self.operation.set_row.table_name, table));
         assert(std.mem.eql(u8, self.operation.set_row.row_key, row_key));
         assert(std.meta.eql(self.operation.set_row.dot, dot));
     }
 
-    pub fn put_set_row_field(
+    fn put_set_row_field(
         self: *@This(),
         field_key: []const u8,
         json_value: crdt.JsonValueBytes,
     ) !void {
         assert(self.active_operation == .set_row);
 
-        const field_exists_before = self.set_row_fields.contains(field_key);
-        assert(field_exists_before or self.set_row_fields.count < constants.crdt_fields_count_max);
-        const fields_count_before = self.set_row_fields.count;
+        const field_exists_before = self.operation.set_row.fields.contains(field_key);
+        assert(field_exists_before or
+            self.operation.set_row.fields.count < constants.crdt_fields_count_max);
+        const fields_count_before = self.operation.set_row.fields.count;
 
         const stored_field_key = try self.copy_field_key(field_key);
         const stored_json_value = try self.copy_json_value(json_value);
 
-        self.set_row_fields.put(stored_field_key, stored_json_value);
-        self.operation.set_row.fields = self.set_row_fields;
+        self.operation.set_row.fields.put(stored_field_key, stored_json_value);
 
         assert(self.active_operation == .set_row);
         assert(self.operation == .set_row);
-        assert(self.operation.set_row.fields.count == self.set_row_fields.count);
-        assert(self.set_row_fields.get(field_key) != null);
-        assert(std.mem.eql(u8, self.set_row_fields.get(field_key).?, json_value));
         assert(self.operation.set_row.fields.get(field_key) != null);
         assert(std.mem.eql(u8, self.operation.set_row.fields.get(field_key).?, json_value));
         if (field_exists_before) {
-            assert(self.set_row_fields.count == fields_count_before);
+            assert(self.operation.set_row.fields.count == fields_count_before);
         } else {
-            assert(self.set_row_fields.count == fields_count_before + 1);
+            assert(self.operation.set_row.fields.count == fields_count_before + 1);
         }
     }
 
-    pub fn put_remove_row_operation(
+    pub fn init_remove_row_operation(
         self: *@This(),
         table: []const u8,
         row_key: []const u8,
@@ -188,7 +187,6 @@ pub const CRDTOperationPoolSlot = struct {
             }
         }
 
-        self.set_row_fields = .{};
         self.table_name_bytes_count = 0;
         self.row_key_bytes_count = 0;
         self.field_key_bytes_count = 0;
@@ -197,7 +195,6 @@ pub const CRDTOperationPoolSlot = struct {
         self.active_operation = null;
         self.pool_state = .acquired;
 
-        assert(self.set_row_fields.count == 0);
         assert(self.active_operation == null);
     }
 };
@@ -240,7 +237,7 @@ pub const ORMapRowPoolSlot = struct {
         assert(self.row.tombstone.version_vector.count == 0);
     }
 
-    pub fn put_row(
+    pub fn init_row(
         self: *@This(),
         table_name: []const u8,
         row_key: crdt.RowKey,
@@ -487,7 +484,6 @@ test "pools initialize preallocated slots" {
     var operation_pool = try CRDTOperationPool.init(allocator, 2);
     defer operation_pool.deinit();
     const operation_slot = try operation_pool.acquire();
-    try std.testing.expectEqual(@as(usize, 0), operation_slot.set_row_fields.count);
     try std.testing.expect(operation_slot.active_operation == null);
     operation_pool.release(operation_slot);
 
@@ -534,11 +530,16 @@ test "row pool marks acquired and free slots explicitly" {
 test "pool slots reserve operation storage" {
     var operation_slot: CRDTOperationPoolSlot = undefined;
     try operation_slot.init();
-    try operation_slot.put_set_row_operation("table", "row", .{ .client_id = test_client_id("client"), .version = 1 });
+    try operation_slot.init_set_row_operation(
+        "table",
+        "row",
+        .{ .client_id = test_client_id("client"), .version = 1 },
+        &.{},
+    );
     try std.testing.expectEqual(@as(usize, 0), operation_slot.operation.set_row.fields.count);
 
     operation_slot.reset();
-    try operation_slot.put_remove_row_operation("table", "row", .{
+    try operation_slot.init_remove_row_operation("table", "row", .{
         .dot = .{ .client_id = test_client_id("client"), .version = 1 },
         .version_vector = .{},
     });
@@ -546,7 +547,7 @@ test "pool slots reserve operation storage" {
 
     var row_slot: ORMapRowPoolSlot = undefined;
     try row_slot.init();
-    try row_slot.put_row("table", "row");
+    try row_slot.init_row("table", "row");
     try std.testing.expectEqual(@as(usize, 0), row_slot.row.fields.count);
     row_slot.put_tombstone_dot(.{ .client_id = test_client_id("client"), .version = 1 });
     try std.testing.expectEqual(@as(usize, 0), row_slot.row.tombstone.version_vector.count);
@@ -564,12 +565,15 @@ test "operation slot copies operation identity strings" {
     var field_key_buffer = [_]u8{ 't', 'i', 't', 'l', 'e' };
     var json_value_buffer = [_]u8{ '"', 'o', 'n', 'e', '"' };
 
-    try operation_slot.put_set_row_operation(
+    try operation_slot.init_set_row_operation(
         table_name_buffer[0..],
         row_key_buffer[0..],
         .{ .client_id = client_id_buffer, .version = 1 },
+        &.{.{
+            .field_key = field_key_buffer[0..],
+            .json_value = json_value_buffer[0..],
+        }},
     );
-    try operation_slot.put_set_row_field(field_key_buffer[0..], json_value_buffer[0..]);
 
     @memset(field_key_buffer[0..], 'f');
     @memset(json_value_buffer[0..], 'v');
@@ -596,7 +600,7 @@ test "row slot copies row identity strings" {
     var field_key_buffer = [_]u8{ 'a', 'g', 'e' };
     var json_value_buffer = [_]u8{ '3', '1' };
 
-    try row_slot.put_row(table_name_buffer[0..], row_key_buffer[0..]);
+    try row_slot.init_row(table_name_buffer[0..], row_key_buffer[0..]);
     try row_slot.put_field(
         field_key_buffer[0..],
         json_value_buffer[0..],

@@ -33,6 +33,14 @@ pub fn build(b: *std.Build) void {
         .target = target,
     });
 
+    const config = b.createModule(.{
+        .root_source_file = b.path("src/config.zig"),
+        .target = target,
+        .imports = &.{
+            .{ .name = "stdx", .module = stdx },
+        },
+    });
+
     const mod = b.addModule("syncdb_compaction", .{
         // The root source file is the "entry point" of this module. Users of
         // this module will only be able to access public declarations contained
@@ -44,7 +52,10 @@ pub fn build(b: *std.Build) void {
         // Later on we'll use this module as the root module of a test executable
         // which requires us to specify a target.
         .target = target,
-        .imports = &.{.{ .name = "stdx", .module = stdx }},
+        .imports = &.{
+            .{ .name = "stdx", .module = stdx },
+            .{ .name = "config", .module = config },
+        },
     });
 
     // Here we define an executable. An executable needs to have a root module
@@ -131,6 +142,7 @@ pub fn build(b: *std.Build) void {
             .imports = &.{
                 .{ .name = "syncdb_compaction", .module = mod },
                 .{ .name = "stdx", .module = stdx },
+                .{ .name = "config", .module = config },
             },
         }),
     });
