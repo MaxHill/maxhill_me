@@ -6,31 +6,51 @@ const syncdb_compaction = @import("syncdb_compaction");
 
 const MiB = stdx.MiB;
 
-const SubCommands = enum {
-    search,
-};
-
 pub fn main(init: std.process.Init) !void {
     // This is appropriate for anything that lives as long as the process.
     const arena: std.mem.Allocator = init.arena.allocator();
 
     // Accessing command line arguments:
     const arguments = try init.minimal.args.toSlice(arena);
-    for (arguments) |arg| {
-        std.log.info("arg: {s}", .{arg});
-    }
+    // for (arguments) |arg| {
+    //     std.log.info("arg: {s}", .{arg});
+    // }
     if (arguments.len < 2) return error.MissingSutPath;
     const sut_path = arguments[1];
 
-    if (arguments.len < 3) return error.MissingSubCommand;
+    if (arguments.len < 3) return error.MissingFuzzerName;
+    const fuzzer_name = arguments[2];
+
+    if (arguments.len < 4) return error.MissingSubCommand;
     const sub_command = std.meta.stringToEnum(enum {
         search,
-    }, arguments[2]) orelse return error.InvalidChoice;
+        replay,
+    }, arguments[3]) orelse return error.InvalidChoice;
 
     switch (sub_command) {
-        .search => try Driver.main(arena, init.io, sut_path, .{
-            .search = .{},
-        }),
+        .search => try Driver.main(
+            arena,
+            init.io,
+            sut_path,
+            fuzzer_name,
+            .{ .search = .{} },
+        ),
+        .replay => {
+            if (arguments.len < 5) return error.MissingSize;
+            const size_argument = arguments[4];
+            const size = try std.fmt.parseInt(u32, size_argument, 10);
+
+            if (arguments.len < 6) return error.MissingSize;
+            const seed_argument = arguments[5];
+            const seed = try std.fmt.parseInt(u64, seed_argument, 10);
+
+            try Driver.main(arena, init.io, sut_path, fuzzer_name, .{
+                .replay = .{
+                    .size = size,
+                    .seed = seed,
+                },
+            });
+        },
     }
 
     // Stdout is for the actual output of your application, for example if you

@@ -104,6 +104,7 @@ pub fn weighted(frng: *FRNG, weights: anytype) Error!std.meta.FieldEnum(@TypeOf(
 pub const Driver = struct {
     io: std.Io,
     sut: []const u8,
+    fuzzer_name: []const u8,
     buffer: []u8,
 
     const log = std.log;
@@ -112,6 +113,7 @@ pub const Driver = struct {
         gpa: std.mem.Allocator,
         io: std.Io,
         sut: []const u8,
+        fuzzer_name: []const u8,
         operation: union(enum) {
             replay: struct { size: u32, seed: u64 },
             search: struct {
@@ -132,6 +134,7 @@ pub const Driver = struct {
             .io = io,
             .buffer = buffer,
             .sut = sut,
+            .fuzzer_name = fuzzer_name,
         };
 
         switch (operation) {
@@ -236,7 +239,7 @@ pub const Driver = struct {
         const entropy = driver.buffer[0..options.size];
 
         var child = try std.process.spawn(driver.io, .{
-            .argv = &.{driver.sut},
+            .argv = &.{ driver.sut, driver.fuzzer_name },
             .stdin = .pipe,
             .stderr = if (options.quiet) .ignore else .inherit,
         });

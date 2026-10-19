@@ -34,24 +34,71 @@ const constants = @import("config.zig").constants;
 
 comptime {
     // Client IDs are protocol-shaped and must remain 16 bytes.
-    assert(@sizeOf(ClientId) == 16);
+    assert(@sizeOf(ClientId.Bytes) == 16);
 }
 
 pub const JsonValueBytes = []const u8;
 
-pub const ClientId = [16]u8;
-pub fn client_id_from_bytes(client_id_bytes: []const u8) !ClientId {
-    if (client_id_bytes.len != @sizeOf(ClientId)) {
-        return error.InvalidClientIdLength;
+pub const ClientId = struct {
+    pub const Bytes = [16]u8;
+
+    pub fn from_bytes(client_id_bytes: []const u8) !Bytes {
+        if (client_id_bytes.len != @sizeOf(Bytes)) return error.InvalidClientIdLength;
+        var client_id: Bytes = undefined;
+        @memcpy(&client_id, client_id_bytes);
+        return client_id;
     }
 
-    var client_id: ClientId = undefined;
-    @memcpy(&client_id, client_id_bytes);
-    return client_id;
-}
+    /// Parses a UUID in canonical 8-4-4-4-12 hexadecimal form.
+    pub fn from_string(client_id_string: []const u8) !Bytes {
+        if (client_id_string.len != 36) return error.InvalidClientIdString;
+        if (client_id_string[8] != '-' or client_id_string[13] != '-' or
+            client_id_string[18] != '-' or client_id_string[23] != '-')
+        {
+            return error.InvalidClientIdString;
+        }
+        var client_id: Bytes = undefined;
+        var byte_index: usize = 0;
+        var high_nibble: ?u8 = null;
+        for (client_id_string) |char| {
+            if (char == '-') continue;
+            const nibble: u8 = switch (char) {
+                '0'...'9' => char - '0',
+                'a'...'f' => char - 'a' + 10,
+                'A'...'F' => char - 'A' + 10,
+                else => return error.InvalidClientIdString,
+            };
+            if (high_nibble) |high| {
+                client_id[byte_index] = (high << 4) | nibble;
+                byte_index += 1;
+                high_nibble = null;
+            } else {
+                high_nibble = nibble;
+            }
+        }
+        return client_id;
+    }
+
+    /// Formats a client ID as a lowercase canonical UUID.
+    pub fn to_string(client_id: Bytes) [36]u8 {
+        const hex = "0123456789abcdef";
+        var result: [36]u8 = undefined;
+        var source_index: usize = 0;
+        for (0..36) |target_index| {
+            if (target_index == 8 or target_index == 13 or target_index == 18 or target_index == 23) {
+                result[target_index] = '-';
+            } else {
+                const byte = client_id[source_index / 2];
+                result[target_index] = if (source_index % 2 == 0) hex[byte >> 4] else hex[byte & 0x0f];
+                source_index += 1;
+            }
+        }
+        return result;
+    }
+};
 
 pub const Dot = struct {
-    client_id: ClientId,
+    client_id: ClientId.Bytes,
     version: i32,
 
     fn assert_valid(dot: Dot) void {
@@ -109,11 +156,11 @@ pub const SetRowOperationFields = struct {
 };
 
 pub const VersionVector = struct {
-    client_ids: [constants.crdt_tombstone_vectors_count_max]ClientId = undefined,
+    client_ids: [constants.crdt_tombstone_vectors_count_max]ClientId.Bytes = undefined,
     client_versions: [constants.crdt_tombstone_vectors_count_max]i32 = undefined,
     count: usize = 0,
 
-    pub fn get(self: *const @This(), client_id: ClientId) ?i32 {
+    pub fn get(self: *const @This(), client_id: ClientId.Bytes) ?i32 {
         assert(!std.mem.allEqual(u8, &client_id, 0));
         assert(self.count <= constants.crdt_tombstone_vectors_count_max);
         for (self.client_ids[0..self.count], self.client_versions[0..self.count]) |entry_client_id, entry_client_version| {
@@ -122,12 +169,12 @@ pub const VersionVector = struct {
         return null;
     }
 
-    pub fn contains(self: *const @This(), client_id: ClientId) bool {
+    pub fn contains(self: *const @This(), client_id: ClientId.Bytes) bool {
         assert(!std.mem.allEqual(u8, &client_id, 0));
         return self.get(client_id) != null;
     }
 
-    pub fn put_client_version_max(self: *@This(), client_id: ClientId, version: i32) void {
+    pub fn put_client_version_max(self: *@This(), client_id: ClientId.Bytes, version: i32) void {
         assert(!std.mem.allEqual(u8, &client_id, 0));
         assert(version >= 0);
         assert(self.count <= constants.crdt_tombstone_vectors_count_max);
@@ -301,7 +348,7 @@ pub const ORMapRow = struct {
     fields: RowFieldRegisters,
     tombstone: Tombstone,
 
-    fn assert_valid(row: ORMapRow) void {
+    pub fn assert_valid(row: ORMapRow) void {
         assert(row.table_name.len > 0);
         assert(row.row_key.len > 0);
         assert(row.fields.count <= constants.crdt_fields_count_max);
@@ -472,9 +519,9 @@ fn assert_field_key_valid(field_key: []const u8) void {
 //  ------------------------------------------------------------------
 //  Tests
 //  ------------------------------------------------------------------
-fn test_client_id(client_id_bytes: []const u8) ClientId {
-    assert(client_id_bytes.len <= @sizeOf(ClientId));
-    var client_id = [_]u8{0} ** @sizeOf(ClientId);
+fn test_client_id(client_id_bytes: []const u8) ClientId.Bytes {
+    assert(client_id_bytes.len <= @sizeOf(ClientId.Bytes));
+    var client_id = [_]u8{0} ** @sizeOf(ClientId.Bytes);
     @memcpy(client_id[0..client_id_bytes.len], client_id_bytes);
     return client_id;
 }
@@ -536,6 +583,26 @@ test "RowFieldRegisters put get remove and clear" {
     try std.testing.expect(!fields.remove("missing"));
     fields.clear();
     try std.testing.expectEqual(@as(usize, 0), fields.count);
+}
+
+test "ClientId parses and formats canonical UUID strings" {
+    const client_id = try ClientId.from_string("0d676a81-7600-4afb-95ff-e6925cffb955");
+    try std.testing.expectEqualSlices(u8, &.{
+        0x0d, 0x67, 0x6a, 0x81, 0x76, 0x00, 0x4a, 0xfb,
+        0x95, 0xff, 0xe6, 0x92, 0x5c, 0xff, 0xb9, 0x55,
+    }, &client_id);
+
+    const formatted = ClientId.to_string(client_id);
+    try std.testing.expectEqualStrings("0d676a81-7600-4afb-95ff-e6925cffb955", &formatted);
+
+    const uppercase = try ClientId.from_string("0D676A81-7600-4AFB-95FF-E6925CFFB955");
+    try std.testing.expectEqualSlices(u8, &client_id, &uppercase);
+}
+
+test "ClientId.from_string rejects malformed UUID strings" {
+    try std.testing.expectError(error.InvalidClientIdString, ClientId.from_string("too short"));
+    try std.testing.expectError(error.InvalidClientIdString, ClientId.from_string("0d676a81_7600-4afb-95ff-e6925cffb955"));
+    try std.testing.expectError(error.InvalidClientIdString, ClientId.from_string("0d676a81-7600-4afb-95ff-e6925cffb95g"));
 }
 
 test "to_user_row" {
