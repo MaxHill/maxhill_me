@@ -5,6 +5,8 @@ const crdt_fuzz = @import("crdt_fuzz.zig");
 
 const syncdb_compaction = @import("syncdb_compaction");
 
+pub const Fuzzers = enum { crdt };
+
 pub fn main(init: std.process.Init) !void {
     // Prints to stderr, unbuffered, ignoring potential errors.
     std.log.info("bin={s}", .{"fuzz_sut"});
@@ -19,9 +21,8 @@ pub fn main(init: std.process.Init) !void {
         std.log.info("SUT arg: {s}", .{arg});
     }
     if (arguments.len < 2) return error.MissingFuzzerName;
-    const fuzzer = std.meta.stringToEnum(enum {
-        crdt,
-    }, arguments[1]) orelse return error.InvalidChoice;
+    const fuzzer = std.meta.stringToEnum(Fuzzers, arguments[1]) orelse
+        return error.InvalidChoice;
     std.log.info("SUT arg: {d}", .{fuzzer});
 
     // In order to do I/O operations need an `Io` instance.

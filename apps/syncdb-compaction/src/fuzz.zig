@@ -3,6 +3,7 @@ const stdx = @import("stdx");
 const Io = std.Io;
 const Driver = @import("testing/FRNG.zig").Driver;
 const syncdb_compaction = @import("syncdb_compaction");
+const Fuzzers = @import("./fuzz_sut.zig").Fuzzers;
 
 const MiB = stdx.MiB;
 
@@ -12,16 +13,17 @@ pub fn main(init: std.process.Init) !void {
 
     // Accessing command line arguments:
     const arguments = try init.minimal.args.toSlice(arena);
-    // for (arguments) |arg| {
-    //     std.log.info("arg: {s}", .{arg});
-    // }
+
     if (arguments.len < 2) return error.MissingSutPath;
     const sut_path = arguments[1];
 
     if (arguments.len < 3) return error.MissingFuzzerName;
     const fuzzer_name = arguments[2];
+    if (std.meta.stringToEnum(Fuzzers, fuzzer_name) == null) {
+        return error.InvalidFuzzerName;
+    }
 
-    if (arguments.len < 4) return error.MissingSubCommand;
+    if (arguments.len < 4) return error.MissingAction;
     const sub_command = std.meta.stringToEnum(enum {
         search,
         replay,
