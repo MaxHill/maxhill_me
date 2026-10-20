@@ -12,6 +12,7 @@ export function openDatabase(dbPath: string): Database {
   const db = new Database(dbPath, { create: true })
   db.exec("PRAGMA journal_mode = WAL")
   db.exec("PRAGMA synchronous = NORMAL")
+  db.exec("PRAGMA foreign_keys = ON")
   db.exec(`
     CREATE TABLE IF NOT EXISTS kv (
       key    TEXT PRIMARY KEY,
@@ -20,6 +21,30 @@ export function openDatabase(dbPath: string): Database {
     )
   `)
   db.exec(`CREATE INDEX IF NOT EXISTS kv_expiry ON kv(expiry) WHERE expiry IS NOT NULL`)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id         TEXT PRIMARY KEY,
+      email      TEXT NOT NULL UNIQUE,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS tenants (
+      id                    TEXT PRIMARY KEY,
+      name                  TEXT NOT NULL,
+      personal_owner_user_id TEXT UNIQUE REFERENCES users(id),
+      created_at            INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS memberships (
+      tenant_id  TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role       TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (tenant_id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS memberships_by_user ON memberships(user_id);
+  `)
   return db
 }
 
@@ -37,7 +62,9 @@ export function SqliteStorage(db: Database): StorageAdapter {
     async get(key: string[]) {
       const k = joinKey(key)
       const row = getStmt.get(k)
-      if (!row) return undefined
+      if (!row) {
+        return undefined
+      }
       if (row.expiry !== null && Date.now() >= row.expiry) {
         removeExpiredOne.run(k)
         return undefined
@@ -64,7 +91,9 @@ export function SqliteStorage(db: Database): StorageAdapter {
         >("SELECT key, value, expiry FROM kv WHERE key >= ? AND key < ? ORDER BY key")
         .all(start, end)
       for (const row of rows) {
-        if (row.expiry !== null && now >= row.expiry) continue
+        if (row.expiry !== null && now >= row.expiry) {
+          continue
+        }
         yield [splitKey(row.key), JSON.parse(row.value)] as [string[], unknown]
       }
     },
@@ -84,8 +113,12 @@ export function sweepExpired(db: Database): number {
  * back to appending a high sentinel.
  */
 function prefixUpperBound(prefix: string): string {
-  if (prefix.length === 0) return "\uFFFF"
+  if (prefix.length === 0) {
+    return "\uFFFF"
+  }
   const last = prefix.charCodeAt(prefix.length - 1)
-  if (last === 0xffff) return prefix + "\uFFFF"
+  if (last === 0xffff) {
+    return prefix + "\uFFFF"
+  }
   return prefix.slice(0, -1) + String.fromCharCode(last + 1)
 }

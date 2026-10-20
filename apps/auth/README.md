@@ -15,7 +15,8 @@ apps/auth/
 ├── src/
 │   ├── index.ts           entry point + subcommands
 │   ├── config.ts          env-var parser (valibot)
-│   ├── sqlite-storage.ts  StorageAdapter over bun:sqlite
+│   ├── sqlite-storage.ts  OpenAuth storage + SQLite schema initialization
+│   ├── user-database.ts   User and personal-tenant provisioning
 │   └── subjects.ts        JWT subject definitions (exportable)
 └── package.json
 ```
@@ -89,28 +90,67 @@ Rotating `RESEND_API_KEY` (or any prod env var): `sops edit
 vps/auth/auth.prod.enc.env`, commit, redeploy. Full flow in
 `docs/vps.md`.
 
-## Storage schema
+## Database setup
 
-Single table, keyed by OpenAuth's 0x1F-joined string key:
+The service opens the SQLite file named by `DB_PATH`. On startup,
+`openDatabase()` creates any missing tables and indexes. This also runs
+for the `sweep` command. Existing databases keep their OpenAuth `kv`
+rows; relational tables are added alongside them.
 
-```sql
-CREATE TABLE kv (
-  key    TEXT PRIMARY KEY,
-  value  TEXT NOT NULL,        -- JSON.stringify(value)
-  expiry INTEGER                -- unix ms; NULL means no expiry
-);
-CREATE INDEX kv_expiry ON kv(expiry) WHERE expiry IS NOT NULL;
+Local development can use `:memory:` to reset all state on restart, or
+a file path to preserve state. Production stores the file under
+`/var/lib/auth/`. SQLite uses WAL mode.
+
+## Data model and permissions
+
+OpenAuth session and verification state stays in `kv`. The relational
+tables store identity and tenant ownership:
+
+```mermaid
+erDiagram
+  users ||--o| tenants : "personal owner"
+  users ||--o{ memberships : "belongs to"
+  tenants ||--o{ memberships : "has members"
+
+  users {
+    text id PK
+    text email UK
+    integer created_at
+  }
+  tenants {
+    text id PK
+    text name
+    text personal_owner_user_id UK
+    integer created_at
+  }
+  memberships {
+    text tenant_id PK, FK
+    text user_id PK, FK
+    text role
+    integer created_at
+  }
 ```
 
-`get` and `scan` skip expired rows lazily; `auth-exe sweep` reclaims
-their disk hourly. `PRAGMA journal_mode=WAL` is set at open (required
-for the deferred Litestream backup plan in `docs/vps.md`).
+A successful password login or signup ensures a user row, one personal
+tenant, and an `owner` membership. The membership is the permission
+relationship: it records which user belongs to which tenant and their
+role. The owner role identifies the user's authority over their
+personal tenant. These tables do not yet expose tenant APIs or enforce
+membership checks on sync requests; those are later work.
+
+`users.email` is unique. `tenants.personal_owner_user_id` is nullable
+and unique: it links a personal tenant to its owner and prevents more
+than one personal tenant per user. Shared tenants can leave it null.
+Memberships have a composite key `(tenant_id, user_id)` and foreign
+keys to users and tenants.
 
 ## User IDs
 
-`getOrCreateUser` currently returns a deterministic SHA-256 hash of
-the email. This is a placeholder — swap it for a call to a real user
-service when one exists.
+User IDs continue to use the existing `user_`-prefixed SHA-256 email
+hash so current token subjects and client ownership remain stable.
+The relational user row now persists that ID and the unique email.
+Tenant IDs are UUIDs generated when a personal tenant is created. A
+later migration can move user IDs to UUIDs after users have updated.
 
 ## Client usage
 

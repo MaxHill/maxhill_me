@@ -5,18 +5,23 @@ import type { Database } from "bun:sqlite";
 import { subjects } from "./subjects";
 import { type Config, loadConfig } from "./config";
 import { openDatabase, SqliteStorage, sweepExpired } from "./sqlite-storage";
+import { getOrCreateUser } from "./user-database";
 
 const PORT = 3002;
 const EMAIL_FROM = "auth@maxhill.me";
 const TOKEN_CORS_ALLOWED_SUFFIX = "maxhill.me";
 
 function resolveAllowedTokenOrigin(origin: string | null): string | null {
-  if (!origin) return null;
+  if (!origin) {
+    return null;
+  }
 
   try {
     const url = new URL(origin);
     const { hostname, protocol } = url;
-    if (protocol !== "https:") return null;
+    if (protocol !== "https:") {
+      return null;
+    }
     if (hostname.endsWith(TOKEN_CORS_ALLOWED_SUFFIX)) {
       return origin;
     }
@@ -54,25 +59,14 @@ async function sendVerificationEmail(config: Config, email: string, code: string
       to: email,
       subject: "Your maxhill.me verification code",
       text:
-        `Your verification code is: ${code}\n\nIt expires shortly. If you did not request this, ignore this email.`,
+        `Your verification code is: ${code}\n\nIt expires shortly. ` +
+        "If you did not request this, ignore this email.",
     }),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`resend send failed (${res.status}): ${body}`);
   }
-}
-
-async function getOrCreateUser(email: string): Promise<string> {
-  // Placeholder: deterministic hash-based user ID. Replace with a real user
-  // service lookup once one exists. Kept intentionally stable across restarts
-  // so dev sessions survive DB wipes.
-  const data = new TextEncoder().encode(email);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hex = Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return `user_${hex.slice(0, 16)}`;
 }
 
 function buildIssuer(config: Config, db: Database) {
@@ -90,7 +84,7 @@ function buildIssuer(config: Config, db: Database) {
     },
     success: async (ctx, value) => {
       if (value.provider === "password") {
-        const userID = await getOrCreateUser(value.email);
+        const userID = getOrCreateUser(db, value.email);
         return ctx.subject("user", { userID });
       }
       throw new Error("Invalid provider");
@@ -105,7 +99,9 @@ function usage(): never {
 
 async function main() {
   const [subcommand] = process.argv.slice(2);
-  if (!subcommand) usage();
+  if (!subcommand) {
+    usage();
+  }
 
   const config = loadConfig();
   const db = openDatabase(config.dbPath);
@@ -117,7 +113,9 @@ async function main() {
     return;
   }
 
-  if (subcommand !== "run") usage();
+  if (subcommand !== "run") {
+    usage();
+  }
 
   const app = buildIssuer(config, db);
   const server = Bun.serve({
@@ -135,7 +133,9 @@ async function main() {
       }
 
       const response = await app.fetch(request);
-      if (url.pathname !== "/token") return response;
+      if (url.pathname !== "/token") {
+        return response;
+      }
 
       const headers = new Headers(response.headers);
       const cors = tokenCorsHeaders(requestOrigin);
@@ -159,7 +159,7 @@ async function main() {
   process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
-main().catch((err) => {
-  console.error(err);
+main().catch((error) => {
+  console.error(error);
   process.exit(1);
 });
