@@ -30,6 +30,9 @@ const cssInlinePlugin = () => ({
     }
   },
   resolveImport({ source }) {
+    if (source === '@maxhill/css/background-patterns.css?inline') {
+      return '/node_modules/@maxhill/css/dist/background-patterns.css';
+    }
     if (source.endsWith('?inline')) {
       return source.replace('?inline', '');
     }

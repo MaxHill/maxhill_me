@@ -1,0 +1,1 @@
+The slot has no content wrapper. Setting `display: grid` on `m-bg-pattern` makes its slotted content participate in that grid. Here, `m-fit-text` fills the available width while the pattern stays behind it.

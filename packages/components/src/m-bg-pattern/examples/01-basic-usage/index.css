@@ -1,0 +1,26 @@
+.graph-demo {
+  min-height: 20rem;
+  padding: clamp(1.5rem, 5vw, 4rem);
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.demo-content {
+  max-width: 36rem;
+}
+
+.eyebrow {
+  color: var(--color-primary-text-colorful);
+  font-size: var(--font-size-0);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.demo-content h2 {
+  margin-block: 0.5rem;
+  font-size: var(--font-size-4);
+}
+
+.demo-content button {
+  margin-block-start: 1rem;
+}

@@ -1,0 +1,3 @@
+Place content inside `m-bg-pattern` to show it above the pattern. Set `pattern` to `lines`, `dots`, `diagonal`, or `grid` (the default). You can also set the JavaScript `pattern` property to change it after rendering.
+
+The background and pointer spotlight use the same pattern from `@maxhill/css/background-patterns.css`. Move the pointer over this example to see the dots brighten around it. Content participates directly in the host's layout; no content wrapper is added.

@@ -1,0 +1,11 @@
+.graph-fit-demo {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 18rem;
+  background: var(--color-background);
+}
+
+.graph-fit-demo m-fit-text {
+  width: 100%;
+}

@@ -1,0 +1,17 @@
+.pattern-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-5);
+  margin-block-end: var(--size-5);
+}
+
+.pattern-controls label {
+  display: grid;
+  gap: var(--size-2);
+}
+
+#graph-live-demo {
+  min-height: 16rem;
+  padding: var(--size-6);
+  background: var(--color-background);
+}

@@ -1,0 +1,49 @@
+:host {
+  --_spot-size: var(--bg-pattern-spot-size, 32.5rem);
+  --_line-color: var(--bg-pattern-line-color, var(--color-text, currentColor));
+
+  display: block;
+  position: relative;
+  isolation: isolate;
+}
+
+.grid {
+  --_color-fg: color-mix(in srgb, var(--_line-color) 16%, transparent);
+
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: linear-gradient(
+    to bottom,
+    #000,
+    rgb(0 0 0 / 55%) 13rem,
+    rgb(0 0 0 / 30%) 28rem,
+    rgb(0 0 0 / 30%) calc(100% - 11rem),
+    rgb(0 0 0 / 65%)
+  );
+}
+
+.spot {
+  --_color-fg: color-mix(in srgb, var(--_line-color) 42%, transparent);
+
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--_spot-size);
+  height: var(--_spot-size);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  background-position:
+    calc(var(--_spot-size) / 2 - var(--_pointer-x, 0px))
+    calc(var(--_spot-size) / 2 - var(--_pointer-y, 0px));
+  mask-image: radial-gradient(circle closest-side, #000, transparent 78%);
+  transition: opacity 350ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spot {
+    transition: none;
+  }
+}

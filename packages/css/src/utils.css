@@ -1,3 +1,4 @@
+@import "background-patterns.css";
 @import "utils/alignment.css";
 @import "utils/border.css";
 @import "utils/gap.css";
@@ -48,77 +49,6 @@
     .ff-display {
         font-family: var(--ff-display);
         letter-spacing: var(--font-letterspacing-0);
-    }
-
-    /*  ------------------------------------------------------------------------
-    /*  Background patterns                                                                     
-    /*  ------------------------------------------------------------------------ */
-    .background-pattern {
-        --_color-fg: var(--color-stroke);
-        --_color-bg: transparent;
-        --_size: 10px 10px;
-
-        --_pattern-lines: repeating-linear-gradient(to right,
-                var(--_color-fg),
-                var(--_color-fg) 1px,
-                var(--_color-bg) 1px,
-                var(--_color-bg));
-        --_pattern-dots: radial-gradient(var(--_color-fg) 1px,
-                var(--_color-bg) 1px);
-        --_pattern-diagonal: repeating-linear-gradient(45deg,
-                var(--_color-fg) 0,
-                var(--_color-fg) 1px,
-                var(--_color-bg) 0,
-                var(--_color-bg) 50%);
-        --_pattern-grid:
-            linear-gradient(var(--_color-fg) 1px, transparent 1px),
-            linear-gradient(to right, var(--_color-fg) 1px, var(--_color-bg) 1px);
-
-        &[data-size="large"] {
-            --_size: 20px 20px;
-        }
-
-        &[data-variant="strong"] {
-            --_color-fg: var(--color-stroke-strong);
-        }
-
-        &[data-variant="danger"] {
-            --_color-fg: hsl(var(--color-status-danger-weak));
-        }
-
-        &[data-variant="success"] {
-            --_color-fg: hsl(var(--color-status-success-weak));
-        }
-
-        &[data-variant="neutral"] {
-            --_color-fg: hsl(var(--color-status-neutral-weak));
-        }
-
-        &[data-variant="info"] {
-            --_color-fg: hsl(var(--color-status-info-weak));
-        }
-
-        &[data-variant="warning"] {
-            --_color-fg: hsl(var(--color-status-warning-weak));
-        }
-
-        background-size: var(--_size);
-
-        &[data-pattern="lines"] {
-            background-image: var(--_pattern-lines);
-        }
-
-        &[data-pattern="dots"] {
-            background-image: var(--_pattern-dots);
-        }
-
-        &[data-pattern="diagonal"] {
-            background-image: var(--_pattern-diagonal);
-        }
-
-        &[data-pattern="grid"] {
-            background-image: var(--_pattern-grid);
-        }
     }
 
     /*  ------------------------------------------------------------------------

@@ -1,0 +1,11 @@
+.size-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--size-4);
+}
+
+.size-gallery m-bg-pattern {
+  min-height: 14rem;
+  padding: var(--size-5);
+  background: var(--color-background);
+}

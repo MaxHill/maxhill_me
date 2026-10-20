@@ -14,11 +14,13 @@ import MListbox from './m-listbox';
 import MOption from './m-option';
 import MPopoverMenu from './m-popover-menu';
 import MEmptyState from './m-empty-state';
+import MBgPattern from './m-bg-pattern';
 
 export function registerAll() {
   MCard.define();
   MCopyButton.define();
   MFitText.define();
+  MBgPattern.define();
 
   MTabList.define();
   MTab.define();
