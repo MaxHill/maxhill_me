@@ -14,10 +14,10 @@ let test_subscribe_and_publish_delivers_to_other_client () =
   let hub = Sync.Event_hub.init () in
   let sub =
     assert_ok
-      (Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"golf"
+      (Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"golf"
          ~client_id:"phone")
   in
-  Sync.Event_hub.publish hub ~user_id:"u1" ~db_name:"golf"
+  Sync.Event_hub.publish hub ~tenant_id:"u1" ~db_name:"golf"
     ~exclude_client_id:"laptop" Sync.Event_hub.Upstream_change;
   await_upstream sub
 
@@ -26,19 +26,19 @@ let test_publish_excludes_writer_client_id () =
   let hub = Sync.Event_hub.init () in
   let phone =
     assert_ok
-      (Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"golf"
+      (Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"golf"
          ~client_id:"phone")
   in
   let laptop =
     assert_ok
-      (Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"golf"
+      (Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"golf"
          ~client_id:"laptop")
   in
-  Sync.Event_hub.publish hub ~user_id:"u1" ~db_name:"golf"
+  Sync.Event_hub.publish hub ~tenant_id:"u1" ~db_name:"golf"
     ~exclude_client_id:"laptop" Sync.Event_hub.Upstream_change;
   await_upstream phone;
   (* laptop must not receive — publish a second event without excluding it *)
-  Sync.Event_hub.publish hub ~user_id:"u1" ~db_name:"golf"
+  Sync.Event_hub.publish hub ~tenant_id:"u1" ~db_name:"golf"
     ~exclude_client_id:"phone" Sync.Event_hub.Upstream_change;
   await_upstream laptop
 
@@ -47,17 +47,26 @@ let test_tenant_isolation () =
   let hub = Sync.Event_hub.init () in
   let golf =
     assert_ok
-      (Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"golf"
+      (Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"golf"
+         ~client_id:"c1")
+  in
+  let other_tenant_same_db =
+    assert_ok
+      (Sync.Event_hub.subscribe hub ~tenant_id:"u2" ~db_name:"golf"
          ~client_id:"c1")
   in
   let _notes =
     assert_ok
-      (Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"notes"
+      (Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"notes"
          ~client_id:"c1")
   in
-  Sync.Event_hub.publish hub ~user_id:"u1" ~db_name:"golf" ~exclude_client_id:""
+  Sync.Event_hub.publish hub ~tenant_id:"u1" ~db_name:"golf" ~exclude_client_id:""
     Sync.Event_hub.Upstream_change;
-  await_upstream golf
+  await_upstream golf;
+  Sync.Event_hub.unsubscribe hub other_tenant_same_db;
+  match Sync.Event_hub.await other_tenant_same_db with
+  | None -> ()
+  | Some _ -> failwith "same db name must not cross tenant subscriptions"
 
 let test_capacity_rejects_eleventh () =
   run_eio @@ fun () ->
@@ -66,11 +75,11 @@ let test_capacity_rejects_eleventh () =
     let client_id = Printf.sprintf "c%d" i in
     ignore
       (assert_ok
-         (Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"golf"
+         (Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"golf"
             ~client_id))
   done;
   match
-    Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"golf"
+    Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"golf"
       ~client_id:"overflow"
   with
   | Error `At_capacity -> ()
@@ -81,7 +90,7 @@ let test_unsubscribe_stops_delivery_and_frees_slot () =
   let hub = Sync.Event_hub.init () in
   let first =
     assert_ok
-      (Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"golf"
+      (Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"golf"
          ~client_id:"c1")
   in
   Sync.Event_hub.unsubscribe hub first;
@@ -89,11 +98,11 @@ let test_unsubscribe_stops_delivery_and_frees_slot () =
     let client_id = Printf.sprintf "n%d" i in
     ignore
       (assert_ok
-         (Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"golf"
+         (Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"golf"
             ~client_id))
   done;
   match
-    Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"golf" ~client_id:"full"
+    Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"golf" ~client_id:"full"
   with
   | Error `At_capacity -> ()
   | Ok _ -> failwith "expected At_capacity after refill"
@@ -103,7 +112,7 @@ let test_unsubscribe_unblocks_await () =
   let hub = Sync.Event_hub.init () in
   let sub =
     assert_ok
-      (Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"golf"
+      (Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"golf"
          ~client_id:"c1")
   in
   let result, resolve = Eio.Promise.create () in
@@ -123,19 +132,19 @@ let test_resubscribe_same_client_replaces_and_frees_capacity () =
   (* Fill almost to capacity with distinct clients, plus one "phone". *)
   let first_phone =
     assert_ok
-      (Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"golf"
+      (Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"golf"
          ~client_id:"phone")
   in
   for i = 2 to Sync.Event_hub.max_subscribers_per_tenant do
     let client_id = Printf.sprintf "c%d" i in
     ignore
       (assert_ok
-         (Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"golf"
+         (Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"golf"
             ~client_id))
   done;
   (* At capacity — new client rejected *)
   (match
-     Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"golf"
+     Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"golf"
        ~client_id:"other"
    with
   | Error `At_capacity -> ()
@@ -143,14 +152,14 @@ let test_resubscribe_same_client_replaces_and_frees_capacity () =
   (* Same client_id reconnects: replaces old phone slot, does not reject *)
   let second_phone =
     assert_ok
-      (Sync.Event_hub.subscribe hub ~user_id:"u1" ~db_name:"golf"
+      (Sync.Event_hub.subscribe hub ~tenant_id:"u1" ~db_name:"golf"
          ~client_id:"phone")
   in
   (* Old subscription must unblock *)
   (match Sync.Event_hub.await first_phone with
   | None -> ()
   | Some _ -> failwith "expected old phone subscription closed");
-  Sync.Event_hub.publish hub ~user_id:"u1" ~db_name:"golf"
+  Sync.Event_hub.publish hub ~tenant_id:"u1" ~db_name:"golf"
     ~exclude_client_id:"" Sync.Event_hub.Upstream_change;
   await_upstream second_phone
 

@@ -22,7 +22,7 @@ let init ~sw ~env (frng : FRNG.t) (db_conn : connection) :
               Printf.sprintf "%s-%d" db_name i;
             ])
   in
-  let tenant_key = db_name ^ ":sim-user" in
+  let tenant_id = "sim-user" in
   let clock = Eio.Stdenv.clock env in
 
   Ok
@@ -33,7 +33,8 @@ let init ~sw ~env (frng : FRNG.t) (db_conn : connection) :
       db_conn;
       clock;
       action_timeout = 5.0;
-      tenant_key;
+      tenant_id;
+      db_name;
       last_count_operations = None;
       last_max_server_version = None;
     }

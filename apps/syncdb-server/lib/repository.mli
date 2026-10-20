@@ -3,6 +3,7 @@ type pool = (connection, Caqti_error.t) Caqti_eio.Pool.t
 
 type db_crdt_operation = {
   server_version : int64;
+  tenant_id : string;
   db_name : string;
   client_id : string;
   version : int64;
@@ -22,7 +23,7 @@ type error =
 val error_to_string : error -> string
 
 val init_schema : connection -> (unit, error) result
-val count_operations : connection -> db_name:string -> (int, error) result
+val count_operations : connection -> tenant_id:string -> db_name:string -> (int, error) result
 val insert_crdt_operation : connection -> db_crdt_operation -> (int64, error) result
 
 val insert_crdt_operations
@@ -32,16 +33,18 @@ val insert_crdt_operations
 
 val get_operations_since
   :  connection
+  -> tenant_id:string
   -> db_name:string
   -> server_version:int64
   -> limit:int
   -> exclude_client_id:string
   -> (db_crdt_operation list, error) result
 
-val get_max_server_version : connection -> db_name:string -> (int64, error) result
+val get_max_server_version : connection -> tenant_id:string -> db_name:string -> (int64, error) result
 
 val has_operation_dot
   :  connection
+  -> tenant_id:string
   -> db_name:string
   -> client_id:string
   -> version:int64
@@ -54,4 +57,4 @@ val with_transaction
   -> ('a, 'e) result
 
 val init_schema_with_pool : pool -> (unit, error) result
-val count_operations_with_pool : pool -> db_name:string -> (int, error) result
+val count_operations_with_pool : pool -> tenant_id:string -> db_name:string -> (int, error) result

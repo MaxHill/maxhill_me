@@ -33,7 +33,7 @@ let assert_set_roundtrip_and_fetch_for_second_client () =
       "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
   let response_1 =
-    match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" request_1 with
+    match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1" ~db_name:"main" request_1 with
     | Error err -> fail_with_sync_error "process request 1 failed: " err
     | Ok response -> response
   in
@@ -46,7 +46,7 @@ let assert_set_roundtrip_and_fetch_for_second_client () =
       "{\"clientId\":\"client-2\",\"dbName\":\"main\",\"operations\":[],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
   let response_2 =
-    match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" request_2 with
+    match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1" ~db_name:"main" request_2 with
     | Error err -> fail_with_sync_error "process request 2 failed: " err
     | Ok response -> response
   in
@@ -72,7 +72,7 @@ let assert_set_row_roundtrip_and_fetch_for_second_client () =
       "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
   let _response_1 =
-    match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" request_1 with
+    match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1" ~db_name:"main" request_1 with
     | Error err -> fail_with_sync_error "process setRow request failed: " err
     | Ok response -> response
   in
@@ -81,7 +81,7 @@ let assert_set_row_roundtrip_and_fetch_for_second_client () =
       "{\"clientId\":\"client-2\",\"dbName\":\"main\",\"operations\":[],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
   let response_2 =
-    match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" request_2 with
+    match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1" ~db_name:"main" request_2 with
     | Error err -> fail_with_sync_error "process fetch request failed: " err
     | Ok response -> response
   in
@@ -101,14 +101,14 @@ let assert_remove_roundtrip_and_fetch_for_second_client () =
     decode_with_valid_hash
       "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
-  (match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" seed_request with
+  (match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1" ~db_name:"main" seed_request with
   | Error err -> fail_with_sync_error "seed request failed: " err
   | Ok _ -> ());
   let remove_request =
     decode_with_valid_hash
       "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"removeRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"versionVector\":{\"client-1\":1},\"dot\":{\"clientId\":\"client-1\",\"version\":2}}],\"lastSeenServerVersion\":1,\"requestHash\":\"ignored\"}"
   in
-  (match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" remove_request with
+  (match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1" ~db_name:"main" remove_request with
   | Error err -> fail_with_sync_error "remove request failed: " err
   | Ok _ -> ());
   let fetch_request =
@@ -116,7 +116,7 @@ let assert_remove_roundtrip_and_fetch_for_second_client () =
       "{\"clientId\":\"client-2\",\"dbName\":\"main\",\"operations\":[],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
   let response =
-    match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" fetch_request with
+    match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1" ~db_name:"main" fetch_request with
     | Error err -> fail_with_sync_error "fetch request failed: " err
     | Ok response -> response
   in
@@ -131,7 +131,7 @@ let assert_accept_non_contiguous_versions () =
     decode_with_valid_hash
       "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"A\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}},{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r2\",\"fields\":{\"title\":\"B\"},\"dot\":{\"clientId\":\"client-1\",\"version\":3}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
-  match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" request with
+  match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1" ~db_name:"main" request with
   | Error err -> fail_with_sync_error "non-contiguous request failed: " err
   | Ok _ -> ()
 
@@ -144,7 +144,7 @@ let assert_reject_versions_that_go_backwards () =
     decode_with_valid_hash
       "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"A\"},\"dot\":{\"clientId\":\"client-1\",\"version\":3}},{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r2\",\"fields\":{\"title\":\"B\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
-  match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" request with
+  match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1" ~db_name:"main" request with
   | Error (Sync.Sync_engine.Non_monotonic_versions "client-1") -> ()
   | Error err -> fail_with_sync_error "expected non-monotonic rejection, got: " err
   | Ok _ -> failwith "expected non-monotonic rejection"
@@ -158,7 +158,7 @@ let assert_reject_remove_context_unseen_dot () =
     decode_with_valid_hash
       "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"removeRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"versionVector\":{\"client-1\":999},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
-  match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" request with
+  match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1" ~db_name:"main" request with
   | Ok _ -> failwith "expected unseen-dot rejection"
   | Error _ -> ()
 
@@ -173,7 +173,7 @@ let assert_tenant_isolation_between_streams () =
   in
   (match
      Sync.Sync_engine.process_sync_request_with_connection conn
-       ~db_name:"main:user-1" request_1
+       ~tenant_id:"user-1" ~db_name:"main" request_1
    with
   | Error err -> fail_with_sync_error "process tenant-1 request failed: " err
   | Ok _ -> ());
@@ -184,7 +184,7 @@ let assert_tenant_isolation_between_streams () =
   let response_2 =
     match
       Sync.Sync_engine.process_sync_request_with_connection conn
-        ~db_name:"main:user-2" request_2
+        ~tenant_id:"user-2" ~db_name:"main" request_2
     with
     | Error err -> fail_with_sync_error "process tenant-2 request failed: " err
     | Ok response -> response
@@ -201,7 +201,7 @@ let assert_reject_invalid_request_hash () =
     decode_or_fail
       "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[],\"lastSeenServerVersion\":0,\"requestHash\":\"wrong\"}"
   in
-  match Sync.Sync_engine.process_sync_request_with_connection conn ~db_name:"main:user-1" request with
+  match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1" ~db_name:"main" request with
   | Error Sync.Sync_engine.Request_integrity_failed -> ()
   | Error err ->
       fail_with_sync_error "expected request integrity failure, got: " err

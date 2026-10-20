@@ -29,7 +29,7 @@ let ensure_versions_monotonic operations =
        (Ok M.empty)
   |> Result.map ignore
 
-let ensure_remove_context_known connection ~db_name operations =
+let ensure_remove_context_known connection ~tenant_id ~db_name operations =
   let known_in_request = incoming_dot_set operations in
   let rec validate_context = function
     | [] -> Ok ()
@@ -38,7 +38,7 @@ let ensure_remove_context_known connection ~db_name operations =
         if List.mem key known_in_request then validate_context rest
         else
           match
-            Repository.has_operation_dot connection ~db_name ~client_id ~version
+            Repository.has_operation_dot connection ~tenant_id ~db_name ~client_id ~version
           with
           | Error err -> Error (Storage_error (Repository.error_to_string err))
           | Ok true -> validate_context rest

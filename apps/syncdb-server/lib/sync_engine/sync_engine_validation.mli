@@ -15,6 +15,7 @@ val ensure_versions_monotonic : crdt_operation list -> (unit, sync_error) result
 (** Reject tombstones that reference dots we cannot prove are known. *)
 val ensure_remove_context_known
   :  Repository.connection
+  -> tenant_id:string
   -> db_name:string
   -> crdt_operation list
   -> (unit, sync_error) result

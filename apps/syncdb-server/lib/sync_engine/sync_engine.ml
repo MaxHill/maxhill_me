@@ -27,7 +27,7 @@ let build_sync_response request ~inserted_versions ~unseen_operations
   in
   { response with response_hash = hash_sync_response response }
 
-let process_sync_request_with_connection connection ~db_name request =
+let process_sync_request_with_connection connection ~tenant_id ~db_name request =
   let open Sync_engine_validation in
   let* () = ensure_request_hash_valid request in
   Repository.with_transaction connection
@@ -35,11 +35,11 @@ let process_sync_request_with_connection connection ~db_name request =
     (fun conn ->
       let* () = ensure_versions_monotonic request.operations in
       let* () =
-        ensure_remove_context_known conn ~db_name request.operations
+        ensure_remove_context_known conn ~tenant_id ~db_name request.operations
       in
 
       let* db_operations =
-        Sync_engine_persistence.db_operations_of_crdt_operations ~db_name
+        Sync_engine_persistence.db_operations_of_crdt_operations ~tenant_id ~db_name
           request.operations
       in
       let* inserted_versions =
@@ -49,7 +49,7 @@ let process_sync_request_with_connection connection ~db_name request =
       in
 
       let* max_server_version =
-        Repository.get_max_server_version conn ~db_name
+        Repository.get_max_server_version conn ~tenant_id ~db_name
         |> Result.map_error (fun err ->
             Storage_error (Repository.error_to_string err))
       in
@@ -59,7 +59,7 @@ let process_sync_request_with_connection connection ~db_name request =
       in
 
       let* unseen_rows =
-        Repository.get_operations_since conn ~db_name
+        Repository.get_operations_since conn ~tenant_id ~db_name
           ~server_version:request.last_seen_server_version ~limit:1000
           ~exclude_client_id:request.client_id
         |> Result.map_error (fun err ->

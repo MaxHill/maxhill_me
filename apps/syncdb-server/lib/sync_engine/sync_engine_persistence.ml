@@ -1,11 +1,12 @@
 open Sync_engine_core
 
-let db_operation_of_crdt_operation ~db_name operation =
+let db_operation_of_crdt_operation ~tenant_id ~db_name operation =
   match operation.payload with
   | Set_row { fields } ->
       Ok
         {
           Repository.server_version = 0L;
+          tenant_id;
           db_name;
           client_id = operation.dot.client_id;
           version = operation.dot.version;
@@ -20,6 +21,7 @@ let db_operation_of_crdt_operation ~db_name operation =
       Ok
         {
           Repository.server_version = 0L;
+          tenant_id;
           db_name;
           client_id = operation.dot.client_id;
           version = operation.dot.version;
@@ -31,10 +33,10 @@ let db_operation_of_crdt_operation ~db_name operation =
           version_vector = Some (canonical_version_vector_json version_vector);
         }
 
-let db_operations_of_crdt_operations ~db_name operations =
+let db_operations_of_crdt_operations ~tenant_id ~db_name operations =
   List.fold_right
     (fun operation acc ->
-      match (db_operation_of_crdt_operation ~db_name operation, acc) with
+      match (db_operation_of_crdt_operation ~tenant_id ~db_name operation, acc) with
       | Error msg, _ -> Error (Decode_error msg)
       | Ok _, (Error _ as err) -> err
       | Ok db_operation, Ok db_operations -> Ok (db_operation :: db_operations))

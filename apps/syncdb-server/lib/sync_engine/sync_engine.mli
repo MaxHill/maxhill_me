@@ -42,4 +42,4 @@ val hash_sync_request : sync_request -> string
 val hash_sync_response : sync_response -> string
 
 val process_sync_request_with_connection :
-  Repository.connection -> db_name:string -> sync_request -> (sync_response, sync_error) result
+  Repository.connection -> tenant_id:string -> db_name:string -> sync_request -> (sync_response, sync_error) result

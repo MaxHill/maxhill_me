@@ -138,7 +138,7 @@ let process_request_and_maybe_send_response ~(client : Client.t) ~(world : world
   let response =
     match
       Sync.Sync_engine.process_sync_request_with_connection world.db_conn
-        ~db_name:world.tenant_key request
+        ~tenant_id:world.tenant_id ~db_name:world.db_name request
     with
     | Error err -> failwith (Sync.Sync_engine.sync_error_to_string err)
     | Ok response -> response
@@ -160,7 +160,7 @@ let process_corrupted_request ~(world : world)
   let* corrupted_request = corrupt_request_field ~world request in
   match
     Sync.Sync_engine.process_sync_request_with_connection world.db_conn
-      ~db_name:world.tenant_key corrupted_request
+      ~tenant_id:world.tenant_id ~db_name:world.db_name corrupted_request
   with
   | Error Sync.Sync_engine.Request_integrity_failed -> Ok ()
   | Error err -> failwith (Sync.Sync_engine.sync_error_to_string err)

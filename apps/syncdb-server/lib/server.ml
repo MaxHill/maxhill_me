@@ -117,7 +117,7 @@ let handle_subscribe (context : context) reqd request uri db_name =
                 }
           | Some client_id -> (
               match
-                Event_hub.subscribe context.event_hub ~user_id:user.id ~db_name
+                Event_hub.subscribe context.event_hub ~tenant_id:user.id ~db_name
                   ~client_id
               with
               | Error `At_capacity ->
@@ -207,13 +207,13 @@ let request_handler (context : context) _client_addr reqd =
                   Sync_engine.decode_sync_request body
                   |> Result.map_error (fun msg -> `Decode msg)
                 in
-                let tenant_key = sync_request.db_name ^ ":" ^ user.id in
                 let* response_or_error =
                   Caqti_eio.Pool.use
                     (fun conn ->
                       Ok
                         (Sync_engine.process_sync_request_with_connection conn
-                           ~db_name:tenant_key sync_request))
+                           ~tenant_id:user.id ~db_name:sync_request.db_name
+                           sync_request))
                     context.db_pool
                   |> Result.map_error (fun err -> `Db err)
                 in
@@ -240,7 +240,7 @@ let request_handler (context : context) _client_addr reqd =
                     { status = status_of_sync_error err; body = msg }
               | Ok (sync_request, response) ->
                   if sync_request.operations <> [] then
-                    Event_hub.publish context.event_hub ~user_id:user.id
+                    Event_hub.publish context.event_hub ~tenant_id:user.id
                       ~db_name:sync_request.db_name
                       ~exclude_client_id:sync_request.client_id
                       Event_hub.Upstream_change;

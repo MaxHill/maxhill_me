@@ -11,7 +11,7 @@ val init : unit -> t
 
 val subscribe
   :  t
-  -> user_id:string
+  -> tenant_id:string
   -> db_name:string
   -> client_id:string
   -> (subscription, [ `At_capacity ]) result
@@ -23,7 +23,7 @@ val await : subscription -> event option
 
 val publish
   :  t
-  -> user_id:string
+  -> tenant_id:string
   -> db_name:string
   -> exclude_client_id:string
   -> event
