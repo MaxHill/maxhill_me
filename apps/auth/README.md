@@ -93,9 +93,10 @@ vps/auth/auth.prod.enc.env`, commit, redeploy. Full flow in
 ## Database setup
 
 The service opens the SQLite file named by `DB_PATH`. On startup,
-`openDatabase()` creates any missing tables and indexes. This also runs
-for the `sweep` command. Existing databases keep their OpenAuth `kv`
-rows; relational tables are added alongside them.
+`openDatabase()` creates missing tables and indexes and applies schema
+migrations. This also runs for the `sweep` command. Schema version 1
+removes the legacy `tenants.personal_owner_user_id` column while preserving
+tenants and memberships. Existing databases keep their OpenAuth `kv` rows.
 
 Local development can use `:memory:` to reset all state on restart, or
 a file path to preserve state. Production stores the file under
@@ -108,7 +109,6 @@ tables store identity and tenant ownership:
 
 ```mermaid
 erDiagram
-  users ||--o| tenants : "personal owner"
   users ||--o{ memberships : "belongs to"
   tenants ||--o{ memberships : "has members"
 
@@ -120,7 +120,6 @@ erDiagram
   tenants {
     text id PK
     text name
-    text personal_owner_user_id UK
     integer created_at
   }
   memberships {
@@ -138,11 +137,10 @@ role. The owner role identifies the user's authority over their
 personal tenant. These tables do not yet expose tenant APIs or enforce
 membership checks on sync requests; those are later work.
 
-`users.email` is unique. `tenants.personal_owner_user_id` is nullable
-and unique: it links a personal tenant to its owner and prevents more
-than one personal tenant per user. Shared tenants can leave it null.
-Memberships have a composite key `(tenant_id, user_id)` and foreign
-keys to users and tenants.
+`users.email` is unique. Memberships have a composite key
+`(tenant_id, user_id)` and foreign keys to users and tenants. Users can
+own multiple tenants. A personal tenant and its owner membership are
+created when the user is first created.
 
 ## User IDs
 

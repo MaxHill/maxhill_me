@@ -120,32 +120,29 @@ async function main() {
   const app = buildIssuer(config, db);
   const server = Bun.serve({
     port: PORT,
-    fetch: async (request) => {
-      const url = new URL(request.url);
-      const requestOrigin = request.headers.get("origin");
-
-      if (url.pathname === "/token" && request.method === "OPTIONS") {
-        const headers = tokenCorsHeaders(requestOrigin);
-        if (!headers.has("Access-Control-Allow-Origin")) {
-          return new Response(null, { status: 403, headers });
-        }
-        return new Response(null, { status: 204, headers });
-      }
-
-      const response = await app.fetch(request);
-      if (url.pathname !== "/token") {
-        return response;
-      }
-
-      const headers = new Headers(response.headers);
-      const cors = tokenCorsHeaders(requestOrigin);
-      cors.forEach((value, key) => headers.set(key, value));
-      return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers,
-      });
+    routes: {
+      "/token": {
+        OPTIONS: (request) => {
+          const headers = tokenCorsHeaders(request.headers.get("origin"));
+          if (!headers.has("Access-Control-Allow-Origin")) {
+            return new Response(null, { status: 403, headers });
+          }
+          return new Response(null, { status: 204, headers });
+        },
+        POST: async (request) => {
+          const response = await app.fetch(request);
+          const headers = new Headers(response.headers);
+          const cors = tokenCorsHeaders(request.headers.get("origin"));
+          cors.forEach((value, key) => headers.set(key, value));
+          return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers,
+          });
+        },
+      },
     },
+    fetch: (request) => app.fetch(request),
   });
   console.log(`auth listening on http://localhost:${server.port} (issuer=${config.issuer})`);
 

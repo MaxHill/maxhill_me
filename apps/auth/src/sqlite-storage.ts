@@ -29,10 +29,9 @@ export function openDatabase(dbPath: string): Database {
     );
 
     CREATE TABLE IF NOT EXISTS tenants (
-      id                    TEXT PRIMARY KEY,
-      name                  TEXT NOT NULL,
-      personal_owner_user_id TEXT UNIQUE REFERENCES users(id),
-      created_at            INTEGER NOT NULL
+      id         TEXT PRIMARY KEY,
+      name       TEXT NOT NULL,
+      created_at INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS memberships (
@@ -45,7 +44,48 @@ export function openDatabase(dbPath: string): Database {
 
     CREATE INDEX IF NOT EXISTS memberships_by_user ON memberships(user_id);
   `)
+  migrateDatabase(db)
   return db
+}
+
+/** Apply relational schema changes that CREATE TABLE IF NOT EXISTS cannot make. */
+export function migrateDatabase(db: Database): void {
+  const tenantColumns = db
+    .query<{ name: string }, []>("PRAGMA table_info(tenants)")
+    .all()
+    .map(({ name }) => name)
+
+  if (!tenantColumns.includes("personal_owner_user_id")) {
+    db.exec("PRAGMA user_version = 1")
+    return
+  }
+
+  db.exec("PRAGMA foreign_keys = OFF")
+  try {
+    db.transaction(() => {
+      db.exec(`
+        CREATE TABLE tenants_migration (
+          id         TEXT PRIMARY KEY,
+          name       TEXT NOT NULL,
+          created_at INTEGER NOT NULL
+        );
+
+        INSERT INTO tenants_migration (id, name, created_at)
+          SELECT id, name, created_at FROM tenants;
+
+        DROP TABLE tenants;
+        ALTER TABLE tenants_migration RENAME TO tenants;
+        PRAGMA user_version = 1;
+      `)
+    })()
+  } finally {
+    db.exec("PRAGMA foreign_keys = ON")
+  }
+
+  const foreignKeyErrors = db.query("PRAGMA foreign_key_check").all()
+  if (foreignKeyErrors.length > 0) {
+    throw new Error(`Auth database migration left ${foreignKeyErrors.length} foreign key error(s)`)
+  }
 }
 
 export function SqliteStorage(db: Database): StorageAdapter {
