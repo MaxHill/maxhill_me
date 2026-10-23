@@ -54,7 +54,7 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
     return this.tableSubscriptions.subscribe(this.tableName, handler, source);
   }
 
-  async setRow(rowKey: ValidKey, value: any): Promise<void> {
+  async setRow(rowKey: ValidKey, value: Record<string, any>): Promise<void> {
     if (value._key) {
       assert(
         value._key === rowKey,
@@ -97,6 +97,14 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
       field !== "_key",
       `Cannot set _key field directly. ` +
         `The _key field is reserved and managed automatically.`,
+    );
+    assert(
+      value !== null &&
+        typeof value === "object" &&
+        !Array.isArray(value) &&
+        (Object.getPrototypeOf(value) === Object.prototype ||
+          Object.getPrototypeOf(value) === null),
+      "Row value must be Record<string, any>",
     );
 
     const tx = this.lifecycle.transaction(

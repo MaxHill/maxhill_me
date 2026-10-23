@@ -1,4 +1,5 @@
 import { CRDTDatabase, newDatabase } from "@maxhill/syncdb";
+import { promisifyIDBRequest } from "@maxhill/stdx";
 import { authClient } from "./features/auth/auth-client";
 import { UserSettingsService } from "./features/user-settings/user-settings-service";
 import { reconcileDatabaseOwnership } from "./db-ownership";
@@ -15,6 +16,7 @@ const SYNC_URL = import.meta.env.VITE_SYNC_URL || "http://localhost:3001/sync";
 const SYNC_INTERVAL_MS = 120_000;
 /** Trailing debounce after local writes before pushing. */
 const LOCAL_SYNC_DEBOUNCE_MS = 1_000;
+const DB_NAME = "golf";
 
 export type DBInterface = CRDTDatabase<{
   shot_types: {};
@@ -28,8 +30,6 @@ export type DBInterface = CRDTDatabase<{
     byRoundAndHole: string[];
   };
 }>;
-
-const DB_NAME = "golf";
 
 // Store the DB instance and promise on window to ensure it's truly a singleton
 declare global {
@@ -139,9 +139,8 @@ function buildAndOpenDatabase(): Promise<DBInterface> {
 }
 
 async function deleteLocalDatabase(name: string): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const request = indexedDB.deleteDatabase(name);
-
+  const request = indexedDB.deleteDatabase(name);
+  const blocked = new Promise<never>((_, reject) => {
     request.onblocked = () => {
       reject(
         new Error(
@@ -149,13 +148,9 @@ async function deleteLocalDatabase(name: string): Promise<void> {
         ),
       );
     };
-    request.onerror = () => {
-      reject(request.error ?? new Error(`Failed to reset local database '${name}'`));
-    };
-    request.onsuccess = () => {
-      resolve();
-    };
   });
+
+  await Promise.race([promisifyIDBRequest(request), blocked]);
 }
 
 function resetDbSingletonOnAuthChange(): void {
@@ -180,6 +175,9 @@ function resetDbSingletonOnAuthChange(): void {
   });
 }
 
+//  ------------------------------------------------------------------
+//  Sync behavior
+//  ------------------------------------------------------------------
 function startSyncStrategies(db: DBInterface): void {
   stopSyncStrategies();
 

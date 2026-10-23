@@ -9,6 +9,7 @@
 
 import { createClient } from "@openauthjs/openauth/client";
 import { createSubjects } from "@openauthjs/openauth/subject";
+import { promisifyIDBRequest, promisifyIDBTransaction } from "@maxhill/stdx";
 import type { Challenge, Client as OpenAuthClient, Tokens } from "@openauthjs/openauth/client";
 
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:3002";
@@ -18,7 +19,7 @@ const CHALLENGE_KEY = "auth_challenge";
 
 const DB_NAME = "golf-auth";
 const DB_VERSION = 2;
-const STORE_NAME = "tokens";
+const TOKENS_STORE_NAME = "tokens";
 
 const subjects = createSubjects({
   user: {
@@ -221,51 +222,6 @@ export class AuthClient {
     return () => this.listeners.delete(cb);
   }
 
-  // --- IndexedDB helpers ---
-
-  private openDb(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, DB_VERSION);
-      req.onupgradeneeded = () => {
-        if (!req.result.objectStoreNames.contains(STORE_NAME)) {
-          req.result.createObjectStore(STORE_NAME);
-        }
-      };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  private async dbGet<T>(key: string): Promise<T | undefined> {
-    const db = await this.openDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, "readonly");
-      const req = tx.objectStore(STORE_NAME).get(key);
-      req.onsuccess = () => resolve(req.result as T | undefined);
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  private async dbSet(key: string, value: unknown): Promise<void> {
-    const db = await this.openDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      tx.objectStore(STORE_NAME).put(value, key);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  }
-
-  private async dbClear(): Promise<void> {
-    const db = await this.openDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      tx.objectStore(STORE_NAME).clear();
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  }
-
   private notifyListeners(authenticated: boolean) {
     for (const cb of this.listeners) {
       try {
@@ -275,10 +231,46 @@ export class AuthClient {
       }
     }
   }
+
+  // --- IndexedDB helpers ---
+  private async openDb(): Promise<IDBDatabase> {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(TOKENS_STORE_NAME)) {
+        req.result.createObjectStore(TOKENS_STORE_NAME);
+      }
+    };
+    return promisifyIDBRequest(req);
+  }
+
+  private async dbGet<T>(key: string): Promise<T | undefined> {
+    const db = await this.openDb();
+    const req = db.transaction(TOKENS_STORE_NAME, "readonly").objectStore(TOKENS_STORE_NAME).get(
+      key,
+    );
+    return (await promisifyIDBRequest(req)) as T | undefined;
+  }
+
+  private async dbSet(key: string, value: unknown): Promise<void> {
+    const db = await this.openDb();
+    const tx = db.transaction(TOKENS_STORE_NAME, "readwrite");
+    tx.objectStore(TOKENS_STORE_NAME).put(value, key);
+    await promisifyIDBTransaction(tx);
+  }
+
+  private async dbClear(): Promise<void> {
+    const db = await this.openDb();
+    const tx = db.transaction(TOKENS_STORE_NAME, "readwrite");
+    tx.objectStore(TOKENS_STORE_NAME).clear();
+    await promisifyIDBTransaction(tx);
+  }
 }
 
 export const authClient = new AuthClient();
 
+//  ------------------------------------------------------------------
+//  Helpers
+//  ------------------------------------------------------------------
 function getCallbackParams(locationLike: Location): URLSearchParams {
   const query = new URLSearchParams(locationLike.search);
   if (query.has("code") || query.has("error")) {
