@@ -57,7 +57,7 @@ describe("OperationLog", () => {
     await lifecycle.commit(saveTx);
 
     const syncTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
-    await log.saveOperationAsSynced(syncTx, op.dot);
+    await log.saveOperationAsSynced(syncTx, op.dot, 4);
     await lifecycle.commit(syncTx);
 
     const getTx = lifecycle.transaction(OPERATIONS_STORE, "readonly");
@@ -65,6 +65,36 @@ describe("OperationLog", () => {
     await lifecycle.commit(getTx);
 
     expect(ops).toHaveLength(0);
+  });
+
+  it("deletes only accepted operations covered by a row checkpoint", async () => {
+    const accepted: CRDTOperation = {
+      type: "setRow", tableName: "users", rowKey: "u1", fields: { name: "old" },
+      dot: { clientId: "c1", version: 1 },
+    };
+    const pending: CRDTOperation = {
+      type: "setRow", tableName: "users", rowKey: "u1", fields: { name: "pending" },
+      dot: { clientId: "c1", version: 2 },
+    };
+    const otherRow: CRDTOperation = {
+      type: "setRow", tableName: "users", rowKey: "u2", fields: { name: "other" },
+      dot: { clientId: "c1", version: 3 },
+    };
+    const writeTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
+    await log.saveOperation(writeTx, accepted);
+    await log.saveOperation(writeTx, pending);
+    await log.saveOperation(writeTx, otherRow);
+    await log.saveOperationAsSynced(writeTx, accepted.dot, 3);
+    await log.saveOperationAsSynced(writeTx, otherRow.dot, 3);
+    await lifecycle.commit(writeTx);
+
+    const cleanupTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
+    await log.deleteCoveredAcceptedOperations(cleanupTx, "users", "u1", 4);
+    await lifecycle.commit(cleanupTx);
+    const allTx = lifecycle.transaction(OPERATIONS_STORE, "readonly");
+    const remaining = await log.getAllOperations(allTx);
+    await lifecycle.commit(allTx);
+    expect(remaining.map((op) => op.dot.version).sort()).toEqual([2, 3]);
   });
 
   it("batch saves operations and counts unsynced", async () => {

@@ -125,6 +125,16 @@ let get_operations_since_query =
   (Caqti_type.(t5 string string int64 string int) ->* db_row_type)
     "SELECT server_version, tenant_id, db_name, client_id, version, type, table_name, row_key, field_key, json_value, version_vector FROM crdt_operations WHERE tenant_id = ? AND db_name = ? AND server_version > ? AND client_id != ? ORDER BY server_version ASC LIMIT ?"
 
+let get_row_prefix_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.(t5 string string string string int64) ->* db_row_type)
+    "SELECT server_version, tenant_id, db_name, client_id, version, type, table_name, row_key, field_key, json_value, version_vector FROM crdt_operations WHERE tenant_id = ? AND db_name = ? AND table_name = ? AND row_key = ? AND server_version < ? ORDER BY server_version ASC"
+
+let delete_row_prefix_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.(t5 string string string string int64) ->. Caqti_type.unit)
+    "DELETE FROM crdt_operations WHERE tenant_id = ? AND db_name = ? AND table_name = ? AND row_key = ? AND server_version < ?"
+
 let find_by_dot_query =
   let open Caqti_request.Infix in
   (Caqti_type.(t4 string string string int64) ->? db_row_type)
@@ -358,6 +368,16 @@ let get_operations_since (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name 
   | Ok rows -> Ok (List.map of_row rows)
   | Error err -> Error (Database (Caqti_error.show err))
 
+let get_row_prefix (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~table_name ~row_key ~before_server_version =
+  match Db.collect_list get_row_prefix_query (tenant_id, db_name, table_name, row_key, before_server_version) with
+  | Ok rows -> Ok (List.map of_row rows)
+  | Error err -> Error (Database (Caqti_error.show err))
+
+let delete_row_prefix (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~table_name ~row_key ~before_server_version =
+  match Db.exec delete_row_prefix_query (tenant_id, db_name, table_name, row_key, before_server_version) with
+  | Ok () -> Ok ()
+  | Error err -> Error (Database (Caqti_error.show err))
+
 let get_max_server_version (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name =
   match Db.find get_max_server_version_query (tenant_id, db_name) with
   | Ok version -> Ok version
@@ -371,23 +391,31 @@ let has_operation_dot (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~cl
 
 let with_transaction (module Db : Caqti_eio.CONNECTION) ~map_tx_error f =
   let conn = (module Db : Caqti_eio.CONNECTION) in
-  Db.with_transaction (fun () ->
-      try
-        match f conn with
-        | Ok value -> Ok (Ok value)
-        | Error err -> Ok (Error err)
-      with
-      | exn ->
-          Ok
-            (Error
-               (map_tx_error
-                  (Database
-                     ("transaction callback raised: "
-                    ^ Printexc.to_string exn)))))
-  |> function
-  | Error err -> Error (map_tx_error (Database (Caqti_error.show err)))
-  | Ok (Error err) -> Error err
-  | Ok (Ok value) -> Ok value
+  let business_error = ref None in
+  try
+    match
+      Db.with_transaction (fun () ->
+          match f conn with
+          | Ok value -> Ok value
+          | Error err ->
+              business_error := Some err;
+              raise Exit)
+    with
+    | Error err -> (
+        match !business_error with
+        | Some business_err -> Error business_err
+        | None -> Error (map_tx_error (Database (Caqti_error.show err))))
+    | Ok value -> Ok value
+  with
+  | Exit -> (
+      match !business_error with
+      | Some err -> Error err
+      | None -> Error (map_tx_error (Database "transaction aborted")))
+  | exn ->
+      Error
+        (map_tx_error
+           (Database
+              ("transaction callback raised: " ^ Printexc.to_string exn)))
 
 let init_schema_with_pool pool =
   match Caqti_eio.Pool.use (fun conn -> Ok (init_schema conn)) pool with

@@ -42,6 +42,18 @@ let decode_operation json =
             version_vector_json
         in
         Ok { table_name; row_key; dot; payload = Remove_row { version_vector } }
+  | "checkpointRow" ->
+      if not (has_key "checkpointSeenServerVersion" json && has_key "state" json)
+         || has_key "fields" json || has_key "versionVector" json
+      then Error "checkpointRow payload shape mismatch"
+      else
+        let checkpoint_seen_server_version =
+          json |> member "checkpointSeenServerVersion" |> int64_of_json
+        in
+        let state = json |> member "state" in
+        Ok
+          { table_name; row_key; dot;
+            payload = Checkpoint_row { checkpoint_seen_server_version; state } }
   | _ -> Error ("unsupported operation type: " ^ operation_type)
 
 let decode_sync_request raw =
@@ -90,6 +102,10 @@ let encode_operation operation =
   in
   match operation.payload with
   | Set_row { fields } -> `Assoc (base_fields @ [ ("fields", fields) ])
+  | Checkpoint_row { checkpoint_seen_server_version; state } ->
+      `Assoc
+        (base_fields
+        @ [ ("checkpointSeenServerVersion", `Intlit (Int64.to_string checkpoint_seen_server_version)); ("state", state) ])
   | Remove_row { version_vector } ->
       let version_vector_json =
         `Assoc
@@ -108,9 +124,22 @@ let encode_sync_response response =
           `Intlit (Int64.to_string response.base_server_version) );
         ( "latestServerVersion",
           `Intlit (Int64.to_string response.latest_server_version) );
-        ("operations", `List (List.map encode_operation response.operations));
+        ( "operations",
+          `List
+            (List.map2
+               (fun operation server_version ->
+                 match encode_operation operation with
+                 | `Assoc fields ->
+                     `Assoc (fields @ [ ("serverVersion", `Intlit (Int64.to_string server_version)) ])
+                 | _ -> assert false)
+               response.operations response.operation_server_versions) );
         ( "syncedOperations",
-          `List (List.map encode_dot response.synced_operations) );
+          `List
+            (List.map
+               (fun accepted ->
+                 `Assoc [ ("dot", encode_dot accepted.dot);
+                          ("serverVersion", `Intlit (Int64.to_string accepted.server_version)) ])
+               response.synced_operations) );
         ("responseHash", `String response.response_hash);
       ]
   in

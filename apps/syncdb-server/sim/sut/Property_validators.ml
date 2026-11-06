@@ -45,13 +45,7 @@ let validate_count_max_consistency ~(world : world) ~count ~max_server_version =
       "non-empty db must have max_server_version>=0 got=%Ld count=%d"
       max_server_version count
 
-let validate_monotonicity ~(world : world) ~count ~max_server_version =
-  (match world.last_count_operations with
-  | Some prev when count < prev ->
-      fail_property ~step_n:world.step_n
-        "count_operations regressed prev=%d now=%d" prev count
-  | _ -> ());
-
+let validate_monotonicity ~(world : world) ~max_server_version =
   (match world.last_max_server_version with
   | Some prev when Int64.compare max_server_version prev < 0 ->
       fail_property ~step_n:world.step_n
@@ -77,15 +71,9 @@ let validate_server_version_sequence ~(world : world) ~count ~max_server_version
     fail_property ~step_n:world.step_n
       "row count mismatch count_operations=%d scan_count=%d" count version_count;
 
-  let rec check_contiguous = function
-    | [] | [ _ ] -> ()
-    | a :: ((b :: _) as rest) ->
-        if Int64.compare b (Int64.add a 1L) <> 0 then
-          fail_property ~step_n:world.step_n
-            "server_version sequence not contiguous prev=%Ld next=%Ld" a b;
-        check_contiguous rest
-  in
-  check_contiguous versions;
+  if not (Simulator_invariants.versions_strictly_increasing versions) then
+    fail_property ~step_n:world.step_n
+      "retained server_version values are not strictly increasing and unique";
 
   match List.rev versions with
   | [] -> ()
@@ -99,10 +87,9 @@ let check_properties (world : world) =
   let count, max_server_version = read_count_and_max ~world in
 
   validate_count_max_consistency ~world ~count ~max_server_version;
-  validate_monotonicity ~world ~count ~max_server_version;
+  validate_monotonicity ~world ~max_server_version;
 
   if should_run_deep_scan ~world then
     validate_server_version_sequence ~world ~count ~max_server_version;
 
-  world.last_count_operations <- Some count;
   world.last_max_server_version <- Some max_server_version

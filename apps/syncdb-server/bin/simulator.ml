@@ -16,6 +16,8 @@ let configure_logs log_level =
   Logs.set_reporter (Logs_fmt.reporter ());
   Logs.set_level ~all:true level
 
+let default_entropy_size = 1_048_576
+
 let log_level_arg =
   let doc = "Log-level verbosity." in
   Arg.(
@@ -46,7 +48,7 @@ let replay_cmd =
   in
   let size_arg =
     let doc = "Size to replay." in
-    Arg.(value & opt int 4096 & info [ "size" ] ~docv:"SIZE" ~doc)
+    Arg.(value & opt int default_entropy_size & info [ "size" ] ~docv:"SIZE" ~doc)
   in
 
   let info = Cmd.info "replay" ~doc:"Replay a known seed" in
@@ -75,8 +77,8 @@ let search_cmd =
     Arg.(value & opt int 100 & info [ "attempts" ] ~docv:"ATTEMPTS" ~doc)
   in
   let size_max_arg =
-    let doc = "Biggest entropy to test." in
-    Arg.(value & opt int 4096 & info [ "size-max" ] ~docv:"SIZE_MAX" ~doc)
+    let doc = "Biggest entropy to test (default: 1 MiB)." in
+    Arg.(value & opt int default_entropy_size & info [ "size-max" ] ~docv:"SIZE_MAX" ~doc)
   in
   let info = Cmd.info "search" ~doc:"Run simulator in search mode" in
   Cmd.v info

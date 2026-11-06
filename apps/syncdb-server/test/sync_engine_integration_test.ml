@@ -149,18 +149,23 @@ let assert_reject_versions_that_go_backwards () =
   | Error err -> fail_with_sync_error "expected non-monotonic rejection, got: " err
   | Ok _ -> failwith "expected non-monotonic rejection"
 
-let assert_reject_remove_context_unseen_dot () =
+let assert_accept_unverified_remove_context () =
   with_connection @@ fun conn ->
   (match Sync.Repository.init_schema conn with
   | Error err -> failwith (Sync.Repository.error_to_string err)
   | Ok () -> ());
   let request =
     decode_with_valid_hash
-      "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"removeRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"versionVector\":{\"client-1\":999},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
+      "{\"clientId\":\"deleter\",\"dbName\":\"main\",\"operations\":[{\"type\":\"removeRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"versionVector\":{\"never-seen-client\":999},\"dot\":{\"clientId\":\"deleter\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
   match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1" ~db_name:"main" request with
-  | Ok _ -> failwith "expected unseen-dot rejection"
-  | Error _ -> ()
+  | Error err -> fail_with_sync_error "unverified remove context was rejected: " err
+  | Ok response ->
+      assert (List.length response.synced_operations = 1);
+      (match Sync.Repository.count_operations conn ~tenant_id:"user-1" ~db_name:"main" with
+      | Ok 1 -> ()
+      | Ok count -> failwith (Printf.sprintf "expected forged delete to be stored, found %d rows" count)
+      | Error err -> failwith (Sync.Repository.error_to_string err))
 
 let assert_tenant_isolation_between_streams () =
   with_connection @@ fun conn ->
@@ -357,13 +362,40 @@ let assert_empty_and_all_own_pull () =
   in
   assert (follow_up.operations = [])
 
+let assert_compaction_publishes_checkpoint_and_replaces_prefix () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error err -> failwith (Sync.Repository.error_to_string err)
+  | Ok () -> ());
+  let original = make_set_row_op ~client_id:"writer" ~version:1L ~row_key:"r1" ~title:"original" in
+  let _ = submit_request conn (make_request ~client_id:"writer" ~db_name:"main" ~last_seen_server_version:0L ~operations:[ original ]) in
+  let checkpoint =
+    match Sync.Sync_engine.compact_row_with_connection conn ~tenant_id:"user-1"
+      ~db_name:"main" ~table_name:"todos" ~row_key:"r1"
+      ~checkpoint_seen_server_version:2L with
+    | Error err -> fail_with_sync_error "compaction failed: " err
+    | Ok checkpoint -> checkpoint
+  in
+  (match checkpoint.payload with
+  | Sync.Sync_engine.Checkpoint_row { checkpoint_seen_server_version; state } ->
+      assert (checkpoint_seen_server_version = 2L);
+      let field = Yojson.Safe.Util.member "title" (Yojson.Safe.Util.member "fields" state) in
+      assert (Yojson.Safe.Util.member "value" field = `String "original");
+      assert (Yojson.Safe.Util.member "dot" field |> Yojson.Safe.Util.member "clientId" |> Yojson.Safe.Util.to_string = "writer")
+  | _ -> failwith "expected checkpoint payload");
+  (match Sync.Repository.count_operations conn ~tenant_id:"user-1" ~db_name:"main" with
+  | Ok 1 -> ()
+  | Ok n -> failwith (Printf.sprintf "expected one replacement operation, got %d" n)
+  | Error err -> failwith (Sync.Repository.error_to_string err))
+
 let () =
+  assert_compaction_publishes_checkpoint_and_replaces_prefix ();
   assert_set_roundtrip_and_fetch_for_second_client ();
   assert_set_row_roundtrip_and_fetch_for_second_client ();
   assert_remove_roundtrip_and_fetch_for_second_client ();
   assert_accept_non_contiguous_versions ();
   assert_reject_versions_that_go_backwards ();
-  assert_reject_remove_context_unseen_dot ();
+  assert_accept_unverified_remove_context ();
   assert_reject_invalid_request_hash ();
   assert_tenant_isolation_between_streams ();
   assert_full_only_remote_pagination ();

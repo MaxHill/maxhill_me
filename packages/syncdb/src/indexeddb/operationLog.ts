@@ -20,7 +20,8 @@ export class OperationLog {
     const store = tx.objectStore(OPERATIONS_STORE);
     await promisifyIDBRequest(store.add({
       op: operation,
-      synced: SYNCED_STATUS.NOT_SYNCED,
+      synced: operation.serverVersion === undefined ? SYNCED_STATUS.NOT_SYNCED : SYNCED_STATUS.SYNCED,
+      ...(operation.serverVersion === undefined ? {} : { serverVersion: operation.serverVersion }),
     }));
   }
 
@@ -32,7 +33,7 @@ export class OperationLog {
     await Promise.all(savePromises);
   }
 
-  async saveOperationAsSynced(tx: IDBTransaction, operationDot: Dot): Promise<void> {
+  async saveOperationAsSynced(tx: IDBTransaction, operationDot: Dot, serverVersion: number): Promise<void> {
     validateTransactionStores(tx, [OPERATIONS_STORE], "readwrite");
 
     const store = tx.objectStore(OPERATIONS_STORE);
@@ -41,7 +42,31 @@ export class OperationLog {
 
     if (!record) return;
 
-    await promisifyIDBRequest(store.put({ ...record, synced: SYNCED_STATUS.SYNCED }));
+    await promisifyIDBRequest(store.put({ ...record, synced: SYNCED_STATUS.SYNCED, serverVersion }));
+  }
+
+  async deleteCoveredAcceptedOperations(
+    tx: IDBTransaction,
+    tableName: string,
+    rowKey: string,
+    checkpointSeenServerVersion: number,
+  ): Promise<void> {
+    validateTransactionStores(tx, [OPERATIONS_STORE], "readwrite");
+    const store = tx.objectStore(OPERATIONS_STORE);
+    const cursorRequest = store.openCursor();
+    for await (const record of asyncCursorIterator<{
+      op: CRDTOperation; synced: number; serverVersion?: number;
+    }>(cursorRequest)) {
+      if (
+        record.synced === SYNCED_STATUS.SYNCED &&
+        record.serverVersion !== undefined &&
+        record.serverVersion < checkpointSeenServerVersion &&
+        record.op.tableName === tableName &&
+        record.op.rowKey === rowKey
+      ) {
+        await promisifyIDBRequest(store.delete([record.op.dot.clientId, record.op.dot.version]));
+      }
+    }
   }
 
   async getUnsyncedOperations(tx: IDBTransaction): Promise<CRDTOperation[]> {

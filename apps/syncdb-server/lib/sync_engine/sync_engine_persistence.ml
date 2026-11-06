@@ -17,6 +17,23 @@ let db_operation_of_crdt_operation ~tenant_id ~db_name operation =
           json_value = Some (Yojson.Safe.to_string fields);
           version_vector = None;
         }
+  | Checkpoint_row { checkpoint_seen_server_version; state } ->
+      Ok
+        {
+          Repository.server_version = 0L;
+          tenant_id;
+          db_name;
+          client_id = operation.dot.client_id;
+          version = operation.dot.version;
+          op_type = "checkpointRow";
+          table_name = operation.table_name;
+          row_key = operation.row_key;
+          field_key = None;
+          json_value = Some (Yojson.Safe.to_string (`Assoc [
+            ("checkpointSeenServerVersion", `Intlit (Int64.to_string checkpoint_seen_server_version));
+            ("state", state)]));
+          version_vector = None;
+        }
   | Remove_row { version_vector } ->
       Ok
         {
@@ -56,6 +73,21 @@ let crdt_operation_of_db_operation operation =
               payload = Set_row { fields = Yojson.Safe.from_string fields };
             }
       | None -> Error "stored setRow operation missing fields")
+  | "checkpointRow" -> (
+      match operation.json_value with
+      | Some json -> (
+          match Yojson.Safe.from_string json with
+          | `Assoc fields ->
+              let get name = List.assoc name fields in
+              let cutoff = get "checkpointSeenServerVersion" |> int64_of_json in
+              Ok {
+                table_name = operation.table_name;
+                row_key = operation.row_key;
+                dot = { client_id = operation.client_id; version = operation.version };
+                payload = Checkpoint_row { checkpoint_seen_server_version = cutoff; state = get "state" };
+              }
+          | _ -> Error "stored checkpointRow payload is not an object")
+      | None -> Error "stored checkpointRow operation missing payload")
   | "removeRow" -> (
       match operation.version_vector with
       | Some version_vector_json -> (

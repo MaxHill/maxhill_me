@@ -65,7 +65,7 @@ export interface SyncResponse {
    * Confirms which local operations were successfully persisted. This prevents
    * re-sending operations that have already been committed to the server.
    */
-  syncedOperations: Dot[];
+  syncedOperations: { dot: Dot; serverVersion: number }[];
 }
 
 export type SyncHeadersProvider = () => Promise<Record<string, string>>;
@@ -234,7 +234,7 @@ export class Sync {
 
     const { clientId, lastSeenServerVersion } = await this.clientState.getClientState(tx);
 
-    const firstSyncedOperation = response.syncedOperations[0];
+    const firstSyncedOperation = response.syncedOperations[0]?.dot;
     if (firstSyncedOperation && firstSyncedOperation.clientId !== clientId) {
       console.warn(
         `Dropping sync response: expected clientId ${clientId}, got ${firstSyncedOperation.clientId}`,
@@ -254,14 +254,26 @@ export class Sync {
     try {
       // Save operations and apply operations to materialized view
       await this.applyRemoteOperations(tx, response.operations);
+      for (const operation of response.operations) {
+        if (operation.type === "checkpointRow") {
+          await this.operationLog.deleteCoveredAcceptedOperations(
+            tx,
+            operation.tableName,
+            operation.rowKey,
+            operation.checkpointSeenServerVersion,
+          );
+        }
+      }
 
       // update lastSeenServerVersion to latestServerVersion from response
       await this.clientState.saveServerVersion(tx, response.latestServerVersion);
 
       // update synced field on the synced local entries
       const operationsPromises: Promise<void>[] = [];
-      for (const operationId of response.syncedOperations) {
-        operationsPromises.push(this.operationLog.saveOperationAsSynced(tx, operationId));
+      for (const accepted of response.syncedOperations) {
+        operationsPromises.push(
+          this.operationLog.saveOperationAsSynced(tx, accepted.dot, accepted.serverVersion),
+        );
       }
       await Promise.all(operationsPromises);
 
@@ -311,6 +323,11 @@ export class Sync {
           throw new Error(
             `Operation: ${op.dot} contained illegal _key property. _key should always be stripped out`,
           );
+        }
+      } else if (op.type === "checkpointRow") {
+        if (!Number.isSafeInteger(op.checkpointSeenServerVersion) || op.checkpointSeenServerVersion < 0 ||
+            typeof op.fields !== "object" || op.fields === null || Array.isArray(op.fields)) {
+          throw new Error("Invalid checkpointRow state");
         }
       } else if (op.type === "removeRow") {
         if (
@@ -397,6 +414,12 @@ export class Sync {
 
       if (op.type === "setRow") {
         value = JSON.stringify(op.fields);
+      } else if (op.type === "checkpointRow") {
+        value = JSON.stringify({
+          fields: op.fields,
+          ...(op.tombstone ? { tombstone: op.tombstone } : {}),
+        });
+        valueKey = String(op.checkpointSeenServerVersion);
       }
 
       // op.type === "removeRow"
@@ -437,6 +460,13 @@ export class Sync {
       if (operation.type === "setRow") {
         parts.push("null"); // field placeholder for consistency
         parts.push(JSON.stringify(operation.fields));
+      } else if (operation.type === "checkpointRow") {
+        parts.push("null");
+        parts.push(JSON.stringify({
+          fields: operation.fields,
+          ...(operation.tombstone ? { tombstone: operation.tombstone } : {}),
+        }));
+        parts.push(String(operation.checkpointSeenServerVersion));
       } else if (operation.type === "removeRow") {
         parts.push("null"); // field placeholder
         parts.push("null"); // value placeholder
@@ -447,12 +477,14 @@ export class Sync {
           parts.push(String(operation.versionVector[key]));
         }
       }
+      parts.push(String(operation.serverVersion));
     }
 
     // Add synced operations
-    for (const dot of response.syncedOperations) {
-      parts.push(dot.clientId);
-      parts.push(String(dot.version));
+    for (const accepted of response.syncedOperations) {
+      parts.push(accepted.dot.clientId);
+      parts.push(String(accepted.dot.version));
+      parts.push(String(accepted.serverVersion));
     }
 
     return this.sha256Array(parts);

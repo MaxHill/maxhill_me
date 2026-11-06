@@ -5,6 +5,7 @@ let excluded_basenames =
   ; "db_name.ml"
   ; "repository.ml"
   ; "server.ml"
+  ; "sync_engine_checkpoint.ml"
   ; "sync_engine_codec.ml"
   ; "sync_engine_core.ml"
   ; "sync_engine_hash.ml"

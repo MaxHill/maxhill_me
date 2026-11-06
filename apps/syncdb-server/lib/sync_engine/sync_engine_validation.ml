@@ -10,9 +10,9 @@ let ensure_client_not_ahead ~last_seen ~max_server =
     Error (Client_state_out_of_sync { last_seen; max_server })
   else Ok ()
 
-let ensure_versions_monotonic operations =
+let ensure_versions_monotonic (operations : crdt_operation list) =
   let module M = Map.Make (String) in
-  let check_operation acc operation =
+  let check_operation acc (operation : crdt_operation) =
     let client_id = operation.dot.client_id in
     let version = operation.dot.version in
     match M.find_opt client_id acc with
@@ -28,31 +28,3 @@ let ensure_versions_monotonic operations =
          | Ok acc -> check_operation acc operation)
        (Ok M.empty)
   |> Result.map ignore
-
-let ensure_remove_context_known connection ~tenant_id ~db_name operations =
-  let known_in_request = incoming_dot_set operations in
-  let rec validate_context = function
-    | [] -> Ok ()
-    | (client_id, version) :: rest -> (
-        let key = Printf.sprintf "%s#%Ld" client_id version in
-        if List.mem key known_in_request then validate_context rest
-        else
-          match
-            Repository.has_operation_dot connection ~tenant_id ~db_name ~client_id ~version
-          with
-          | Error err -> Error (Storage_error (Repository.error_to_string err))
-          | Ok true -> validate_context rest
-          | Ok false -> Error (Remove_context_unseen_dot { client_id; version })
-        )
-  in
-  let rec validate_operations = function
-    | [] -> Ok ()
-    | operation :: rest -> (
-        match operation.payload with
-        | Remove_row { version_vector } -> (
-            match validate_context version_vector with
-            | Error _ as err -> err
-            | Ok () -> validate_operations rest)
-        | Set_row _ -> validate_operations rest)
-  in
-  validate_operations operations
