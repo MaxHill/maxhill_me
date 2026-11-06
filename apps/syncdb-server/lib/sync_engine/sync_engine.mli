@@ -15,7 +15,9 @@ val compact_row_with_connection
   -> (crdt_operation, sync_error) result
 
 val process_sync_request_with_connection
-  :  Repository.connection
+  :  ?checkpoint_threshold_operations:int
+  -> ?checkpoint_threshold_bytes:int
+  -> Repository.connection
   -> tenant_id:string
   -> db_name:string
   -> sync_request

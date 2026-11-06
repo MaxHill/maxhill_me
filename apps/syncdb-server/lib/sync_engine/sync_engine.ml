@@ -74,46 +74,81 @@ let compact_row_with_connection connection ~tenant_id ~db_name ~table_name ~row_
       in
       Ok operation)
 
-let configured_positive_int name =
-  match Sys.getenv_opt name with
-  | None -> None
-  | Some value -> (try let parsed = int_of_string value in if parsed > 0 then Some parsed else None with _ -> None)
-
-let auto_compact_request_rows connection ~tenant_id ~db_name (request : sync_request) =
-  match
-    (configured_positive_int "SYNC_CHECKPOINT_THRESHOLD_OPERATIONS",
-     configured_positive_int "SYNC_CHECKPOINT_THRESHOLD_BYTES")
-  with
+let auto_compact_request_rows connection ~tenant_id ~db_name
+    ~operation_threshold ~byte_threshold (request : sync_request) =
+  match (operation_threshold, byte_threshold) with
   | None, None -> ()
-  | thresholds ->
+  | _ ->
       let rows =
         request.operations
         |> List.map (fun op -> (op.table_name, op.row_key))
         |> List.sort_uniq compare
       in
+      let failure_count = ref 0 in
+      let first_failure = ref None in
+      let record_failure ~table_name ~row_key ~cutoff error =
+        incr failure_count;
+        if !first_failure = None then
+          first_failure := Some (table_name, row_key, cutoff, error)
+      in
       List.iter
         (fun (table_name, row_key) ->
+          let current_cutoff = ref "unavailable" in
           try
             match Repository.get_max_server_version connection ~tenant_id ~db_name with
-            | Error _ -> ()
+            | Error error ->
+                record_failure ~table_name ~row_key ~cutoff:!current_cutoff
+                  (Repository.error_to_string error)
             | Ok latest ->
                 let cutoff = Int64.succ latest in
-                (match Repository.get_row_prefix connection ~tenant_id ~db_name ~table_name ~row_key
-                         ~before_server_version:cutoff with
-                | Error _ -> ()
+                current_cutoff := Int64.to_string cutoff;
+                (match
+                   Repository.get_row_prefix connection ~tenant_id ~db_name ~table_name ~row_key
+                     ~before_server_version:cutoff
+                 with
+                | Error error ->
+                    record_failure ~table_name ~row_key ~cutoff:!current_cutoff
+                      (Repository.error_to_string error)
                 | Ok rows ->
-                    let bytes = List.fold_left (fun total row ->
-                      total + Option.fold ~none:0 ~some:String.length row.Repository.json_value
-                      + Option.fold ~none:0 ~some:String.length row.version_vector) 0 rows in
-                    let by_count = match thresholds with Some n, _ -> List.length rows >= n | _ -> false in
-                    let by_bytes = match thresholds with _, Some n -> bytes >= n | _ -> false in
+                    let bytes =
+                      List.fold_left
+                        (fun total row ->
+                          total
+                          + Option.fold ~none:0 ~some:String.length row.Repository.json_value
+                          + Option.fold ~none:0 ~some:String.length row.version_vector)
+                        0 rows
+                    in
+                    let by_count =
+                      Option.fold ~none:false ~some:(fun threshold -> List.length rows >= threshold)
+                        operation_threshold
+                    in
+                    let by_bytes =
+                      Option.fold ~none:false ~some:(fun threshold -> bytes >= threshold)
+                        byte_threshold
+                    in
                     if rows <> [] && (by_count || by_bytes) then
-                      ignore (compact_row_with_connection connection ~tenant_id ~db_name ~table_name ~row_key
-                        ~checkpoint_seen_server_version:cutoff))
-          with _ -> ())
-        rows
+                      match
+                        compact_row_with_connection connection ~tenant_id ~db_name ~table_name
+                          ~row_key ~checkpoint_seen_server_version:cutoff
+                      with
+                      | Ok _ -> ()
+                      | Error error ->
+                          record_failure ~table_name ~row_key ~cutoff:!current_cutoff
+                            (sync_error_to_string error))
+          with exn ->
+            record_failure ~table_name ~row_key ~cutoff:!current_cutoff
+              (Printexc.to_string exn))
+        rows;
+      match !first_failure with
+      | None -> ()
+      | Some (table_name, row_key, cutoff, error) ->
+          Logs.warn (fun message ->
+              message
+                "automatic checkpoint compaction failures=%d tenant=%s db=%s table=%s row=%s cutoff=%s error=%s"
+                !failure_count tenant_id db_name table_name row_key cutoff error)
 
-let process_sync_request_with_connection connection ~tenant_id ~db_name request =
+let process_sync_request_with_connection ?checkpoint_threshold_operations
+    ?checkpoint_threshold_bytes connection ~tenant_id ~db_name request =
   let open Sync_engine_validation in
   let* () = ensure_request_hash_valid request in
   let* response = Repository.with_transaction connection
@@ -169,5 +204,7 @@ let process_sync_request_with_connection connection ~tenant_id ~db_name request 
       in
       Ok { response with response_hash = hash_sync_response response })
   in
-  auto_compact_request_rows connection ~tenant_id ~db_name request;
+  auto_compact_request_rows connection ~tenant_id ~db_name
+    ~operation_threshold:checkpoint_threshold_operations
+    ~byte_threshold:checkpoint_threshold_bytes request;
   Ok response

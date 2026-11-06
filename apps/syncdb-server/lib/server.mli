@@ -7,6 +7,8 @@ type context = {
   auth : Auth.t;
   event_hub : Event_hub.t;
   clock : float Eio.Time.clock_ty Eio.Std.r;
+  checkpoint_threshold_operations : int option;
+  checkpoint_threshold_bytes : int option;
 }
 
 val route

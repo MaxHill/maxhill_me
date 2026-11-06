@@ -388,8 +388,50 @@ let assert_compaction_publishes_checkpoint_and_replaces_prefix () =
   | Ok n -> failwith (Printf.sprintf "expected one replacement operation, got %d" n)
   | Error err -> failwith (Sync.Repository.error_to_string err))
 
+let assert_auto_compaction_failure_does_not_fail_sync () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error err -> failwith (Sync.Repository.error_to_string err)
+  | Ok () -> ());
+  let malformed_old_operation : Sync.Repository.db_crdt_operation =
+    { server_version = 0L;
+      tenant_id = "user-1";
+      db_name = "main";
+      client_id = "writer";
+      version = 1L;
+      op_type = "setRow";
+      table_name = "todos";
+      row_key = "r1";
+      field_key = None;
+      json_value = Some "not-json";
+      version_vector = None }
+  in
+  (match Sync.Repository.insert_crdt_operation conn malformed_old_operation with
+  | Error err -> failwith (Sync.Repository.error_to_string err)
+  | Ok _ -> ());
+  let operation = make_set_row_op ~client_id:"writer" ~version:2L ~row_key:"r1" ~title:"valid" in
+  let request =
+    make_request ~client_id:"writer" ~db_name:"main"
+      ~last_seen_server_version:1L ~operations:[ operation ]
+  in
+  (match
+     Sync.Sync_engine.process_sync_request_with_connection
+       ~checkpoint_threshold_operations:1 conn ~tenant_id:"user-1"
+       ~db_name:"main" request
+   with
+  | Error err -> fail_with_sync_error "auto compaction failure escaped sync: " err
+  | Ok response -> assert (List.length response.synced_operations = 1));
+  match
+    Sync.Sync_engine.compact_row_with_connection conn ~tenant_id:"user-1"
+      ~db_name:"main" ~table_name:"todos" ~row_key:"r1"
+      ~checkpoint_seen_server_version:3L
+  with
+  | Error _ -> ()
+  | Ok _ -> failwith "explicit compaction should report malformed stored operation"
+
 let () =
   assert_compaction_publishes_checkpoint_and_replaces_prefix ();
+  assert_auto_compaction_failure_does_not_fail_sync ();
   assert_set_roundtrip_and_fetch_for_second_client ();
   assert_set_row_roundtrip_and_fetch_for_second_client ();
   assert_remove_roundtrip_and_fetch_for_second_client ();

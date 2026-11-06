@@ -135,12 +135,6 @@ let all_results array_of_result =
     array_of_result (Ok [])
 
 let run (world : world) =
-  let summary_printed = ref false in
-  let print_summary () =
-    if not !summary_printed then (
-      summary_printed := true;
-      Coverage.print_summary world.coverage ~step:world.step_n)
-  in
   let rec loop () =
     Printf.eprintf "\r%-50s"
       (Printf.sprintf "Progress: %.1f%%" (FRNG.progress world.frng *. 100.0));
@@ -150,13 +144,12 @@ let run (world : world) =
     in
     match client_steps with Ok _ -> loop () | Error FRNG.Out_of_entropy -> ()
   in
-  try
-    loop ();
-    Printf.eprintf "\r%-50s" "Progress: 100.0%";
+  loop ();
+  Printf.eprintf "\r%-50s" "Progress: 100.0%";
   Printf.eprintf "\n";
   flush stderr;
 
-    Log.info (fun m -> m "Run complete, cleaning up");
+  Log.info (fun m -> m "Run complete, cleaning up");
 
   List.iter
     (fun (client : Client.t) ->
@@ -174,8 +167,4 @@ let run (world : world) =
                 world.action_timeout);
           client.force_close ();
           ignore (client.wait_for_exit ()))
-    world.clients;
-    print_summary ()
-  with exn ->
-    print_summary ();
-    raise exn
+    world.clients

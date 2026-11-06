@@ -154,19 +154,3 @@ let observe_request coverage ~(request : Sync.Sync_engine.sync_request) =
             version_vector
       | Sync.Sync_engine.Set_row _ | Sync.Sync_engine.Checkpoint_row _ -> ())
     request.operations
-
-let print_summary coverage ~step =
-  let summary =
-    `Assoc
-      [ ("step", `Int step);
-        ("acceptedUploads", `Int coverage.accepted_uploads);
-        ("droppedResponses", `Int coverage.dropped_responses);
-        ("droppedAcknowledgements", `Int coverage.dropped_acks);
-        ("explicitCompactions", `Int coverage.explicit_compactions);
-        ("removedOriginalDots", `Int coverage.removed_original_dots);
-        ("retriesBeforeCompaction", `Int coverage.retries_before_compaction);
-        ("retriesAfterCompaction", `Int coverage.retries_after_compaction);
-        ("deleteContextReferencesRemovedDots",
-         `Int coverage.delete_context_references_removed_dots) ]
-  in
-  Printf.eprintf "CHECKPOINT_COVERAGE_SUMMARY %s\n%!" (Yojson.Safe.to_string summary)

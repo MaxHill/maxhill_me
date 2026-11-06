@@ -254,16 +254,11 @@ export class Sync {
     try {
       // Save operations and apply operations to materialized view
       await this.applyRemoteOperations(tx, response.operations);
-      for (const operation of response.operations) {
-        if (operation.type === "checkpointRow") {
-          await this.operationLog.deleteCoveredAcceptedOperations(
-            tx,
-            operation.tableName,
-            operation.rowKey,
-            operation.checkpointSeenServerVersion,
-          );
-        }
-      }
+      const checkpoints = response.operations.filter(
+        (operation): operation is Extract<CRDTOperation, { type: "checkpointRow" }> =>
+          operation.type === "checkpointRow",
+      );
+      await this.operationLog.deleteCoveredAcceptedOperations(tx, checkpoints);
 
       // update lastSeenServerVersion to latestServerVersion from response
       await this.clientState.saveServerVersion(tx, response.latestServerVersion);
