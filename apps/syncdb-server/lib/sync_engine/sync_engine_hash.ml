@@ -13,6 +13,8 @@ let hash_sync_request request =
       match operation.payload with
       | Set_row { fields } -> ("setRow", Yojson.Safe.to_string fields, "null")
       | Remove_row _ -> ("removeRow", "null", "null")
+      | Checkpoint_row { checkpoint_seen_server_version; state } ->
+          ("checkpointRow", Yojson.Safe.to_string state, Int64.to_string checkpoint_seen_server_version)
     in
 
     push operation.row_key;
@@ -44,6 +46,10 @@ let hash_sync_response response =
     | Set_row { fields } ->
         push "null";
         push (Yojson.Safe.to_string fields)
+    | Checkpoint_row { checkpoint_seen_server_version; state } ->
+        push "null";
+        push (Yojson.Safe.to_string state);
+        push (Int64.to_string checkpoint_seen_server_version)
     | Remove_row { version_vector } ->
         push "null";
         push "null";
@@ -56,10 +62,15 @@ let hash_sync_response response =
             push (Int64.to_string version))
           sorted_version_vector
   in
-  List.iter push_operation response.operations;
+  List.iter2
+    (fun operation server_version ->
+      push_operation operation;
+      push (Int64.to_string server_version))
+    response.operations response.operation_server_versions;
   List.iter
-    (fun (dot : dot) ->
-      push dot.client_id;
-      push (Int64.to_string dot.version))
+    (fun accepted ->
+      push accepted.dot.client_id;
+      push (Int64.to_string accepted.dot.version);
+      push (Int64.to_string accepted.server_version))
     response.synced_operations;
   hash_parts (List.rev !parts_rev)

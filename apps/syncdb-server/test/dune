@@ -5,6 +5,7 @@
   repository_test
   sync_engine_test
   sync_engine_integration_test
+  simulator_coverage_test
   auth_test
   event_hub_test)
  (modules
@@ -13,10 +14,12 @@
   repository_test
   sync_engine_test
   sync_engine_integration_test
+  simulator_coverage_test
   auth_test
   event_hub_test)
  (libraries
   sync
+  sync_simulator
   httpun
   logs
   eio_main

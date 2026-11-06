@@ -7,7 +7,8 @@
   sync_engine_codec
   sync_engine_hash
   sync_engine_persistence
-  sync_engine_validation)
+  sync_engine_validation
+  sync_engine_checkpoint)
  (libraries
   eio
   eio_main

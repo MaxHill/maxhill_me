@@ -49,6 +49,27 @@ let assert_init_schema_and_count_empty () =
       | Error err -> failwith (Sync.Repository.error_to_string err)
       | Ok count -> assert (count = 0))
 
+let assert_transaction_error_rolls_back () =
+  with_connection @@ fun conn ->
+  match Sync.Repository.init_schema conn with
+  | Error err -> failwith (Sync.Repository.error_to_string err)
+  | Ok () ->
+      let result =
+        Sync.Repository.with_transaction conn ~map_tx_error:(fun err -> err)
+          (fun tx_conn ->
+            match Sync.Repository.insert_crdt_operation tx_conn (make_op ()) with
+            | Error err -> Error err
+            | Ok _ -> Error (Sync.Repository.Database "forced rollback"))
+      in
+      (match result with
+      | Error (Sync.Repository.Database "forced rollback") -> ()
+      | Error err -> failwith (Sync.Repository.error_to_string err)
+      | Ok () -> failwith "expected transaction failure");
+      (match Sync.Repository.count_operations conn ~tenant_id:tenant_a ~db_name with
+      | Ok 0 -> ()
+      | Ok count -> failwith (Printf.sprintf "expected rollback, found %d rows" count)
+      | Error err -> failwith (Sync.Repository.error_to_string err))
+
 let assert_insert_and_fetch_operations_since () =
   with_connection @@ fun conn ->
   match Sync.Repository.init_schema conn with
@@ -222,6 +243,7 @@ let assert_migrates_legacy_partition_keys_without_data_loss () =
 
 let () =
   assert_init_schema_and_count_empty ();
+  assert_transaction_error_rolls_back ();
   assert_insert_and_fetch_operations_since ();
   assert_insert_duplicate_idempotent ();
   assert_insert_duplicate_mismatch_fails ();

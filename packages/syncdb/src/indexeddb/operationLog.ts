@@ -20,7 +20,8 @@ export class OperationLog {
     const store = tx.objectStore(OPERATIONS_STORE);
     await promisifyIDBRequest(store.add({
       op: operation,
-      synced: SYNCED_STATUS.NOT_SYNCED,
+      synced: operation.serverVersion === undefined ? SYNCED_STATUS.NOT_SYNCED : SYNCED_STATUS.SYNCED,
+      ...(operation.serverVersion === undefined ? {} : { serverVersion: operation.serverVersion }),
     }));
   }
 
@@ -32,7 +33,7 @@ export class OperationLog {
     await Promise.all(savePromises);
   }
 
-  async saveOperationAsSynced(tx: IDBTransaction, operationDot: Dot): Promise<void> {
+  async saveOperationAsSynced(tx: IDBTransaction, operationDot: Dot, serverVersion: number): Promise<void> {
     validateTransactionStores(tx, [OPERATIONS_STORE], "readwrite");
 
     const store = tx.objectStore(OPERATIONS_STORE);
@@ -41,7 +42,44 @@ export class OperationLog {
 
     if (!record) return;
 
-    await promisifyIDBRequest(store.put({ ...record, synced: SYNCED_STATUS.SYNCED }));
+    await promisifyIDBRequest(store.put({ ...record, synced: SYNCED_STATUS.SYNCED, serverVersion }));
+  }
+
+  async deleteCoveredAcceptedOperations(
+    tx: IDBTransaction,
+    checkpoints: readonly Extract<CRDTOperation, { type: "checkpointRow" }>[],
+  ): Promise<void> {
+    validateTransactionStores(tx, [OPERATIONS_STORE], "readwrite");
+    if (checkpoints.length === 0) return;
+
+    const cutoffsByTable = new Map<string, Map<string, number>>();
+    for (const checkpoint of checkpoints) {
+      let cutoffsByRow = cutoffsByTable.get(checkpoint.tableName);
+      if (!cutoffsByRow) {
+        cutoffsByRow = new Map();
+        cutoffsByTable.set(checkpoint.tableName, cutoffsByRow);
+      }
+      cutoffsByRow.set(
+        checkpoint.rowKey,
+        Math.max(
+          cutoffsByRow.get(checkpoint.rowKey) ?? -1,
+          checkpoint.checkpointSeenServerVersion,
+        ),
+      );
+    }
+
+    const store = tx.objectStore(OPERATIONS_STORE);
+    const syncedIndex = store.index(BY_SYNCED_INDEX);
+    const cursorRequest = syncedIndex.openCursor(IDBKeyRange.only(SYNCED_STATUS.SYNCED));
+    for await (const record of asyncCursorIterator<{
+      op: CRDTOperation; synced: number; serverVersion?: number;
+    }>(cursorRequest)) {
+      if (record.serverVersion === undefined) continue;
+      const cutoff = cutoffsByTable.get(record.op.tableName)?.get(record.op.rowKey);
+      if (cutoff !== undefined && record.serverVersion < cutoff) {
+        await promisifyIDBRequest(store.delete([record.op.dot.clientId, record.op.dot.version]));
+      }
+    }
   }
 
   async getUnsyncedOperations(tx: IDBTransaction): Promise<CRDTOperation[]> {

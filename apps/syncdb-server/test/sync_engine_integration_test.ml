@@ -149,18 +149,23 @@ let assert_reject_versions_that_go_backwards () =
   | Error err -> fail_with_sync_error "expected non-monotonic rejection, got: " err
   | Ok _ -> failwith "expected non-monotonic rejection"
 
-let assert_reject_remove_context_unseen_dot () =
+let assert_accept_unverified_remove_context () =
   with_connection @@ fun conn ->
   (match Sync.Repository.init_schema conn with
   | Error err -> failwith (Sync.Repository.error_to_string err)
   | Ok () -> ());
   let request =
     decode_with_valid_hash
-      "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"removeRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"versionVector\":{\"client-1\":999},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
+      "{\"clientId\":\"deleter\",\"dbName\":\"main\",\"operations\":[{\"type\":\"removeRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"versionVector\":{\"never-seen-client\":999},\"dot\":{\"clientId\":\"deleter\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"ignored\"}"
   in
   match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1" ~db_name:"main" request with
-  | Ok _ -> failwith "expected unseen-dot rejection"
-  | Error _ -> ()
+  | Error err -> fail_with_sync_error "unverified remove context was rejected: " err
+  | Ok response ->
+      assert (List.length response.synced_operations = 1);
+      (match Sync.Repository.count_operations conn ~tenant_id:"user-1" ~db_name:"main" with
+      | Ok 1 -> ()
+      | Ok count -> failwith (Printf.sprintf "expected forged delete to be stored, found %d rows" count)
+      | Error err -> failwith (Sync.Repository.error_to_string err))
 
 let assert_tenant_isolation_between_streams () =
   with_connection @@ fun conn ->
@@ -207,12 +212,235 @@ let assert_reject_invalid_request_hash () =
       fail_with_sync_error "expected request integrity failure, got: " err
   | Ok _ -> failwith "expected invalid request hash rejection"
 
+let make_request ~client_id ~db_name ~last_seen_server_version ~operations =
+  let request : Sync.Sync_engine.sync_request =
+    {
+      client_id;
+      db_name;
+      operations;
+      last_seen_server_version;
+      request_hash = "";
+    }
+  in
+  { request with request_hash = Sync.Sync_engine.hash_sync_request request }
+
+let assert_response_hash_valid (response : Sync.Sync_engine.sync_response) =
+  let without_hash = { response with response_hash = "" } in
+  let expected = Sync.Sync_engine.hash_sync_response without_hash in
+  assert (response.response_hash = expected)
+
+let make_set_row_op ~client_id ~version ~row_key ~title =
+  {
+    Sync.Sync_engine.table_name = "todos";
+    row_key;
+    dot = { client_id; version };
+    payload = Sync.Sync_engine.Set_row { fields = `Assoc [ ("title", `String title) ] };
+  }
+
+let submit_request conn request =
+  match
+    Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1"
+      ~db_name:"main" request
+  with
+  | Error err -> fail_with_sync_error "sync request failed: " err
+  | Ok response ->
+      assert_response_hash_valid response;
+      response
+
+let seed_remote_ops conn ~count =
+  let ops =
+    List.init count (fun i ->
+        make_set_row_op ~client_id:"remote" ~version:(Int64.of_int (i + 1))
+          ~row_key:(Printf.sprintf "remote-%d" (i + 1)) ~title:"remote")
+  in
+  let response =
+    submit_request conn
+      (make_request ~client_id:"remote" ~db_name:"main" ~last_seen_server_version:0L
+         ~operations:ops)
+  in
+  assert (List.length response.synced_operations = count);
+  response
+
+let pull_once conn ~client_id ~cursor =
+  submit_request conn
+    (make_request ~client_id ~db_name:"main" ~last_seen_server_version:cursor
+       ~operations:[])
+
+let collect_row_keys operations =
+  List.map (fun (op : Sync.Sync_engine.crdt_operation) -> op.row_key) operations
+
+let assert_full_only_remote_pagination () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error err -> failwith (Sync.Repository.error_to_string err)
+  | Ok () -> ());
+  let _ = seed_remote_ops conn ~count:1205 in
+  let first = pull_once conn ~client_id:"observer" ~cursor:0L in
+  assert (List.length first.operations = 1000);
+  assert (first.latest_server_version = 1000L);
+  let second = pull_once conn ~client_id:"observer" ~cursor:first.latest_server_version in
+  assert (List.length second.operations = 205);
+  assert (second.latest_server_version = 1205L);
+  let all_keys = collect_row_keys first.operations @ collect_row_keys second.operations in
+  let dedup = List.sort_uniq String.compare all_keys in
+  assert (List.length all_keys = 1205);
+  assert (List.length dedup = 1205)
+
+let assert_remote_pages_not_skipped_after_own_high_uploads () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error err -> failwith (Sync.Repository.error_to_string err)
+  | Ok () -> ());
+  let _ = seed_remote_ops conn ~count:1205 in
+  let own_ops =
+    List.init 300 (fun i ->
+        make_set_row_op ~client_id:"observer" ~version:(Int64.of_int (i + 1))
+          ~row_key:(Printf.sprintf "own-%d" (i + 1)) ~title:"own")
+  in
+  let first =
+    submit_request conn
+      (make_request ~client_id:"observer" ~db_name:"main"
+         ~last_seen_server_version:0L ~operations:own_ops)
+  in
+  assert (List.length first.synced_operations = 300);
+  assert (List.length first.operations = 1000);
+  assert (first.latest_server_version = 1000L);
+  let second = pull_once conn ~client_id:"observer" ~cursor:first.latest_server_version in
+  assert (List.length second.operations = 205);
+  let third = pull_once conn ~client_id:"observer" ~cursor:second.latest_server_version in
+  assert (third.operations = []);
+  let all_keys =
+    collect_row_keys first.operations @ collect_row_keys second.operations
+    @ collect_row_keys third.operations
+  in
+  let dedup = List.sort_uniq String.compare all_keys in
+  assert (List.length all_keys = 1205);
+  assert (List.length dedup = 1205)
+
+let assert_pagination_boundaries () =
+  let run_count count expected_first_count expected_first_latest =
+    with_connection @@ fun conn ->
+    (match Sync.Repository.init_schema conn with
+    | Error err -> failwith (Sync.Repository.error_to_string err)
+    | Ok () -> ());
+    let _ = seed_remote_ops conn ~count in
+    let first = pull_once conn ~client_id:"observer" ~cursor:0L in
+    assert (List.length first.operations = expected_first_count);
+    assert (first.latest_server_version = expected_first_latest);
+    let second =
+      pull_once conn ~client_id:"observer" ~cursor:first.latest_server_version
+    in
+    if count <= 1000 then assert (second.operations = [])
+    else assert (List.length second.operations = count - 1000)
+  in
+  run_count 999 999 999L;
+  run_count 1000 1000 1000L;
+  run_count 1001 1000 1000L
+
+let assert_empty_and_all_own_pull () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error err -> failwith (Sync.Repository.error_to_string err)
+  | Ok () -> ());
+  let empty = pull_once conn ~client_id:"solo" ~cursor:(-1L) in
+  assert (empty.operations = []);
+  assert (empty.latest_server_version = -1L);
+  let own_ops =
+    List.init 5 (fun i ->
+        make_set_row_op ~client_id:"solo" ~version:(Int64.of_int (i + 1))
+          ~row_key:(Printf.sprintf "solo-%d" (i + 1)) ~title:"solo")
+  in
+  let own_response =
+    submit_request conn
+      (make_request ~client_id:"solo" ~db_name:"main"
+         ~last_seen_server_version:(-1L) ~operations:own_ops)
+  in
+  assert (List.length own_response.synced_operations = 5);
+  assert (own_response.operations = []);
+  let follow_up =
+    pull_once conn ~client_id:"solo" ~cursor:own_response.latest_server_version
+  in
+  assert (follow_up.operations = [])
+
+let assert_compaction_publishes_checkpoint_and_replaces_prefix () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error err -> failwith (Sync.Repository.error_to_string err)
+  | Ok () -> ());
+  let original = make_set_row_op ~client_id:"writer" ~version:1L ~row_key:"r1" ~title:"original" in
+  let _ = submit_request conn (make_request ~client_id:"writer" ~db_name:"main" ~last_seen_server_version:0L ~operations:[ original ]) in
+  let checkpoint =
+    match Sync.Sync_engine.compact_row_with_connection conn ~tenant_id:"user-1"
+      ~db_name:"main" ~table_name:"todos" ~row_key:"r1"
+      ~checkpoint_seen_server_version:2L with
+    | Error err -> fail_with_sync_error "compaction failed: " err
+    | Ok checkpoint -> checkpoint
+  in
+  (match checkpoint.payload with
+  | Sync.Sync_engine.Checkpoint_row { checkpoint_seen_server_version; state } ->
+      assert (checkpoint_seen_server_version = 2L);
+      let field = Yojson.Safe.Util.member "title" (Yojson.Safe.Util.member "fields" state) in
+      assert (Yojson.Safe.Util.member "value" field = `String "original");
+      assert (Yojson.Safe.Util.member "dot" field |> Yojson.Safe.Util.member "clientId" |> Yojson.Safe.Util.to_string = "writer")
+  | _ -> failwith "expected checkpoint payload");
+  (match Sync.Repository.count_operations conn ~tenant_id:"user-1" ~db_name:"main" with
+  | Ok 1 -> ()
+  | Ok n -> failwith (Printf.sprintf "expected one replacement operation, got %d" n)
+  | Error err -> failwith (Sync.Repository.error_to_string err))
+
+let assert_auto_compaction_failure_does_not_fail_sync () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error err -> failwith (Sync.Repository.error_to_string err)
+  | Ok () -> ());
+  let malformed_old_operation : Sync.Repository.db_crdt_operation =
+    { server_version = 0L;
+      tenant_id = "user-1";
+      db_name = "main";
+      client_id = "writer";
+      version = 1L;
+      op_type = "setRow";
+      table_name = "todos";
+      row_key = "r1";
+      field_key = None;
+      json_value = Some "not-json";
+      version_vector = None }
+  in
+  (match Sync.Repository.insert_crdt_operation conn malformed_old_operation with
+  | Error err -> failwith (Sync.Repository.error_to_string err)
+  | Ok _ -> ());
+  let operation = make_set_row_op ~client_id:"writer" ~version:2L ~row_key:"r1" ~title:"valid" in
+  let request =
+    make_request ~client_id:"writer" ~db_name:"main"
+      ~last_seen_server_version:1L ~operations:[ operation ]
+  in
+  (match
+     Sync.Sync_engine.process_sync_request_with_connection
+       ~checkpoint_threshold_operations:1 conn ~tenant_id:"user-1"
+       ~db_name:"main" request
+   with
+  | Error err -> fail_with_sync_error "auto compaction failure escaped sync: " err
+  | Ok response -> assert (List.length response.synced_operations = 1));
+  match
+    Sync.Sync_engine.compact_row_with_connection conn ~tenant_id:"user-1"
+      ~db_name:"main" ~table_name:"todos" ~row_key:"r1"
+      ~checkpoint_seen_server_version:3L
+  with
+  | Error _ -> ()
+  | Ok _ -> failwith "explicit compaction should report malformed stored operation"
+
 let () =
+  assert_compaction_publishes_checkpoint_and_replaces_prefix ();
+  assert_auto_compaction_failure_does_not_fail_sync ();
   assert_set_roundtrip_and_fetch_for_second_client ();
   assert_set_row_roundtrip_and_fetch_for_second_client ();
   assert_remove_roundtrip_and_fetch_for_second_client ();
   assert_accept_non_contiguous_versions ();
   assert_reject_versions_that_go_backwards ();
-  assert_reject_remove_context_unseen_dot ();
+  assert_accept_unverified_remove_context ();
   assert_reject_invalid_request_hash ();
-  assert_tenant_isolation_between_streams ()
+  assert_tenant_isolation_between_streams ();
+  assert_full_only_remote_pagination ();
+  assert_remote_pages_not_skipped_after_own_high_uploads ();
+  assert_pagination_boundaries ();
+  assert_empty_and_all_own_pull ()

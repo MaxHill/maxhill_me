@@ -3,6 +3,7 @@ type dot = { client_id : string; version : int64 }
 type op_payload =
   | Set_row of { fields : Yojson.Safe.t }
   | Remove_row of { version_vector : (string * int64) list }
+  | Checkpoint_row of { checkpoint_seen_server_version : int64; state : Yojson.Safe.t }
 
 type crdt_operation = {
   table_name : string;
@@ -20,11 +21,14 @@ type sync_request = {
   request_hash : string;
 }
 
+type synced_operation = { dot : dot; server_version : int64 }
+
 type sync_response = {
   base_server_version : int64;
   latest_server_version : int64;
   operations : crdt_operation list;
-  synced_operations : dot list;
+  operation_server_versions : int64 list;
+  synced_operations : synced_operation list;
   response_hash : string;
 }
 
@@ -32,7 +36,6 @@ type sync_error =
   | Request_integrity_failed
   | Client_state_out_of_sync of { last_seen : int64; max_server : int64 }
   | Non_monotonic_versions of string
-  | Remove_context_unseen_dot of { client_id : string; version : int64 }
   | Storage_error of string
   | Decode_error of string
 
@@ -43,15 +46,13 @@ let sync_error_to_string = function
         max_server
   | Non_monotonic_versions client_id ->
       Printf.sprintf "request versions went backwards for client %s" client_id
-  | Remove_context_unseen_dot { client_id; version } ->
-      Printf.sprintf "remove context references unseen dot %s#%Ld" client_id
-        version
   | Storage_error msg -> msg
   | Decode_error msg -> msg
 
 let operation_type = function
   | Set_row _ -> "setRow"
   | Remove_row _ -> "removeRow"
+  | Checkpoint_row _ -> "checkpointRow"
 
 let int64_of_json = function
   | `Int value -> Int64.of_int value
@@ -75,5 +76,3 @@ let canonical_version_vector_json version_vector =
   |> Yojson.Safe.to_string
 
 let dot_key (dot : dot) = Printf.sprintf "%s#%Ld" dot.client_id dot.version
-
-let incoming_dot_set operations = operations |> List.map (fun op -> dot_key op.dot)

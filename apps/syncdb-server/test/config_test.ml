@@ -19,6 +19,8 @@ let assert_defaults_from_env () =
   assert (config.port = 3001);
   assert (config.db_path = "./sync.db");
   assert (config.log_level = Some Logs.Info);
+  assert (config.checkpoint_threshold_operations = None);
+  assert (config.checkpoint_threshold_bytes = None);
   assert (config.auth.issuer = "https://issuer.example");
   assert (config.auth.audience = "sync-users");
   assert (config.auth.allowed_algs = [ `RS256; `ES256 ])
@@ -32,6 +34,8 @@ let assert_env_overrides_defaults () =
              ("PORT", "4321");
              ("DB_PATH", "/tmp/custom-sync.db");
              ("LOG_LEVEL", "debug");
+             ("SYNC_CHECKPOINT_THRESHOLD_OPERATIONS", "250");
+             ("SYNC_CHECKPOINT_THRESHOLD_BYTES", "65536");
              ("AUTH_ISSUER_URL", "https://env-issuer.example");
              ("AUTH_AUDIENCE", "env-users");
              ("AUTH_ALLOWED_ALGS", "HS256, ES256");
@@ -41,6 +45,8 @@ let assert_env_overrides_defaults () =
   assert (config.port = 4321);
   assert (config.db_path = "/tmp/custom-sync.db");
   assert (config.log_level = Some Logs.Debug);
+  assert (config.checkpoint_threshold_operations = Some 250);
+  assert (config.checkpoint_threshold_bytes = Some 65536);
   assert (config.auth.issuer = "https://env-issuer.example");
   assert (config.auth.audience = "env-users");
   assert (config.auth.allowed_algs = [ `HS256; `ES256 ])
@@ -60,6 +66,19 @@ let assert_invalid_port_raises () =
           ~getenv:(env_of (("PORT", "not-a-port") :: required_only))
           ()))
 
+let assert_invalid_checkpoint_thresholds_raise () =
+  List.iter
+    (fun (name, value) ->
+      assert
+        (did_raise (fun () ->
+             Sync.Config.init
+               ~getenv:(env_of ((name, value) :: required_only)) ())))
+    [ ("SYNC_CHECKPOINT_THRESHOLD_OPERATIONS", "not-a-number");
+      ("SYNC_CHECKPOINT_THRESHOLD_OPERATIONS", "0");
+      ("SYNC_CHECKPOINT_THRESHOLD_OPERATIONS", "-1");
+      ("SYNC_CHECKPOINT_THRESHOLD_BYTES", "bad");
+      ("SYNC_CHECKPOINT_THRESHOLD_BYTES", "0") ]
+
 let assert_missing_required_auth_raises () =
   assert (did_raise (fun () -> Sync.Config.init ~getenv:(env_of []) ()))
 
@@ -68,4 +87,5 @@ let () =
   assert_env_overrides_defaults ();
   assert_app_log_level_from_env ();
   assert_invalid_port_raises ();
+  assert_invalid_checkpoint_thresholds_raise ();
   assert_missing_required_auth_raises ()
