@@ -135,26 +135,22 @@ let register_delayed_request ~(client : Client.t)
 
 let process_request_and_maybe_send_response ~(client : Client.t) ~(world : world)
     (request : Sync.Sync_engine.sync_request) =
-  Coverage.observe_request world.coverage ~request ~step:world.step_n;
+  Coverage.observe_request world.coverage ~request;
   let response =
     match
       Sync.Sync_engine.process_sync_request_with_connection world.db_conn
         ~tenant_id:world.tenant_id ~db_name:world.db_name request
     with
-    | Error error ->
-        let outcome = Sync.Sync_engine.sync_error_to_string error in
-        Coverage.record_request_outcome ~request ~step:world.step_n outcome;
-        failwith outcome
+    | Error error -> failwith (Sync.Sync_engine.sync_error_to_string error)
     | Ok response -> response
   in
-  Coverage.record_request_outcome ~request ~step:world.step_n "accepted";
-  Coverage.record_acceptances world.coverage ~request ~response ~step:world.step_n;
+  Coverage.record_acceptances world.coverage ~response;
 
   let* action = choose_response_action ~world in
   match action with
   | Pass -> send_response_to_client ~client ~world response
   | Drop ->
-      Coverage.record_response_drop world.coverage ~request ~response ~step:world.step_n;
+      Coverage.record_response_drop world.coverage ~request ~response;
       Ok ()
   | Delay ->
       let* delay_ticks = choose_delay_ticks ~world in

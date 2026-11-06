@@ -99,8 +99,8 @@ let compact_random_server_row world =
            with
           | Error error -> failwith ("CHECKPOINT_PREFIX_VALIDATION_FAIL: " ^ error)
           | Ok () -> ());
-          Coverage.record_compaction world.coverage ~table_name ~row_key ~cutoff
-            ~removed_rows ~step:world.step_n;
+          Coverage.record_compaction world.coverage ~table_name ~row_key
+            ~removed_rows;
           Ok ()
 
 let perform_client_action ~client world action =

@@ -27,12 +27,12 @@ let test_lost_ack_retry_and_compacted_delete_classification () =
         [ { dot = upload.dot; server_version = 5L } ];
       response_hash = "response" }
   in
-  Coverage.observe_request coverage ~request ~step:1;
+  Coverage.observe_request coverage ~request;
   assert (coverage.retries_before_compaction = 0);
-  Coverage.record_acceptances coverage ~request ~response ~step:2;
-  Coverage.record_response_drop coverage ~request ~response ~step:2;
+  Coverage.record_acceptances coverage ~response;
+  Coverage.record_response_drop coverage ~request ~response;
   let retry = make_request [ upload ] "retry-request" in
-  Coverage.observe_request coverage ~request:retry ~step:3;
+  Coverage.observe_request coverage ~request:retry;
   assert (coverage.retries_before_compaction = 1);
   assert (coverage.retries_after_compaction = 0);
   let removed : Sync.Repository.db_crdt_operation =
@@ -49,15 +49,15 @@ let test_lost_ack_retry_and_compacted_delete_classification () =
       version_vector = None }
   in
   Coverage.record_compaction coverage ~table_name:"items" ~row_key:"r1"
-    ~cutoff:6L ~removed_rows:[ removed ] ~step:4;
-  Coverage.observe_request coverage ~request:retry ~step:5;
+    ~removed_rows:[ removed ];
+  Coverage.observe_request coverage ~request:retry;
   assert (coverage.retries_after_compaction = 1);
   let delete =
     make_operation ~client_id:"deleter" ~version:1L ~row_key:"r1"
       ~payload:(Sync.Sync_engine.Remove_row { version_vector = [ ("writer", 1L) ] }) ()
   in
   Coverage.observe_request coverage
-    ~request:(make_request [ delete ] "delete-request") ~step:6;
+    ~request:(make_request [ delete ] "delete-request");
   assert (coverage.delete_context_references_removed_dots = 1)
 
 let make_db_row ~server_version ~client_id ~version ~op_type ~json_value =
