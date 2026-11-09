@@ -33,11 +33,11 @@ let current_sync_path = "/v2/sync"
 
 let legacy_sync_response =
   {
-    status = `Upgrade_required;
+    status = `Gone;
     body =
       Yojson.Safe.to_string
         (`Assoc
-          [ ("code", `String "SYNC_PROTOCOL_UPGRADE_REQUIRED");
+          [ ("code", `String "SYNC_ENDPOINT_RETIRED");
             ("message", `String "POST /sync is retired; use POST /v2/sync") ]);
   }
 
@@ -58,16 +58,9 @@ let json_error_body message =
   Yojson.Safe.to_string (`Assoc [ ("error", `String message) ])
 
 let respond_with_content_type reqd ~content_type ({ status; body } : response) =
-  let protocol_headers =
-    match status with
-    | `Upgrade_required ->
-        [ ("connection", "Upgrade"); ("upgrade", "syncdb/2") ]
-    | _ -> []
-  in
   let headers =
     Httpun.Headers.of_list
       (cors_headers
-      @ protocol_headers
       @ [
           ("content-type", content_type);
           ("content-length", string_of_int (String.length body));

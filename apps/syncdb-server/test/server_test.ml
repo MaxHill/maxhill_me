@@ -11,14 +11,14 @@ let assert_health_route () =
   assert (response.status = `OK);
   assert (response.body = "ok")
 
-let assert_legacy_sync_requires_upgrade () =
+let assert_legacy_sync_is_gone () =
   let response, format = Sync.Server.route ~meth:`POST ~target:"/sync" in
   assert (format = `Json);
-  assert (response.status = `Upgrade_required);
+  assert (response.status = `Gone);
   let body = Yojson.Safe.from_string response.body in
   assert
     (Yojson.Safe.Util.member "code" body
-    = `String "SYNC_PROTOCOL_UPGRADE_REQUIRED");
+    = `String "SYNC_ENDPOINT_RETIRED");
   assert
     (Yojson.Safe.Util.member "message" body
     = `String "POST /sync is retired; use POST /v2/sync")
@@ -44,7 +44,7 @@ let assert_sse_upstream_frame () =
 
 let () =
   assert_health_route ();
-  assert_legacy_sync_requires_upgrade ();
+  assert_legacy_sync_is_gone ();
   assert_unknown_route ();
   assert_wrong_method_route ();
   assert_subscribe_path_parsing ();
