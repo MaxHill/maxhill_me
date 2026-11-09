@@ -11,7 +11,7 @@ import {
   type StopHandle,
 } from "./sync-strategies";
 
-const SYNC_URL = import.meta.env.VITE_SYNC_URL || "http://localhost:3001/sync";
+const SYNC_URL = import.meta.env.VITE_SYNC_URL || "http://localhost:3001/v2/sync";
 /** Safety-net pull when SSE is quiet. */
 const SYNC_INTERVAL_MS = 120_000;
 /** Trailing debounce after local writes before pushing. */
@@ -197,7 +197,7 @@ function startSyncStrategies(db: DBInterface): void {
       dbName: DB_NAME,
       getToken: () => authClient.getToken(),
       onUnauthorized: async () => {
-        // Match POST /sync: try a forced refresh once, else log out.
+        // Match POST /v2/sync: try a forced refresh once, else log out.
         const token = await authClient.getToken({ forceRefresh: true });
         if (token) {
           return true;

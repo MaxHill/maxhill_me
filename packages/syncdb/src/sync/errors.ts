@@ -20,6 +20,9 @@ export enum SyncErrorCode {
   
   /** Client ID is invalid or missing */
   INVALID_CLIENT_ID = "INVALID_CLIENT_ID",
+
+  /** The legacy sync endpoint has been retired; use the versioned endpoint. */
+  SYNC_PROTOCOL_UPGRADE_REQUIRED = "SYNC_PROTOCOL_UPGRADE_REQUIRED",
 }
 
 /**

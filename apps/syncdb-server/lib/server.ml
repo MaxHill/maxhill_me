@@ -29,9 +29,22 @@ let status_of_sync_error = function
   | Sync_engine.Storage_error _ | Sync_engine.Decode_error _ ->
       `Internal_server_error
 
+let current_sync_path = "/v2/sync"
+
+let legacy_sync_response =
+  {
+    status = `Upgrade_required;
+    body =
+      Yojson.Safe.to_string
+        (`Assoc
+          [ ("code", `String "SYNC_PROTOCOL_UPGRADE_REQUIRED");
+            ("message", `String "POST /sync is retired; use POST /v2/sync") ]);
+  }
+
 let route ~meth ~target =
   match (meth, target) with
   | `GET, "/health" -> ({ status = `OK; body = "ok" }, `Text)
+  | `POST, "/sync" -> (legacy_sync_response, `Json)
   | _ -> ({ status = `Not_found; body = "not found" }, `Text)
 
 let cors_headers =
@@ -45,9 +58,16 @@ let json_error_body message =
   Yojson.Safe.to_string (`Assoc [ ("error", `String message) ])
 
 let respond_with_content_type reqd ~content_type ({ status; body } : response) =
+  let protocol_headers =
+    match status with
+    | `Upgrade_required ->
+        [ ("connection", "Upgrade"); ("upgrade", "syncdb/2") ]
+    | _ -> []
+  in
   let headers =
     Httpun.Headers.of_list
       (cors_headers
+      @ protocol_headers
       @ [
           ("content-type", content_type);
           ("content-length", string_of_int (String.length body));
@@ -190,11 +210,12 @@ let request_handler (context : context) _client_addr reqd =
   let path = Uri.path uri in
   Log.info (fun m -> m "%s %s" (Httpun.Method.to_string meth) target);
   match (meth, path) with
-  | `OPTIONS, "/sync" ->
+  | `OPTIONS, path when path = "/sync" || path = current_sync_path ->
       respond_text reqd { status = `No_content; body = "" }
   | `OPTIONS, path when Option.is_some (subscribe_db_name path) ->
       respond_text reqd { status = `No_content; body = "" }
-  | `POST, "/sync" -> (
+  | `POST, "/sync" -> respond_json reqd legacy_sync_response
+  | `POST, path when path = current_sync_path -> (
       let authorization = Httpun.Headers.get request.headers "authorization" in
       match Auth.validate_bearer context.auth authorization with
       | Error err ->

@@ -235,6 +235,15 @@ describe("CRDTDatabase", () => {
         rowKey: "u1",
         fields: { age: 26 },
       });
+      await expect(users.get("u1")).resolves.toMatchObject({ age: 26 });
+    });
+
+    it("should reject unserializable setField values", async () => {
+      const users = db.table("users");
+
+      await expect(users.setField("u1", "age", undefined)).rejects.toThrow(
+        "Field value must be JSON-serializable",
+      );
     });
 
     it("should notify subscribers when deleteRow is called", async () => {

@@ -25,6 +25,19 @@ let assert_defaults_from_env () =
   assert (config.auth.audience = "sync-users");
   assert (config.auth.allowed_algs = [ `RS256; `ES256 ])
 
+let assert_blank_checkpoint_thresholds_are_absent () =
+  let config =
+    Sync.Config.init
+      ~getenv:
+        (env_of
+           ([ ("SYNC_CHECKPOINT_THRESHOLD_OPERATIONS", "  ");
+              ("SYNC_CHECKPOINT_THRESHOLD_BYTES", "") ]
+           @ required_only))
+      ()
+  in
+  assert (config.checkpoint_threshold_operations = None);
+  assert (config.checkpoint_threshold_bytes = None)
+
 let assert_env_overrides_defaults () =
   let config =
     Sync.Config.init
@@ -84,6 +97,7 @@ let assert_missing_required_auth_raises () =
 
 let () =
   assert_defaults_from_env ();
+  assert_blank_checkpoint_thresholds_are_absent ();
   assert_env_overrides_defaults ();
   assert_app_log_level_from_env ();
   assert_invalid_port_raises ();

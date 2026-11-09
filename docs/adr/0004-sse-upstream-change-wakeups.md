@@ -2,18 +2,18 @@
 
 Clients learn that a **tenant**'s op log advanced via Server-Sent
 Events. The only event variant today is a unit **upstream change**
-(wake-up only). Operations still move solely over `POST /sync`.
+(wake-up only). Operations still move solely over the versioned `POST /v2/sync` endpoint.
 
 ## Why wake-up, not push
 
 Pushing ops over SSE would duplicate the sync protocol (hashes,
 versioning, integrity). A wake-up keeps one mutation path and lets
-each replica call `/sync` when ready.
+each replica call `/v2/sync` when ready.
 
 ## Shape
 
 - `GET /subscribe/<dbName>?clientId=…` with the same Bearer auth as
-  `/sync`. `dbName` uses the existing validator.
+  `/v2/sync`. `dbName` uses the existing validator.
 - Browser `EventSource` cannot set `Authorization`. Clients use
   `fetch` + a stream reader (no npm SSE lib). Wire format stays
   standard SSE so a future cookie-auth world could still use
@@ -33,9 +33,9 @@ each replica call `/sync` when ready.
 - Publish after a successful sync that had operations; exclude the
   writing `clientId` so the writer is not woken for its own ops.
 - Client catch-up: on stream open and after stream end, call
-  `POST /sync` once. The hub does not replay missed wake-ups.
+  `POST /v2/sync` once. The hub does not replay missed wake-ups.
 - Subscribe 401/403 uses the same refresh-then-logout idea as
-  `/sync`. Capacity 429 uses a longer backoff than network blips.
+  `/v2/sync`. Capacity 429 uses a longer backoff than network blips.
 
 ## Considered options
 
@@ -43,6 +43,6 @@ each replica call `/sync` when ready.
 - **Stock `EventSource` + token query** — rejected; tokens in URLs
   and access logs.
 - **POST subscribe with token in body** — works with `fetch`, but
-  does not restore `EventSource` and diverges from GET+Bearer `/sync`.
+  does not restore `EventSource` and diverges from GET+Bearer `/v2/sync`.
 - **Cookie session for SSE only** — clean native `EventSource`, but
   a second auth mode beside JWT Bearer.

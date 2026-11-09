@@ -268,13 +268,13 @@ After `sync()` applies remote ops, these handlers run with `source: "remote"`.
 
 ## 7. Sync with the server
 
-Point the builder at your sync HTTP endpoint. Call `sync()` when you want to
+Point the builder at your versioned sync HTTP endpoint. Call `sync()` when you want to
 push local ops and pull remote ops.
 
 ```ts
 const db = await newDatabase("golf")
   .addTable("clubs", { byName: ["name"] })
-  .withSyncRemote("https://sync.example.com/sync")
+  .withSyncRemote("https://sync.example.com/v2/sync")
   .withSyncHeaders(async () => {
     const token = await getAccessToken();
     if (!token) {
@@ -353,7 +353,7 @@ async function main() {
       byUpdatedAt: ["updatedAt"],
       byTitle: ["title"],
     })
-    .withSyncRemote("https://sync.example.com/sync")
+    .withSyncRemote("https://sync.example.com/v2/sync")
     .withSyncHeaders(async () => ({
       Authorization: `Bearer ${await getAccessToken()}`,
     }))

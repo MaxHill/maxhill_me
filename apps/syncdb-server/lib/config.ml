@@ -76,10 +76,10 @@ let init ?(getenv = Sys.getenv_opt) () =
     log_level = parse_log_level (opt "LOG_LEVEL");
     checkpoint_threshold_operations =
       parse_positive_threshold "SYNC_CHECKPOINT_THRESHOLD_OPERATIONS"
-        (getenv "SYNC_CHECKPOINT_THRESHOLD_OPERATIONS");
+        (opt "SYNC_CHECKPOINT_THRESHOLD_OPERATIONS");
     checkpoint_threshold_bytes =
       parse_positive_threshold "SYNC_CHECKPOINT_THRESHOLD_BYTES"
-        (getenv "SYNC_CHECKPOINT_THRESHOLD_BYTES");
+        (opt "SYNC_CHECKPOINT_THRESHOLD_BYTES");
     auth =
       {
         issuer = required_value "AUTH_ISSUER_URL" (opt "AUTH_ISSUER_URL");
