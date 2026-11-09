@@ -32,6 +32,10 @@ const remoteRunnerPath = "/tmp/golf-deploy-remote";
 await $`mkdir -p vps/golf/dist`;
 await compileLinuxBinary("vps/golf/deploy-remote.ts", "vps/golf/dist/deploy-remote");
 
+await withCwd("packages/syncdb", async () => {
+	await $`pnpm exec vite build`;
+});
+
 await withCwd("apps/golf", async () => {
 	await $`pnpm exec vite build`;
 });
