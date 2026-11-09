@@ -43,17 +43,30 @@ let decode_operation json =
         in
         Ok { table_name; row_key; dot; payload = Remove_row { version_vector } }
   | "checkpointRow" ->
-      if not (has_key "checkpointSeenServerVersion" json && has_key "state" json)
-         || has_key "fields" json || has_key "versionVector" json
+      if
+        not (has_key "checkpointSeenServerVersion" json && has_key "fields" json)
+        || has_key "state" json || has_key "versionVector" json
       then Error "checkpointRow payload shape mismatch"
       else
-        let checkpoint_seen_server_version =
-          json |> member "checkpointSeenServerVersion" |> int64_of_json
-        in
-        let state = json |> member "state" in
-        Ok
-          { table_name; row_key; dot;
-            payload = Checkpoint_row { checkpoint_seen_server_version; state } }
+        let fields = json |> member "fields" in
+        let tombstone = json |> member "tombstone" in
+        (match fields with
+        | `Assoc _ ->
+            (match (has_key "tombstone" json, tombstone) with
+            | true, `Assoc _ | false, _ ->
+                let checkpoint_seen_server_version =
+                  json |> member "checkpointSeenServerVersion" |> int64_of_json
+                in
+                let state =
+                  `Assoc
+                    ([ ("fields", fields) ]
+                    @ if has_key "tombstone" json then [ ("tombstone", tombstone) ] else [])
+                in
+                Ok
+                  { table_name; row_key; dot;
+                    payload = Checkpoint_row { checkpoint_seen_server_version; state } }
+            | _ -> Error "checkpointRow tombstone shape mismatch")
+        | _ -> Error "checkpointRow fields must be an object")
   | _ -> Error ("unsupported operation type: " ^ operation_type)
 
 let decode_sync_request raw =
@@ -103,9 +116,13 @@ let encode_operation operation =
   match operation.payload with
   | Set_row { fields } -> `Assoc (base_fields @ [ ("fields", fields) ])
   | Checkpoint_row { checkpoint_seen_server_version; state } ->
+      let fields = Yojson.Safe.Util.member "fields" state in
+      let tombstone = Yojson.Safe.Util.member "tombstone" state in
       `Assoc
         (base_fields
-        @ [ ("checkpointSeenServerVersion", `Intlit (Int64.to_string checkpoint_seen_server_version)); ("state", state) ])
+        @ [ ("checkpointSeenServerVersion", `Intlit (Int64.to_string checkpoint_seen_server_version));
+            ("fields", fields) ]
+        @ if tombstone = `Null then [] else [ ("tombstone", tombstone) ])
   | Remove_row { version_vector } ->
       let version_vector_json =
         `Assoc

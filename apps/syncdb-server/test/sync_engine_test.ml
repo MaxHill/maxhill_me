@@ -167,7 +167,7 @@ let assert_encode_sync_response_includes_set_row_operation_shape () =
 
 let assert_checkpoint_wire_round_trip () =
   let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"checkpointRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"dot\":{\"clientId\":\"server\",\"version\":9},\"checkpointSeenServerVersion\":7,\"state\":{\"fields\":{\"title\":{\"value\":\"Hi\",\"dot\":{\"clientId\":\"client-1\",\"version\":2}}}}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
+    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"checkpointRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"dot\":{\"clientId\":\"server\",\"version\":9},\"checkpointSeenServerVersion\":7,\"fields\":{\"title\":{\"value\":\"Hi\",\"dot\":{\"clientId\":\"client-1\",\"version\":2}}},\"tombstone\":{\"dot\":{\"clientId\":\"deleter\",\"version\":3},\"versionVector\":{\"client-1\":2}}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
   in
   match Sync.Sync_engine.decode_sync_request request_json with
   | Error msg -> failwith ("expected checkpoint decode success: " ^ msg)
@@ -175,11 +175,46 @@ let assert_checkpoint_wire_round_trip () =
       (match request.operations with
       | [ { payload = Checkpoint_row { checkpoint_seen_server_version; state }; _ } ] ->
           assert (checkpoint_seen_server_version = 7L);
-          assert (Yojson.Safe.Util.member "fields" state <> `Null)
+          assert (Yojson.Safe.Util.member "fields" state <> `Null);
+          assert (Yojson.Safe.Util.member "tombstone" state <> `Null)
       | _ -> failwith "expected checkpointRow payload")
+
+let assert_checkpoint_response_uses_client_wire_shape () =
+  let operation =
+    {
+      Sync.Sync_engine.table_name = "todos";
+      row_key = "r1";
+      dot = { client_id = "server"; version = 9L };
+      payload =
+        Checkpoint_row
+          { checkpoint_seen_server_version = 7L;
+            state =
+              `Assoc
+                [ ("fields", `Assoc [ ("title", `Assoc [ ("value", `String "Hi"); ("dot", `Assoc [ ("clientId", `String "client-1"); ("version", `Int 2) ]) ]) ]);
+                  ("tombstone", `Assoc [ ("dot", `Assoc [ ("clientId", `String "deleter"); ("version", `Int 3) ]); ("versionVector", `Assoc [ ("client-1", `Int 2) ]) ]) ] };
+    }
+  in
+  let response =
+    { Sync.Sync_engine.base_server_version = 0L;
+      latest_server_version = 8L;
+      operations = [ operation ];
+      operation_server_versions = [ 8L ];
+      synced_operations = [];
+      response_hash = "hash" }
+  in
+  assert
+    (Sync.Sync_engine.hash_sync_response response
+    = "0a330e88ebc6f8da31563f3a6b46f0c32f2fed49dea522ec9dba1f4bd97af11a");
+  let json = Yojson.Safe.from_string (Sync.Sync_engine.encode_sync_response response) in
+  let encoded_operation = json |> Yojson.Safe.Util.member "operations" |> Yojson.Safe.Util.to_list |> List.hd in
+  assert (Yojson.Safe.Util.member "fields" encoded_operation <> `Null);
+  assert (Yojson.Safe.Util.member "tombstone" encoded_operation <> `Null);
+  assert (Yojson.Safe.Util.member "state" encoded_operation = `Null);
+  assert (Yojson.Safe.Util.member "checkpointSeenServerVersion" encoded_operation = `Int 7)
 
 let () =
   assert_checkpoint_wire_round_trip ();
+  assert_checkpoint_response_uses_client_wire_shape ();
   assert_reject_set_operation_request ();
   assert_decode_set_row_operation_request ();
   assert_decode_remove_operation_request ();
