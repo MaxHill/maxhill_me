@@ -1,4 +1,11 @@
-import { applyOperationToRow, CRDTOperation, Dot, toUserRow, ValidKey } from "./crdt.ts";
+import {
+  applyOperationToRow,
+  CRDTOperation,
+  Dot,
+  isSerializable,
+  toUserRow,
+  ValidKey,
+} from "./crdt.ts";
 import {
   CLIENT_STATE_STORE,
   Lifecycle,
@@ -99,12 +106,8 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
         `The _key field is reserved and managed automatically.`,
     );
     assert(
-      value !== null &&
-        typeof value === "object" &&
-        !Array.isArray(value) &&
-        (Object.getPrototypeOf(value) === Object.prototype ||
-          Object.getPrototypeOf(value) === null),
-      "Row value must be Record<string, any>",
+      isSerializable(value),
+      "Field value must be JSON-serializable",
     );
 
     const tx = this.lifecycle.transaction(

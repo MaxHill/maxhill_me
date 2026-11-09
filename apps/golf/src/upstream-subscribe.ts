@@ -38,13 +38,13 @@ export class SubscribeHttpError extends Error {
   }
 }
 
-/** Build subscribe URL from the existing POST /sync base URL. */
+/** Build subscribe URL from the existing POST /vN/sync base URL. */
 export function subscribeUrlFromSyncUrl(
   syncUrl: string,
   dbName: string,
   clientId: string,
 ): string {
-  const base = syncUrl.replace(/\/sync\/?$/, "");
+  const base = syncUrl.replace(/\/(?:v\d+\/)?sync\/?$/, "");
   const url = new URL(`${base}/subscribe/${encodeURIComponent(dbName)}`);
   url.searchParams.set("clientId", clientId);
   return url.toString();

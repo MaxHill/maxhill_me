@@ -12,8 +12,8 @@ type world = {
   action_timeout : float;
   tenant_id : string;
   db_name : string;
-  mutable last_count_operations : int option;
   mutable last_max_server_version : int64 option;
+  coverage : Coverage.t;
 }
 
 (* ------------------------------------------------------------------------ *)

@@ -47,5 +47,14 @@ let () =
   |> fail_on_repository_error "init_schema";
   let event_hub = Sync.Event_hub.init () in
   let clock = Eio.Stdenv.clock env in
-  let context = Sync.Server.{ db_pool; auth; event_hub; clock } in
+  let context =
+    Sync.Server.{
+      db_pool;
+      auth;
+      event_hub;
+      clock;
+      checkpoint_threshold_operations = config.checkpoint_threshold_operations;
+      checkpoint_threshold_bytes = config.checkpoint_threshold_bytes;
+    }
+  in
   Sync.Server.start env ~sw ~port:config.port ~context

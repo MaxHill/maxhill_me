@@ -8,6 +8,8 @@ type t = {
   port : int;
   db_path : string;
   log_level : Logs.level option;
+  checkpoint_threshold_operations : int option;
+  checkpoint_threshold_bytes : int option;
   auth : auth;
 }
 

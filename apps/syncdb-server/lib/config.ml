@@ -8,6 +8,8 @@ type t = {
   port : int;
   db_path : string;
   log_level : Logs.level option;
+  checkpoint_threshold_operations : int option;
+  checkpoint_threshold_bytes : int option;
   auth : auth;
 }
 
@@ -32,6 +34,13 @@ let parse_log_level = function
       | "info" -> Some Logs.Info
       | "debug" -> Some Logs.Debug
       | _ -> failwith "LOG_LEVEL must be one of: app|error|warning|info|debug")
+
+let parse_positive_threshold name = function
+  | None -> None
+  | Some raw -> (
+      match int_of_string_opt (String.trim raw) with
+      | Some value when value > 0 -> Some value
+      | _ -> failwith (name ^ " must be a positive integer when set"))
 
 let parse_db_path = function
   | Some path when String.length path > 0 -> path
@@ -65,6 +74,12 @@ let init ?(getenv = Sys.getenv_opt) () =
     port = parse_port (opt "PORT");
     db_path = parse_db_path (opt "DB_PATH");
     log_level = parse_log_level (opt "LOG_LEVEL");
+    checkpoint_threshold_operations =
+      parse_positive_threshold "SYNC_CHECKPOINT_THRESHOLD_OPERATIONS"
+        (opt "SYNC_CHECKPOINT_THRESHOLD_OPERATIONS");
+    checkpoint_threshold_bytes =
+      parse_positive_threshold "SYNC_CHECKPOINT_THRESHOLD_BYTES"
+        (opt "SYNC_CHECKPOINT_THRESHOLD_BYTES");
     auth =
       {
         issuer = required_value "AUTH_ISSUER_URL" (opt "AUTH_ISSUER_URL");

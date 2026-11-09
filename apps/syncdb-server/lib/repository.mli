@@ -42,6 +42,24 @@ val get_operations_since
 
 val get_max_server_version : connection -> tenant_id:string -> db_name:string -> (int64, error) result
 
+val get_row_prefix
+  :  connection
+  -> tenant_id:string
+  -> db_name:string
+  -> table_name:string
+  -> row_key:string
+  -> before_server_version:int64
+  -> (db_crdt_operation list, error) result
+
+val delete_row_prefix
+  :  connection
+  -> tenant_id:string
+  -> db_name:string
+  -> table_name:string
+  -> row_key:string
+  -> before_server_version:int64
+  -> (unit, error) result
+
 val has_operation_dot
   :  connection
   -> tenant_id:string

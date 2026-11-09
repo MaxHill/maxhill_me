@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { OperationLog } from "./operationLog.ts";
 import { Lifecycle, OPERATIONS_STORE, CLIENT_STATE_STORE } from "./lifecycle.ts";
 import { CRDTOperation } from "../crdt.ts";
@@ -57,7 +58,7 @@ describe("OperationLog", () => {
     await lifecycle.commit(saveTx);
 
     const syncTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
-    await log.saveOperationAsSynced(syncTx, op.dot);
+    await log.saveOperationAsSynced(syncTx, op.dot, 4);
     await lifecycle.commit(syncTx);
 
     const getTx = lifecycle.transaction(OPERATIONS_STORE, "readonly");
@@ -65,6 +66,60 @@ describe("OperationLog", () => {
     await lifecycle.commit(getTx);
 
     expect(ops).toHaveLength(0);
+  });
+
+  it("batches row checkpoints in one synced-record scan and preserves uncovered operations", async () => {
+    const acceptedBeforeCutoff: CRDTOperation = {
+      type: "setRow", tableName: "users", rowKey: "u1", fields: { name: "old" },
+      dot: { clientId: "c1", version: 1 },
+    };
+    const acceptedBetweenCutoffs: CRDTOperation = {
+      type: "setRow", tableName: "users", rowKey: "u1", fields: { name: "covered by max cutoff" },
+      dot: { clientId: "c1", version: 2 },
+    };
+    const acceptedAtCutoff: CRDTOperation = {
+      type: "setRow", tableName: "users", rowKey: "u1", fields: { name: "boundary" },
+      dot: { clientId: "c1", version: 5 },
+    };
+    const pending: CRDTOperation = {
+      type: "setRow", tableName: "users", rowKey: "u1", fields: { name: "pending" },
+      dot: { clientId: "c1", version: 3 },
+    };
+    const acceptedOtherRow: CRDTOperation = {
+      type: "setRow", tableName: "users", rowKey: "u2", fields: { name: "other" },
+      dot: { clientId: "c1", version: 4 },
+    };
+    const checkpoints: Extract<CRDTOperation, { type: "checkpointRow" }>[] = [
+      { type: "checkpointRow", tableName: "users", rowKey: "u1", dot: { clientId: "server", version: 5 }, checkpointSeenServerVersion: 4, fields: {} },
+      { type: "checkpointRow", tableName: "users", rowKey: "u1", dot: { clientId: "server", version: 6 }, checkpointSeenServerVersion: 5, fields: {} },
+    ];
+    const writeTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
+    await log.saveOperation(writeTx, acceptedBeforeCutoff);
+    await log.saveOperation(writeTx, acceptedBetweenCutoffs);
+    await log.saveOperation(writeTx, acceptedAtCutoff);
+    await log.saveOperation(writeTx, pending);
+    await log.saveOperation(writeTx, acceptedOtherRow);
+    await log.saveOperationAsSynced(writeTx, acceptedBeforeCutoff.dot, 3);
+    await log.saveOperationAsSynced(writeTx, acceptedBetweenCutoffs.dot, 4);
+    await log.saveOperationAsSynced(writeTx, acceptedAtCutoff.dot, 5);
+    await log.saveOperationAsSynced(writeTx, acceptedOtherRow.dot, 3);
+    await lifecycle.commit(writeTx);
+
+    const cleanupTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
+    const storeIndex = vi.spyOn(IDBObjectStore.prototype, "index");
+    const openCursor = vi.spyOn(IDBIndex.prototype, "openCursor");
+    await log.deleteCoveredAcceptedOperations(cleanupTx, checkpoints);
+    expect(storeIndex).toHaveBeenCalledTimes(1);
+    expect(storeIndex).toHaveBeenCalledWith("by-synced");
+    expect(openCursor).toHaveBeenCalledTimes(1);
+    storeIndex.mockRestore();
+    openCursor.mockRestore();
+    await lifecycle.commit(cleanupTx);
+
+    const allTx = lifecycle.transaction(OPERATIONS_STORE, "readonly");
+    const remaining = await log.getAllOperations(allTx);
+    await lifecycle.commit(allTx);
+    expect(remaining.map((op) => op.dot.version).sort()).toEqual([3, 4, 5]);
   });
 
   it("batch saves operations and counts unsynced", async () => {

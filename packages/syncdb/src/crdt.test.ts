@@ -658,6 +658,30 @@ describe("applyOpToRow", () => {
     });
   });
 
+  describe("checkpoint merge", () => {
+    it("preserves original field clocks and merges tombstone context", () => {
+      const row: ORMapRow = { [TABLE_NAME]: "test", [ROW_KEY]: "r", fields: {
+        keep: { value: "new", dot: { clientId: "b", version: 5 } },
+        gone: { value: "old", dot: { clientId: "a", version: 2 } },
+      }, tombstone: { dot: { clientId: "a", version: 3 }, versionVector: { a: 1 } } };
+      const checkpoint: CRDTOperation = {
+        type: "checkpointRow", tableName: "test", rowKey: "r",
+        dot: { clientId: "server", version: 99 }, checkpointSeenServerVersion: 20,
+        fields: {
+          keep: { value: "older", dot: { clientId: "b", version: 4 } },
+          gone: { value: "old", dot: { clientId: "a", version: 2 } },
+        },
+        tombstone: { dot: { clientId: "c", version: 4 }, versionVector: { a: 2, c: 1 } },
+      };
+      applyOperationToRow(row, checkpoint);
+      expect(row.fields.keep).toEqual({ value: "new", dot: { clientId: "b", version: 5 } });
+      expect(row.fields.gone).toBeUndefined();
+      expect(row.tombstone).toEqual({ dot: { clientId: "c", version: 4 }, versionVector: { a: 2, c: 1 } });
+      applyOperationToRow(row, checkpoint);
+      expect(row.fields.keep.dot).toEqual({ clientId: "b", version: 5 });
+    });
+  });
+
   describe("property: general convergence", () => {
     it("operations applied in any order should converge", () => {
       fc.assert(

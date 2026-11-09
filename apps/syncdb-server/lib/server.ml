@@ -6,6 +6,8 @@ type context = {
   auth : Auth.t;
   event_hub : Event_hub.t;
   clock : float Eio.Time.clock_ty Eio.Std.r;
+  checkpoint_threshold_operations : int option;
+  checkpoint_threshold_bytes : int option;
 }
 
 (* Comment frames while blocked on hub await. 15s is enough for typical proxy
@@ -22,15 +24,27 @@ module Log = (val Logs.src_log src : Logs.LOG)
 let status_of_sync_error = function
   | Sync_engine.Request_integrity_failed
   | Sync_engine.Client_state_out_of_sync _
-  | Sync_engine.Non_monotonic_versions _
-  | Sync_engine.Remove_context_unseen_dot _ ->
+  | Sync_engine.Non_monotonic_versions _ ->
       `Bad_request
   | Sync_engine.Storage_error _ | Sync_engine.Decode_error _ ->
       `Internal_server_error
 
+let current_sync_path = "/v2/sync"
+
+let legacy_sync_response =
+  {
+    status = `Upgrade_required;
+    body =
+      Yojson.Safe.to_string
+        (`Assoc
+          [ ("code", `String "SYNC_PROTOCOL_UPGRADE_REQUIRED");
+            ("message", `String "POST /sync is retired; use POST /v2/sync") ]);
+  }
+
 let route ~meth ~target =
   match (meth, target) with
   | `GET, "/health" -> ({ status = `OK; body = "ok" }, `Text)
+  | `POST, "/sync" -> (legacy_sync_response, `Json)
   | _ -> ({ status = `Not_found; body = "not found" }, `Text)
 
 let cors_headers =
@@ -44,9 +58,16 @@ let json_error_body message =
   Yojson.Safe.to_string (`Assoc [ ("error", `String message) ])
 
 let respond_with_content_type reqd ~content_type ({ status; body } : response) =
+  let protocol_headers =
+    match status with
+    | `Upgrade_required ->
+        [ ("connection", "Upgrade"); ("upgrade", "syncdb/2") ]
+    | _ -> []
+  in
   let headers =
     Httpun.Headers.of_list
       (cors_headers
+      @ protocol_headers
       @ [
           ("content-type", content_type);
           ("content-length", string_of_int (String.length body));
@@ -189,11 +210,12 @@ let request_handler (context : context) _client_addr reqd =
   let path = Uri.path uri in
   Log.info (fun m -> m "%s %s" (Httpun.Method.to_string meth) target);
   match (meth, path) with
-  | `OPTIONS, "/sync" ->
+  | `OPTIONS, path when path = "/sync" || path = current_sync_path ->
       respond_text reqd { status = `No_content; body = "" }
   | `OPTIONS, path when Option.is_some (subscribe_db_name path) ->
       respond_text reqd { status = `No_content; body = "" }
-  | `POST, "/sync" -> (
+  | `POST, "/sync" -> respond_json reqd legacy_sync_response
+  | `POST, path when path = current_sync_path -> (
       let authorization = Httpun.Headers.get request.headers "authorization" in
       match Auth.validate_bearer context.auth authorization with
       | Error err ->
@@ -211,8 +233,10 @@ let request_handler (context : context) _client_addr reqd =
                   Caqti_eio.Pool.use
                     (fun conn ->
                       Ok
-                        (Sync_engine.process_sync_request_with_connection conn
-                           ~tenant_id:user.id ~db_name:sync_request.db_name
+                        (Sync_engine.process_sync_request_with_connection
+                           ?checkpoint_threshold_operations:context.checkpoint_threshold_operations
+                           ?checkpoint_threshold_bytes:context.checkpoint_threshold_bytes
+                           conn ~tenant_id:user.id ~db_name:sync_request.db_name
                            sync_request))
                     context.db_pool
                   |> Result.map_error (fun err -> `Db err)

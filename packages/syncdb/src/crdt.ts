@@ -18,6 +18,7 @@ export type CRDTOperation =
     rowKey: ValidKey;
     fields: Record<string, any>;
     dot: Dot;
+    serverVersion?: number;
   }
   | {
     type: "removeRow";
@@ -25,6 +26,17 @@ export type CRDTOperation =
     rowKey: ValidKey;
     dot: Dot;
     versionVector: Record<string, number>;
+    serverVersion?: number;
+  }
+  | {
+    type: "checkpointRow";
+    tableName: string;
+    rowKey: ValidKey;
+    dot: Dot;
+    checkpointSeenServerVersion: number;
+    fields: Record<string, LWWField>;
+    tombstone?: { dot: Dot; versionVector: Record<string, number> };
+    serverVersion?: number;
   };
 
 export type LWWField = {
@@ -103,6 +115,37 @@ export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): vo
           assert(cmp !== 0, `CRDT invariant violated: duplicate dot for field "${field}"`);
         }
         // Otherwise keep existing (cmp < 0)
+      }
+    }
+  } else if (operation.type === "checkpointRow") {
+    // Merge the snapshot using original CRDT clocks. The checkpoint's publication
+    // dot is deliberately not used to date fields or the tombstone.
+    for (const [field, incoming] of Object.entries(operation.fields)) {
+      const existing = row.fields[field];
+      if (!existing || compareDots(incoming.dot, existing.dot) > 0) {
+        row.fields[field] = incoming;
+      }
+    }
+    if (operation.tombstone) {
+      const current = row.tombstone;
+      if (!current) {
+        row.tombstone = operation.tombstone;
+      } else {
+        const cmp = compareDots(operation.tombstone.dot, current.dot);
+        const versionVector = { ...current.versionVector };
+        for (const [clientId, version] of Object.entries(operation.tombstone.versionVector)) {
+          versionVector[clientId] = Math.max(versionVector[clientId] ?? -1, version);
+        }
+        row.tombstone = {
+          dot: cmp > 0 ? operation.tombstone.dot : current.dot,
+          versionVector,
+        };
+      }
+    }
+    if (row.tombstone) {
+      for (const [field, state] of Object.entries(row.fields)) {
+        const covered = row.tombstone.versionVector[state.dot.clientId];
+        if (covered !== undefined && state.dot.version <= covered) delete row.fields[field];
       }
     }
   } else if (operation.type === "removeRow") {
