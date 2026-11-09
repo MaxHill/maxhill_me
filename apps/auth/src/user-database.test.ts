@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test"
 import { Database } from "bun:sqlite"
 import { migrateDatabase, openDatabase, SqliteStorage } from "./sqlite-storage"
-import { getOrCreateUser } from "./user-database"
+import { getEmailForUser, getOrCreateUser } from "./user-database"
 
 function makeDatabase() {
   return openDatabase(":memory:")
@@ -100,6 +100,7 @@ describe("auth user database schema", () => {
 
       const user = db.query("SELECT id, email FROM users").get() as { id: string; email: string }
       expect(user).toEqual({ id: userID, email })
+      expect(getEmailForUser(db, userID)).toBe(email)
       const tenant = db.query("SELECT id, name FROM tenants").get() as {
         id: string
         name: string

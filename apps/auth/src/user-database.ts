@@ -42,7 +42,18 @@ export function getOrCreateUser(db: Database, email: string): string {
   })();
 }
 
-export const routes = (db: Database, config: Config) => {
+export function getEmailForUser(db: Database, userID: string): string | null {
+  const user = db
+    .query<{ email: string }, [string]>("SELECT email FROM users WHERE id = ?")
+    .get(userID);
+  return user?.email ?? null;
+}
+
+export const routes = (
+  db: Database,
+  config: Config,
+  corsHeadersForOrigin: (origin: string | null) => Headers,
+) => {
   // Create once, not on every request.
   const auth = createClient({
     clientID: "auth",
@@ -50,6 +61,42 @@ export const routes = (db: Database, config: Config) => {
   });
 
   return {
+    "/me": {
+      OPTIONS: (request: Bun.BunRequest<"/me">) => {
+        const headers = corsHeadersForOrigin(request.headers.get("origin"));
+        if (!headers.has("Access-Control-Allow-Origin")) {
+          return new Response(null, { status: 403, headers });
+        }
+        return new Response(null, { status: 204, headers });
+      },
+      GET: async (request: Bun.BunRequest<"/me">) => {
+        const origin = request.headers.get("origin");
+        const headers = corsHeadersForOrigin(origin);
+        if (origin && !headers.has("Access-Control-Allow-Origin")) {
+          return Response.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const token = request.headers
+          .get("authorization")
+          ?.match(/^Bearer\s+(\S+)$/i)?.[1];
+        if (!token) {
+          return Response.json({ error: "Unauthorized" }, { status: 401, headers });
+        }
+
+        const verified = await auth.verify(subjects, token);
+        if (verified.err) {
+          return Response.json({ error: "Unauthorized" }, { status: 401, headers });
+        }
+
+        const email = getEmailForUser(db, verified.subject.properties.userID);
+        if (!email) {
+          return Response.json({ error: "User not found" }, { status: 404, headers });
+        }
+
+        headers.set("Cache-Control", "no-store");
+        return Response.json({ email }, { status: 200, headers });
+      },
+    },
     "/me/roles": {
       GET: async (request: Bun.BunRequest<"/me/roles">) => {
         const token = request.headers

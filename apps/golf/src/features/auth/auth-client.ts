@@ -199,6 +199,31 @@ export class AuthClient {
     }
   }
 
+  /** Returns the authenticated account email without storing it in the browser. */
+  async getUserEmail(accessToken?: string): Promise<string | null> {
+    const token = accessToken ?? await this.getToken();
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(`${AUTH_URL}/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        return null;
+      }
+
+      const result: unknown = await response.json();
+      if (typeof result !== "object" || result === null || !("email" in result)) {
+        return null;
+      }
+      return typeof result.email === "string" ? result.email : null;
+    } catch {
+      return null;
+    }
+  }
+
   private async saveTokens(tokens: Tokens): Promise<void> {
     await this.dbSet("access_token", tokens.access);
     await this.dbSet("refresh_token", tokens.refresh);

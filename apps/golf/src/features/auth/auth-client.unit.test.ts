@@ -1,10 +1,11 @@
-import { expect, describe, it, afterEach } from "vitest";
+import { expect, describe, it, afterEach, vi } from "vitest";
 import { AuthClient } from "./auth-client";
 
 describe("AuthClient", () => {
   const initialPath = window.location.pathname + window.location.search + window.location.hash;
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     window.history.replaceState({}, "", initialPath);
     sessionStorage.clear();
     await clearAuthStore();
@@ -39,6 +40,27 @@ describe("AuthClient", () => {
 
     const subjects = await client.getUserSubjects();
     expect(subjects).to.deep.equal({ userID: "user-123" });
+  });
+
+  it("getUserEmail fetches the signed-in user's email with the access token", async () => {
+    await seedTokens({ access: "a1", refresh: "r1", expiresIn: 3600 });
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ email: "person@example.com" }), { status: 200 }),
+    );
+    const client = new AuthClient({ refresh: async () => ({ err: false }) } as any);
+
+    expect(await client.getUserEmail()).to.equal("person@example.com");
+    expect(fetch).toHaveBeenCalledWith("http://localhost:3002/me", {
+      headers: { Authorization: "Bearer a1" },
+    });
+  });
+
+  it("getUserEmail returns null when the account request fails", async () => {
+    await seedTokens({ access: "a1", refresh: "r1", expiresIn: 3600 });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 401 }));
+    const client = new AuthClient({ refresh: async () => ({ err: false }) } as any);
+
+    expect(await client.getUserEmail()).to.equal(null);
   });
 
   it("getToken returns null and emits unauthenticated when refresh fails near expiry", async () => {

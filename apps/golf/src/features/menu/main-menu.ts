@@ -8,20 +8,49 @@
 
 import { authClient } from "../auth/auth-client";
 
+let authRenderVersion = 0;
+
 function renderAuthStatus() {
   const containers = document.querySelectorAll<HTMLElement>(".auth-status");
-  authClient.getToken().then((token) => {
+  const renderVersion = ++authRenderVersion;
+  void authClient.getToken().then((token) => {
+    if (renderVersion !== authRenderVersion) return;
+
     for (const container of containers) {
+      container.replaceChildren();
       if (token) {
-        container.innerHTML = `<button class="button" data-variant="secondary" data-size="compact">Sign out</button>`;
-        container.querySelector("button")!.addEventListener("click", () => {
-          authClient.logout();
+        container.classList.add("auth-account");
+
+        const email = document.createElement("span");
+        email.className = "auth-email";
+        email.hidden = true;
+        container.append(email);
+
+        const signOutButton = document.createElement("button");
+        signOutButton.className = "button";
+        signOutButton.dataset.variant = "secondary";
+        signOutButton.dataset.size = "compact";
+        signOutButton.textContent = "Sign out";
+        signOutButton.addEventListener("click", () => {
+          void authClient.logout();
+        });
+        container.append(signOutButton);
+
+        void authClient.getUserEmail(token).then((address) => {
+          if (renderVersion !== authRenderVersion || !address) return;
+          email.textContent = address;
+          email.hidden = false;
         });
       } else {
-        container.innerHTML = `<button class="button" data-size="compact">Sign in</button>`;
-        container.querySelector("button")!.addEventListener("click", () => {
-          authClient.authorize();
+        container.classList.remove("auth-account");
+        const signInButton = document.createElement("button");
+        signInButton.className = "button";
+        signInButton.dataset.size = "compact";
+        signInButton.textContent = "Sign in";
+        signInButton.addEventListener("click", () => {
+          void authClient.authorize();
         });
+        container.append(signInButton);
       }
     }
   });

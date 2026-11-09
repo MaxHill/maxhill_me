@@ -113,6 +113,23 @@ body {
   }
 }
 
+/* Auth identity sits beside the sign-out control in the account menu. */
+.auth-account {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2);
+  min-width: 0;
+}
+
+.auth-email {
+  max-width: min(42vw, 18rem);
+  overflow: hidden;
+  color: var(--color-text-weak);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-0);
+}
+
 /* Desktop theme button */
 .theme-menu-button {
   background: none;

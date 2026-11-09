@@ -19,10 +19,16 @@ function resolveAllowedTokenOrigin(origin: string | null): string | null {
   try {
     const url = new URL(origin);
     const { hostname, protocol } = url;
+    if (protocol === "http:" && hostname === "localhost") {
+      return origin;
+    }
     if (protocol !== "https:") {
       return null;
     }
-    if (hostname.endsWith(TOKEN_CORS_ALLOWED_SUFFIX)) {
+    if (
+      hostname === TOKEN_CORS_ALLOWED_SUFFIX ||
+      hostname.endsWith(`.${TOKEN_CORS_ALLOWED_SUFFIX}`)
+    ) {
       return origin;
     }
     return null;
@@ -33,8 +39,8 @@ function resolveAllowedTokenOrigin(origin: string | null): string | null {
 
 function tokenCorsHeaders(origin: string | null): Headers {
   const headers = new Headers({
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type",
     Vary: "Origin",
   });
 
@@ -120,7 +126,7 @@ async function main() {
   const server = Bun.serve({
     port: PORT,
     routes: {
-      ...userRoutes(db, config),
+      ...userRoutes(db, config, tokenCorsHeaders),
       "/token": {
         OPTIONS: (request) => {
           const headers = tokenCorsHeaders(request.headers.get("origin"));
