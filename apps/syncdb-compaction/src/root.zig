@@ -3,6 +3,7 @@ const std = @import("std");
 const Io = std.Io;
 const assert = std.debug.assert;
 
+pub const cli_auth = @import("cli-auth.zig");
 pub const crdt = @import("crdt.zig");
 pub const crdt_pools = @import("crdt_pools.zig");
 pub const lint = @import("lint.zig");

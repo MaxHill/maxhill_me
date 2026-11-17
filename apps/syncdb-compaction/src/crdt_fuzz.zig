@@ -27,7 +27,7 @@ pub fn main(frng: *FRNG, arena: std.mem.Allocator) !void {
         assert(iteration < 1_000_000);
 
         const client_index = try FRNG.int_inclusive(frng, u8, 3);
-        var client_id_bytes: crdt.ClientId.Bytes = .{0} ** 16;
+        var client_id_bytes: crdt.ClientId.Bytes = @splat(0);
         client_id_bytes[0] = client_index + 1;
 
         const fake_uuid = crdt.ClientId.to_string(client_id_bytes);

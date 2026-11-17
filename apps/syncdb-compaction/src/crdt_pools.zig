@@ -473,7 +473,7 @@ fn SlotPoolType(comptime Slot: type) type {
 fn test_client_id(client_id_bytes: []const u8) crdt.ClientId.Bytes {
     assert(client_id_bytes.len <= @sizeOf(crdt.ClientId.Bytes));
 
-    var client_id = [_]u8{0} ** @sizeOf(crdt.ClientId.Bytes);
+    var client_id = @as([@sizeOf(crdt.ClientId.Bytes)]u8, @splat(0));
     @memcpy(client_id[0..client_id_bytes.len], client_id_bytes);
     return client_id;
 }

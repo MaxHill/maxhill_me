@@ -542,7 +542,8 @@ fn assert_field_key_valid(field_key: []const u8) void {
 //  ------------------------------------------------------------------
 fn test_client_id(client_id_bytes: []const u8) ClientId.Bytes {
     assert(client_id_bytes.len <= @sizeOf(ClientId.Bytes));
-    var client_id = [_]u8{0} ** @sizeOf(ClientId.Bytes);
+
+    var client_id = @as([@sizeOf(ClientId.Bytes)]u8, @splat(0));
     @memcpy(client_id[0..client_id_bytes.len], client_id_bytes);
     return client_id;
 }

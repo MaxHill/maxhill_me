@@ -1,9 +1,34 @@
 const std = @import("std");
 const Io = std.Io;
 const assert = std.debug.assert;
+const http = std.http;
 const zqlite = @import("zqlite");
 
 const syncdb_compaction = @import("syncdb_compaction");
+
+const Db = struct {
+    conn: zqlite.Conn,
+
+    pub fn init() !@This() {
+        const flags = zqlite.OpenFlags.Create | zqlite.OpenFlags.EXResCode;
+        const conn = try zqlite.open("/tmp/test.sqlite", flags);
+        return .{ .conn = conn };
+    }
+    pub fn deinit(self: @This()) void {
+        self.conn.close();
+    }
+
+    pub fn migrate(self: @This()) !void {
+        try self.conn.exec("create table if not exists test (name text)", .{});
+    }
+
+    pub fn insert_names(
+        self: @This(),
+        names: (struct { []const u8, []const u8 }),
+    ) !void {
+        try self.conn.exec("insert into test (name) values (?1), (?2)", names);
+    }
+};
 
 pub fn main(init: std.process.Init) !void {
     // Prints to stderr, unbuffered, ignoring potential errors.
@@ -20,22 +45,20 @@ pub fn main(init: std.process.Init) !void {
     };
     std.debug.print("data_home: {s}\n", .{data_home});
 
-    const flags = zqlite.OpenFlags.Create | zqlite.OpenFlags.EXResCode;
-    var conn = try zqlite.open("/tmp/test.sqlite", flags);
-    defer conn.close();
+    var db = try Db.init();
+    defer db.deinit();
 
-    try conn.exec("create table if not exists test (name text)", .{});
-    try conn.exec("insert into test (name) values (?1), (?2)", .{ "Leto", "Ghanima" });
-
+    try db.migrate();
+    try db.insert_names(.{ "Leto", "Ghanima" });
     {
-        if (try conn.row("select * from test order by name limit 1", .{})) |row| {
+        if (try db.conn.row("select * from test order by name limit 1", .{})) |row| {
             defer row.deinit();
             std.debug.print("name: {s}\n", .{row.text(0)});
         }
     }
 
     {
-        var rows = try conn.rows("select * from test order by name", .{});
+        var rows = try db.conn.rows("select * from test order by name", .{});
         defer rows.deinit();
         while (rows.next()) |row| {
             std.debug.print("name: {s}\n", .{row.text(0)});
@@ -51,6 +74,8 @@ pub fn main(init: std.process.Init) !void {
 
     // In order to do I/O operations need an `Io` instance.
     const io = init.io;
+
+    try syncdb_compaction.cli_auth.main(.{ .arena = arena, .io = io });
 
     // Stdout is for the actual output of your application, for example if you
     // are implementing gzip, then only the compressed bytes should be sent to
