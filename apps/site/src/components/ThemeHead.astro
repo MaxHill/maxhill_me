@@ -1,0 +1,15 @@
+<meta name="color-scheme" content="light dark" />
+<script is:inline>
+      (function () {
+        let theme;
+        try { theme = localStorage.getItem("theme"); } catch (_) {}
+        if (theme === "light" || theme === "dark") {
+          document.documentElement.setAttribute("data-theme", theme);
+          document.querySelector('meta[name="color-scheme"]').content = theme;
+        }
+      })();
+</script>
+<script>
+  import { installThemeSwitchers } from "@maxhill/web-component-utils/theme-switcher";
+  installThemeSwitchers();
+</script>

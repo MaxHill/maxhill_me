@@ -1,4 +1,5 @@
 @layer semantics {
+  :root,
   [data-theme="light"] {
     --tint-loud: black;
     --tint-soft: white;

@@ -7,6 +7,7 @@
     "@lucide/astro": "^0.546.0",
     "@maxhill/components": "workspace:*",
     "@maxhill/css": "workspace:*",
+    "@maxhill/web-component-utils": "workspace:*",
     "astro": "^5.14.4",
     "marked": "^16.4.1"
   },

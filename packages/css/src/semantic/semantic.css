@@ -2,6 +2,20 @@
 @import "./dark-theme.css";
 
 @layer semantic {
+  :root {
+    color-scheme: light dark;
+  }
+
+  :root:has(> head > meta[name="color-scheme"][content="light"]),
+  [data-theme="light"]:not(:root) {
+    color-scheme: light;
+  }
+
+  :root:has(> head > meta[name="color-scheme"][content="dark"]),
+  [data-theme="dark"]:not(:root) {
+    color-scheme: dark;
+  }
+
   [data-theme="light"],
   [data-theme="dark"],
   :root {
