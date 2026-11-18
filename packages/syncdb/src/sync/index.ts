@@ -77,6 +77,39 @@ export type SyncHeadersProvider = () => Promise<Record<string, string>>;
  */
 export type OnUnauthorizedHandler = () => Promise<boolean>;
 
+async function readSyncError(response: Response): Promise<Error> {
+  let errorData: unknown;
+  try {
+    errorData = await response.json();
+  } catch (cause) {
+    return new Error(
+      `Sync failed (${response.status}): ${response.statusText || "Unknown error"}`,
+      { cause },
+    );
+  }
+
+  if (isSyncError(errorData)) {
+    if (errorData.code === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {
+      const error = new Error(errorData.message);
+      error.name = SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC;
+      return error;
+    }
+    return new Error(`Sync error [${errorData.code}]: ${errorData.message}`);
+  }
+
+  let message = "Unknown error";
+  if (errorData !== null && typeof errorData === "object") {
+    if ("error" in errorData && typeof errorData.error === "string" && errorData.error) {
+      message = errorData.error;
+    } else if (
+      "message" in errorData && typeof errorData.message === "string" && errorData.message
+    ) {
+      message = errorData.message;
+    }
+  }
+  return new Error(`Sync failed (${response.status}): ${message}`);
+}
+
 export class Sync {
   private clientState: ClientState;
   private rowStore: RowStore;
@@ -174,32 +207,7 @@ export class Sync {
       }
 
       if (!response.ok) {
-        // Try to parse structured error from response
-        try {
-          const errorData = await response.json();
-
-          // Check if this is a structured SyncError
-          if (isSyncError(errorData)) {
-            // For CLIENT_STATE_OUT_OF_SYNC, throw a special error that the client can catch
-            if (errorData.code === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {
-              const error = new Error(errorData.message);
-              error.name = SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC;
-              throw error;
-            }
-
-            // For other sync errors, include the code in the error message
-            throw new Error(`Sync error [${errorData.code}]: ${errorData.message}`);
-          }
-
-          // Fallback for non-structured errors
-          const message = errorData.error || errorData.message || "Unknown error";
-          throw new Error(`Sync failed (${response.status}): ${message}`);
-        } catch (parseError) {
-          // If we can't parse the response, use status text
-          throw new Error(
-            `Sync failed (${response.status}): ${response.statusText || "Unknown error"}`,
-          );
-        }
+        throw await readSyncError(response);
       }
 
       let syncResponse: SyncResponse = await response.json();
@@ -207,7 +215,7 @@ export class Sync {
       return syncResponse;
     } catch (error: any) {
       if (!error || !error.message) {
-        throw new Error(`Unknown error occurred during sync: ${error}`);
+        throw new Error(`Unknown error occurred during sync: ${error}`, { cause: error });
       }
 
       // Re-throw CLIENT_STATE_OUT_OF_SYNC errors as-is so they can be handled by the caller
