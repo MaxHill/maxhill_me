@@ -1,6 +1,7 @@
 const std = @import("std");
 const assert = std.debug.assert;
 const http = std.http;
+const auth_callback_server = @import("./auth-callback-server.zig");
 
 // TODO: rename AuthInit to something more fitting
 const AuthInit = struct { arena: std.mem.Allocator, io: std.Io };
@@ -304,9 +305,11 @@ pub fn main(init: AuthInit) !void {
 
     std.debug.print("{s}\n", .{auth_url});
 
+    try auth_callback_server.listen(init.io, 9999);
     //     // Step 2: After callback, exchange code for token
     // var token = try client.exchangeAuthorizationCode("received_code", &pkce);
     // defer token.deinit();
+    //
     //
     // // Step 3: Use token for API requests
     // const auth_header = try token.getAuthorizationHeader();

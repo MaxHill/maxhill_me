@@ -58,6 +58,9 @@ importers:
       '@maxhill/css':
         specifier: workspace:*
         version: link:../../packages/css
+      '@maxhill/stdx':
+        specifier: workspace:*
+        version: link:../../packages/ts-stdx
       '@maxhill/syncdb':
         specifier: workspace:*
         version: link:../../packages/syncdb
