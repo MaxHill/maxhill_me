@@ -51,6 +51,14 @@ val get_row_prefix
   -> before_server_version:int64
   -> (db_crdt_operation list, error) result
 
+val get_latest_row_checkpoint
+  :  connection
+  -> tenant_id:string
+  -> db_name:string
+  -> table_name:string
+  -> row_key:string
+  -> (db_crdt_operation option, error) result
+
 val delete_row_prefix
   :  connection
   -> tenant_id:string

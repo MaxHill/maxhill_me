@@ -130,6 +130,11 @@ let get_row_prefix_query =
   (Caqti_type.(t5 string string string string int64) ->* db_row_type)
     "SELECT server_version, tenant_id, db_name, client_id, version, type, table_name, row_key, field_key, json_value, version_vector FROM crdt_operations WHERE tenant_id = ? AND db_name = ? AND table_name = ? AND row_key = ? AND server_version < ? ORDER BY server_version ASC"
 
+let get_latest_row_checkpoint_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.(t4 string string string string) ->? db_row_type)
+    "SELECT server_version, tenant_id, db_name, client_id, version, type, table_name, row_key, field_key, json_value, version_vector FROM crdt_operations WHERE tenant_id = ? AND db_name = ? AND table_name = ? AND row_key = ? AND type = 'checkpointRow' ORDER BY server_version DESC LIMIT 1"
+
 let delete_row_prefix_query =
   let open Caqti_request.Infix in
   (Caqti_type.(t5 string string string string int64) ->. Caqti_type.unit)
@@ -372,6 +377,12 @@ let get_row_prefix (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~table
   match Db.collect_list get_row_prefix_query (tenant_id, db_name, table_name, row_key, before_server_version) with
   | Ok rows -> Ok (List.map of_row rows)
   | Error err -> Error (Database (Caqti_error.show err))
+
+let get_latest_row_checkpoint (module Db : Caqti_eio.CONNECTION)
+    ~tenant_id ~db_name ~table_name ~row_key =
+  match Db.find_opt get_latest_row_checkpoint_query (tenant_id, db_name, table_name, row_key) with
+  | Ok operation -> Ok (Option.map of_row operation)
+  | Error error -> Error (Database (Caqti_error.show error))
 
 let delete_row_prefix (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~table_name ~row_key ~before_server_version =
   match Db.exec delete_row_prefix_query (tenant_id, db_name, table_name, row_key, before_server_version) with

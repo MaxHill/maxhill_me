@@ -429,7 +429,324 @@ let assert_auto_compaction_failure_does_not_fail_sync () =
   | Error _ -> ()
   | Ok _ -> failwith "explicit compaction should report malformed stored operation"
 
+let assert_compacted_retry_is_covered () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error err -> failwith (Sync.Repository.error_to_string err)
+  | Ok () -> ());
+  let original = make_set_row_op ~client_id:"writer" ~version:100L
+      ~row_key:"r1" ~title:"original" in
+  let upload = make_request ~client_id:"writer" ~db_name:"main"
+      ~last_seen_server_version:(-1L) ~operations:[original] in
+  let first = submit_request conn upload in
+  assert (first.latest_server_version = 1L);
+  let checkpoint =
+    match Sync.Sync_engine.compact_row_with_connection conn ~tenant_id:"user-1"
+      ~db_name:"main" ~table_name:"todos" ~row_key:"r1"
+      ~checkpoint_seen_server_version:2L with
+    | Error err -> fail_with_sync_error "compaction failed: " err
+    | Ok value -> value
+  in
+  List.iter (fun () ->
+      let retry = submit_request conn upload in
+      assert (retry.latest_server_version = 2L);
+      (match retry.synced_operations with
+      | [accepted] ->
+          assert (accepted.dot = original.dot);
+          assert (accepted.server_version = 2L)
+      | _ -> failwith "expected covered retry acknowledgement");
+      assert (List.map (fun (op : Sync.Sync_engine.crdt_operation) -> op.dot)
+        retry.operations = [checkpoint.dot]);
+      match Sync.Repository.count_operations conn ~tenant_id:"user-1" ~db_name:"main" with
+      | Ok 1 -> ()
+      | Ok count -> failwith (Printf.sprintf "retry inserted another operation: %d" count)
+      | Error err -> failwith (Sync.Repository.error_to_string err)) [(); ()];
+  let observer = pull_once conn ~client_id:"observer" ~cursor:1L in
+  assert (List.map (fun (op : Sync.Sync_engine.crdt_operation) -> op.dot)
+    observer.operations = [checkpoint.dot]);
+  assert (observer.operation_server_versions = [2L])
+
+let checkpoint_state ~client_id ~version value =
+  `Assoc [("fields", `Assoc [("title", `Assoc [
+    ("value", value);
+    ("dot", `Assoc [("clientId", `String client_id); ("version", `Intlit (Int64.to_string version))])
+  ])])]
+
+let with_stored_checkpoint state f =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error error -> failwith (Sync.Repository.error_to_string error)
+  | Ok () -> ());
+  let checkpoint : Sync.Sync_engine.crdt_operation = {
+    table_name = "todos"; row_key = "r1";
+    dot = { client_id = "checkpoint"; version = 1000L };
+    payload = Checkpoint_row { checkpoint_seen_server_version = 1L; state };
+  } in
+  ignore (submit_request conn (make_request ~client_id:"checkpoint" ~db_name:"main"
+    ~last_seen_server_version:(-1L) ~operations:[checkpoint]));
+  f conn
+
+let assert_checkpoint_coverage_case label state
+    (operation : Sync.Sync_engine.crdt_operation) covered =
+  with_stored_checkpoint state @@ fun conn ->
+  let result = submit_request conn (make_request ~client_id:operation.Sync.Sync_engine.dot.client_id
+      ~db_name:"main" ~last_seen_server_version:(-1L) ~operations:[operation]) in
+  let expected = if covered then 1L else 2L in
+  (match result.synced_operations with
+  | [accepted] ->
+      if accepted.server_version <> expected then failwith ("incorrect coverage: " ^ label);
+      assert (accepted.dot = operation.dot)
+  | _ -> failwith ("missing acknowledgement: " ^ label));
+  assert (result.latest_server_version = expected);
+  match Sync.Repository.count_operations conn ~tenant_id:"user-1" ~db_name:"main" with
+  | Ok count -> assert (count = Int64.to_int expected)
+  | Error error -> failwith (Sync.Repository.error_to_string error)
+
+let assert_checkpoint_write_coverage () =
+  let write = make_set_row_op ~client_id:"writer" ~version:5L ~row_key:"r1" ~title:"value" in
+  let state client version value = checkpoint_state ~client_id:client ~version value in
+  List.iter (fun (label, snapshot, operation, covered) ->
+      assert_checkpoint_coverage_case label snapshot operation covered) [
+    ("equal original dot", state "writer" 5L (`String "value"), write, true);
+    ("higher original dot", state "writer" 6L (`String "newer"), write, true);
+    ("publication version is not coverage", state "writer" 4L (`String "older"), write, false);
+    ("large original dot covered at small server version",
+      state "writer" 101L (`String "newer"),
+      make_set_row_op ~client_id:"writer" ~version:100L ~row_key:"r1" ~title:"value", true);
+    ("missing field", `Assoc [("fields", `Assoc [])], write, false);
+    ("partly covered fields", state "writer" 5L (`String "value"),
+      {write with payload = Set_row {fields = `Assoc [("title", `String "value"); ("body", `String "new")]}},
+      false);
+    ("incoming wins client tie", state "a" 5L (`String "other"), write, false);
+    ("server version cannot cover tie winner", state "a" 0L (`String "other"),
+      make_set_row_op ~client_id:"writer" ~version:0L ~row_key:"r1" ~title:"value", false);
+    ("checkpoint wins client tie", state "z" 5L (`String "other"), write, true);
+    ("numeric int and float", state "writer" 5L (`Int 1),
+      {write with payload = Set_row {fields = `Assoc [("title", `Float 1.)]}}, true);
+    ("large exact integer and float", state "writer" 5L (`Intlit "100000000000000000000"),
+      {write with payload = Set_row {fields = `Assoc [("title", `Float 1e20)]}}, true);
+    ("object key order", state "writer" 5L (`Assoc [("a", `Int 1); ("b", `List [`Bool true])]),
+      {write with payload = Set_row {fields = `Assoc [
+        ("title", `Assoc [("b", `List [`Bool true]); ("a", `Int 1)])]}}, true);
+  ]
+
+let tombstone_state dot_version vector =
+  `Assoc [("fields", `Assoc []); ("tombstone", `Assoc [
+    ("dot", `Assoc [("clientId", `String "deleter"); ("version", `Intlit (Int64.to_string dot_version))]);
+    ("versionVector", `Assoc (List.map (fun (client, version) ->
+        client, `Intlit (Int64.to_string version)) vector))])]
+
+let assert_checkpoint_delete_coverage () =
+  let remove version vector : Sync.Sync_engine.crdt_operation = {
+    table_name = "todos"; row_key = "r1"; dot = {client_id = "deleter"; version};
+    payload = Remove_row {version_vector = vector};
+  } in
+  let snapshot = tombstone_state 6L [("writer", 5L)] in
+  List.iter (fun (label, state, operation, covered) ->
+      assert_checkpoint_coverage_case label state operation covered) [
+    ("covered remove", snapshot, remove 5L [("writer", 5L)], true);
+    ("uncovered vector", snapshot, remove 5L [("writer", 6L)], false);
+    ("unseen vector client", snapshot, remove 5L [("unknown", 1L)], false);
+    ("newer remove dot", snapshot, remove 7L [("writer", 5L)], false);
+    ("no tombstone", `Assoc [("fields", `Assoc [])], remove 5L [], false);
+    ("tombstone covers write", snapshot,
+      make_set_row_op ~client_id:"writer" ~version:5L ~row_key:"r1" ~title:"old", true);
+    ("tombstone does not cover write", snapshot,
+      make_set_row_op ~client_id:"writer" ~version:6L ~row_key:"r1" ~title:"new", false);
+  ]
+
+let assert_checkpoint_conflict_rolls_back () =
+  let snapshot = checkpoint_state ~client_id:"writer" ~version:5L (`String "original") in
+  with_stored_checkpoint snapshot @@ fun conn ->
+  let valid = make_set_row_op ~client_id:"writer" ~version:4L ~row_key:"other" ~title:"valid" in
+  (* The missing field comes first: it must not hide the later equal-dot conflict. *)
+  let conflict = { (make_set_row_op ~client_id:"writer" ~version:5L ~row_key:"r1" ~title:"changed")
+    with payload = Set_row {fields = `Assoc [("missing", `Int 1); ("title", `String "changed")]} } in
+  let request = make_request ~client_id:"writer" ~db_name:"main"
+    ~last_seen_server_version:(-1L) ~operations:[valid; conflict] in
+  (match Sync.Sync_engine.process_sync_request_with_connection conn
+      ~tenant_id:"user-1" ~db_name:"main" request with
+  | Error (Sync.Sync_engine.Storage_error _) -> ()
+  | Error error -> fail_with_sync_error "unexpected conflict: " error
+  | Ok _ -> failwith "expected equal-dot conflict");
+  match Sync.Repository.count_operations conn ~tenant_id:"user-1" ~db_name:"main" with
+  | Ok count -> assert (count = 1)
+  | Error error -> failwith (Sync.Repository.error_to_string error)
+
+let assert_checkpoint_live_dot_precedes_coverage () =
+  with_stored_checkpoint (checkpoint_state ~client_id:"writer" ~version:5L (`String "snapshot"))
+  @@ fun conn ->
+  let retained : Sync.Repository.db_crdt_operation = {
+    server_version = 0L; tenant_id = "user-1"; db_name = "main";
+    client_id = "writer"; version = 5L; op_type = "setRow";
+    table_name = "todos"; row_key = "r1"; field_key = None;
+    json_value = Some "{\"title\":\"retained\"}"; version_vector = None;
+  } in
+  (match Sync.Repository.insert_crdt_operation conn retained with
+  | Ok _ -> () | Error error -> failwith (Sync.Repository.error_to_string error));
+  let request title = make_request ~client_id:"writer" ~db_name:"main"
+    ~last_seen_server_version:(-1L) ~operations:[
+      make_set_row_op ~client_id:"writer" ~version:5L ~row_key:"r1" ~title] in
+  let retry = submit_request conn (request "retained") in
+  assert ((List.hd retry.synced_operations).server_version = 2L);
+  match Sync.Sync_engine.process_sync_request_with_connection conn
+      ~tenant_id:"user-1" ~db_name:"main" (request "snapshot") with
+  | Error (Sync.Sync_engine.Storage_error _) -> ()
+  | _ -> failwith "checkpoint bypassed a retained-dot payload conflict"
+
+let assert_checkpoint_mixed_acceptance () =
+  with_stored_checkpoint (checkpoint_state ~client_id:"writer" ~version:5L (`String "value"))
+  @@ fun conn ->
+  let operations = [
+    make_set_row_op ~client_id:"writer" ~version:5L ~row_key:"r1" ~title:"value";
+    make_set_row_op ~client_id:"writer" ~version:6L ~row_key:"new" ~title:"new";
+  ] in
+  let response = submit_request conn (make_request ~client_id:"writer" ~db_name:"main"
+    ~last_seen_server_version:(-1L) ~operations) in
+  assert (List.map (fun (ack : Sync.Sync_engine.synced_operation) -> ack.server_version)
+    response.synced_operations = [1L; 2L]);
+  assert (List.map (fun (ack : Sync.Sync_engine.synced_operation) -> ack.dot.version)
+    response.synced_operations = [5L; 6L])
+
+let assert_checkpoint_partition_isolation () =
+  List.iter (fun (tenant_id, db_name) ->
+    with_stored_checkpoint (checkpoint_state ~client_id:"writer" ~version:5L (`String "value"))
+    @@ fun conn ->
+    let operation = make_set_row_op ~client_id:"writer" ~version:5L ~row_key:"r1" ~title:"value" in
+    let request = make_request ~client_id:"writer" ~db_name
+        ~last_seen_server_version:(-1L) ~operations:[operation] in
+    match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id ~db_name request with
+    | Error error -> fail_with_sync_error "isolated request failed: " error
+    | Ok response ->
+        assert ((List.hd response.synced_operations).server_version = 2L);
+        assert (response.operations = []))
+    [("other-user", "main"); ("user-1", "other-db")];
+  let operation = make_set_row_op ~client_id:"writer" ~version:5L ~row_key:"r1" ~title:"value" in
+  let state = checkpoint_state ~client_id:"writer" ~version:5L (`String "value") in
+  assert_checkpoint_coverage_case "other table" state {operation with table_name = "other"} false;
+  assert_checkpoint_coverage_case "other row" state {operation with row_key = "other"} false
+
+let assert_malformed_checkpoint_is_not_coverage () =
+  List.iter (fun state ->
+    with_stored_checkpoint state @@ fun conn ->
+    let operation = make_set_row_op ~client_id:"writer" ~version:5L ~row_key:"r1" ~title:"value" in
+    let request = make_request ~client_id:"writer" ~db_name:"main"
+        ~last_seen_server_version:(-1L) ~operations:[operation] in
+    match Sync.Sync_engine.process_sync_request_with_connection conn
+        ~tenant_id:"user-1" ~db_name:"main" request with
+    | Error (Sync.Sync_engine.Decode_error _) -> ()
+    | _ -> failwith "malformed checkpoint was treated as coverage")
+    [`Assoc [("fields", `String "broken")];
+     `Assoc [("fields", `Assoc [("title", `Assoc [("value", `String "value")])])];
+     `Assoc [("fields", `Assoc []); ("tombstone", `Null)]]
+
+let assert_covered_upload_does_not_skip_pages () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error error -> failwith (Sync.Repository.error_to_string error)
+  | Ok () -> ());
+  let operation = make_set_row_op ~client_id:"writer" ~version:5000L
+      ~row_key:"r1" ~title:"value" in
+  let request = make_request ~client_id:"writer" ~db_name:"main"
+      ~last_seen_server_version:0L ~operations:[operation] in
+  ignore (submit_request conn request);
+  ignore (seed_remote_ops conn ~count:1205);
+  (match Sync.Sync_engine.compact_row_with_connection conn ~tenant_id:"user-1"
+      ~db_name:"main" ~table_name:"todos" ~row_key:"r1"
+      ~checkpoint_seen_server_version:1207L with
+  | Error error -> fail_with_sync_error "compaction failed: " error
+  | Ok _ -> ());
+  let first = submit_request conn request in
+  assert ((List.hd first.synced_operations).server_version = 1207L);
+  assert (List.length first.operations = 1000);
+  assert (first.latest_server_version = 1001L);
+  let second = pull_once conn ~client_id:"writer" ~cursor:first.latest_server_version in
+  assert (List.length second.operations = 206);
+  assert (second.latest_server_version = 1207L);
+  let keys = collect_row_keys first.operations @ collect_row_keys second.operations in
+  assert (List.length (List.sort_uniq String.compare keys) = 1206)
+
+let assert_covered_ack_client_contract () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error error -> failwith (Sync.Repository.error_to_string error)
+  | Ok () -> ());
+  let operation = make_set_row_op ~client_id:"reader" ~version:0L
+      ~row_key:"r1" ~title:"original" in
+  let request = make_request ~client_id:"reader" ~db_name:"main"
+      ~last_seen_server_version:(-1L) ~operations:[operation] in
+  ignore (submit_request conn request);
+  let compact cutoff =
+    match Sync.Sync_engine.compact_row_with_connection conn ~tenant_id:"user-1"
+        ~db_name:"main" ~table_name:"todos" ~row_key:"r1"
+        ~checkpoint_seen_server_version:cutoff with
+    | Error error -> fail_with_sync_error "compaction failed: " error
+    | Ok _ -> ()
+  in
+  compact 2L;
+  let covered = submit_request conn request in
+  assert ((List.hd covered.synced_operations).server_version = 2L);
+  assert (covered.latest_server_version = 2L);
+  compact 3L;
+  let cleanup = pull_once conn ~client_id:"reader" ~cursor:2L in
+  assert (cleanup.latest_server_version = 3L)
+
+let assert_compacted_remove_retry_is_covered () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error error -> failwith (Sync.Repository.error_to_string error)
+  | Ok () -> ());
+  let write = make_set_row_op ~client_id:"writer" ~version:5L ~row_key:"r1" ~title:"value" in
+  ignore (submit_request conn (make_request ~client_id:"writer" ~db_name:"main"
+      ~last_seen_server_version:(-1L) ~operations:[write]));
+  let remove : Sync.Sync_engine.crdt_operation = {
+    table_name = "todos"; row_key = "r1"; dot = {client_id = "deleter"; version = 6L};
+    payload = Remove_row {version_vector = [("writer", 5L)]};
+  } in
+  let request = make_request ~client_id:"deleter" ~db_name:"main"
+      ~last_seen_server_version:1L ~operations:[remove] in
+  ignore (submit_request conn request);
+  (match Sync.Sync_engine.compact_row_with_connection conn ~tenant_id:"user-1"
+      ~db_name:"main" ~table_name:"todos" ~row_key:"r1"
+      ~checkpoint_seen_server_version:3L with
+  | Ok _ -> () | Error error -> fail_with_sync_error "remove compaction failed: " error);
+  let retried = submit_request conn request in
+  assert ((List.hd retried.synced_operations).server_version = 3L);
+  assert (retried.latest_server_version = 3L);
+  assert (List.length retried.operations = 1);
+  match Sync.Repository.count_operations conn ~tenant_id:"user-1" ~db_name:"main" with
+  | Ok 1 -> () | _ -> failwith "covered delete retry grew the operation log"
+
+let assert_checkpoint_json_conflicts () =
+  List.iter (fun (stored, incoming) ->
+    with_stored_checkpoint (checkpoint_state ~client_id:"writer" ~version:5L stored)
+    @@ fun conn ->
+    let operation = { (make_set_row_op ~client_id:"writer" ~version:5L ~row_key:"r1" ~title:"unused")
+      with payload = Set_row {fields = `Assoc [("title", incoming)]} } in
+    let request = make_request ~client_id:"writer" ~db_name:"main"
+        ~last_seen_server_version:(-1L) ~operations:[operation] in
+    match Sync.Sync_engine.process_sync_request_with_connection conn
+        ~tenant_id:"user-1" ~db_name:"main" request with
+    | Error (Sync.Sync_engine.Storage_error _) -> ()
+    | _ -> failwith "unequal JSON at an equal dot was not rejected") [
+      (`List [`Int 1; `Int 2], `List [`Int 2; `Int 1]);
+      (`Int 1, `String "1");
+      (`Intlit "9007199254740993", `Float 9007199254740992.);
+    ]
+
 let () =
+  assert_compacted_remove_retry_is_covered ();
+  assert_checkpoint_json_conflicts ();
+  assert_checkpoint_live_dot_precedes_coverage ();
+  assert_checkpoint_mixed_acceptance ();
+  assert_checkpoint_partition_isolation ();
+  assert_malformed_checkpoint_is_not_coverage ();
+  assert_covered_upload_does_not_skip_pages ();
+  assert_covered_ack_client_contract ();
+  assert_compacted_retry_is_covered ();
+  assert_checkpoint_write_coverage ();
+  assert_checkpoint_delete_coverage ();
+  assert_checkpoint_conflict_rolls_back ();
   assert_compaction_publishes_checkpoint_and_replaces_prefix ();
   assert_auto_compaction_failure_does_not_fail_sync ();
   assert_set_roundtrip_and_fetch_for_second_client ();

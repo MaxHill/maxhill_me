@@ -62,8 +62,9 @@ export interface SyncResponse {
   operations: CRDTOperation[];
 
   /**
-   * Confirms which local operations were successfully persisted. This prevents
-   * re-sending operations that have already been committed to the server.
+   * Confirms local operations persisted or already covered by a server checkpoint.
+   * serverVersion identifies the stored operation or covering checkpoint for cleanup;
+   * it is not the operation's logical clock or a field-dominance comparison.
    */
   syncedOperations: { dot: Dot; serverVersion: number }[];
 }

@@ -241,7 +241,38 @@ let assert_migrates_legacy_partition_keys_without_data_loss () =
   | Error err -> failwith (Sync.Repository.error_to_string err)
   | Ok count -> assert (count = 1)
 
+let assert_latest_checkpoint_is_scoped () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error error -> failwith (Sync.Repository.error_to_string error)
+  | Ok () -> ());
+  let lookup () = Sync.Repository.get_latest_row_checkpoint conn
+      ~tenant_id:tenant_a ~db_name ~table_name:"todos" ~row_key:"r1" in
+  assert (lookup () = Ok None);
+  let checkpoint version =
+    { (make_op ()) with client_id = "checkpoint"; version;
+      op_type = "checkpointRow"; json_value = Some "{}" } in
+  let records = [
+    checkpoint 1L;
+    { (checkpoint 2L) with tenant_id = tenant_b };
+    { (checkpoint 3L) with db_name = "other" };
+    { (checkpoint 4L) with table_name = "other" };
+    { (checkpoint 5L) with row_key = "other" };
+    checkpoint 6L;
+    { (checkpoint 7L) with op_type = "setRow" };
+  ] in
+  List.iter (fun operation ->
+      match Sync.Repository.insert_crdt_operation conn operation with
+      | Ok _ -> ()
+      | Error error -> failwith (Sync.Repository.error_to_string error)) records;
+  match lookup () with
+  | Ok (Some operation) ->
+      assert (operation.version = 6L);
+      assert (operation.server_version = 6L)
+  | _ -> failwith "expected newest checkpoint for exactly this partition and row"
+
 let () =
+  assert_latest_checkpoint_is_scoped ();
   assert_init_schema_and_count_empty ();
   assert_transaction_error_rolls_back ();
   assert_insert_and_fetch_operations_since ();

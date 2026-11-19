@@ -112,3 +112,112 @@ let fold operations =
   `Assoc
     ([ ("fields", `Assoc fields) ]
     @ (match tombstone with None -> [] | Some tombstone -> [ ("tombstone", tombstone) ]))
+
+
+(* Coverage deliberately accepts no publication/cursor versions. *)
+type coverage = Covered | Not_covered | Conflict of string | Invalid_checkpoint
+
+let integer_value = function
+  | `Int value -> Some (Int64.of_int value)
+  | `Intlit value -> Int64.of_string_opt value
+  | _ -> None
+
+let integer_matches_float integer value =
+  let text = match integer with
+    | `Int number -> string_of_int number
+    | `Intlit number -> number
+    | _ -> ""
+  in
+  Float.is_finite value && Float.is_integer value
+  (* Avoid rounding a large integer to a float before comparing. *)
+  && if value = 0. then text = "0" || text = "-0"
+     else text = Printf.sprintf "%.0f" value
+
+let rec json_values_equal left right =
+  match left, right with
+  | `Null, `Null -> true
+  | `Bool a, `Bool b -> a = b
+  | `String a, `String b -> a = b
+  | `Float a, `Float b -> Float.is_finite a && Float.is_finite b && a = b
+  | ((`Int _ | `Intlit _) as integer), `Float value
+  | `Float value, ((`Int _ | `Intlit _) as integer) ->
+      integer_matches_float integer value
+  | ((`Int _ | `Intlit _) as a), ((`Int _ | `Intlit _) as b) ->
+      (match integer_value a, integer_value b with
+      | Some a, Some b -> a = b
+      | _ -> a = b)
+  | `List a, `List b ->
+      List.length a = List.length b && List.for_all2 json_values_equal a b
+  | `Assoc a, `Assoc b ->
+      let unique fields =
+        let keys = List.map fst fields in
+        List.length keys = List.length (List.sort_uniq String.compare keys)
+      in
+      unique a && unique b && List.length a = List.length b
+      && List.for_all (fun (key, value) ->
+          match List.assoc_opt key b with
+          | None -> false
+          | Some other -> json_values_equal value other) a
+  | _ -> false
+
+let checked_fields state =
+  let open Yojson.Safe.Util in
+  state |> member "fields" |> to_assoc
+  |> List.map (fun (name, field) ->
+      let properties = to_assoc field in
+      let value = List.assoc "value" properties in
+      let dot = List.assoc "dot" properties |> dot_of_json in
+      name, (value, dot))
+
+let checked_vector json =
+  json |> Yojson.Safe.Util.to_assoc
+  |> List.map (fun (client_id, version) -> client_id, int64_of_json version)
+
+let checked_tombstone state =
+  match List.assoc_opt "tombstone" (Yojson.Safe.Util.to_assoc state) with
+  | None -> None
+  | Some tombstone ->
+      let open Yojson.Safe.Util in
+      Some (tombstone |> member "dot" |> dot_of_json,
+            tombstone |> member "versionVector" |> checked_vector)
+
+let vector_covers_dot vector (dot : dot) =
+  match List.assoc_opt dot.client_id vector with
+  | Some version -> version >= dot.version
+  | None -> false
+
+let classify_fields fields dot values =
+  let covered = ref true in
+  let conflict = ref None in
+  List.iter (fun (name, value) ->
+      match List.assoc_opt name fields with
+      | None -> covered := false
+      | Some (existing_value, existing_dot) ->
+          let order = compare_dot existing_dot dot in
+          if order < 0 then covered := false
+          else if order = 0 && not (json_values_equal value existing_value) then
+            conflict := Some name) values;
+  match !conflict with
+  | Some field -> Conflict field
+  | None -> if !covered then Covered else Not_covered
+
+let classify_coverage state operation =
+  try
+    let fields = checked_fields state in
+    let tombstone = checked_tombstone state in
+    match operation.payload with
+    | Set_row { fields = values } ->
+        let values = Yojson.Safe.Util.to_assoc values in
+        (match tombstone with
+        | Some (_, vector) when vector_covers_dot vector operation.dot -> Covered
+        | _ -> classify_fields fields operation.dot values)
+    | Remove_row { version_vector } ->
+        (match tombstone with
+        | Some (dot, vector) when compare_dot dot operation.dot >= 0
+            && List.for_all (fun (client_id, version) ->
+                vector_covers_dot vector { client_id; version }) version_vector -> Covered
+        | _ -> Not_covered)
+    | Checkpoint_row _ -> Not_covered
+  with
+  | Yojson.Safe.Util.Type_error _ | Not_found | Failure _ | Invalid_argument _ ->
+      Invalid_checkpoint
