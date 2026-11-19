@@ -63,9 +63,14 @@ let compact_row_with_connection connection ~tenant_id ~db_name ~table_name ~row_
         Sync_engine_persistence.db_operation_of_crdt_operation ~tenant_id ~db_name operation
         |> Result.map_error (fun error -> Decode_error error)
       in
-      let* _published_version =
+      let* published_version =
         Repository.insert_crdt_operation conn db_operation
         |> Result.map_error (fun err -> Storage_error (Repository.error_to_string err))
+      in
+      let* () =
+        Repository.retain_checkpoint_dots conn ~tenant_id ~db_name ~table_name ~row_key
+          ~checkpoint_server_version:published_version rows
+        |> Result.map_error (fun error -> Storage_error (Repository.error_to_string error))
       in
       let* () =
         Repository.delete_row_prefix conn ~tenant_id ~db_name ~table_name ~row_key
@@ -162,6 +167,45 @@ let decode_checkpoint_coverage checkpoint operation =
   | Failure _ | Invalid_argument _ ->
       Error (Decode_error "invalid stored checkpoint encoding")
 
+let checkpoint_conflict (operation : crdt_operation) field =
+  Storage_error (Printf.sprintf
+    "CRDT consistency violation for (%s, %Ld), checkpoint field %S"
+    operation.dot.client_id operation.dot.version field)
+
+let accept_checkpoint_aware connection ~tenant_id ~db_name
+    (operation : crdt_operation) insert =
+  let map_storage_error error = Storage_error (Repository.error_to_string error) in
+  let* receipt = Repository.find_checkpoint_dot connection ~tenant_id ~db_name
+      ~client_id:operation.dot.client_id ~version:operation.dot.version
+    |> Result.map_error map_storage_error in
+  match receipt with
+  | Some range when range.table_name <> operation.table_name || range.row_key <> operation.row_key ->
+      Error (map_storage_error (Repository.Crdt_consistency_violation {
+        client_id = operation.dot.client_id; version = operation.dot.version }))
+  | _ ->
+      let* checkpoint = Repository.get_latest_row_checkpoint connection ~tenant_id ~db_name
+          ~table_name:operation.table_name ~row_key:operation.row_key
+        |> Result.map_error map_storage_error in
+      match checkpoint, receipt with
+      | None, Some _ -> Error (Decode_error "accepted dot has no covering checkpoint")
+      | None, None -> insert ()
+      | Some checkpoint, _ ->
+          let* coverage = decode_checkpoint_coverage checkpoint operation in
+          match coverage, receipt with
+          | Sync_engine_checkpoint.Conflict field, _ ->
+              Error (checkpoint_conflict operation field)
+          | Sync_engine_checkpoint.Invalid_checkpoint, _ ->
+              Error (Decode_error "invalid stored checkpoint state")
+          | _, Some range -> Ok range.checkpoint_server_version
+          | Sync_engine_checkpoint.Not_covered, None -> insert ()
+          | Sync_engine_checkpoint.Covered, None ->
+              let* () = Repository.record_checkpoint_dot connection ~tenant_id ~db_name
+                  ~table_name:operation.table_name ~row_key:operation.row_key
+                  ~client_id:operation.dot.client_id ~version:operation.dot.version
+                  ~checkpoint_server_version:checkpoint.server_version
+                |> Result.map_error map_storage_error in
+              Ok checkpoint.server_version
+
 let accept_operation connection ~tenant_id ~db_name (operation : crdt_operation) =
   let map_storage_error error = Storage_error (Repository.error_to_string error) in
   let* db_operation =
@@ -180,26 +224,7 @@ let accept_operation connection ~tenant_id ~db_name (operation : crdt_operation)
   else match operation.payload with
   | Checkpoint_row _ -> insert ()
   | Set_row _ | Remove_row _ ->
-      let* checkpoint =
-        Repository.get_latest_row_checkpoint connection ~tenant_id ~db_name
-          ~table_name:operation.table_name ~row_key:operation.row_key
-        |> Result.map_error map_storage_error
-      in
-      match checkpoint with
-      | None -> insert ()
-      | Some checkpoint ->
-          let* coverage = decode_checkpoint_coverage checkpoint operation in
-          match coverage with
-          | Sync_engine_checkpoint.Covered ->
-              (* The version identifies coverage evidence, not dominance or a new insertion. *)
-              Ok checkpoint.server_version
-          | Sync_engine_checkpoint.Not_covered -> insert ()
-          | Sync_engine_checkpoint.Conflict field ->
-              Error (Storage_error (Printf.sprintf
-                "CRDT consistency violation for (%s, %Ld), checkpoint field %S"
-                operation.dot.client_id operation.dot.version field))
-          | Sync_engine_checkpoint.Invalid_checkpoint ->
-              Error (Decode_error "invalid stored checkpoint state")
+      accept_checkpoint_aware connection ~tenant_id ~db_name operation insert
 
 let accept_operations connection ~tenant_id ~db_name operations =
   let rec loop versions = function

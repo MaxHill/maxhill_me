@@ -17,6 +17,14 @@ type db_crdt_operation = {
   version_vector : string option;
 }
 
+type checkpoint_dot_range = {
+  table_name : string;
+  row_key : string;
+  first_version : int64;
+  last_version : int64;
+  checkpoint_server_version : int64;
+}
+
 type error =
   | Database of string
   | Duplicate_insert_conflict_missing_existing_row
@@ -53,6 +61,20 @@ let schema_sql =
     UNIQUE(tenant_id, db_name, client_id, version)
 );
 |}
+
+(* Mutable server-only checkpoint evidence; published operation payloads stay immutable. *)
+let checkpoint_dot_schema_sql =
+  {|CREATE TABLE IF NOT EXISTS checkpoint_dot_ranges (
+    tenant_id TEXT NOT NULL, db_name TEXT NOT NULL, client_id TEXT NOT NULL,
+    first_version INTEGER NOT NULL, last_version INTEGER NOT NULL,
+    table_name TEXT NOT NULL, row_key TEXT NOT NULL,
+    checkpoint_server_version INTEGER NOT NULL,
+    PRIMARY KEY (tenant_id, db_name, client_id, first_version),
+    CHECK (first_version <= last_version)
+  )|}
+
+let checkpoint_dot_row_index_sql =
+  "CREATE INDEX IF NOT EXISTS idx_checkpoint_dot_row ON checkpoint_dot_ranges(tenant_id, db_name, table_name, row_key)"
 
 let db_row_type =
   Caqti_type.(t11 int64 string string string int64 string string string (option string) (option string) (option string))
@@ -144,6 +166,33 @@ let find_by_dot_query =
   let open Caqti_request.Infix in
   (Caqti_type.(t4 string string string int64) ->? db_row_type)
     "SELECT server_version, tenant_id, db_name, client_id, version, type, table_name, row_key, field_key, json_value, version_vector FROM crdt_operations WHERE tenant_id = ? AND db_name = ? AND client_id = ? AND version = ?"
+
+let checkpoint_dot_type = Caqti_type.(t5 string string int64 int64 int64)
+
+let find_checkpoint_dot_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.(t4 string string string int64) ->? checkpoint_dot_type)
+    "SELECT table_name, row_key, first_version, last_version, checkpoint_server_version FROM checkpoint_dot_ranges WHERE tenant_id = ? AND db_name = ? AND client_id = ? AND first_version <= ? ORDER BY first_version DESC LIMIT 1"
+
+let touching_checkpoint_dots_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.(t7 string string string string string int64 int64) ->* checkpoint_dot_type)
+    "SELECT table_name, row_key, first_version, last_version, checkpoint_server_version FROM checkpoint_dot_ranges WHERE tenant_id = ? AND db_name = ? AND client_id = ? AND table_name = ? AND row_key = ? AND first_version <= ? AND last_version >= ?"
+
+let delete_touching_checkpoint_dots_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.(t7 string string string string string int64 int64) ->. Caqti_type.unit)
+    "DELETE FROM checkpoint_dot_ranges WHERE tenant_id = ? AND db_name = ? AND client_id = ? AND table_name = ? AND row_key = ? AND first_version <= ? AND last_version >= ?"
+
+let insert_checkpoint_dot_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.(t8 string string string int64 int64 string string int64) ->. Caqti_type.unit)
+    "INSERT INTO checkpoint_dot_ranges (tenant_id, db_name, client_id, first_version, last_version, table_name, row_key, checkpoint_server_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+
+let move_checkpoint_dot_evidence_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.(t5 int64 string string string string) ->. Caqti_type.unit)
+    "UPDATE checkpoint_dot_ranges SET checkpoint_server_version = ? WHERE tenant_id = ? AND db_name = ? AND table_name = ? AND row_key = ?"
 
 let get_max_server_version_query =
   let open Caqti_request.Infix in
@@ -287,8 +336,13 @@ let init_schema (module Db : Caqti_eio.CONNECTION) =
       match migrate_schema (module Db : Caqti_eio.CONNECTION) with
       | Error _ as err -> err
       | Ok () ->
-          exec_sql (module Db : Caqti_eio.CONNECTION) indexes_sql
-          |> Result.map_error (fun err -> Database (Caqti_error.show err)))
+          let conn = (module Db : Caqti_eio.CONNECTION) in
+          let* () = exec_sql conn indexes_sql
+            |> Result.map_error (fun error -> Database (Caqti_error.show error)) in
+          let* () = exec_sql conn checkpoint_dot_schema_sql
+            |> Result.map_error (fun error -> Database (Caqti_error.show error)) in
+          exec_sql conn checkpoint_dot_row_index_sql
+          |> Result.map_error (fun error -> Database (Caqti_error.show error)))
 
 let count_operations (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name =
   match Db.find count_operations_query (tenant_id, db_name) with
@@ -399,6 +453,65 @@ let has_operation_dot (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~cl
   | Ok (Some _) -> Ok true
   | Ok None -> Ok false
   | Error err -> Error (Database (Caqti_error.show err))
+
+let checkpoint_dot_of_row
+    (table_name, row_key, first_version, last_version, checkpoint_server_version) =
+  { table_name; row_key; first_version; last_version; checkpoint_server_version }
+
+let find_checkpoint_dot (module Db : Caqti_eio.CONNECTION)
+    ~tenant_id ~db_name ~client_id ~version =
+  match Db.find_opt find_checkpoint_dot_query (tenant_id, db_name, client_id, version) with
+  | Error error -> Error (Database (Caqti_error.show error))
+  | Ok None -> Ok None
+  | Ok (Some row) ->
+      let range = checkpoint_dot_of_row row in
+      Ok (if version <= range.last_version then Some range else None)
+
+let record_checkpoint_dot (module Db : Caqti_eio.CONNECTION)
+    ~tenant_id ~db_name ~table_name ~row_key ~client_id ~version ~checkpoint_server_version =
+  let connection = (module Db : Caqti_eio.CONNECTION) in
+  let* existing = find_checkpoint_dot connection ~tenant_id ~db_name ~client_id ~version in
+  match existing with
+  | Some range when range.table_name <> table_name || range.row_key <> row_key ->
+      Error (Crdt_consistency_violation { client_id; version })
+  | _ ->
+      let lower = if version = Int64.min_int then version else Int64.pred version in
+      let upper = if version = Int64.max_int then version else Int64.succ version in
+      let parameters = tenant_id, db_name, client_id, table_name, row_key, upper, lower in
+      let* touching = Db.collect_list touching_checkpoint_dots_query parameters
+        |> Result.map_error (fun error -> Database (Caqti_error.show error)) in
+      let first_version, last_version =
+        List.fold_left (fun (first, last) row ->
+          let range = checkpoint_dot_of_row row in
+          Int64.min first range.first_version, Int64.max last range.last_version)
+          (version, version) touching
+      in
+      let* () = Db.exec delete_touching_checkpoint_dots_query parameters
+        |> Result.map_error (fun error -> Database (Caqti_error.show error)) in
+      Db.exec insert_checkpoint_dot_query
+        (tenant_id, db_name, client_id, first_version, last_version,
+         table_name, row_key, checkpoint_server_version)
+      |> Result.map_error (fun error -> Database (Caqti_error.show error))
+
+let retain_checkpoint_dots (module Db : Caqti_eio.CONNECTION)
+    ~tenant_id ~db_name ~table_name ~row_key ~checkpoint_server_version operations =
+  let connection = (module Db : Caqti_eio.CONNECTION) in
+  let* () = Db.exec move_checkpoint_dot_evidence_query
+      (checkpoint_server_version, tenant_id, db_name, table_name, row_key)
+    |> Result.map_error (fun error -> Database (Caqti_error.show error)) in
+  let rec record = function
+    | [] -> Ok ()
+    | (operation : db_crdt_operation) :: rest ->
+        if operation.tenant_id <> tenant_id || operation.db_name <> db_name
+           || operation.table_name <> table_name || operation.row_key <> row_key then
+          Error (Database "checkpoint retirement crossed a row partition")
+        else if operation.op_type = "checkpointRow" then record rest
+        else
+          let* () = record_checkpoint_dot connection ~tenant_id ~db_name ~table_name ~row_key
+              ~client_id:operation.client_id ~version:operation.version ~checkpoint_server_version in
+          record rest
+  in
+  record operations
 
 let with_transaction (module Db : Caqti_eio.CONNECTION) ~map_tx_error f =
   let conn = (module Db : Caqti_eio.CONNECTION) in

@@ -271,7 +271,62 @@ let assert_latest_checkpoint_is_scoped () =
       assert (operation.server_version = 6L)
   | _ -> failwith "expected newest checkpoint for exactly this partition and row"
 
+let assert_checkpoint_dot_ranges_are_exact () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error error -> failwith (Sync.Repository.error_to_string error) | Ok () -> ());
+  let find ?(tenant_id = tenant_a) ?(db_name = db_name) version =
+    Sync.Repository.find_checkpoint_dot conn ~tenant_id ~db_name ~client_id:"writer" ~version in
+  let record ?(tenant_id = tenant_a) ?(db_name = db_name) ?(row_key = "r1") version =
+    Sync.Repository.with_transaction conn ~map_tx_error:(fun error -> error) (fun tx ->
+      Sync.Repository.record_checkpoint_dot tx ~tenant_id ~db_name ~table_name:"todos"
+        ~row_key ~client_id:"writer" ~version ~checkpoint_server_version:10L) in
+  List.iter (fun version -> assert (record version = Ok ())) [1L; 3L];
+  assert (find 2L = Ok None);
+  assert (record 2L = Ok ());
+  (match find 2L with
+  | Ok (Some range) ->
+      assert (range.first_version = 1L);
+      assert (range.last_version = 3L)
+  | _ -> failwith "expected coalesced exact range");
+  assert (record ~row_key:"other" 4L = Ok ());
+  assert (record 5L = Ok ());
+  (match find 4L with
+  | Ok (Some range) -> assert (range.row_key = "other")
+  | _ -> failwith "ranges crossed a row boundary");
+  (match record ~row_key:"other" 1L with
+  | Error (Sync.Repository.Crdt_consistency_violation _) -> ()
+  | _ -> failwith "retired dot moved to another row");
+  assert (record ~tenant_id:tenant_b 1L = Ok ());
+  assert (record ~db_name:"other-db" 1L = Ok ());
+  assert (find 9L = Ok None);
+  let aborted = Sync.Repository.with_transaction conn ~map_tx_error:(fun error -> error)
+      (fun tx -> match Sync.Repository.record_checkpoint_dot tx ~tenant_id:tenant_a ~db_name
+          ~table_name:"todos" ~row_key:"r1" ~client_id:"writer" ~version:9L
+          ~checkpoint_server_version:10L with
+      | Error error -> Error error | Ok () -> Error (Sync.Repository.Database "forced")) in
+  assert (aborted = Error (Sync.Repository.Database "forced"));
+  assert (find 9L = Ok None);
+  let failed_retirement =
+    Sync.Repository.with_transaction conn ~map_tx_error:(fun error -> error) (fun tx ->
+      Sync.Repository.retain_checkpoint_dots tx ~tenant_id:tenant_a ~db_name
+        ~table_name:"todos" ~row_key:"r1" ~checkpoint_server_version:20L
+        [{(make_op ()) with row_key = "wrong-row"}])
+  in
+  assert (Result.is_error failed_retirement);
+  (match find 2L with
+  | Ok (Some range) -> assert (range.checkpoint_server_version = 10L)
+  | _ -> failwith "retirement lost accepted evidence");
+  assert (record Int64.max_int = Ok ());
+  assert (record (Int64.pred Int64.max_int) = Ok ());
+  (match find Int64.max_int with
+  | Ok (Some range) -> assert (range.first_version = Int64.pred Int64.max_int)
+  | _ -> failwith "lost boundary dot");
+  assert (Sync.Repository.init_schema conn = Ok ());
+  assert (Option.is_some (Result.get_ok (find 2L)))
+
 let () =
+  assert_checkpoint_dot_ranges_are_exact ();
   assert_latest_checkpoint_is_scoped ();
   assert_init_schema_and_count_empty ();
   assert_transaction_error_rolls_back ();

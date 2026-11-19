@@ -464,7 +464,14 @@ let assert_compacted_retry_is_covered () =
   let observer = pull_once conn ~client_id:"observer" ~cursor:1L in
   assert (List.map (fun (op : Sync.Sync_engine.crdt_operation) -> op.dot)
     observer.operations = [checkpoint.dot]);
-  assert (observer.operation_server_versions = [2L])
+  assert (observer.operation_server_versions = [2L]);
+  let conflicting = {original with payload = Set_row {fields = `Assoc [("title", `String "changed")]}} in
+  let request = make_request ~client_id:"writer" ~db_name:"main"
+      ~last_seen_server_version:(-1L) ~operations:[conflicting] in
+  match Sync.Sync_engine.process_sync_request_with_connection conn
+      ~tenant_id:"user-1" ~db_name:"main" request with
+  | Error (Sync.Sync_engine.Storage_error _) -> ()
+  | _ -> failwith "retired-dot membership bypassed a retained field conflict"
 
 let checkpoint_state ~client_id ~version value =
   `Assoc [("fields", `Assoc [("title", `Assoc [
@@ -558,17 +565,20 @@ let assert_checkpoint_delete_coverage () =
 let assert_checkpoint_conflict_rolls_back () =
   let snapshot = checkpoint_state ~client_id:"writer" ~version:5L (`String "original") in
   with_stored_checkpoint snapshot @@ fun conn ->
+  let covered = make_set_row_op ~client_id:"writer" ~version:3L ~row_key:"r1" ~title:"older" in
   let valid = make_set_row_op ~client_id:"writer" ~version:4L ~row_key:"other" ~title:"valid" in
   (* The missing field comes first: it must not hide the later equal-dot conflict. *)
   let conflict = { (make_set_row_op ~client_id:"writer" ~version:5L ~row_key:"r1" ~title:"changed")
     with payload = Set_row {fields = `Assoc [("missing", `Int 1); ("title", `String "changed")]} } in
   let request = make_request ~client_id:"writer" ~db_name:"main"
-    ~last_seen_server_version:(-1L) ~operations:[valid; conflict] in
+    ~last_seen_server_version:(-1L) ~operations:[covered; valid; conflict] in
   (match Sync.Sync_engine.process_sync_request_with_connection conn
       ~tenant_id:"user-1" ~db_name:"main" request with
   | Error (Sync.Sync_engine.Storage_error _) -> ()
   | Error error -> fail_with_sync_error "unexpected conflict: " error
   | Ok _ -> failwith "expected equal-dot conflict");
+  assert (Sync.Repository.find_checkpoint_dot conn ~tenant_id:"user-1" ~db_name:"main"
+    ~client_id:"writer" ~version:3L = Ok None);
   match Sync.Repository.count_operations conn ~tenant_id:"user-1" ~db_name:"main" with
   | Ok count -> assert (count = 1)
   | Error error -> failwith (Sync.Repository.error_to_string error)
@@ -734,7 +744,86 @@ let assert_checkpoint_json_conflicts () =
       (`Intlit "9007199254740993", `Float 9007199254740992.);
     ]
 
+let assert_overwritten_deleted_dot_retry_is_covered () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error error -> failwith (Sync.Repository.error_to_string error)
+  | Ok () -> ());
+  let original = make_set_row_op ~client_id:"a" ~version:53L ~row_key:"r1" ~title:"old" in
+  let upload (operation : Sync.Sync_engine.crdt_operation) = submit_request conn (make_request
+      ~client_id:operation.dot.client_id ~db_name:"main"
+      ~last_seen_server_version:(-1L) ~operations:[operation]) in
+  ignore (upload original);
+  ignore (upload (make_set_row_op ~client_id:"b" ~version:149L ~row_key:"r1" ~title:"new"));
+  let remove : Sync.Sync_engine.crdt_operation = {
+    table_name = "todos"; row_key = "r1"; dot = {client_id = "b"; version = 151L};
+    payload = Remove_row {version_vector = [("b", 149L)]};
+  } in
+  ignore (upload remove);
+  (match Sync.Sync_engine.compact_row_with_connection conn ~tenant_id:"user-1"
+      ~db_name:"main" ~table_name:"todos" ~row_key:"r1"
+      ~checkpoint_seen_server_version:4L with
+  | Error error -> fail_with_sync_error "compaction failed: " error | Ok _ -> ());
+  let retry = upload original in
+  assert (retry.latest_server_version = 4L);
+  assert ((List.hd retry.synced_operations).server_version = 4L);
+  List.iter (fun cutoff ->
+      (match Sync.Sync_engine.compact_row_with_connection conn ~tenant_id:"user-1"
+          ~db_name:"main" ~table_name:"todos" ~row_key:"r1"
+          ~checkpoint_seen_server_version:cutoff with
+      | Error error -> fail_with_sync_error "repeat compaction failed: " error | Ok _ -> ());
+      let retry = upload original in
+      assert ((List.hd retry.synced_operations).server_version = cutoff);
+      assert (Sync.Repository.has_operation_dot conn ~tenant_id:"user-1" ~db_name:"main"
+        ~client_id:"a" ~version:53L = Ok false)) [5L; 6L];
+  (match Sync.Repository.count_operations conn ~tenant_id:"user-1" ~db_name:"main" with
+  | Ok 1 -> () | _ -> failwith "forgotten accepted dot was inserted again");
+  let moved = {original with row_key = "other"} in
+  let moved_request = make_request ~client_id:"a" ~db_name:"main"
+      ~last_seen_server_version:(-1L) ~operations:[moved] in
+  (match Sync.Sync_engine.process_sync_request_with_connection conn ~tenant_id:"user-1"
+      ~db_name:"main" moved_request with
+  | Error (Sync.Sync_engine.Storage_error _) -> ()
+  | _ -> failwith "retired identity was rebound to another row");
+  let unseen = {original with dot = {client_id = "a"; version = 52L};
+      payload = Set_row {fields = `Assoc [("extra", `String "offline")]}} in
+  let accepted = upload unseen in
+  assert ((List.hd accepted.synced_operations).server_version = 7L)
+
+let assert_covered_only_ack_retains_identity () =
+  with_connection @@ fun conn ->
+  (match Sync.Repository.init_schema conn with
+  | Error error -> failwith (Sync.Repository.error_to_string error) | Ok () -> ());
+  let upload (operation : Sync.Sync_engine.crdt_operation) = submit_request conn (make_request
+      ~client_id:operation.dot.client_id ~db_name:"main"
+      ~last_seen_server_version:(-1L) ~operations:[operation]) in
+  let compact cutoff = match Sync.Sync_engine.compact_row_with_connection conn
+      ~tenant_id:"user-1" ~db_name:"main" ~table_name:"todos" ~row_key:"r1"
+      ~checkpoint_seen_server_version:cutoff with
+    | Error error -> fail_with_sync_error "compaction failed: " error | Ok _ -> () in
+  ignore (upload (make_set_row_op ~client_id:"a" ~version:10L ~row_key:"r1" ~title:"current"));
+  compact 2L;
+  let covered = make_set_row_op ~client_id:"a" ~version:5L ~row_key:"r1" ~title:"older" in
+  assert ((List.hd (upload covered).synced_operations).server_version = 2L);
+  assert (Sync.Repository.has_operation_dot conn ~tenant_id:"user-1" ~db_name:"main"
+    ~client_id:"a" ~version:5L = Ok false);
+  assert (Sync.Repository.find_checkpoint_dot conn ~tenant_id:"user-1" ~db_name:"main"
+    ~client_id:"a" ~version:6L = Ok None);
+  ignore (upload (make_set_row_op ~client_id:"b" ~version:20L ~row_key:"r1" ~title:"new"));
+  let remove : Sync.Sync_engine.crdt_operation = {
+    table_name = "todos"; row_key = "r1"; dot = {client_id = "b"; version = 21L};
+    payload = Remove_row {version_vector = [("b", 20L)]};
+  } in
+  ignore (upload remove);
+  compact 5L;
+  let retry = upload covered in
+  assert ((List.hd retry.synced_operations).server_version = 5L);
+  match Sync.Repository.count_operations conn ~tenant_id:"user-1" ~db_name:"main" with
+  | Ok 1 -> () | _ -> failwith "covered-only identity was forgotten"
+
 let () =
+  assert_covered_only_ack_retains_identity ();
+  assert_overwritten_deleted_dot_retry_is_covered ();
   assert_compacted_remove_retry_is_covered ();
   assert_checkpoint_json_conflicts ();
   assert_checkpoint_live_dot_precedes_coverage ();

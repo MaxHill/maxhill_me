@@ -15,6 +15,14 @@ type db_crdt_operation = {
   version_vector : string option;
 }
 
+type checkpoint_dot_range = {
+  table_name : string;
+  row_key : string;
+  first_version : int64;
+  last_version : int64;
+  checkpoint_server_version : int64;
+}
+
 type error =
   | Database of string
   | Duplicate_insert_conflict_missing_existing_row
@@ -75,6 +83,21 @@ val has_operation_dot
   -> client_id:string
   -> version:int64
   -> (bool, error) result
+
+val find_checkpoint_dot
+  :  connection -> tenant_id:string -> db_name:string -> client_id:string -> version:int64
+  -> (checkpoint_dot_range option, error) result
+
+(** These metadata writes require the caller's acceptance/compaction transaction. *)
+val record_checkpoint_dot
+  :  connection -> tenant_id:string -> db_name:string -> table_name:string -> row_key:string
+  -> client_id:string -> version:int64 -> checkpoint_server_version:int64
+  -> (unit, error) result
+
+val retain_checkpoint_dots
+  :  connection -> tenant_id:string -> db_name:string -> table_name:string -> row_key:string
+  -> checkpoint_server_version:int64 -> db_crdt_operation list
+  -> (unit, error) result
 
 val with_transaction
   :  connection
