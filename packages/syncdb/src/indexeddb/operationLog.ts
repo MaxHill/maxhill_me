@@ -15,6 +15,7 @@ const SYNCED_STATUS = {
 const BY_SYNCED_INDEX = "by-synced";
 const BY_CLIENT_SYNCED_INDEX = "by-client-synced";
 export type PendingMutationRecord = {
+  /** This ID stays separate from the logical clock so the server can detect upload gaps and acknowledge a complete prefix. */
   mutationID: number;
   operation: CRDTOperation;
 };

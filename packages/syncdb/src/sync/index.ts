@@ -16,6 +16,7 @@ import { encodeCanonicalJson } from "./canonical-json.ts";
 const WIRE_PROTOCOL_VERSION = 3;
 
 type Mutation = {
+  /** This ID lets the server detect missing uploads because logical-clock versions can jump. */
   id: number;
   operation: CRDTOperation;
 };
@@ -24,8 +25,10 @@ export interface SyncRequest {
   protocolVersion: 3;
   clientId: string;
   dbName: string;
+  /** This frontier lets the client send only work after the last complete prefix the server committed. */
   clientLastMutationID: number;
   mutations: Mutation[];
+  /** This cursor tracks downloads separately because upload acknowledgement does not prove the client received server changes. */
   lastSeenServerVersion: number;
   requestHash: string;
 }
@@ -35,6 +38,7 @@ export interface SyncResponse {
   clientId: string;
   baseServerVersion: number;
   latestServerVersion: number;
+  /** This frontier lets the client retire only mutations the server committed as a complete prefix. */
   lastMutationID: number;
   responseHash: string;
   operations: CRDTOperation[];

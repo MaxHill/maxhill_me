@@ -7,6 +7,7 @@ import { jsonValuesEqual } from "./json-values-equal.ts";
 // Unique identifier for each operation
 export type Dot = {
   clientId: string;
+  /** This clock orders CRDT changes because remote observations can make its values jump. */
   version: number;
 };
 
@@ -19,6 +20,7 @@ export type CRDTOperation =
     rowKey: ValidKey;
     fields: Record<string, any>;
     dot: Dot;
+    /** This tracks pull progress because upload acknowledgements do not show which server changes the client received. */
     serverVersion?: number;
   }
   | {
@@ -27,6 +29,7 @@ export type CRDTOperation =
     rowKey: ValidKey;
     dot: Dot;
     versionVector: Record<string, number>;
+    /** This tracks pull progress because upload acknowledgements do not show which server changes the client received. */
     serverVersion?: number;
   }
   | {
@@ -37,6 +40,7 @@ export type CRDTOperation =
     checkpointSeenServerVersion: number;
     fields: Record<string, LWWField>;
     tombstone?: { dot: Dot; versionVector: Record<string, number> };
+    /** This tracks pull progress because upload acknowledgements do not show which server changes the client received. */
     serverVersion?: number;
   };
 
