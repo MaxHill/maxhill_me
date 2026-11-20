@@ -42,7 +42,6 @@ type sync_error =
   | Client_mutation_state_diverged of { client_last_mutation_id : int64; server_last_mutation_id : int64 }
   | Client_mutation_gap of { expected : int64; received : int64 }
   | Logical_clock_regression of { client_id : string; expected_gt : int64; received : int64 }
-  | Non_monotonic_versions of string
   | Storage_error of string
   | Decode_error of string
 
@@ -59,8 +58,6 @@ let sync_error_to_string = function
   | Logical_clock_regression { client_id; expected_gt; received } ->
       Printf.sprintf "LOGICAL_CLOCK_REGRESSION: client=%s expected_gt=%Ld received=%Ld"
         client_id expected_gt received
-  | Non_monotonic_versions client_id ->
-      Printf.sprintf "request versions went backwards for client %s" client_id
   | Storage_error msg -> msg
   | Decode_error msg -> msg
 
@@ -70,7 +67,6 @@ let sync_error_code = function
   | Client_mutation_state_diverged _ -> "CLIENT_MUTATION_STATE_DIVERGED"
   | Client_mutation_gap _ -> "CLIENT_MUTATION_GAP"
   | Logical_clock_regression _ -> "LOGICAL_CLOCK_REGRESSION"
-  | Non_monotonic_versions _ -> "INVALID_OPERATION"
   | Storage_error _ -> "DATABASE_ERROR"
   | Decode_error _ -> "INVALID_OPERATION"
 

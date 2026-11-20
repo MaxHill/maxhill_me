@@ -56,7 +56,7 @@ let schema_sql =
 );
 |}
 
-(* Mutable server-only checkpoint evidence; published operation payloads stay immutable. *)
+(* Per-client committed mutation and logical-clock frontiers survive row compaction. *)
 let client_state_schema_sql =
   {|CREATE TABLE IF NOT EXISTS client_sync_state (
     tenant_id TEXT NOT NULL,
@@ -325,12 +325,6 @@ let delete_row_prefix (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~ta
 let get_max_server_version (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name =
   match Db.find get_max_server_version_query (tenant_id, db_name) with
   | Ok version -> Ok version
-  | Error err -> Error (Database (Caqti_error.show err))
-
-let has_operation_dot (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~client_id ~version =
-  match Db.find_opt find_by_dot_query (tenant_id, db_name, client_id, version) with
-  | Ok (Some _) -> Ok true
-  | Ok None -> Ok false
   | Error err -> Error (Database (Caqti_error.show err))
 
 let get_or_create_client_state (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~client_id =

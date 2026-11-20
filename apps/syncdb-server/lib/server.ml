@@ -26,8 +26,7 @@ let status_of_sync_error = function
   | Sync_engine.Client_state_out_of_sync _
   | Sync_engine.Client_mutation_state_diverged _
   | Sync_engine.Client_mutation_gap _
-  | Sync_engine.Logical_clock_regression _
-  | Sync_engine.Non_monotonic_versions _ ->
+  | Sync_engine.Logical_clock_regression _ ->
       `Bad_request
   | Sync_engine.Decode_error _ -> `Bad_request
   | Sync_engine.Storage_error _ -> `Internal_server_error

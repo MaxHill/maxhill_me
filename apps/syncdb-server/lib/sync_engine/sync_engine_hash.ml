@@ -60,14 +60,13 @@ let rec encode_typed_json (value : Yojson.Safe.t) : (Yojson.Safe.t, string) resu
       in
       let* encoded_pairs = encode_all [] sorted_fields in
       Ok (`List [ `String "object"; `List encoded_pairs ])
-  | `Tuple _ | `Variant _ -> Error "non-JSON value"
 
 let to_typed_string value =
   let ( let* ) = Result.bind in
   let* encoded = encode_typed_json value in
   Ok (Yojson.Safe.to_string encoded)
 
-let rec validate_strict_json value : (unit, string) result =
+let rec validate_strict_json (value : Yojson.Safe.t) : (unit, string) result =
   let ( let* ) = Result.bind in
   match value with
   | `Null | `Bool _ | `String _ -> Ok ()
@@ -87,8 +86,6 @@ let rec validate_strict_json value : (unit, string) result =
           let* () = acc in
           validate_strict_json json_value)
         (Ok ()) fields
-  | `Tuple _ | `Variant _ -> Error "non-JSON value"
-
 
 let ( let* ) = Result.bind
 

@@ -82,14 +82,6 @@ val delete_row_prefix
   -> before_server_version:int64
   -> (unit, error) result
 
-val has_operation_dot
-  :  connection
-  -> tenant_id:string
-  -> db_name:string
-  -> client_id:string
-  -> version:int64
-  -> (bool, error) result
-
 val with_transaction
   :  connection
   -> map_tx_error:(error -> 'e)

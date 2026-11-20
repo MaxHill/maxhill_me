@@ -176,11 +176,7 @@ let process_sync_request_with_connection ?checkpoint_threshold_operations
       let* new_state =
         List.fold_left (fun acc (mutation : mutation) ->
             let* state = acc in
-            if mutation.operation.dot.client_id <> request.client_id then
-              Error (Decode_error "mutation dot.clientId must equal request clientId")
-            else if (match mutation.operation.payload with Checkpoint_row _ -> true | _ -> false) then
-              Error (Decode_error "clients cannot upload checkpointRow")
-            else if mutation.id <= state.Repository.last_mutation_id then Ok state
+            if mutation.id <= state.Repository.last_mutation_id then Ok state
             else if mutation.id <> Int64.succ state.Repository.last_mutation_id then
               Error (Client_mutation_gap { expected = Int64.succ state.Repository.last_mutation_id; received = mutation.id })
             else if mutation.operation.dot.version <= state.Repository.last_client_version then

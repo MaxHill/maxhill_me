@@ -275,8 +275,11 @@ let assert_duplicate_after_compaction_with_constant_metadata () =
          ~mutations:[ { Sync.Sync_engine.id = 1L; operation = make_set_op ~client_id:"c1" ~dot_version:1L ~row_key:"r1" } ])
   in
   assert (duplicate.last_mutation_id = 1L);
-  assert (Sync.Repository.has_operation_dot conn ~tenant_id:"user-1" ~db_name:"main"
-    ~client_id:"c1" ~version:1L = Ok false);
+  (match Sync.Repository.get_row_prefix conn ~tenant_id:"user-1" ~db_name:"main"
+     ~table_name:"todos" ~row_key:"r1" ~before_server_version:Int64.max_int with
+  | Ok [ operation ] -> assert (operation.op_type = "checkpointRow")
+  | Ok _ -> failwith "expected only the checkpoint after a compacted mutation retry"
+  | Error error -> failwith (Sync.Repository.error_to_string error));
   assert (Sync.Repository.count_operations conn ~tenant_id:"user-1" ~db_name:"main" = Ok 1)
 
 let assert_typed_requests_reject_invalid_counters () =
