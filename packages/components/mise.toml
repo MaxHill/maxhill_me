@@ -14,5 +14,6 @@ description = "Unbounded checks (none defined)."
 run = 'echo "no-op" && exit 0'
 
 [tasks.deploy]
+depends = ["//packages/css:deploy", "//packages/web-component-utils:deploy"]
 description = "One-shot build — produces the artifact consumers use."
 run = "pnpm exec vite build && pnpm exec tsc --emitDeclarationOnly && pnpm exec cem analyze"

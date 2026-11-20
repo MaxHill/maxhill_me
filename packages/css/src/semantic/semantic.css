@@ -1,5 +1,7 @@
-@import "./light-theme.css";
+/* Reuse the same palettes for explicit choices and the no-JavaScript system default. */
 @import "./dark-theme.css";
+@import "./light-theme.css";
+@import "./dark-theme.css" (prefers-color-scheme: dark);
 
 @layer semantic {
   :root {
