@@ -5,9 +5,8 @@ import {
   indexDefinitionToIDBIndex,
   needIndexUpdate,
 } from "../indexes.ts";
-import { promisifyIDBRequest, validateTransactionStores } from "../utils.ts";
+import { abortFailedTransaction, promisifyIDBRequest } from "../utils.ts";
 import { ROW_KEY, TABLE_NAME } from "../crdt.ts";
-import { migrate } from "./migrations.ts";
 
 // Stores
 export const ROWS_STORE = "rows";
@@ -23,6 +22,10 @@ const REQUIRED_STORES = [ROWS_STORE, OPERATIONS_STORE, CLIENT_STATE_STORE] as co
 // Client state keys
 const LOGICAL_CLOCK = "logicalClock";
 const LAST_SEEN_SERVER_VERSION = "lastSeenServerVersion";
+const SYNC_PROTOCOL_VERSION = "syncProtocolVersion";
+const LAST_MUTATION_ID = "lastMutationID";
+const LAST_GENERATED_MUTATION_ID = "lastGeneratedMutationID";
+const SYNC_PROTOCOL_VERSION_CURRENT = 4;
 export const INDEXES_HASH = "indexesHash";
 
 export class Lifecycle {
@@ -30,11 +33,11 @@ export class Lifecycle {
   indexes?: IndexDefinition[];
 
   constructor(indexes?: IndexDefinition[]) {
-    if (indexes) this.indexes = indexes;
+    if (indexes) {this.indexes = indexes;}
   }
 
   private validateIndexDefinitions(): void {
-    if (!this.indexes) return;
+    if (!this.indexes) {return;}
 
     const indexNames = this.indexes.map((index) =>
       `table: ${index.table}, indexName: ${index.name}`
@@ -68,99 +71,149 @@ export class Lifecycle {
   }
 
   async open(dbName: string, version?: number): Promise<IDBDatabase> {
-    const self = this;
-
+    this.validateIndexDefinitions();
     return new Promise((resolve, reject) => {
-      this.validateIndexDefinitions();
-
       const request = indexedDB.open(dbName, version);
-
       request.onerror = () => reject(request.error);
-      request.onsuccess = async () => {
-        var db = request.result;
-
-        const missingStores = REQUIRED_STORES.filter((store) =>
-          !db.objectStoreNames.contains(store)
-        );
-        if (missingStores.length > 0 && version) {
-          db.close();
-          assert(
-            false,
-            `Database is missing required object stores [${missingStores.join(", ")}]. ` +
-              `Open with explicit version ${version} cannot auto-upgrade.`,
-          );
-        } else if (missingStores.length > 0) {
-          db.close();
-          db = await self.open(dbName, db.version + 1);
-        }
-
-        const tx = db.transaction([CLIENT_STATE_STORE], "readonly");
-        const upgradeNeeded = await needIndexUpdate(tx, this.indexes);
-        if (upgradeNeeded && version) {
-          assert(
-            false,
-            "Database indexes where not successfully updated, got a new version and non-matching indexes",
-          );
-        } else if (upgradeNeeded) {
-          db.close();
-          db = await self.open(dbName, db.version + 1);
-        }
-
-        this.db = db;
-        await migrate(this.db);
-        resolve(this.db);
+      request.onsuccess = () => {
+        this.completeOpen(request.result, dbName, version).then((db) => {
+          this.db = db;
+          resolve(db);
+        }, reject);
       };
-
-      request.onupgradeneeded = async (event) => {
-        const request = event.target as IDBOpenDBRequest;
-        const db = request.result;
-
-        if (!db.objectStoreNames.contains(ROWS_STORE)) {
-          const rowStore = db.createObjectStore(ROWS_STORE, {
-            keyPath: [TABLE_NAME, ROW_KEY],
-          });
-          rowStore.createIndex(BY_TABLE_INDEX, TABLE_NAME, { unique: false });
-        }
-
-        if (!db.objectStoreNames.contains(OPERATIONS_STORE)) {
-          const operationStore = db.createObjectStore(OPERATIONS_STORE, {
-            keyPath: ["op.dot.clientId", "op.dot.version"],
-          });
-          operationStore.createIndex(BY_SYNCED_INDEX, "synced", { unique: false });
-          operationStore.createIndex(BY_CLIENT_SYNCED_INDEX, ["op.dot.clientId", "synced"], {
-            unique: false,
-          });
-        }
-
-        if (!db.objectStoreNames.contains(CLIENT_STATE_STORE)) {
-          const store = db.createObjectStore(CLIENT_STATE_STORE);
-          store.put(-1, LOGICAL_CLOCK);
-          store.put(-1, LAST_SEEN_SERVER_VERSION);
-        }
-
-        const tx = request.transaction!;
-        validateTransactionStores(tx, [ROWS_STORE, CLIENT_STATE_STORE], "versionchange");
-
-        const clientStateStore = tx.objectStore(CLIENT_STATE_STORE);
-        const rowStore = tx.objectStore(ROWS_STORE);
-
-        if (this.indexes && this.indexes.length > 0) {
-          for (const index of this.indexes) {
-            const [internalIndexName, keyPath] = indexDefinitionToIDBIndex(index);
-
-            if (!rowStore.indexNames.contains(internalIndexName)) {
-              rowStore.createIndex(internalIndexName, keyPath, { unique: false });
-            }
-          }
-        }
-
-        await promisifyIDBRequest(
-          clientStateStore.put(hashIndexDefinitions(this.indexes), INDEXES_HASH),
-        );
+      request.onupgradeneeded = (event) => {
+        this.upgradeDatabase(request, event.oldVersion).catch((error) => {
+          abortFailedTransaction(request.transaction!);
+          reject(error);
+        });
       };
     });
   }
 
+  private async completeOpen(db: IDBDatabase, name: string, version?: number) {
+    try {
+      if (REQUIRED_STORES.some((store) => !db.objectStoreNames.contains(store))) {
+        throw new Error("Database is missing required object stores; existing data was preserved");
+      }
+      await this.assertSupportedProtocolState(db);
+      const transaction = db.transaction(CLIENT_STATE_STORE);
+      const upgradeNeeded = await needIndexUpdate(transaction, this.indexes);
+      if (upgradeNeeded) {
+        if (version !== undefined) {
+          throw new Error("Database indexes were not successfully updated");
+        }
+        const nextVersion = db.version + 1;
+        db.close();
+        return await this.open(name, nextVersion);
+      }
+      return db;
+    } catch (error) {
+      db.close();
+      throw error;
+    }
+  }
+
+  private async upgradeDatabase(request: IDBOpenDBRequest, oldVersion: number) {
+    const db = request.result;
+    const transaction = request.transaction!;
+    if (oldVersion > 0) {
+      if (REQUIRED_STORES.some((store) => !db.objectStoreNames.contains(store))) {
+        throw new Error("Database is missing required object stores; existing data was preserved");
+      }
+      const state = transaction.objectStore(CLIENT_STATE_STORE);
+      const protocol = await promisifyIDBRequest(state.get(SYNC_PROTOCOL_VERSION));
+      if (protocol !== SYNC_PROTOCOL_VERSION_CURRENT) {
+        throw new Error("Unsupported local sync store protocol; existing data was preserved");
+      }
+      await this.validateMutationState(state);
+      this.validateOperationStore(transaction.objectStore(OPERATIONS_STORE));
+    }
+    this.createStores(db);
+    this.createApplicationIndexes(transaction);
+    await promisifyIDBRequest(transaction.objectStore(CLIENT_STATE_STORE).put(
+      hashIndexDefinitions(this.indexes), INDEXES_HASH,
+    ));
+  }
+
+  private createStores(db: IDBDatabase): void {
+    if (!db.objectStoreNames.contains(ROWS_STORE)) {
+      const store = db.createObjectStore(ROWS_STORE, { keyPath: [TABLE_NAME, ROW_KEY] });
+      store.createIndex(BY_TABLE_INDEX, TABLE_NAME);
+    }
+    if (!db.objectStoreNames.contains(OPERATIONS_STORE)) {
+      const store = db.createObjectStore(OPERATIONS_STORE, {
+        keyPath: ["operation.dot.clientId", "operation.dot.version"],
+      });
+      store.createIndex(BY_SYNCED_INDEX, "synced");
+      store.createIndex(BY_CLIENT_SYNCED_INDEX, ["operation.dot.clientId", "synced"]);
+      store.createIndex("by-client-mutation", ["operation.dot.clientId", "mutationID"], {
+        unique: true,
+      });
+    }
+    if (!db.objectStoreNames.contains(CLIENT_STATE_STORE)) {
+      const store = db.createObjectStore(CLIENT_STATE_STORE);
+      store.put(-1, LOGICAL_CLOCK);
+      store.put(-1, LAST_SEEN_SERVER_VERSION);
+      store.put(SYNC_PROTOCOL_VERSION_CURRENT, SYNC_PROTOCOL_VERSION);
+      store.put(0, LAST_MUTATION_ID);
+      store.put(0, LAST_GENERATED_MUTATION_ID);
+    }
+  }
+
+  private createApplicationIndexes(transaction: IDBTransaction): void {
+    const store = transaction.objectStore(ROWS_STORE);
+    for (const index of this.indexes ?? []) {
+      const [name, keyPath] = indexDefinitionToIDBIndex(index);
+      if (!store.indexNames.contains(name)) {
+        store.createIndex(name, keyPath);
+      }
+    }
+  }
+
+  private validateOperationStore(store: IDBObjectStore): void {
+    const expected = ["operation.dot.clientId", "operation.dot.version"];
+    if (JSON.stringify(store.keyPath) !== JSON.stringify(expected) ||
+        !store.indexNames.contains("by-client-mutation") ||
+        !store.index("by-client-mutation").unique ||
+        JSON.stringify(store.index("by-client-mutation").keyPath) !==
+          JSON.stringify(["operation.dot.clientId", "mutationID"])) {
+      throw new Error("Unsupported operation store schema; existing data was preserved");
+    }
+  }
+
+  private async validateMutationState(store: IDBObjectStore): Promise<void> {
+    const [acknowledged, generated, clientId] = await Promise.all([
+      promisifyIDBRequest<number>(store.get(LAST_MUTATION_ID)),
+      promisifyIDBRequest<number>(store.get(LAST_GENERATED_MUTATION_ID)),
+      promisifyIDBRequest<string | undefined>(store.get("clientId")),
+    ]);
+    if (!Number.isSafeInteger(acknowledged) || acknowledged < 0 ||
+        !Number.isSafeInteger(generated) || generated < acknowledged ||
+        (generated > 0 && !clientId)) {
+      throw new Error("Invalid local mutation state; existing data was preserved");
+    }
+  }
+
+  private async assertSupportedProtocolState(db: IDBDatabase): Promise<void> {
+    const tx = db.transaction([CLIENT_STATE_STORE, ROWS_STORE, OPERATIONS_STORE], "readonly");
+    const clientState = tx.objectStore(CLIENT_STATE_STORE);
+
+    const protocolVersion = await promisifyIDBRequest<number | undefined>(
+      clientState.get(SYNC_PROTOCOL_VERSION),
+    );
+
+    if (protocolVersion === SYNC_PROTOCOL_VERSION_CURRENT) {
+      this.validateOperationStore(tx.objectStore(OPERATIONS_STORE));
+      await this.validateMutationState(clientState);
+      return;
+    }
+
+    throw new Error(
+      `Unsupported local sync store protocol: ${protocolVersion ?? "uninitialized"}. ` +
+        `Open a fresh empty database for protocol ${SYNC_PROTOCOL_VERSION_CURRENT}. ` +
+        "Existing data was preserved.",
+    );
+  }
 
   close(): void {
     assert(

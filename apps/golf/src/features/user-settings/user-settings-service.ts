@@ -9,7 +9,7 @@ import { KVWrapper } from "../../utils";
 const DB_OWNER_USER_ID_KEY = "db_owner_user_id";
 
 export class UserSettingsService {
-  kv: KVWrapper<string>;
+  kv: KVWrapper<unknown>;
 
   constructor(db: DBInterface) {
     const table = db.table("user_settings");

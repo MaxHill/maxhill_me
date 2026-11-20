@@ -13,6 +13,7 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
   dbName: string;
   clientId: string;
   syncRemote?: string;
+  private localDatabaseName?: string;
   private tables: Map<string, Map<string, string[]>> = new Map();
 
   // Should these be part of the config?
@@ -26,6 +27,12 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
     assertValidDbName(dbName);
     this.dbName = dbName;
     this.clientId = clientIdGenerator ? clientIdGenerator() : crypto.randomUUID();
+  }
+
+  withLocalDatabaseName(name: string): CRDTDatabaseBuilder<TSchema> {
+    assertValidDbName(name);
+    this.localDatabaseName = name;
+    return this;
   }
 
   withSyncRemote(remoteUrl: string): CRDTDatabaseBuilder<TSchema> {
@@ -97,6 +104,7 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
       syncManager,
       lifecycle,
       this.clientId,
+      this.localDatabaseName,
     );
   }
 }

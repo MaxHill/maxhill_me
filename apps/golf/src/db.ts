@@ -11,12 +11,13 @@ import {
   type StopHandle,
 } from "./sync-strategies";
 
-const SYNC_URL = import.meta.env.VITE_SYNC_URL || "http://localhost:3001/v2/sync";
+const SYNC_URL = import.meta.env.VITE_SYNC_URL || "http://localhost:3001/v3/sync";
 /** Safety-net pull when SSE is quiet. */
 const SYNC_INTERVAL_MS = 120_000;
 /** Trailing debounce after local writes before pushing. */
 const LOCAL_SYNC_DEBOUNCE_MS = 1_000;
 const DB_NAME = "golf";
+const LOCAL_DB_NAME = "golf-v3";
 
 export type DBInterface = CRDTDatabase<{
   shot_types: {};
@@ -94,7 +95,7 @@ async function withOwnershipEnforcement(db: DBInterface): Promise<DBInterface> {
     },
     resetForNewOwner: async (candidateDb, userID) => {
       await candidateDb.close();
-      await deleteLocalDatabase(DB_NAME);
+      await deleteLocalDatabase(LOCAL_DB_NAME);
       const replacementDb = await buildAndOpenDatabase();
       const replacementSettings = new UserSettingsService(replacementDb);
       await replacementSettings.setDatabaseOwnerUserID(userID);
@@ -108,6 +109,7 @@ async function withOwnershipEnforcement(db: DBInterface): Promise<DBInterface> {
 
 function buildAndOpenDatabase(): Promise<DBInterface> {
   return newDatabase(DB_NAME)
+    .withLocalDatabaseName(LOCAL_DB_NAME)
     .addTable("shot_types", {})
     .addTable("clubs", {})
     .addTable("shot_log", {})
@@ -140,17 +142,11 @@ function buildAndOpenDatabase(): Promise<DBInterface> {
 
 async function deleteLocalDatabase(name: string): Promise<void> {
   const request = indexedDB.deleteDatabase(name);
-  const blocked = new Promise<never>((_, reject) => {
-    request.onblocked = () => {
-      reject(
-        new Error(
-          `Failed to reset local database '${name}': delete blocked by another open connection`,
-        ),
-      );
-    };
-  });
-
-  await Promise.race([promisifyIDBRequest(request), blocked]);
+  request.onblocked = () => {
+    console.warn(`Close other Golf tabs to finish replacing local database '${name}'.`);
+  };
+  // A blocked delete is still queued. Wait for its actual result before opening a replacement.
+  await promisifyIDBRequest(request);
 }
 
 function resetDbSingletonOnAuthChange(): void {
@@ -197,7 +193,7 @@ function startSyncStrategies(db: DBInterface): void {
       dbName: DB_NAME,
       getToken: () => authClient.getToken(),
       onUnauthorized: async () => {
-        // Match POST /v2/sync: try a forced refresh once, else log out.
+        // Match POST /v3/sync: try a forced refresh once, else log out.
         const token = await authClient.getToken({ forceRefresh: true });
         if (token) {
           return true;

@@ -21,7 +21,7 @@ let assert_legacy_sync_is_gone () =
     = `String "SYNC_ENDPOINT_RETIRED");
   assert
     (Yojson.Safe.Util.member "message" body
-    = `String "POST /sync is retired; use POST /v2/sync")
+    = `String "POST /sync is retired; use POST /v3/sync")
 
 let assert_unknown_route () =
   let response, format = Sync.Server.route ~meth:`GET ~target:"/unknown" in

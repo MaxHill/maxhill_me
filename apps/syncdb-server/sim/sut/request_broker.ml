@@ -144,7 +144,7 @@ let process_request_and_maybe_send_response ~(client : Client.t) ~(world : world
     | Error error -> failwith (Sync.Sync_engine.sync_error_to_string error)
     | Ok response -> response
   in
-  Coverage.record_acceptances world.coverage ~response;
+  Coverage.record_acceptances world.coverage ~request ~response;
 
   let* action = choose_response_action ~world in
   match action with

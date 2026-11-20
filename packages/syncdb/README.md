@@ -274,7 +274,7 @@ push local ops and pull remote ops.
 ```ts
 const db = await newDatabase("golf")
   .addTable("clubs", { byName: ["name"] })
-  .withSyncRemote("https://sync.example.com/v2/sync")
+  .withSyncRemote("https://sync.example.com/v3/sync")
   .withSyncHeaders(async () => {
     const token = await getAccessToken();
     if (!token) {
@@ -301,6 +301,75 @@ Typical app pattern:
 3. UI handlers with `source: "remote"` refresh lists after pull.
 
 Auth headers are optional. Without them the server rejects protected routes.
+
+Protocol notes:
+
+- Client uploads use dense mutation IDs (`1..N`) in `mutations[]` with
+  `clientLastMutationID` watermarks.
+- Replies return `lastMutationID` as an acknowledged prefix frontier.
+- This client expects fresh local protocol storage (`syncProtocolVersion=4`).
+  Existing initialized stores from older protocols are refused
+  non-destructively (data is not wiped).
+
+### Why the client uses an outbox and mutation IDs
+
+The client keeps each local change in a durable outbox until the server
+acknowledges it. The outbox stores the payloads that the client still needs to
+send. A mutation ID gives each payload a dense position in that client's upload
+sequence. The server acknowledges a complete prefix, such as IDs `1..5`.
+
+A CRDT logical-clock version has a different purpose. It identifies the
+change's logical position in the CRDT. Remote observations can make a client's
+clock jump, so versions do not form a dense upload sequence. A version also
+cannot replace the outbox because it does not store the change payload.
+
+The client uses three separate pieces of state:
+
+| State | Purpose |
+| --- | --- |
+| Outbox | Holds unacknowledged local change payloads for retry. |
+| Mutation ID | Orders one client's uploads and lets the server acknowledge a complete prefix. |
+| Logical-clock version | Identifies a change in CRDT ordering. |
+
+When a local write occurs, the client stores the row change, advances its
+logical clock, allocates a mutation ID, and adds the payload to the outbox in
+one IndexedDB transaction. If the transaction fails, none of those changes
+commit. This prevents a local change without a queued payload, or a skipped
+mutation ID.
+
+During sync, the client sends its pending outbox entries in order. The server
+applies new entries and records the committed mutation prefix in one SQLite
+transaction. If the server commits but the reply is lost, the client can retry
+the same entries. The server recognizes their IDs and does not apply them a
+second time. After a valid reply, the client removes only the acknowledged
+prefix from the outbox. It does not discard pending entries on a protocol or
+state error.
+
+The pull cursor tracks downloaded server changes. It is separate from the
+upload acknowledgement, so upload progress does not imply pull progress.
+
+```mermaid
+sequenceDiagram
+    participant App
+    participant Client as Client database
+    participant Outbox
+    participant Server
+
+    App->>Client: Write local change
+    Client->>Client: Allocate mutation ID and clock version
+    Client->>Outbox: Store change payload atomically
+    Note over Client,Outbox: Failed transaction means no write and no ID consumed
+
+    Client->>Server: POST /v3/sync: pending IDs and pull cursor
+    Server->>Server: Check order and apply new mutations
+    Server->>Server: Commit effects and mutation watermark atomically
+    Server-->>Client: lastMutationID and pulled changes
+    Client->>Client: Validate reply and apply pulled changes
+    Client->>Outbox: Retire acknowledged prefix atomically
+
+    Note over Client,Server: If the reply is lost, retry the same outbox entries
+    Server->>Server: Ignore already-committed mutation IDs
+```
 
 ## 8. Client id rules (multi-device)
 
@@ -353,7 +422,7 @@ async function main() {
       byUpdatedAt: ["updatedAt"],
       byTitle: ["title"],
     })
-    .withSyncRemote("https://sync.example.com/v2/sync")
+    .withSyncRemote("https://sync.example.com/v3/sync")
     .withSyncHeaders(async () => ({
       Authorization: `Bearer ${await getAccessToken()}`,
     }))

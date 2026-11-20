@@ -6,7 +6,7 @@ import type { UserSubjects } from "./features/auth/auth-client";
 describe("get_DB ownership bootstrap integration", () => {
   afterEach(async () => {
     await resetDBSingletonForTests();
-    await deleteDatabase("golf");
+    await deleteDatabase("golf-v3");
   });
 
   it("preserves guest rows and claims ownership on first authenticated startup", async () => {

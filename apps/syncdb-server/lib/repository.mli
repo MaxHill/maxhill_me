@@ -15,8 +15,14 @@ type db_crdt_operation = {
   version_vector : string option;
 }
 
+type client_state = {
+  last_mutation_id : int64;
+  last_client_version : int64;
+}
+
 type error =
   | Database of string
+  | Migration_required
   | Duplicate_insert_conflict_missing_existing_row
   | Crdt_consistency_violation of { client_id : string; version : int64 }
 
@@ -25,11 +31,6 @@ val error_to_string : error -> string
 val init_schema : connection -> (unit, error) result
 val count_operations : connection -> tenant_id:string -> db_name:string -> (int, error) result
 val insert_crdt_operation : connection -> db_crdt_operation -> (int64, error) result
-
-val insert_crdt_operations
-  :  connection
-  -> db_crdt_operation list
-  -> (int64 list, error) result
 
 val get_operations_since
   :  connection
@@ -41,6 +42,22 @@ val get_operations_since
   -> (db_crdt_operation list, error) result
 
 val get_max_server_version : connection -> tenant_id:string -> db_name:string -> (int64, error) result
+
+val get_or_create_client_state
+  :  connection
+  -> tenant_id:string
+  -> db_name:string
+  -> client_id:string
+  -> (client_state, error) result
+
+val update_client_state
+  :  connection
+  -> tenant_id:string
+  -> db_name:string
+  -> client_id:string
+  -> last_mutation_id:int64
+  -> last_client_version:int64
+  -> (unit, error) result
 
 val get_row_prefix
   :  connection
@@ -59,14 +76,6 @@ val delete_row_prefix
   -> row_key:string
   -> before_server_version:int64
   -> (unit, error) result
-
-val has_operation_dot
-  :  connection
-  -> tenant_id:string
-  -> db_name:string
-  -> client_id:string
-  -> version:int64
-  -> (bool, error) result
 
 val with_transaction
   :  connection

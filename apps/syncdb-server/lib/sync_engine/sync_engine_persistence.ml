@@ -50,15 +50,6 @@ let db_operation_of_crdt_operation ~tenant_id ~db_name operation =
           version_vector = Some (canonical_version_vector_json version_vector);
         }
 
-let db_operations_of_crdt_operations ~tenant_id ~db_name operations =
-  List.fold_right
-    (fun operation acc ->
-      match (db_operation_of_crdt_operation ~tenant_id ~db_name operation, acc) with
-      | Error msg, _ -> Error (Decode_error msg)
-      | Ok _, (Error _ as err) -> err
-      | Ok db_operation, Ok db_operations -> Ok (db_operation :: db_operations))
-    operations (Ok [])
-
 let crdt_operation_of_db_operation operation =
   match operation.Repository.op_type with
   | "setRow" -> (

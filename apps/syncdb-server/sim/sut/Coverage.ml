@@ -1,10 +1,10 @@
 type accepted_upload = {
+  mutation_id : int64;
   client_id : string;
   version : int64;
   table_name : string;
   row_key : string;
   operation_signature : string;
-  server_version : int64;
 }
 
 type removed_dot = {
@@ -46,46 +46,42 @@ let operation_signature (operation : Sync.Sync_engine.crdt_operation) =
   | Sync.Sync_engine.Remove_row { version_vector } ->
       let sorted = List.sort (fun (a, _) (b, _) -> String.compare a b) version_vector in
       let vector =
-        `Assoc
-          (List.map
-             (fun (client_id, version) ->
-               (client_id, `Intlit (Int64.to_string version)))
-             sorted)
+        `Assoc (List.map (fun (client_id, version) -> (client_id, `Intlit (Int64.to_string version))) sorted)
       in
       "removeRow:" ^ Yojson.Safe.to_string vector
   | Sync.Sync_engine.Checkpoint_row { checkpoint_seen_server_version; state } ->
-      "checkpointRow:" ^ Int64.to_string checkpoint_seen_server_version ^ ":"
-      ^ Yojson.Safe.to_string state
+      "checkpointRow:" ^ Int64.to_string checkpoint_seen_server_version ^ ":" ^ Yojson.Safe.to_string state
 
 let same_dot client_id version (operation : Sync.Sync_engine.crdt_operation) =
   operation.dot.client_id = client_id && operation.dot.version = version
 
-let record_acceptances coverage ~(response : Sync.Sync_engine.sync_response) =
-  coverage.accepted_uploads <-
-    coverage.accepted_uploads + List.length response.synced_operations
+let record_acceptances coverage ~(request : Sync.Sync_engine.sync_request)
+    ~(response : Sync.Sync_engine.sync_response) =
+  let accepted_count =
+    List.fold_left
+      (fun n (mutation : Sync.Sync_engine.mutation) ->
+        if mutation.id <= response.last_mutation_id then n + 1 else n)
+      0 request.mutations
+  in
+  coverage.accepted_uploads <- coverage.accepted_uploads + accepted_count
 
 let record_response_drop coverage ~(request : Sync.Sync_engine.sync_request)
     ~(response : Sync.Sync_engine.sync_response) =
   coverage.dropped_responses <- coverage.dropped_responses + 1;
   List.iter
-    (fun (accepted : Sync.Sync_engine.synced_operation) ->
-      coverage.dropped_acks <- coverage.dropped_acks + 1;
-      match
-        List.find_opt (same_dot accepted.dot.client_id accepted.dot.version)
-          request.operations
-      with
-      | None -> ()
-      | Some operation ->
-          let upload =
-            { client_id = accepted.dot.client_id;
-              version = accepted.dot.version;
-              table_name = operation.table_name;
-              row_key = operation.row_key;
-              operation_signature = operation_signature operation;
-              server_version = accepted.server_version }
-          in
-          coverage.dropped_uploads <- upload :: coverage.dropped_uploads)
-    response.synced_operations
+    (fun (mutation : Sync.Sync_engine.mutation) ->
+      if mutation.id <= response.last_mutation_id then (
+        coverage.dropped_acks <- coverage.dropped_acks + 1;
+        let operation = mutation.operation in
+        coverage.dropped_uploads <-
+          { mutation_id = mutation.id;
+            client_id = operation.dot.client_id;
+            version = operation.dot.version;
+            table_name = operation.table_name;
+            row_key = operation.row_key;
+            operation_signature = operation_signature operation }
+          :: coverage.dropped_uploads))
+    request.mutations
 
 let record_compaction coverage ~table_name ~row_key
     ~(removed_rows : Sync.Repository.db_crdt_operation list) =
@@ -97,8 +93,7 @@ let record_compaction coverage ~table_name ~row_key
         || row.Sync.Repository.op_type = "removeRow")
       removed_rows
   in
-  coverage.removed_original_dots <-
-    coverage.removed_original_dots + List.length original_rows;
+  coverage.removed_original_dots <- coverage.removed_original_dots + List.length original_rows;
   List.iter
     (fun (row : Sync.Repository.db_crdt_operation) ->
       coverage.removed_dots <-
@@ -130,8 +125,7 @@ let observe_request coverage ~(request : Sync.Sync_engine.sync_request) =
                 removed.client_id = upload.client_id
                 && removed.version = upload.version
                 && removed.table_name = upload.table_name
-                && removed.row_key = upload.row_key
-                && removed.server_version = upload.server_version)
+                && removed.row_key = upload.row_key)
               coverage.removed_dots
           in
           if compacted then coverage.retries_after_compaction <- coverage.retries_after_compaction + 1
@@ -153,4 +147,4 @@ let observe_request coverage ~(request : Sync.Sync_engine.sync_request) =
                 coverage.removed_dots)
             version_vector
       | Sync.Sync_engine.Set_row _ | Sync.Sync_engine.Checkpoint_row _ -> ())
-    request.operations
+    (List.map (fun (mutation : Sync.Sync_engine.mutation) -> mutation.operation) request.mutations)
