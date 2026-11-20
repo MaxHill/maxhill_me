@@ -1,7 +1,11 @@
 @layer semantics {
+  :root:not([data-theme]),
   [data-theme="light"] {
     --tint-loud: black;
     --tint-soft: white;
+    --shadow-color: 220 3% 15%;
+    --shadow-strength: 1%;
+    --focus-shadow: initial;
 
     /* Primary */
     --color-primary-fill-softer: var(--color-primary-100);

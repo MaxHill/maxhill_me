@@ -1,4 +1,5 @@
 @layer semantics {
+    :root:not([data-theme]),
     [data-theme="dark"] {
         --tint-loud: white;
         --tint-soft: black;
