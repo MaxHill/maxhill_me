@@ -18,11 +18,8 @@ description = "Run sync locally."
 run = "opam exec --switch=. -- dune exec ./bin/main.exe"
 
 [tasks.test]
-description = "Run bounded migration and dune tests."
-run = [
-  "python3 -B ../../vps/syncdb-server/test_migrate_drained_v3.py",
-  "opam exec --switch=. -- dune runtest",
-]
+description = "Run bounded dune tests."
+run = "opam exec --switch=. -- dune runtest"
 
 [tasks.fuzz]
 description = "Unbounded simulator search."

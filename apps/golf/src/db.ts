@@ -1,4 +1,4 @@
-import { CRDTDatabase, migrateDrainedReplica, newDatabase } from "@maxhill/syncdb";
+import { CRDTDatabase, newDatabase } from "@maxhill/syncdb";
 import { promisifyIDBRequest } from "@maxhill/stdx";
 import { authClient } from "./features/auth/auth-client";
 import { UserSettingsService } from "./features/user-settings/user-settings-service";
@@ -18,7 +18,6 @@ const SYNC_INTERVAL_MS = 120_000;
 const LOCAL_SYNC_DEBOUNCE_MS = 1_000;
 const DB_NAME = "golf";
 const LOCAL_DB_NAME = "golf-v3";
-const LEGACY_RETIRED_KEY = "golf-v3-legacy-retired";
 
 export type DBInterface = CRDTDatabase<{
   shot_types: {};
@@ -96,8 +95,7 @@ async function withOwnershipEnforcement(db: DBInterface): Promise<DBInterface> {
     },
     resetForNewOwner: async (candidateDb, userID) => {
       await candidateDb.close();
-      // Journal the authorized owner replacement outside the store being deleted.
-      localStorage.setItem(LEGACY_RETIRED_KEY, JSON.stringify({ replacingFor: userID }));
+      await deleteLocalDatabase(LOCAL_DB_NAME);
       const replacementDb = await buildAndOpenDatabase();
       const replacementSettings = new UserSettingsService(replacementDb);
       await replacementSettings.setDatabaseOwnerUserID(userID);
@@ -109,20 +107,7 @@ async function withOwnershipEnforcement(db: DBInterface): Promise<DBInterface> {
   return db;
 }
 
-async function buildAndOpenDatabase(): Promise<DBInterface> {
-  let retired = localStorage.getItem(LEGACY_RETIRED_KEY);
-  if (retired !== null && retired !== "true") {
-    const replacement = JSON.parse(retired) as { replacingFor?: string };
-    const subjects = await authClient.getUserSubjects();
-    if (!replacement?.replacingFor || subjects?.userID !== replacement.replacingFor) {
-      throw new Error("Sign in as the replacement owner to finish the local database transition");
-    }
-    await deleteLocalDatabase(LOCAL_DB_NAME);
-    await migrateDrainedReplica(undefined, LOCAL_DB_NAME);
-    localStorage.setItem(LEGACY_RETIRED_KEY, "true");
-    retired = "true";
-  }
-  await migrateDrainedReplica(retired === "true" ? undefined : DB_NAME, LOCAL_DB_NAME);
+function buildAndOpenDatabase(): Promise<DBInterface> {
   return newDatabase(DB_NAME)
     .withLocalDatabaseName(LOCAL_DB_NAME)
     .addTable("shot_types", {})
