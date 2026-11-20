@@ -17,21 +17,15 @@ type db_crdt_operation = {
   version_vector : string option;
 }
 
-type checkpoint_dot_range = {
-  table_name : string;
-  row_key : string;
-  first_version : int64;
-  last_version : int64;
-  checkpoint_server_version : int64;
-}
-
 type error =
   | Database of string
+  | Migration_required
   | Duplicate_insert_conflict_missing_existing_row
   | Crdt_consistency_violation of { client_id : string; version : int64 }
 
 let error_to_string = function
   | Database msg -> msg
+  | Migration_required -> "migration required"
   | Duplicate_insert_conflict_missing_existing_row ->
       "duplicate insert conflict with missing existing row"
   | Crdt_consistency_violation { client_id; version } ->
@@ -63,18 +57,21 @@ let schema_sql =
 |}
 
 (* Mutable server-only checkpoint evidence; published operation payloads stay immutable. *)
-let checkpoint_dot_schema_sql =
-  {|CREATE TABLE IF NOT EXISTS checkpoint_dot_ranges (
-    tenant_id TEXT NOT NULL, db_name TEXT NOT NULL, client_id TEXT NOT NULL,
-    first_version INTEGER NOT NULL, last_version INTEGER NOT NULL,
-    table_name TEXT NOT NULL, row_key TEXT NOT NULL,
-    checkpoint_server_version INTEGER NOT NULL,
-    PRIMARY KEY (tenant_id, db_name, client_id, first_version),
-    CHECK (first_version <= last_version)
+let client_state_schema_sql =
+  {|CREATE TABLE IF NOT EXISTS client_sync_state (
+    tenant_id TEXT NOT NULL,
+    db_name TEXT NOT NULL,
+    client_id TEXT NOT NULL,
+    last_mutation_id INTEGER NOT NULL,
+    last_client_version INTEGER NOT NULL,
+    PRIMARY KEY (tenant_id, db_name, client_id)
   )|}
 
-let checkpoint_dot_row_index_sql =
-  "CREATE INDEX IF NOT EXISTS idx_checkpoint_dot_row ON checkpoint_dot_ranges(tenant_id, db_name, table_name, row_key)"
+let schema_marker_sql =
+  {|CREATE TABLE IF NOT EXISTS protocol_schema_marker (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    schema_version INTEGER NOT NULL
+  )|}
 
 let db_row_type =
   Caqti_type.(t11 int64 string string string int64 string string string (option string) (option string) (option string))
@@ -88,15 +85,20 @@ CREATE INDEX IF NOT EXISTS idx_tenant_db_table_row ON crdt_operations(tenant_id,
 CREATE INDEX IF NOT EXISTS idx_type ON crdt_operations(type);
 CREATE INDEX IF NOT EXISTS idx_tenant_db_client_version ON crdt_operations(tenant_id, db_name, client_id, version);|}
 
-let tenant_column_exists_query =
+let table_exists_query =
   let open Caqti_request.Infix in
-  (Caqti_type.unit ->! Caqti_type.int)
-    "SELECT COUNT(*) FROM pragma_table_info('crdt_operations') WHERE name = 'tenant_id'"
+  (Caqti_type.string ->! Caqti_type.int)
+    "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?"
 
-let malformed_legacy_partition_count_query =
+let user_table_count_query =
   let open Caqti_request.Infix in
   (Caqti_type.unit ->! Caqti_type.int)
-    "SELECT COUNT(*) FROM crdt_operations WHERE instr(db_name, ':') = 0"
+    "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+
+let schema_marker_version_query =
+  let open Caqti_request.Infix in
+  (Caqti_type.unit ->? Caqti_type.int)
+    "SELECT schema_version FROM protocol_schema_marker WHERE id = 1"
 
 let exec_sql (module Db : Caqti_eio.CONNECTION) sql =
   let open Caqti_request.Infix in
@@ -128,10 +130,6 @@ let of_row
     version_vector;
   }
 
-let init_schema_query =
-  let open Caqti_request.Infix in
-  (Caqti_type.unit ->. Caqti_type.unit) schema_sql
-
 let count_operations_query =
   let open Caqti_request.Infix in
   (Caqti_type.(t2 string string) ->! Caqti_type.int)
@@ -152,11 +150,6 @@ let get_row_prefix_query =
   (Caqti_type.(t5 string string string string int64) ->* db_row_type)
     "SELECT server_version, tenant_id, db_name, client_id, version, type, table_name, row_key, field_key, json_value, version_vector FROM crdt_operations WHERE tenant_id = ? AND db_name = ? AND table_name = ? AND row_key = ? AND server_version < ? ORDER BY server_version ASC"
 
-let get_latest_row_checkpoint_query =
-  let open Caqti_request.Infix in
-  (Caqti_type.(t4 string string string string) ->? db_row_type)
-    "SELECT server_version, tenant_id, db_name, client_id, version, type, table_name, row_key, field_key, json_value, version_vector FROM crdt_operations WHERE tenant_id = ? AND db_name = ? AND table_name = ? AND row_key = ? AND type = 'checkpointRow' ORDER BY server_version DESC LIMIT 1"
-
 let delete_row_prefix_query =
   let open Caqti_request.Infix in
   (Caqti_type.(t5 string string string string int64) ->. Caqti_type.unit)
@@ -167,182 +160,74 @@ let find_by_dot_query =
   (Caqti_type.(t4 string string string int64) ->? db_row_type)
     "SELECT server_version, tenant_id, db_name, client_id, version, type, table_name, row_key, field_key, json_value, version_vector FROM crdt_operations WHERE tenant_id = ? AND db_name = ? AND client_id = ? AND version = ?"
 
-let checkpoint_dot_type = Caqti_type.(t5 string string int64 int64 int64)
-
-let find_checkpoint_dot_query =
-  let open Caqti_request.Infix in
-  (Caqti_type.(t4 string string string int64) ->? checkpoint_dot_type)
-    "SELECT table_name, row_key, first_version, last_version, checkpoint_server_version FROM checkpoint_dot_ranges WHERE tenant_id = ? AND db_name = ? AND client_id = ? AND first_version <= ? ORDER BY first_version DESC LIMIT 1"
-
-let touching_checkpoint_dots_query =
-  let open Caqti_request.Infix in
-  (Caqti_type.(t7 string string string string string int64 int64) ->* checkpoint_dot_type)
-    "SELECT table_name, row_key, first_version, last_version, checkpoint_server_version FROM checkpoint_dot_ranges WHERE tenant_id = ? AND db_name = ? AND client_id = ? AND table_name = ? AND row_key = ? AND first_version <= ? AND last_version >= ?"
-
-let delete_touching_checkpoint_dots_query =
-  let open Caqti_request.Infix in
-  (Caqti_type.(t7 string string string string string int64 int64) ->. Caqti_type.unit)
-    "DELETE FROM checkpoint_dot_ranges WHERE tenant_id = ? AND db_name = ? AND client_id = ? AND table_name = ? AND row_key = ? AND first_version <= ? AND last_version >= ?"
-
-let insert_checkpoint_dot_query =
-  let open Caqti_request.Infix in
-  (Caqti_type.(t8 string string string int64 int64 string string int64) ->. Caqti_type.unit)
-    "INSERT INTO checkpoint_dot_ranges (tenant_id, db_name, client_id, first_version, last_version, table_name, row_key, checkpoint_server_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-
-let move_checkpoint_dot_evidence_query =
-  let open Caqti_request.Infix in
-  (Caqti_type.(t5 int64 string string string string) ->. Caqti_type.unit)
-    "UPDATE checkpoint_dot_ranges SET checkpoint_server_version = ? WHERE tenant_id = ? AND db_name = ? AND table_name = ? AND row_key = ?"
-
 let get_max_server_version_query =
   let open Caqti_request.Infix in
   (Caqti_type.(t2 string string) ->! Caqti_type.int64)
     "SELECT COALESCE(MAX(server_version), -1) FROM crdt_operations WHERE tenant_id = ? AND db_name = ?"
 
-let rename_field_column_query =
+type client_state = {
+  last_mutation_id : int64;
+  last_client_version : int64;
+}
+
+let get_client_state_query =
   let open Caqti_request.Infix in
-  (Caqti_type.unit ->. Caqti_type.unit)
-    "ALTER TABLE crdt_operations RENAME COLUMN field TO field_key"
+  (Caqti_type.(t3 string string string) ->? Caqti_type.(t2 int64 int64))
+    "SELECT last_mutation_id, last_client_version FROM client_sync_state WHERE tenant_id = ? AND db_name = ? AND client_id = ?"
 
-let rename_value_column_query =
+let insert_client_state_query =
   let open Caqti_request.Infix in
-  (Caqti_type.unit ->. Caqti_type.unit)
-    "ALTER TABLE crdt_operations RENAME COLUMN value TO json_value"
+  (Caqti_type.(t3 string string string) ->. Caqti_type.unit)
+    "INSERT OR IGNORE INTO client_sync_state (tenant_id, db_name, client_id, last_mutation_id, last_client_version) VALUES (?, ?, ?, 0, -1)"
 
-let rename_context_column_query =
+let update_client_state_query =
   let open Caqti_request.Infix in
-  (Caqti_type.unit ->. Caqti_type.unit)
-    "ALTER TABLE crdt_operations RENAME COLUMN context TO version_vector"
+  (Caqti_type.(t5 int64 int64 string string string) ->. Caqti_type.unit)
+    "UPDATE client_sync_state SET last_mutation_id = ?, last_client_version = ? WHERE tenant_id = ? AND db_name = ? AND client_id = ?"
 
-let migrate_remove_type_query =
-  let open Caqti_request.Infix in
-  (Caqti_type.unit ->. Caqti_type.unit)
-    "UPDATE crdt_operations SET type = 'removeRow' WHERE type = 'remove'"
-
-let get_set_operations_query =
-  let open Caqti_request.Infix in
-  (Caqti_type.unit ->* db_row_type)
-    "SELECT server_version, tenant_id, db_name, client_id, version, type, table_name, row_key, field_key, json_value, version_vector FROM crdt_operations WHERE type = 'set'"
-
-let update_set_operation_to_set_row_query =
-  let open Caqti_request.Infix in
-  (Caqti_type.(t2 string int64) ->. Caqti_type.unit)
-    "UPDATE crdt_operations SET type = 'setRow', field_key = NULL, json_value = ? WHERE server_version = ?"
-
-let exec_ignore_error (module Db : Caqti_eio.CONNECTION) query =
-  match Db.exec query () with Ok () -> () | Error _ -> ()
-
-let migrate_set_operations (module Db : Caqti_eio.CONNECTION) =
-  let migrate_operation operation =
-    match (operation.field_key, operation.json_value) with
-    | Some field_key, Some json_value ->
-        let fields_json =
-          `Assoc [ (field_key, Yojson.Safe.from_string json_value) ]
-          |> Yojson.Safe.to_string
-        in
-        Db.exec update_set_operation_to_set_row_query
-          (fields_json, operation.server_version)
-    | _ -> Ok ()
-  in
-  match Db.collect_list get_set_operations_query () with
-  | Error err -> Error (Database (Caqti_error.show err))
-  | Ok rows ->
-      let rec loop = function
-        | [] -> Ok ()
-        | row :: rest -> (
-            let operation = of_row row in
-            match migrate_operation operation with
-            | Ok () -> loop rest
-            | Error err -> Error (Database (Caqti_error.show err)))
-      in
-      loop rows
-
-let migrate_tenant_partition_schema (module Db : Caqti_eio.CONNECTION) =
-  match Db.find tenant_column_exists_query () with
-  | Error err -> Error (Database (Caqti_error.show err))
-  | Ok 1 -> Ok ()
-  | Ok _ ->
-      let* malformed_count =
-        Db.find malformed_legacy_partition_count_query ()
-        |> Result.map_error (fun err -> Database (Caqti_error.show err))
-      in
-      if malformed_count > 0 then
-        Error (Database "legacy partition key is missing the dbName:userId separator")
-      else
-      let migrate () =
-        let statements =
-          [
-            "ALTER TABLE crdt_operations RENAME TO crdt_operations_legacy";
-            {|CREATE TABLE crdt_operations (
-              server_version INTEGER PRIMARY KEY AUTOINCREMENT,
-              tenant_id TEXT NOT NULL,
-              db_name TEXT NOT NULL,
-              client_id TEXT NOT NULL,
-              version INTEGER NOT NULL,
-              type TEXT NOT NULL,
-              table_name TEXT NOT NULL,
-              row_key TEXT NOT NULL,
-              field_key TEXT,
-              json_value TEXT,
-              version_vector TEXT,
-              UNIQUE(tenant_id, db_name, client_id, version)
-            )|};
-            {|INSERT INTO crdt_operations
-              (server_version, tenant_id, db_name, client_id, version, type, table_name, row_key, field_key, json_value, version_vector)
-              SELECT server_version,
-                     substr(db_name, instr(db_name, ':') + 1),
-                     substr(db_name, 1, instr(db_name, ':') - 1),
-                     client_id, version, type, table_name, row_key, field_key, json_value, version_vector
-              FROM crdt_operations_legacy
-              WHERE instr(db_name, ':') > 0|};
-            "DROP TABLE crdt_operations_legacy";
-            indexes_sql;
-          ]
-        in
-        let rec run = function
-          | [] -> Ok ()
-          | sql :: rest -> (
-              match exec_sql (module Db : Caqti_eio.CONNECTION) sql with
-              | Error _ as err -> err
-              | Ok () -> run rest)
-        in
-        run statements
-      in
-      Db.with_transaction (fun () ->
-          match migrate () with
-          | Ok () -> Ok (Ok ())
-          | Error err -> Ok (Error err))
-      |> function
-      | Error err -> Error (Database (Caqti_error.show err))
-      | Ok (Error err) -> Error (Database (Caqti_error.show err))
-      | Ok (Ok ()) -> Ok ()
-
-let migrate_schema (module Db : Caqti_eio.CONNECTION) =
-  let conn = (module Db : Caqti_eio.CONNECTION) in
-  exec_ignore_error conn rename_field_column_query;
-  exec_ignore_error conn rename_value_column_query;
-  exec_ignore_error conn rename_context_column_query;
-  match Db.exec migrate_remove_type_query () with
-  | Error err -> Error (Database (Caqti_error.show err))
-  | Ok () -> (
-      match migrate_tenant_partition_schema (module Db : Caqti_eio.CONNECTION) with
-      | Error _ as err -> err
-      | Ok () -> migrate_set_operations (module Db : Caqti_eio.CONNECTION))
 
 let init_schema (module Db : Caqti_eio.CONNECTION) =
-  match Db.exec init_schema_query () with
-  | Error err -> Error (Database (Caqti_error.show err))
-  | Ok () -> (
-      match migrate_schema (module Db : Caqti_eio.CONNECTION) with
-      | Error _ as err -> err
-      | Ok () ->
-          let conn = (module Db : Caqti_eio.CONNECTION) in
-          let* () = exec_sql conn indexes_sql
-            |> Result.map_error (fun error -> Database (Caqti_error.show error)) in
-          let* () = exec_sql conn checkpoint_dot_schema_sql
-            |> Result.map_error (fun error -> Database (Caqti_error.show error)) in
-          exec_sql conn checkpoint_dot_row_index_sql
-          |> Result.map_error (fun error -> Database (Caqti_error.show error)))
+  let conn = (module Db : Caqti_eio.CONNECTION) in
+  let table_exists name =
+    Db.find table_exists_query name
+    |> Result.map_error (fun err -> Database (Caqti_error.show err))
+    |> Result.map (fun n -> n > 0)
+  in
+  let expected_schema_version = 1 in
+  let* marker_exists = table_exists "protocol_schema_marker" in
+  if marker_exists then (
+    let* marker_version =
+      Db.find_opt schema_marker_version_query ()
+      |> Result.map_error (fun err -> Database (Caqti_error.show err))
+    in
+    let* () =
+      match marker_version with
+      | Some version when version = expected_schema_version -> Ok ()
+      | _ -> Error Migration_required
+    in
+    let* crdt_exists = table_exists "crdt_operations" in
+    let* client_state_exists = table_exists "client_sync_state" in
+    if crdt_exists && client_state_exists then (
+      let* () = exec_sql conn schema_sql |> Result.map_error (fun e -> Database (Caqti_error.show e)) in
+      exec_sql conn indexes_sql |> Result.map_error (fun e -> Database (Caqti_error.show e)))
+    else
+      Error Migration_required)
+  else
+    let* user_tables =
+      Db.find user_table_count_query () |> Result.map_error (fun err -> Database (Caqti_error.show err))
+    in
+    if user_tables > 0 then Error Migration_required
+    else
+      Db.with_transaction (fun () ->
+          let* () = exec_sql conn schema_sql in
+          let* () = exec_sql conn indexes_sql in
+          let* () = exec_sql conn client_state_schema_sql in
+          let* () = exec_sql conn schema_marker_sql in
+          let open Caqti_request.Infix in
+          let marker_insert = (Caqti_type.unit ->. Caqti_type.unit)
+              "INSERT OR REPLACE INTO protocol_schema_marker (id, schema_version) VALUES (1, 1)" in
+          Db.exec marker_insert ())
+      |> Result.map_error (fun err -> Database (Caqti_error.show err))
 
 let count_operations (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name =
   match Db.find count_operations_query (tenant_id, db_name) with
@@ -432,12 +317,6 @@ let get_row_prefix (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~table
   | Ok rows -> Ok (List.map of_row rows)
   | Error err -> Error (Database (Caqti_error.show err))
 
-let get_latest_row_checkpoint (module Db : Caqti_eio.CONNECTION)
-    ~tenant_id ~db_name ~table_name ~row_key =
-  match Db.find_opt get_latest_row_checkpoint_query (tenant_id, db_name, table_name, row_key) with
-  | Ok operation -> Ok (Option.map of_row operation)
-  | Error error -> Error (Database (Caqti_error.show error))
-
 let delete_row_prefix (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~table_name ~row_key ~before_server_version =
   match Db.exec delete_row_prefix_query (tenant_id, db_name, table_name, row_key, before_server_version) with
   | Ok () -> Ok ()
@@ -454,64 +333,22 @@ let has_operation_dot (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~cl
   | Ok None -> Ok false
   | Error err -> Error (Database (Caqti_error.show err))
 
-let checkpoint_dot_of_row
-    (table_name, row_key, first_version, last_version, checkpoint_server_version) =
-  { table_name; row_key; first_version; last_version; checkpoint_server_version }
-
-let find_checkpoint_dot (module Db : Caqti_eio.CONNECTION)
-    ~tenant_id ~db_name ~client_id ~version =
-  match Db.find_opt find_checkpoint_dot_query (tenant_id, db_name, client_id, version) with
-  | Error error -> Error (Database (Caqti_error.show error))
-  | Ok None -> Ok None
-  | Ok (Some row) ->
-      let range = checkpoint_dot_of_row row in
-      Ok (if version <= range.last_version then Some range else None)
-
-let record_checkpoint_dot (module Db : Caqti_eio.CONNECTION)
-    ~tenant_id ~db_name ~table_name ~row_key ~client_id ~version ~checkpoint_server_version =
-  let connection = (module Db : Caqti_eio.CONNECTION) in
-  let* existing = find_checkpoint_dot connection ~tenant_id ~db_name ~client_id ~version in
-  match existing with
-  | Some range when range.table_name <> table_name || range.row_key <> row_key ->
-      Error (Crdt_consistency_violation { client_id; version })
-  | _ ->
-      let lower = if version = Int64.min_int then version else Int64.pred version in
-      let upper = if version = Int64.max_int then version else Int64.succ version in
-      let parameters = tenant_id, db_name, client_id, table_name, row_key, upper, lower in
-      let* touching = Db.collect_list touching_checkpoint_dots_query parameters
-        |> Result.map_error (fun error -> Database (Caqti_error.show error)) in
-      let first_version, last_version =
-        List.fold_left (fun (first, last) row ->
-          let range = checkpoint_dot_of_row row in
-          Int64.min first range.first_version, Int64.max last range.last_version)
-          (version, version) touching
-      in
-      let* () = Db.exec delete_touching_checkpoint_dots_query parameters
-        |> Result.map_error (fun error -> Database (Caqti_error.show error)) in
-      Db.exec insert_checkpoint_dot_query
-        (tenant_id, db_name, client_id, first_version, last_version,
-         table_name, row_key, checkpoint_server_version)
-      |> Result.map_error (fun error -> Database (Caqti_error.show error))
-
-let retain_checkpoint_dots (module Db : Caqti_eio.CONNECTION)
-    ~tenant_id ~db_name ~table_name ~row_key ~checkpoint_server_version operations =
-  let connection = (module Db : Caqti_eio.CONNECTION) in
-  let* () = Db.exec move_checkpoint_dot_evidence_query
-      (checkpoint_server_version, tenant_id, db_name, table_name, row_key)
-    |> Result.map_error (fun error -> Database (Caqti_error.show error)) in
-  let rec record = function
-    | [] -> Ok ()
-    | (operation : db_crdt_operation) :: rest ->
-        if operation.tenant_id <> tenant_id || operation.db_name <> db_name
-           || operation.table_name <> table_name || operation.row_key <> row_key then
-          Error (Database "checkpoint retirement crossed a row partition")
-        else if operation.op_type = "checkpointRow" then record rest
-        else
-          let* () = record_checkpoint_dot connection ~tenant_id ~db_name ~table_name ~row_key
-              ~client_id:operation.client_id ~version:operation.version ~checkpoint_server_version in
-          record rest
+let get_or_create_client_state (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~client_id =
+  let* () =
+    Db.exec insert_client_state_query (tenant_id, db_name, client_id)
+    |> Result.map_error (fun err -> Database (Caqti_error.show err))
   in
-  record operations
+  match Db.find_opt get_client_state_query (tenant_id, db_name, client_id) with
+  | Ok (Some (last_mutation_id, last_client_version)) ->
+      Ok { last_mutation_id; last_client_version }
+  | Ok None -> Error (Database "client state row missing after insert")
+  | Error err -> Error (Database (Caqti_error.show err))
+
+let update_client_state (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~client_id
+    ~last_mutation_id ~last_client_version =
+  Db.exec update_client_state_query
+    (last_mutation_id, last_client_version, tenant_id, db_name, client_id)
+  |> Result.map_error (fun err -> Database (Caqti_error.show err))
 
 let with_transaction (module Db : Caqti_eio.CONNECTION) ~map_tx_error f =
   let conn = (module Db : Caqti_eio.CONNECTION) in

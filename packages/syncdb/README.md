@@ -274,7 +274,7 @@ push local ops and pull remote ops.
 ```ts
 const db = await newDatabase("golf")
   .addTable("clubs", { byName: ["name"] })
-  .withSyncRemote("https://sync.example.com/v2/sync")
+  .withSyncRemote("https://sync.example.com/v3/sync")
   .withSyncHeaders(async () => {
     const token = await getAccessToken();
     if (!token) {
@@ -301,6 +301,15 @@ Typical app pattern:
 3. UI handlers with `source: "remote"` refresh lists after pull.
 
 Auth headers are optional. Without them the server rejects protected routes.
+
+Protocol notes:
+
+- Client uploads use dense mutation IDs (`1..N`) in `mutations[]` with
+  `clientLastMutationID` watermarks.
+- Replies return `lastMutationID` as an acknowledged prefix frontier.
+- This client expects fresh local protocol storage (`syncProtocolVersion=4`).
+  Existing initialized stores from older protocols are refused
+  non-destructively (data is not wiped).
 
 ## 8. Client id rules (multi-device)
 
@@ -353,7 +362,7 @@ async function main() {
       byUpdatedAt: ["updatedAt"],
       byTitle: ["title"],
     })
-    .withSyncRemote("https://sync.example.com/v2/sync")
+    .withSyncRemote("https://sync.example.com/v3/sync")
     .withSyncHeaders(async () => ({
       Authorization: `Bearer ${await getAccessToken()}`,
     }))

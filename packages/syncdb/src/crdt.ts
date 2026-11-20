@@ -226,13 +226,5 @@ export function validateOperation(operation: CRDTOperation): CRDTOperation {
 }
 
 export function isSerializable(value: any): boolean {
-  if (value === undefined || typeof value === "function" || typeof value === "symbol") {
-    return false;
-  }
-  try {
-    JSON.stringify(value);
-    return true;
-  } catch {
-    return false; // Circular reference
-  }
+  return jsonValuesEqual(value, value);
 }

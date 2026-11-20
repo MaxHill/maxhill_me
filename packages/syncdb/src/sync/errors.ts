@@ -1,10 +1,13 @@
 /**
  * Error codes that can be returned by the sync server.
- * These match the error codes defined in the Go server.
+ * These match the error codes returned by the sync server.
  */
 export enum SyncErrorCode {
   /** Client's lastSeenServerVersion is ahead of server state (e.g., after server reset) */
   CLIENT_STATE_OUT_OF_SYNC = "CLIENT_STATE_OUT_OF_SYNC",
+  CLIENT_MUTATION_GAP = "CLIENT_MUTATION_GAP",
+  CLIENT_MUTATION_STATE_DIVERGED = "CLIENT_MUTATION_STATE_DIVERGED",
+  LOGICAL_CLOCK_REGRESSION = "LOGICAL_CLOCK_REGRESSION",
   
   /** Request integrity check failed (hash mismatch) */
   REQUEST_INTEGRITY_FAILED = "REQUEST_INTEGRITY_FAILED",
@@ -36,13 +39,13 @@ export interface SyncError {
 /**
  * Type guard to check if an error is a SyncError
  */
-export function isSyncError(obj: any): obj is SyncError {
+export function isSyncError(value: any): value is SyncError {
   return (
-    obj &&
-    typeof obj === "object" &&
-    "code" in obj &&
-    "message" in obj &&
-    typeof obj.code === "string" &&
-    typeof obj.message === "string"
+    value &&
+    typeof value === "object" &&
+    "code" in value &&
+    "message" in value &&
+    typeof value.code === "string" &&
+    typeof value.message === "string"
   );
 }

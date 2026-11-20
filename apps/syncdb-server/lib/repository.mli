@@ -15,16 +15,14 @@ type db_crdt_operation = {
   version_vector : string option;
 }
 
-type checkpoint_dot_range = {
-  table_name : string;
-  row_key : string;
-  first_version : int64;
-  last_version : int64;
-  checkpoint_server_version : int64;
+type client_state = {
+  last_mutation_id : int64;
+  last_client_version : int64;
 }
 
 type error =
   | Database of string
+  | Migration_required
   | Duplicate_insert_conflict_missing_existing_row
   | Crdt_consistency_violation of { client_id : string; version : int64 }
 
@@ -50,6 +48,22 @@ val get_operations_since
 
 val get_max_server_version : connection -> tenant_id:string -> db_name:string -> (int64, error) result
 
+val get_or_create_client_state
+  :  connection
+  -> tenant_id:string
+  -> db_name:string
+  -> client_id:string
+  -> (client_state, error) result
+
+val update_client_state
+  :  connection
+  -> tenant_id:string
+  -> db_name:string
+  -> client_id:string
+  -> last_mutation_id:int64
+  -> last_client_version:int64
+  -> (unit, error) result
+
 val get_row_prefix
   :  connection
   -> tenant_id:string
@@ -58,14 +72,6 @@ val get_row_prefix
   -> row_key:string
   -> before_server_version:int64
   -> (db_crdt_operation list, error) result
-
-val get_latest_row_checkpoint
-  :  connection
-  -> tenant_id:string
-  -> db_name:string
-  -> table_name:string
-  -> row_key:string
-  -> (db_crdt_operation option, error) result
 
 val delete_row_prefix
   :  connection
@@ -83,21 +89,6 @@ val has_operation_dot
   -> client_id:string
   -> version:int64
   -> (bool, error) result
-
-val find_checkpoint_dot
-  :  connection -> tenant_id:string -> db_name:string -> client_id:string -> version:int64
-  -> (checkpoint_dot_range option, error) result
-
-(** These metadata writes require the caller's acceptance/compaction transaction. *)
-val record_checkpoint_dot
-  :  connection -> tenant_id:string -> db_name:string -> table_name:string -> row_key:string
-  -> client_id:string -> version:int64 -> checkpoint_server_version:int64
-  -> (unit, error) result
-
-val retain_checkpoint_dots
-  :  connection -> tenant_id:string -> db_name:string -> table_name:string -> row_key:string
-  -> checkpoint_server_version:int64 -> db_crdt_operation list
-  -> (unit, error) result
 
 val with_transaction
   :  connection
