@@ -61,7 +61,14 @@ export default {
       timeout: 5000,
     },
   },
-  browsers: [playwrightLauncher({ product: "chromium" })],
+  browsers: [
+    playwrightLauncher({
+      product: "chromium",
+      launchOptions: process.env.CHROMIUM_PATH
+        ? { executablePath: process.env.CHROMIUM_PATH }
+        : {},
+    }),
+  ],
   filterBrowserLogs: (log) => {
     return !log["args"].some(
       (argument) =>

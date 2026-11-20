@@ -12,7 +12,7 @@ await $`ln -sfn ${releaseDir} /opt/syncdb-server/current.tmp`;
 await rename("/opt/syncdb-server/current.tmp", "/opt/syncdb-server/current");
 
 const env = (
-	await $`sops -d --input-type dotenv --output-type dotenv
+	await $`sops -d --input-type dotenv --output-type dotenv \
 	  /tmp/syncdb-server.prod.enc.env`.stdout("piped")
 ).stdout;
 await writeFile("/etc/syncdb-server/syncdb-server.prod.env", env, { mode: 0o600 });

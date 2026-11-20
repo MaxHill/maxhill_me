@@ -53,6 +53,7 @@ run = "pnpm exec playwright install --only-shell chromium"
 description = "Build workspace libraries, then run root lint and all bounded project checks."
 run = """
 pnpm exec oxlint oxlint.config.ts plopfile.js scripts vps
+pnpm exec tsx vps/deploy-commands.test.ts
 mise run '//packages/components:deploy' ::: '//packages/syncdb:deploy' ::: '//packages/ts-stdx:deploy'
 status=0
 for d in apps/*/ packages/*/; do
