@@ -1,11 +1,15 @@
-import { expect, html, fixture } from '@open-wc/testing';
-import MFitText from './index';
+import { expect, html, fixture } from "@open-wc/testing";
+import MFitText from "./index";
 
 MFitText.define();
 
-describe('m-fit-text', () => {
-  describe('accessibility', () => {
-    it('should be accessible', async () => {
+// Suite registration groups independent tests, not runtime logic.
+// oxlint-disable-next-line max-lines-per-function
+describe("m-fit-text", () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("accessibility", () => {
+    it("should be accessible", async () => {
       const el = await fixture(html`
         <m-fit-text>Text that will scale</m-fit-text>
       `);

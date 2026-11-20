@@ -1,6 +1,9 @@
-if (typeof HTMLElement !== 'undefined' && !HTMLElement.prototype.attachInternals) {
+if (
+  typeof HTMLElement !== "undefined" &&
+  !HTMLElement.prototype.attachInternals
+) {
   class MockElementInternals {
-    #value: string = '';
+    #value: string = "";
     #element: HTMLElement;
     #states: Set<string>;
 
@@ -14,7 +17,7 @@ if (typeof HTMLElement !== 'undefined' && !HTMLElement.prototype.attachInternals
     }
 
     setFormValue(value: string | FormData | null) {
-      this.#value = typeof value === 'string' ? value : '';
+      this.#value = typeof value === "string" ? value : "";
     }
 
     getValue(): string {
@@ -22,7 +25,7 @@ if (typeof HTMLElement !== 'undefined' && !HTMLElement.prototype.attachInternals
     }
 
     get form(): HTMLFormElement | null {
-      return this.#element.closest('form');
+      return this.#element.closest("form");
     }
 
     setValidity() {}
@@ -33,7 +36,7 @@ if (typeof HTMLElement !== 'undefined' && !HTMLElement.prototype.attachInternals
       return true;
     }
     get validationMessage(): string {
-      return '';
+      return "";
     }
     get validity(): ValidityState {
       return {
@@ -60,7 +63,9 @@ if (typeof HTMLElement !== 'undefined' && !HTMLElement.prototype.attachInternals
 
   const internalsMap = new WeakMap<HTMLElement, MockElementInternals>();
 
-  HTMLElement.prototype.attachInternals = function (this: HTMLElement): ElementInternals {
+  HTMLElement.prototype.attachInternals = function (
+    this: HTMLElement,
+  ): ElementInternals {
     const internals = new MockElementInternals(this);
     internalsMap.set(this, internals);
 
@@ -72,14 +77,14 @@ if (typeof HTMLElement !== 'undefined' && !HTMLElement.prototype.attachInternals
   globalThis.FormData = class extends OriginalFormData {
     constructor(form?: HTMLFormElement) {
       super(form);
-      
+
       if (form) {
-        const formElements = form.querySelectorAll('*');
+        const formElements = form.querySelectorAll("*");
         formElements.forEach((el) => {
           if (el instanceof HTMLElement) {
             const internals = internalsMap.get(el);
             if (internals) {
-              const name = el.getAttribute('name');
+              const name = el.getAttribute("name");
               const value = internals.getValue();
               if (name && value) {
                 this.append(name, value);

@@ -9,9 +9,12 @@ const syncdb_compaction = @import("syncdb_compaction");
 const Db = struct {
     conn: zqlite.Conn,
 
-    pub fn init() !@This() {
+    pub fn init(path: [:0]const u8) !@This() {
+        assert(path.len > 0);
         const flags = zqlite.OpenFlags.Create | zqlite.OpenFlags.EXResCode;
-        const conn = try zqlite.open("/tmp/test.sqlite", flags);
+        const conn = try zqlite.open(path, flags);
+        // A newly opened connection must not report a previous write.
+        assert(conn.changes() == 0);
         return .{ .conn = conn };
     }
     pub fn deinit(self: @This()) void {
@@ -20,13 +23,24 @@ const Db = struct {
 
     pub fn migrate(self: @This()) !void {
         try self.conn.exec("create table if not exists test (name text)", .{});
+        // IF NOT EXISTS does not validate a table left by an earlier run.
+        const column = try self.conn.row("pragma table_info(test)", .{}) orelse
+            return error.MissingNameColumn;
+        defer column.deinit();
+        assert(std.mem.eql(u8, column.text(1), "name"));
+        assert(std.ascii.eqlIgnoreCase(column.text(2), "text"));
     }
 
     pub fn insert_names(
         self: @This(),
         names: (struct { []const u8, []const u8 }),
     ) !void {
+        assert(names[0].len > 0);
+        assert(names[1].len > 0);
+        assert(std.unicode.utf8ValidateSlice(names[0]));
+        assert(std.unicode.utf8ValidateSlice(names[1]));
         try self.conn.exec("insert into test (name) values (?1), (?2)", names);
+        assert(self.conn.changes() == 2);
     }
 };
 
@@ -45,7 +59,7 @@ pub fn main(init: std.process.Init) !void {
     };
     std.debug.print("data_home: {s}\n", .{data_home});
 
-    var db = try Db.init();
+    var db = try Db.init("/tmp/test.sqlite");
     defer db.deinit();
 
     try db.migrate();
@@ -87,4 +101,34 @@ pub fn main(init: std.process.Init) !void {
     try syncdb_compaction.printAnotherMessage(stdout_writer);
 
     try stdout_writer.flush(); // Don't forget to flush!
+}
+
+test "migration is idempotent and inserts preserve UTF-8 and SQL punctuation" {
+    const db = try Db.init(":memory:");
+    defer db.deinit();
+    try db.migrate();
+    try db.migrate();
+    try db.insert_names(.{ "O'Brien", "Ғанима" });
+    try std.testing.expectEqual(@as(usize, 2), db.conn.changes());
+
+    var rows = try db.conn.rows("select name from test order by rowid", .{});
+    defer rows.deinit();
+    const first = rows.next() orelse return error.MissingFirstName;
+    try std.testing.expectEqualStrings("O'Brien", first.text(0));
+    const second = rows.next() orelse return error.MissingSecondName;
+    try std.testing.expectEqualStrings("Ғанима", second.text(0));
+    try std.testing.expect(rows.next() == null);
+    if (rows.err) |failure| return failure;
+}
+
+test "insert before migration fails without writing rows" {
+    const db = try Db.init(":memory:");
+    defer db.deinit();
+    if (db.insert_names(.{ "Leto", "Ghanima" })) |_| {
+        return error.ExpectedMissingTableError;
+    } else |_| {}
+    try std.testing.expectEqual(@as(usize, 0), db.conn.changes());
+    try db.migrate();
+    try db.insert_names(.{ "Leto", "Ghanima" });
+    try std.testing.expectEqual(@as(usize, 2), db.conn.changes());
 }

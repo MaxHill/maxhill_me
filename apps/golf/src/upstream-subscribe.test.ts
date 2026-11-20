@@ -8,24 +8,28 @@ import {
 
 describe("upstream-subscribe helpers", () => {
   it("builds subscribe URL from sync URL", () => {
-    expect(subscribeUrlFromSyncUrl("http://localhost:3001/v3/sync", "golf", "cid-1")).to.equal(
-      "http://localhost:3001/subscribe/golf?clientId=cid-1",
-    );
-    expect(subscribeUrlFromSyncUrl("http://localhost:3001/sync", "golf", "cid-2")).to.equal(
-      "http://localhost:3001/subscribe/golf?clientId=cid-2",
-    );
-    expect(subscribeUrlFromSyncUrl("https://sync.example/sync/", "golf", "a b")).to.equal(
-      "https://sync.example/subscribe/golf?clientId=a+b",
-    );
+    expect(
+      subscribeUrlFromSyncUrl("http://localhost:3001/v3/sync", "golf", "cid-1"),
+    ).to.equal("http://localhost:3001/subscribe/golf?clientId=cid-1");
+    expect(
+      subscribeUrlFromSyncUrl("http://localhost:3001/sync", "golf", "cid-2"),
+    ).to.equal("http://localhost:3001/subscribe/golf?clientId=cid-2");
+    expect(
+      subscribeUrlFromSyncUrl("https://sync.example/sync/", "golf", "a b"),
+    ).to.equal("https://sync.example/subscribe/golf?clientId=a+b");
   });
 
   it("parses named SSE events and ignores comments", () => {
-    expect(parseSseEventName("event: upstreamChange\ndata: {}")).to.equal("upstreamChange");
+    expect(parseSseEventName("event: upstreamChange\ndata: {}")).to.equal(
+      "upstreamChange",
+    );
     expect(parseSseEventName(": keepalive\n")).to.equal("message");
     expect(parseSseEventName("data: {}\n")).to.equal("message");
   });
 });
 
+// Suite registration keeps related cases together.
+// oxlint-disable-next-line max-lines-per-function
 describe("runUpstreamSubscription", () => {
   const originalFetch = globalThis.fetch;
 

@@ -1,163 +1,181 @@
-import { expect, fixture, html } from '@open-wc/testing';
-import { BindAttribute, UpdatesAttribute } from './reflect-attribute';
-import { MElement } from './m-element';
+import { expect, fixture, html } from "@open-wc/testing";
+import { BindAttribute, UpdatesAttribute } from "./reflect-attribute";
+import { MElement } from "./m-element";
 
-describe('UpdatesAttribute', () => {
-  it('should sync property to attribute (one-way)', async () => {
+// Suite registration groups independent tests, not runtime logic.
+// oxlint-disable-next-line max-lines-per-function
+describe("UpdatesAttribute", () => {
+  it("should sync property to attribute (one-way)", async () => {
     class TestElement extends MElement {
       @UpdatesAttribute()
       testProp: boolean = false;
     }
-    customElements.define('test-updates-basic', TestElement);
+    customElements.define("test-updates-basic", TestElement);
 
-    const el = await fixture<TestElement>(html`<test-updates-basic></test-updates-basic>`);
-    
-    expect(el.hasAttribute('testprop')).to.be.false;
-    
+    const el = await fixture<TestElement>(
+      html`<test-updates-basic></test-updates-basic>`,
+    );
+
+    expect(el.hasAttribute("testprop")).to.equal(false);
+
     el.testProp = true;
-    expect(el.hasAttribute('testprop')).to.be.true;
-    
+    expect(el.hasAttribute("testprop")).to.equal(true);
+
     el.testProp = false;
-    expect(el.hasAttribute('testprop')).to.be.false;
+    expect(el.hasAttribute("testprop")).to.equal(false);
   });
 
-  it('should use custom attribute name', async () => {
+  it("should use custom attribute name", async () => {
     class TestElement extends MElement {
-      @UpdatesAttribute({ attribute: 'aria-selected' })
+      @UpdatesAttribute({ attribute: "aria-selected" })
       selected: boolean = false;
     }
-    customElements.define('test-updates-custom-name', TestElement);
+    customElements.define("test-updates-custom-name", TestElement);
 
-    const el = await fixture<TestElement>(html`<test-updates-custom-name></test-updates-custom-name>`);
-    
+    const el = await fixture<TestElement>(
+      html`<test-updates-custom-name></test-updates-custom-name>`,
+    );
+
     el.selected = true;
-    expect(el.getAttribute('aria-selected')).to.equal('');
-    
+    expect(el.getAttribute("aria-selected")).to.equal("");
+
     el.selected = false;
-    expect(el.hasAttribute('aria-selected')).to.be.false;
+    expect(el.hasAttribute("aria-selected")).to.equal(false);
   });
 
-  it('should support converter option', async () => {
+  it("should support converter option", async () => {
     class TestElement extends MElement {
-      @UpdatesAttribute({ 
-        attribute: 'aria-selected',
-        converter: (v) => v ? 'true' : 'false'
+      @UpdatesAttribute({
+        attribute: "aria-selected",
+        converter: (v) => (v ? "true" : "false"),
       })
       selected: boolean = false;
     }
-    customElements.define('test-updates-converter', TestElement);
+    customElements.define("test-updates-converter", TestElement);
 
-    const el = await fixture<TestElement>(html`<test-updates-converter></test-updates-converter>`);
-    
+    const el = await fixture<TestElement>(
+      html`<test-updates-converter></test-updates-converter>`,
+    );
+
     el.selected = true;
-    expect(el.getAttribute('aria-selected')).to.equal('true');
-    
+    expect(el.getAttribute("aria-selected")).to.equal("true");
+
     el.selected = false;
-    expect(el.getAttribute('aria-selected')).to.equal('false');
+    expect(el.getAttribute("aria-selected")).to.equal("false");
   });
 
-  it('should support converter returning null', async () => {
+  it("should support converter returning null", async () => {
     class TestElement extends MElement {
-      @UpdatesAttribute({ 
-        attribute: 'aria-activedescendant',
-        converter: (el: any) => el?.id ?? null
+      @UpdatesAttribute({
+        attribute: "aria-activedescendant",
+        converter: (el: any) => el?.id ?? null,
       })
       focusedElement: any = null;
     }
-    customElements.define('test-updates-converter-null', TestElement);
+    customElements.define("test-updates-converter-null", TestElement);
 
-    const el = await fixture<TestElement>(html`<test-updates-converter-null></test-updates-converter-null>`);
-    
-    expect(el.hasAttribute('aria-activedescendant')).to.be.false;
-    
-    el.focusedElement = { id: 'item-1' };
-    expect(el.getAttribute('aria-activedescendant')).to.equal('item-1');
-    
+    const el = await fixture<TestElement>(
+      html`<test-updates-converter-null></test-updates-converter-null>`,
+    );
+
+    expect(el.hasAttribute("aria-activedescendant")).to.equal(false);
+
+    el.focusedElement = { id: "item-1" };
+    expect(el.getAttribute("aria-activedescendant")).to.equal("item-1");
+
     el.focusedElement = null;
-    expect(el.hasAttribute('aria-activedescendant')).to.be.false;
+    expect(el.hasAttribute("aria-activedescendant")).to.equal(false);
   });
 
-  it('should stack with BindAttribute on same property', async () => {
+  it("should stack with BindAttribute on same property", async () => {
     class TestElement extends MElement {
       @BindAttribute()
-      @UpdatesAttribute({ 
-        attribute: 'aria-selected',
-        converter: (v) => v ? 'true' : 'false'
+      @UpdatesAttribute({
+        attribute: "aria-selected",
+        converter: (v) => (v ? "true" : "false"),
       })
       selected: boolean = false;
     }
-    customElements.define('test-updates-stacked', TestElement);
+    customElements.define("test-updates-stacked", TestElement);
 
-    const el = await fixture<TestElement>(html`<test-updates-stacked></test-updates-stacked>`);
-    
+    const el = await fixture<TestElement>(
+      html`<test-updates-stacked></test-updates-stacked>`,
+    );
+
     el.selected = true;
-    expect(el.hasAttribute('selected')).to.be.true;
-    expect(el.getAttribute('aria-selected')).to.equal('true');
-    
+    expect(el.hasAttribute("selected")).to.equal(true);
+    expect(el.getAttribute("aria-selected")).to.equal("true");
+
     el.selected = false;
-    expect(el.hasAttribute('selected')).to.be.false;
-    expect(el.getAttribute('aria-selected')).to.equal('false');
+    expect(el.hasAttribute("selected")).to.equal(false);
+    expect(el.getAttribute("aria-selected")).to.equal("false");
   });
 
-  it('should stack multiple UpdatesAttribute decorators', async () => {
+  it("should stack multiple UpdatesAttribute decorators", async () => {
     class TestElement extends MElement {
       @BindAttribute()
-      @UpdatesAttribute({ 
-        attribute: 'aria-selected',
-        converter: (v) => v ? 'true' : 'false'
+      @UpdatesAttribute({
+        attribute: "aria-selected",
+        converter: (v) => (v ? "true" : "false"),
       })
-      @UpdatesAttribute({ 
-        attribute: 'tabindex',
-        converter: (v) => v ? '0' : '-1'
+      @UpdatesAttribute({
+        attribute: "tabindex",
+        converter: (v) => (v ? "0" : "-1"),
       })
       active: boolean = false;
     }
-    customElements.define('test-updates-multiple', TestElement);
+    customElements.define("test-updates-multiple", TestElement);
 
-    const el = await fixture<TestElement>(html`<test-updates-multiple></test-updates-multiple>`);
-    
+    const el = await fixture<TestElement>(
+      html`<test-updates-multiple></test-updates-multiple>`,
+    );
+
     el.active = true;
-    expect(el.hasAttribute('active')).to.be.true;
-    expect(el.getAttribute('aria-selected')).to.equal('true');
-    expect(el.getAttribute('tabindex')).to.equal('0');
-    
+    expect(el.hasAttribute("active")).to.equal(true);
+    expect(el.getAttribute("aria-selected")).to.equal("true");
+    expect(el.getAttribute("tabindex")).to.equal("0");
+
     el.active = false;
-    expect(el.hasAttribute('active')).to.be.false;
-    expect(el.getAttribute('aria-selected')).to.equal('false');
-    expect(el.getAttribute('tabindex')).to.equal('-1');
+    expect(el.hasAttribute("active")).to.equal(false);
+    expect(el.getAttribute("aria-selected")).to.equal("false");
+    expect(el.getAttribute("tabindex")).to.equal("-1");
   });
 
-  it('should handle string properties', async () => {
+  it("should handle string properties", async () => {
     class TestElement extends MElement {
-      @UpdatesAttribute({ attribute: 'data-value' })
-      value: string = '';
+      @UpdatesAttribute({ attribute: "data-value" })
+      value: string = "";
     }
-    customElements.define('test-updates-string', TestElement);
+    customElements.define("test-updates-string", TestElement);
 
-    const el = await fixture<TestElement>(html`<test-updates-string></test-updates-string>`);
-    
-    expect(el.hasAttribute('data-value')).to.be.false;
-    
-    el.value = 'test';
-    expect(el.getAttribute('data-value')).to.equal('test');
-    
-    el.value = '';
-    expect(el.hasAttribute('data-value')).to.be.false;
+    const el = await fixture<TestElement>(
+      html`<test-updates-string></test-updates-string>`,
+    );
+
+    expect(el.hasAttribute("data-value")).to.equal(false);
+
+    el.value = "test";
+    expect(el.getAttribute("data-value")).to.equal("test");
+
+    el.value = "";
+    expect(el.hasAttribute("data-value")).to.equal(false);
   });
 
-  it('should handle number properties', async () => {
+  it("should handle number properties", async () => {
     class TestElement extends MElement {
-      @UpdatesAttribute({ attribute: 'data-count' })
+      @UpdatesAttribute({ attribute: "data-count" })
       count: number = 0;
     }
-    customElements.define('test-updates-number', TestElement);
+    customElements.define("test-updates-number", TestElement);
 
-    const el = await fixture<TestElement>(html`<test-updates-number></test-updates-number>`);
-    
+    const el = await fixture<TestElement>(
+      html`<test-updates-number></test-updates-number>`,
+    );
+
     el.count = 5;
-    expect(el.getAttribute('data-count')).to.equal('5');
-    
+    expect(el.getAttribute("data-count")).to.equal("5");
+
     el.count = 0;
-    expect(el.getAttribute('data-count')).to.equal('0');
+    expect(el.getAttribute("data-count")).to.equal("0");
   });
 });

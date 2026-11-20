@@ -1,11 +1,15 @@
-import { expect, html, fixture, waitUntil } from '@open-wc/testing';
-import { MCommand } from './index';
+import { expect, html, fixture } from "@open-wc/testing";
+import { MCommand } from "./index";
 
 MCommand.define();
 
-describe('m-command', () => {
-  describe('accessibility', () => {
-    it('should be accessible', async () => {
+// Suite registration groups independent tests, not runtime logic.
+// oxlint-disable-next-line max-lines-per-function
+describe("m-command", () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("accessibility", () => {
+    it("should be accessible", async () => {
       const el = await fixture<MCommand>(html`
         <m-command command="focus" commandfor="#target"></m-command>
       `);

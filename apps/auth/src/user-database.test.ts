@@ -15,6 +15,8 @@ async function legacyUserID(email: string): Promise<string> {
   return `user_${hex.slice(0, 16)}`
 }
 
+// Suite registration groups related schema tests; each test stays within the function limit.
+// oxlint-disable-next-line max-lines-per-function
 describe("auth user database schema", () => {
   it("removes the legacy tenant owner column without losing relationships", () => {
     const db = new Database(":memory:")

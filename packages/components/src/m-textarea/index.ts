@@ -41,8 +41,10 @@ baseStyleSheet.replaceSync(styles);
  * @csspart clear-icon - The icon inside the clear button
  * @csspart error - The error message container
  *
- * @event m-invalid - Fires when validation fails. Detail: { validity: ValidityState, validationMessage: string, value: string }
- * @event m-textarea-clear - Fires when clear button is clicked (cancelable). Detail: { value: string }
+ * @event m-invalid - Fires when validation fails. Detail: { validity: ValidityState,
+ * validationMessage: string, value: string }
+ * @event m-textarea-clear - Fires when clear button is clicked (cancelable). Detail: { value:
+ * string }
  */
 export class MTextarea extends MFormAssociatedElement {
   static tagName = "m-textarea";
@@ -108,7 +110,10 @@ export class MTextarea extends MFormAssociatedElement {
   }
 
   get selectionDirection(): "forward" | "backward" | "none" | null {
-    return (this.textareaElement?.selectionDirection as "forward" | "backward" | "none") ?? null;
+    return (
+      (this.textareaElement?.selectionDirection as
+        "forward" | "backward" | "none") ?? null
+    );
   }
 
   set selectionDirection(value: "forward" | "backward" | "none" | null) {
@@ -124,7 +129,7 @@ export class MTextarea extends MFormAssociatedElement {
   focus(options?: FocusOptions) {
     this.textareaElement?.focus(options);
   }
-  
+
   blur() {
     this.textareaElement?.blur();
   }
@@ -172,13 +177,19 @@ export class MTextarea extends MFormAssociatedElement {
     this.clearSlot.removeEventListener("click", this.handleClearClick);
   }
 
-  attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
+  attributeChangedCallback(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null,
+  ) {
     super.attributeChangedCallback(name, oldValue, newValue);
-    if (!this.textareaElement) return;
+    if (!this.textareaElement) {
+      return;
+    }
 
     // Special case: label goes to labelElement
     if (name === "label") {
-      this.labelElement.textContent = newValue as string || "";
+      this.labelElement.textContent = (newValue as string) || "";
       return;
     }
 
@@ -213,7 +224,11 @@ export class MTextarea extends MFormAssociatedElement {
    */
   protected onValueChange = (value: string | string[] | null) => {
     if (Array.isArray(value)) {
-      console.error("trying to set array value to string textarea", this.tagName, value);
+      console.error(
+        "trying to set array value to string textarea",
+        this.tagName,
+        value,
+      );
       return;
     }
     if (this.textareaElement) {
@@ -225,8 +240,13 @@ export class MTextarea extends MFormAssociatedElement {
   /**
    * Update error UI when validation state changes
    */
-  protected onValidationChange = (isValid: boolean, validationMessage: string) => {
-    if (!this.errorElement) return;
+  protected onValidationChange = (
+    isValid: boolean,
+    validationMessage: string,
+  ) => {
+    if (!this.errorElement) {
+      return;
+    }
 
     if (!isValid && this.hasInteracted) {
       // Show error when invalid and user has interacted
@@ -247,7 +267,9 @@ export class MTextarea extends MFormAssociatedElement {
 
   handleInput = (e: Event) => {
     const target = e.target as HTMLTextAreaElement;
-    if (target) this.value = target.value;
+    if (target) {
+      this.value = target.value;
+    }
     // Note: value setter already calls updateValidity()
     this.toggleClearButton();
   };
@@ -284,19 +306,29 @@ export class MTextarea extends MFormAssociatedElement {
       validityState.valueMissing = true;
       validationMessage = "This field is required";
     } // 2. Check tooShort (minlength) - only if value is not empty
-    else if (this.minLength != null && value.length > 0 && value.length < this.minLength) {
+    else if (
+      this.minLength != null &&
+      value.length > 0 &&
+      value.length < this.minLength
+    ) {
       validityState.tooShort = true;
       validationMessage =
-        `Please lengthen this text to ${this.minLength} characters or more (you are currently using ${value.length} characters).`;
+        `Please lengthen this text to ${this.minLength} characters or more ` +
+        `(you are currently using ${value.length} characters).`;
     } // 3. Check tooLong (maxlength) - browser usually prevents this, but check anyway
     else if (this.maxLength != null && value.length > this.maxLength) {
       validityState.tooLong = true;
       validationMessage =
-        `Please shorten this text to ${this.maxLength} characters or less (you are currently using ${value.length} characters).`;
+        `Please shorten this text to ${this.maxLength} characters or less ` +
+        `(you are currently using ${value.length} characters).`;
     }
 
     // Update validation state (sets validity, custom states, and dispatches events)
-    this.updateValidationState(validityState, validationMessage, this.textareaElement);
+    this.updateValidationState(
+      validityState,
+      validationMessage,
+      this.textareaElement,
+    );
   }
 
   //  ------------------------------------------------------------------------
@@ -323,7 +355,9 @@ export class MTextarea extends MFormAssociatedElement {
     end?: number,
     selectionMode?: "select" | "start" | "end" | "preserve",
   ): void {
-    if (!this.textareaElement) return;
+    if (!this.textareaElement) {
+      return;
+    }
 
     if (start !== undefined && end !== undefined) {
       this.textareaElement.setRangeText(replacement, start, end, selectionMode);
@@ -339,12 +373,12 @@ export class MTextarea extends MFormAssociatedElement {
   //  Clear button
   //  ------------------------------------------------------------------------
   private toggleClearButton() {
-    if (!this.clearSlot) return;
+    if (!this.clearSlot) {
+      return;
+    }
 
-    const shouldHide = !this.clearable ||
-      !this.value ||
-      this.disabled ||
-      this.readonly;
+    const shouldHide =
+      !this.clearable || !this.value || this.disabled || this.readonly;
 
     if (shouldHide) {
       this.clearSlot.setAttribute("hidden", "");
@@ -371,9 +405,10 @@ export class MTextarea extends MFormAssociatedElement {
                 ${this.minLength != null ? `minlength="${this.minLength}"` : ""}
                 ${this.maxLength != null ? `maxlength="${this.maxLength}"` : ""}
                 ${this.placeholder ? `placeholder="${this.placeholder}"` : ""}
-            >${this.value ?? ""}</textarea>
+            >${Array.isArray(this.value) ? this.value.join(",") : (this.value ?? "")}</textarea>
                 <slot name="clear">
-                    <button part="clear-button" type="button" tabindex="-1" aria-label="Clear textarea">
+                    <button part="clear-button"
+                      type="button" tabindex="-1" aria-label="Clear textarea">
                         <svg part="clear-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                     </button>
                 </slot>

@@ -1,20 +1,20 @@
-import MCard from './m-card';
-import MInput from './m-input';
-import MTextarea from './m-textarea';
-import MCombobox from './m-combobox';
-import MCommandPalette from './m-command-palette';
-import MCommand from './m-command';
-import MCopyButton from './m-copy-button';
-import { MSearchList } from './m-search-list';
-import MFitText from './m-fit-text';
-import MTabList from './m-tab-list';
-import MTab from './m-tab';
-import MTabPanel from './m-tab-panel';
-import MListbox from './m-listbox';
-import MOption from './m-option';
-import MPopoverMenu from './m-popover-menu';
-import MEmptyState from './m-empty-state';
-import MBgPattern from './m-bg-pattern';
+import MCard from "./m-card";
+import MInput from "./m-input";
+import MTextarea from "./m-textarea";
+import MCombobox from "./m-combobox";
+import MCommandPalette from "./m-command-palette";
+import MCommand from "./m-command";
+import MCopyButton from "./m-copy-button";
+import { MSearchList } from "./m-search-list";
+import MFitText from "./m-fit-text";
+import MTabList from "./m-tab-list";
+import MTab from "./m-tab";
+import MTabPanel from "./m-tab-panel";
+import MListbox from "./m-listbox";
+import MOption from "./m-option";
+import MPopoverMenu from "./m-popover-menu";
+import MEmptyState from "./m-empty-state";
+import MBgPattern from "./m-bg-pattern";
 
 export function registerAll() {
   MCard.define();

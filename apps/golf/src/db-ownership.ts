@@ -22,7 +22,7 @@ export type OwnershipReconciliationContext<TContext> = {
  * - Different authenticated identity triggers reset before use.
  */
 export async function reconcileDatabaseOwnership<TContext>(
-  params: OwnershipReconciliationContext<TContext>,
+  parameters: OwnershipReconciliationContext<TContext>,
 ): Promise<{ context: TContext; outcome: OwnershipReconciliationOutcome }> {
   const {
     context,
@@ -30,7 +30,7 @@ export async function reconcileDatabaseOwnership<TContext>(
     storedOwnerUserID,
     claimOwnerUserID,
     resetForNewOwner,
-  } = params;
+  } = parameters;
 
   const normalizedStoredOwnerUserID = normalizeOwner(storedOwnerUserID);
 
@@ -52,6 +52,8 @@ export async function reconcileDatabaseOwnership<TContext>(
 }
 
 function normalizeOwner(owner: string | null | undefined): string | null {
-  if (typeof owner !== "string") return null;
+  if (typeof owner !== "string") {
+    return null;
+  }
   return owner.length > 0 ? owner : null;
 }

@@ -1,357 +1,365 @@
 import { MElement, BindAttribute } from "@maxhill/web-component-utils";
 import { MInvalidEvent } from "../events";
 
-
 /**
- * 
- * Base class for creating a form associated element. Use this as a base to 
+ *
+ * Base class for creating a form associated element. Use this as a base to
  * conform to how form elements work and get a lot of boilerplate setup.
- * 
+ *
  * Value property is automatically synced to formValue
  *
  */
 export abstract class MFormAssociatedElement extends MElement {
+  /**
+   * Enables constraint validation, default aria attributes, and fully
+   * participate in HTMLForms
+   */
+  protected internals: ElementInternals;
 
-    /**
-     * Enables constraint validation, default aria attributes, and fully 
-     * participate in HTMLForms
-     */
-    protected internals: ElementInternals;
+  /**
+   * Enables form participation for the element with attributes such as value and name
+   */
+  static formAssociated = true;
 
-    /**
-     * Enables form participation for the element with attributes such as value and name 
-     */
-    static formAssociated = true;
+  /**
+   * Returns the associated form element, if any.
+   */
+  get form(): HTMLFormElement | null {
+    return this.internals.form;
+  }
 
+  /**
+   * Label that can be used in the ui and also set as the aria-label
+   */
+  @BindAttribute()
+  label?: string;
 
-    /**
-     * Returns the associated form element, if any.
-     */
-    get form(): HTMLFormElement | null { return this.internals.form; }
+  /**
+   * Whether the element is disabled. When disabled, tabindex is set to -1
+   */
+  @BindAttribute()
+  disabled = false;
 
-    /**
-     * Label that can be used in the ui and also set as the aria-label
-     */
-    @BindAttribute()
-    label?: string;
+  /**
+   * Whether the element is readonly. When readonly, user cannot edit
+   * but value is still submitted with forms and can be updated programmatically.
+   */
+  @BindAttribute()
+  readonly = false;
 
-    /**
-     * Whether the element is disabled. When disabled, tabindex is set to -1
-     */
-    @BindAttribute()
-    disabled = false;
+  /**
+   * Name associated with the value when submitted in a form
+   */
+  @BindAttribute()
+  name?: string;
 
-    /**
-     * Whether the element is readonly. When readonly, user cannot edit 
-     * but value is still submitted with forms and can be updated programmatically.
-     */
-    @BindAttribute()
-    readonly = false;
+  /**
+   * Original (or default) value of the element.
+   * It reflects the element's value attribute.
+   * This is used on form reset
+   */
+  @BindAttribute({ attribute: "value" })
+  defaultValue: string | null = null;
 
-    /**
-     * Name associated with the value when submitted in a form
-     */
-    @BindAttribute()
-    name?: string;
+  private _value: string | string[] | null = null;
+  /**
+   *
+   * @returns {string|string[]|null} - The value of the element
+   */
+  get value(): string | string[] | null {
+    return this._value;
+  }
 
-    /**
-     * Original (or default) value of the element. 
-     * It reflects the element's value attribute.
-     * This is used on form reset
-     */
-    @BindAttribute({ attribute: "value" })
-    defaultValue: string | null = null;
-
-    private _value: string | string[] | null = null;
-    /**
-     *
-     * @returns {string|string[]|null} - The value of the element
-     */
-    get value(): string | string[] | null {
-        return this._value
+  /**
+   * @param {string|string[]|null} value - sets both the value and the form value for the element
+   */
+  set value(value: string | string[] | null) {
+    if (this.value === value) {
+      return;
     }
 
-    /**
-     * @param {string|string[]|null} value - sets both the value and the form value for the element
-     */
-    set value(value: string | string[] | null) {
-        if (this.value === value) return;
-
-        if (Array.isArray(value)) {
-            this._value = value;
-            if (this.name) {
-                const formData = new FormData();
-                for (const val of value) {
-                    formData.append(this.name, val as string);
-                }
-                this.internals.setFormValue(formData);
-            }
-            // Note: If no name attribute, value is set but won't be submitted with form
-        } else {
-            this._value = value;
-            // Only set form value if value is not null
-            this.internals.setFormValue(value ?? '')
+    if (Array.isArray(value)) {
+      this._value = value;
+      if (this.name) {
+        const formData = new FormData();
+        for (const selectedValue of value) {
+          formData.append(this.name, selectedValue);
         }
-
-        this.onValueChange && this.onValueChange(value)
-        this.updateValidity()
+        this.internals.setFormValue(formData);
+      }
+      // Note: If no name attribute, value is set but won't be submitted with form
+    } else {
+      this._value = value;
+      // Only set form value if value is not null
+      this.internals.setFormValue(value ?? "");
     }
 
-    /**
-     * Implement this to hook into when the value is updated
-     */
-    protected onValueChange?: (value: string | string[] | null) => void;
+    this.onValueChange?.(value);
+    this.updateValidity();
+  }
 
-    /**
-     * Implement this to hook into when the validation state changes.
-     * Called every time updateValidationState() runs, allowing child classes
-     * to update their UI (e.g., show/hide error messages) based on validation state.
-     */
-    protected onValidationChange?: (isValid: boolean, validationMessage: string) => void;
+  /**
+   * Implement this to hook into when the value is updated
+   */
+  protected onValueChange?: (value: string | string[] | null) => void;
 
-    //  ------------------------------------------------------------------------
-    //  Constraint validation                                                                     
-    //  ------------------------------------------------------------------------ 
-    /**
-     * If the field is required, part of Constraint validation. 
-     */
-    @BindAttribute()
-    required = false;
+  /**
+   * Implement this to hook into when the validation state changes.
+   * Called every time updateValidationState() runs, allowing child classes
+   * to update their UI (e.g., show/hide error messages) based on validation state.
+   */
+  protected onValidationChange?: (
+    isValid: boolean,
+    validationMessage: string,
+  ) => void;
 
+  //  ------------------------------------------------------------------------
+  //  Constraint validation
+  //  ------------------------------------------------------------------------
+  /**
+   * If the field is required, part of Constraint validation.
+   */
+  @BindAttribute()
+  required = false;
 
-    /**
-     * Tracks whether the user has interacted with the element in a way that
-     * warrants showing validation feedback (e.g., blur, form submit attempt).
-     * Used to determine when to apply user-invalid and user-valid states.
-     */
-    protected hasInteracted = false;
+  /**
+   * Tracks whether the user has interacted with the element in a way that
+   * warrants showing validation feedback (e.g., blur, form submit attempt).
+   * Used to determine when to apply user-invalid and user-valid states.
+   */
+  protected hasInteracted = false;
 
-    /**
-     * Tracks the previous validation message to avoid dispatching duplicate m-invalid events
-     */
-    private _previousValidationMessage: string = '';
+  /**
+   * Tracks the previous validation message to avoid dispatching duplicate m-invalid events
+   */
+  private _previousValidationMessage: string = "";
 
-    constructor() {
-        super();
+  constructor() {
+    super();
 
-        this.internals = this.attachInternals();
+    this.internals = this.attachInternals();
+  }
+
+  connectedCallback() {
+    this.addEventListener("invalid", this.handleInvalid);
+
+    if (this.defaultValue) {
+      this.value = this.defaultValue;
     }
 
-    connectedCallback() {
-        this.addEventListener("invalid", this.handleInvalid);
+    // Note: updateValidity() should be called by subclasses after they render their DOM
+    // TODO: fix this behavior
+  }
 
-        if (this.defaultValue) {
-            this.value = this.defaultValue;
-        }
+  disconnectedCallback() {
+    this.removeEventListener("invalid", this.handleInvalid);
+  }
 
-        // Note: updateValidity() should be called by subclasses after they render their DOM
-        // TODO: fix this behavior
+  attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
+    super.attributeChangedCallback(name, oldValue, newValue);
+
+    if (!this.internals) {
+      return;
     }
 
-    disconnectedCallback() {
-        this.removeEventListener("invalid", this.handleInvalid);
+    if (name === "value") {
+      this.value = (newValue as string | null) ?? null;
+      this.hasInteracted = false;
     }
 
-    attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
-        super.attributeChangedCallback(name, oldValue, newValue);
-
-        if (!this.internals) return;
-
-        if (name === "value") {
-            this.value = (newValue as string | null) ?? null;
-            this.hasInteracted = false;
-        }
-
-        if (name === "label") {
-            this.internals.ariaLabel = newValue as string;
-        }
-
-        if (name === "disabled") {
-            if (this.disabled) {
-                this.setAttribute("tabindex", "-1");
-            } else {
-                this.setAttribute("tabindex", "0");
-            }
-        }
-
-        if (name !== "value") {
-            this.updateValidity();
-        }
+    if (name === "label") {
+      this.internals.ariaLabel = newValue as string;
     }
 
-    //  ------------------------------------------------------------------------
-    //  Event handlers                                                                     
-    //  ------------------------------------------------------------------------ 
-    handleInvalid = (e: Event) => {
-        // Prevent native validation bubble and focus handling
-        // (native browser can't focus through shadow DOM, so we handle it ourselves)
-        e.preventDefault();
-
-        this.hasInteracted = true;
-        this.updateValidity();
-
-        // Focus the first invalid element only
-        const form = this.internals.form;
-        if (form) {
-            // Mark that we've seen an invalid event in this validation cycle
-            if (!(form as any)._hasInvalidEvent) {
-                // This is the first invalid element
-                (form as any)._hasInvalidEvent = true;
-                this.focus();
-                // Clear the flag after the current event loop to be ready for next submit
-                setTimeout(() => { delete (form as any)._hasInvalidEvent; }, 0);
-            }
-        } else {
-            // No form, just focus
-            this.focus();
-        }
+    if (name === "disabled") {
+      if (this.disabled) {
+        this.setAttribute("tabindex", "-1");
+      } else {
+        this.setAttribute("tabindex", "0");
+      }
     }
 
-    //  ------------------------------------------------------------------------
-    //  Form lifecycle                                                                    
-    //  ------------------------------------------------------------------------ 
+    if (name !== "value") {
+      this.updateValidity();
+    }
+  }
 
-    /** 
-     * Called when the form is reset. Should clear the value and reset states 
-     * and interaction.
-     * */
-    formResetCallback() {
-        this.value = this.defaultValue;
-        this.hasInteracted = false;
-        this.updateValidationState({}, '');
+  //  ------------------------------------------------------------------------
+  //  Event handlers
+  //  ------------------------------------------------------------------------
+  handleInvalid = (e: Event) => {
+    // Prevent native validation bubble and focus handling
+    // (native browser can't focus through shadow DOM, so we handle it ourselves)
+    e.preventDefault();
+
+    this.hasInteracted = true;
+    this.updateValidity();
+
+    // Focus the first invalid element only
+    const form = this.internals.form;
+    if (form) {
+      // Mark that we've seen an invalid event in this validation cycle
+      if (!(form as any)._hasInvalidEvent) {
+        // This is the first invalid element
+        (form as any)._hasInvalidEvent = true;
+        this.focus();
+        // Clear the flag after the current event loop to be ready for next submit
+        setTimeout(() => {
+          delete (form as any)._hasInvalidEvent;
+        }, 0);
+      }
+    } else {
+      // No form, just focus
+      this.focus();
+    }
+  };
+
+  //  ------------------------------------------------------------------------
+  //  Form lifecycle
+  //  ------------------------------------------------------------------------
+
+  /**
+   * Called when the form is reset. Should clear the value and reset states
+   * and interaction.
+   * */
+  formResetCallback() {
+    this.value = this.defaultValue;
+    this.hasInteracted = false;
+    this.updateValidationState({}, "");
+  }
+
+  /**
+   * Called when the whole form is disabled/enabled.
+   * @param {boolean} disabled - If the form is disabled/enabled
+   */
+  formDisabledCallback(disabled: boolean) {
+    this.disabled = disabled;
+  }
+
+  /**
+   * @param {string} state - value to be set
+   * @param {"restore" | "autocomplete"} _mode - is it called by "restore" (going back in the
+   * browser after form submission for example) or autocomplete?
+   */
+  formStateRestoreCallback(state: string, _mode: "restore" | "autocomplete") {
+    this.value = state;
+  }
+
+  //  ------------------------------------------------------------------------
+  //  Validation
+  //  ------------------------------------------------------------------------
+
+  /**
+   * Updates validation state including internals.validity, custom states, and dispatches events.
+   * Call this method with validation results instead of calling internals.setValidity() directly.
+   *
+   * @param validityState - The ValidityStateFlags object describing validation errors
+   * @param validationMessage - Human-readable error message
+   * @param anchor - Optional anchor element for constraint validation API
+   */
+  protected updateValidationState(
+    validityState: ValidityStateFlags,
+    validationMessage: string = "",
+    anchor?: HTMLElement,
+  ): void {
+    // Set validity on internals
+    if (Object.keys(validityState).length > 0) {
+      this.internals.setValidity(validityState, validationMessage, anchor);
+    } else {
+      this.internals.setValidity({});
     }
 
+    // Update custom states for :state() pseudo-classes
+    const isValid = this.internals.validity.valid;
+    this.setState("invalid", !isValid);
+    this.setState("valid", isValid);
+    this.setState("user-invalid", !isValid && this.hasInteracted);
+    this.setState("user-valid", isValid && this.hasInteracted);
 
-    /**
-     * Called when the whole form is disabled/enabled.
-     * @param {boolean} disabled - If the form is disabled/enabled
-     */
-    formDisabledCallback(disabled: boolean) {
-        this.disabled = disabled;
+    // Update ARIA attributes for accessibility
+    this.internals.ariaInvalid = !isValid ? "true" : "false";
+
+    // Call validation change hook for child classes to update UI
+    if (this.onValidationChange) {
+      this.onValidationChange(isValid, validationMessage);
     }
 
-
-    /**
-     * @param {string} state - value to be set
-     * @param {"restore" | "autocomplete"} _mode - is it called by "restore" (going back in the browser after form submission for example) or autocomplete?
-     */
-    formStateRestoreCallback(state: string, _mode: 'restore' | 'autocomplete') {
-        this.value = state;
+    // Dispatch m-invalid event when invalid (avoid duplicates)
+    if (!isValid && this._previousValidationMessage !== validationMessage) {
+      this.dispatchEvent(
+        new MInvalidEvent({
+          validity: this.internals.validity,
+          validationMessage,
+          value: this.value,
+        }),
+      );
+      this._previousValidationMessage = validationMessage;
+    } else if (isValid) {
+      this._previousValidationMessage = "";
     }
+  }
 
-    //  ------------------------------------------------------------------------
-    //  Validation                                                                     
-    //  ------------------------------------------------------------------------ 
+  /**
+   * Implement this method to validate the element's value. Should calculate
+   * validation state and call updateValidationState() with the results.
+   */
+  protected abstract updateValidity(): void;
 
-    /**
-     * Updates validation state including internals.validity, custom states, and dispatches events.
-     * Call this method with validation results instead of calling internals.setValidity() directly.
-     * 
-     * @param validityState - The ValidityStateFlags object describing validation errors
-     * @param validationMessage - Human-readable error message
-     * @param anchor - Optional anchor element for constraint validation API
-     */
-    protected updateValidationState(
-        validityState: ValidityStateFlags,
-        validationMessage: string = '',
-        anchor?: HTMLElement
-    ): void {
-        // Set validity on internals
-        if (Object.keys(validityState).length > 0) {
-            this.internals.setValidity(validityState, validationMessage, anchor);
-        } else {
-            this.internals.setValidity({});
-        }
+  /**
+   * Checks validity without showing validation UI.
+   * Fires 'invalid' event if validation fails (handled by handleInvalid).
+   *
+   * @returns {boolean} - true if the element is valid, false otherwise
+   */
+  public checkValidity(): boolean {
+    // Just check validity, fire 'invalid' event if needed
+    // The 'invalid' event is already handled by handleInvalid()
+    return this.internals.checkValidity();
+  }
 
-        // Update custom states for :state() pseudo-classes
-        const isValid = this.internals.validity.valid;
-        this.setState('invalid', !isValid);
-        this.setState('valid', isValid);
-        this.setState('user-invalid', !isValid && this.hasInteracted);
-        this.setState('user-valid', isValid && this.hasInteracted);
+  /**
+   * Checks validity and shows custom validation UI if invalid.
+   * Sets hasInteracted to true and updates validation state.
+   *
+   * @returns {boolean} - true if the element is valid, false otherwise
+   */
+  public reportValidity(): boolean {
+    // Trigger validation with UI
+    this.hasInteracted = true;
+    this.updateValidity();
 
-        // Update ARIA attributes for accessibility
-        this.internals.ariaInvalid = !isValid ? 'true' : 'false';
+    // Fire 'invalid' event if needed (handled by handleInvalid)
+    // Note: We use checkValidity() not reportValidity() to avoid native browser UI
+    return this.internals.checkValidity();
+  }
 
-        // Call validation change hook for child classes to update UI
-        if (this.onValidationChange) {
-            this.onValidationChange(isValid, validationMessage);
-        }
+  //  ------------------------------------------------------------------------
+  //  Helpers
+  //  ------------------------------------------------------------------------
 
-        // Dispatch m-invalid event when invalid (avoid duplicates)
-        if (!isValid && this._previousValidationMessage !== validationMessage) {
-            this.dispatchEvent(new MInvalidEvent({
-                validity: this.internals.validity,
-                validationMessage,
-                value: this.value
-            }));
-            this._previousValidationMessage = validationMessage;
-        } else if (isValid) {
-            this._previousValidationMessage = '';
-        }
+  /**
+   * @param {string} name - Name of the state
+   * @param {boolean} condition - Whether the state should be added or removed
+   */
+  private setState(name: string, condition: boolean) {
+    if (condition) {
+      this.internals.states.add(name);
+    } else {
+      this.internals.states.delete(name);
     }
+  }
 
-
-    /**
-     * Implement this method to validate the element's value. Should calculate
-     * validation state and call updateValidationState() with the results.
-     */
-    protected abstract updateValidity(): void;
-
-    /**
-     * Checks validity without showing validation UI.
-     * Fires 'invalid' event if validation fails (handled by handleInvalid).
-     * 
-     * @returns {boolean} - true if the element is valid, false otherwise
-     */
-    public checkValidity(): boolean {
-        // Just check validity, fire 'invalid' event if needed
-        // The 'invalid' event is already handled by handleInvalid()
-        return this.internals.checkValidity();
+  /**
+   * Call this function to submit the form the element is associated
+   * with when enter is pressed. The implementor is responsible for setting
+   * up the keydown event listener.
+   *
+   * @param {KeyboardEvent} e - Keydown event to listen for enter key
+   */
+  protected submitOnEnter = (e: KeyboardEvent) => {
+    const form = this.internals.form as HTMLFormElement | null;
+    if (e.key === "Enter" && form) {
+      form.requestSubmit();
     }
-
-    /**
-     * Checks validity and shows custom validation UI if invalid.
-     * Sets hasInteracted to true and updates validation state.
-     * 
-     * @returns {boolean} - true if the element is valid, false otherwise
-     */
-    public reportValidity(): boolean {
-        // Trigger validation with UI
-        this.hasInteracted = true;
-        this.updateValidity();
-
-        // Fire 'invalid' event if needed (handled by handleInvalid)
-        // Note: We use checkValidity() not reportValidity() to avoid native browser UI
-        return this.internals.checkValidity();
-    }
-
-    //  ------------------------------------------------------------------------
-    //  Helpers                                                                     
-    //  ------------------------------------------------------------------------ 
-
-
-    /**
-     * @param {string} name - Name of the state
-     * @param {boolean} condition - Whether the state should be added or removed
-     */
-    private setState(name: string, condition: boolean) {
-        if (condition) { this.internals.states.add(name) }
-        else { this.internals.states.delete(name) }
-    }
-
-    /**
-     * Call this function to submit the form the element is associated 
-     * with when enter is pressed. The implementor is responsible for setting 
-     * up the keydown event listener.
-     *
-     * @param {KeyboardEvent} e - Keydown event to listen for enter key
-     */
-    protected submitOnEnter = (e: KeyboardEvent) => {
-        const form = this.internals.form as HTMLFormElement | null;
-        if (e.key === "Enter" && form) {
-            form.requestSubmit();
-        }
-    }
-
+  };
 }

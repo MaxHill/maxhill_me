@@ -1,5 +1,5 @@
 import { html, nothing, type TemplateResult } from "lit-html";
-import { ref } from "lit-html/directives/ref.js";
+import { "ref" as reference } from "lit-html/directives/ref.js";
 
 type DangerZoneAttribute = readonly [key: string, value: string];
 
@@ -21,7 +21,9 @@ export function renderDangerZone({
   description,
 }: DangerZoneTemplateOptions): TemplateResult {
   const applyAttrs = (el: Element | undefined) => {
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     const entries = attributes;
     const nextKeys = entries.map(([key]) => key);
@@ -45,7 +47,7 @@ export function renderDangerZone({
 
   return html`
     <details
-      ${ref(applyAttrs)}
+      ${reference(applyAttrs)}
       class=${`danger-zone box ${className}`.trim()}
       data-variant="surface"
       data-gap="2"
@@ -54,7 +56,7 @@ export function renderDangerZone({
       <summary class="danger-zone-summary">${title}</summary>
       ${description ? html`<p data-text="softer">${description}</p>` : nothing}
       <button
-      data-margin="bs-2"
+        data-margin="bs-2"
         type="button"
         class="button"
         data-style="destructive"

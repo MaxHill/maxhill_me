@@ -16,13 +16,13 @@ Monorepo for Max Hill's personal website and services.
 ### Prerequisites
 
 - Node.js 20+
-- pnpm 10.19.0 (managed via `packageManager` field)
+- pnpm 10.27.0 (managed via `packageManager` field)
 
 ### Commands
 
 ```bash
 pnpm install                # Install dependencies
-mise run dev:all            # Start every workspace project in dev mode (dekit mprocs)
+mise run run                # Start workspace apps and libraries (dekit mprocs)
 mise run generate           # Code-gen via plop
 ```
 
@@ -94,8 +94,25 @@ Both deployments run in parallel.
 Test locally before pushing:
 
 ```bash
-for d in apps/*/ packages/*/; do (cd "$d" && mise run test) || exit 1; done
+mise run setup              # Install Chromium for browser tests (once per clone)
+mise run test               # Build libraries, lint root scripts, and check all apps/packages
 ```
+
+The root test task runs projects with their own `mise.toml`. It does not
+run data-only directories such as `packages/devhub`. It reports a failure
+if any project fails, but continues so you can see all failures in one run.
+Auth includes Bun tests. Golf includes TypeScript checks, Vitest unit tests,
+and browser tests. Syncdb includes TypeScript checks and Vitest tests.
+
+To use an installed Chromium instead of Playwright's downloaded browser:
+
+```bash
+CHROMIUM_PATH=/path/to/chromium mise run test
+```
+
+Library builds are local. The test task does not deploy apps or provision
+the VPS. App production builds can be checked separately with their local
+compiler or bundler; do not use app `deploy` tasks for a local-only check.
 
 Test deployments locally (requires Cloudflare credentials):
 

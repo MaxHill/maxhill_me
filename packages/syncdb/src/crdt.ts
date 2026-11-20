@@ -15,38 +15,49 @@ export type ValidKey = string;
 
 export type CRDTOperation =
   | {
-    type: "setRow";
-    tableName: string;
-    rowKey: ValidKey;
-    fields: Record<string, any>;
-    dot: Dot;
-    /** This tracks pull progress because upload acknowledgements do not show which server changes the client received. */
-    serverVersion?: number;
-  }
+      type: "setRow";
+      tableName: string;
+      rowKey: ValidKey;
+      fields: Record<string, any>;
+      dot: Dot;
+      /**
+       * This tracks pull progress because upload acknowledgements do not show which
+       * server changes the client received.
+       */
+      serverVersion?: number;
+    }
   | {
-    type: "removeRow";
-    tableName: string;
-    rowKey: ValidKey;
-    dot: Dot;
-    versionVector: Record<string, number>;
-    /** This tracks pull progress because upload acknowledgements do not show which server changes the client received. */
-    serverVersion?: number;
-  }
+      type: "removeRow";
+      tableName: string;
+      rowKey: ValidKey;
+      dot: Dot;
+      versionVector: Record<string, number>;
+      /**
+       * This tracks pull progress because upload acknowledgements do not show which
+       * server changes the client received.
+       */
+      serverVersion?: number;
+    }
   | {
-    type: "checkpointRow";
-    tableName: string;
-    rowKey: ValidKey;
-    dot: Dot;
-    checkpointSeenServerVersion: number;
-    fields: Record<string, LWWField>;
-    tombstone?: { dot: Dot; versionVector: Record<string, number> };
-    /** This tracks pull progress because upload acknowledgements do not show which server changes the client received. */
-    serverVersion?: number;
-  };
+      type: "checkpointRow";
+      tableName: string;
+      rowKey: ValidKey;
+      dot: Dot;
+      checkpointSeenServerVersion: number;
+      fields: Record<string, LWWField>;
+      tombstone?: { dot: Dot; versionVector: Record<string, number> };
+      /**
+       * This tracks pull progress because upload acknowledgements do not show which
+       * server changes the client received.
+       */
+      serverVersion?: number;
+    };
 
 export type LWWField = {
   value: any;
   dot: Dot;
+  /** Non-winning per-client writes must survive deletes that observed only the winner. */
+  contenders?: { value: any; dot: Dot }[];
 };
 
 export const TABLE_NAME = "table_name";
@@ -73,7 +84,7 @@ export function toUserRow(row: ORMapRow) {
     return undefined;
   }
 
-  let result: Record<string, any> = {};
+  const result: Record<string, any> = {};
   for (const [field, fieldState] of Object.entries(row.fields)) {
     result[field] = fieldState.value;
   }
@@ -88,20 +99,77 @@ export type CRDTValue = Record<ValidKey, ORMapRow>;
 //  Methods
 //  ------------------------------------------------------------------------
 export function compareDots(a: Dot, b: Dot): number {
-  if (a.version !== b.version) return a.version - b.version;
+  if (a.version !== b.version) {
+    return a.version - b.version;
+  }
   return a.clientId.localeCompare(b.clientId);
 }
 
 function mergeField(row: ORMapRow, field: string, incoming: LWWField): void {
   const existing = row.fields[field];
-  const order = existing ? compareDots(incoming.dot, existing.dot) : 1;
-  if (order > 0) {
-    row.fields[field] = incoming;
-  } else if (order === 0) {
-    assert(
-      jsonValuesEqual(incoming.value, existing.value),
-      `CRDT invariant violated: duplicate dot for field "${field}"`,
-    );
+  const candidates = new Map<string, { value: any; dot: Dot }>();
+  for (const state of [existing, incoming]) {
+    if (!state) {
+      continue;
+    }
+    for (const candidate of [state, ...(state.contenders ?? [])]) {
+      const covered = row.tombstone?.versionVector[candidate.dot.clientId];
+      if (covered !== undefined && candidate.dot.version <= covered) {
+        continue;
+      }
+      const previous = candidates.get(candidate.dot.clientId);
+      const order = previous ? compareDots(candidate.dot, previous.dot) : 1;
+      if (order > 0) {
+        candidates.set(candidate.dot.clientId, { value: candidate.value, dot: candidate.dot });
+      } else if (order === 0) {
+        assert(
+          jsonValuesEqual(candidate.value, previous!.value),
+          `CRDT invariant violated: duplicate dot for field "${field}"`,
+        );
+      }
+    }
+  }
+  const sorted = [...candidates.values()].sort((a, b) => compareDots(b.dot, a.dot));
+  const winner = sorted.shift();
+  if (!winner) {
+    delete row.fields[field];
+  } else {
+    const merged = sorted.length ? { ...winner, contenders: sorted } : winner;
+    if (!existing || !jsonValuesEqual(existing, merged)) {
+      row.fields[field] = merged;
+    }
+  }
+}
+
+function applyCheckpointToRow(
+  row: ORMapRow,
+  operation: Extract<CRDTOperation, { type: "checkpointRow" }>,
+): void {
+  // Merge the snapshot using original CRDT clocks. The checkpoint's publication
+  // dot is deliberately not used to date fields or the tombstone.
+  for (const [field, incoming] of Object.entries(operation.fields)) {
+    mergeField(row, field, incoming);
+  }
+  if (operation.tombstone) {
+    const current = row.tombstone;
+    if (!current) {
+      row.tombstone = operation.tombstone;
+    } else {
+      const cmp = compareDots(operation.tombstone.dot, current.dot);
+      const versionVector = { ...current.versionVector };
+      for (const [clientId, version] of Object.entries(operation.tombstone.versionVector)) {
+        versionVector[clientId] = Math.max(versionVector[clientId] ?? -1, version);
+      }
+      row.tombstone = {
+        dot: cmp > 0 ? operation.tombstone.dot : current.dot,
+        versionVector,
+      };
+    }
+  }
+  if (row.tombstone) {
+    for (const [field, state] of Object.entries(row.fields)) {
+      mergeField(row, field, state);
+    }
   }
 }
 
@@ -122,33 +190,7 @@ export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): vo
       mergeField(row, field, { value, dot: operation.dot });
     }
   } else if (operation.type === "checkpointRow") {
-    // Merge the snapshot using original CRDT clocks. The checkpoint's publication
-    // dot is deliberately not used to date fields or the tombstone.
-    for (const [field, incoming] of Object.entries(operation.fields)) {
-      mergeField(row, field, incoming);
-    }
-    if (operation.tombstone) {
-      const current = row.tombstone;
-      if (!current) {
-        row.tombstone = operation.tombstone;
-      } else {
-        const cmp = compareDots(operation.tombstone.dot, current.dot);
-        const versionVector = { ...current.versionVector };
-        for (const [clientId, version] of Object.entries(operation.tombstone.versionVector)) {
-          versionVector[clientId] = Math.max(versionVector[clientId] ?? -1, version);
-        }
-        row.tombstone = {
-          dot: cmp > 0 ? operation.tombstone.dot : current.dot,
-          versionVector,
-        };
-      }
-    }
-    if (row.tombstone) {
-      for (const [field, state] of Object.entries(row.fields)) {
-        const covered = row.tombstone.versionVector[state.dot.clientId];
-        if (covered !== undefined && state.dot.version <= covered) delete row.fields[field];
-      }
-    }
+    applyCheckpointToRow(row, operation);
   } else if (operation.type === "removeRow") {
     // Merge with existing tombstone if present
     let finalTombstone: { dot: Dot; versionVector: Record<string, number> };
@@ -159,13 +201,17 @@ export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): vo
       const winningDot = cmp > 0 ? operation.dot : row.tombstone.dot;
 
       // When merging two tombstones (concurrent deletes), we need to merge their version vectors.
-      // The merged version vector tracks the maximum version seen from each client across both deletes.
+      // The merged version vector tracks the maximum version seen from each client
+      // across both deletes.
       // This ensures the resulting tombstone dominates all writes that EITHER delete observed.
       // Example: Delete A saw client1:v5, Delete B saw client1:v7 → merged sees client1:v7
-      const mergedVersionVector: Record<string, number> = { ...row.tombstone.versionVector };
+      const mergedVersionVector: Record<string, number> = {
+        ...row.tombstone.versionVector,
+      };
       for (const [clientId, version] of Object.entries(operation.versionVector)) {
         const existing = mergedVersionVector[clientId];
-        mergedVersionVector[clientId] = existing !== undefined ? Math.max(existing, version) : version;
+        mergedVersionVector[clientId] =
+          existing !== undefined ? Math.max(existing, version) : version;
       }
 
       finalTombstone = { dot: winningDot, versionVector: mergedVersionVector };
@@ -173,17 +219,10 @@ export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): vo
       finalTombstone = { dot: operation.dot, versionVector: operation.versionVector };
     }
 
-    // Keep only fields NOT dominated by the final tombstone
-    const newFields: Record<string, LWWField> = {};
-    for (const [field, fieldState] of Object.entries(row.fields)) {
-      const seenCounter = finalTombstone.versionVector[fieldState.dot.clientId];
-      if (seenCounter === undefined || fieldState.dot.version > seenCounter) {
-        newFields[field] = fieldState;
-      }
-    }
-
-    row.fields = newFields;
     row.tombstone = finalTombstone;
+    for (const [field, fieldState] of Object.entries(row.fields)) {
+      mergeField(row, field, fieldState);
+    }
   }
 }
 
@@ -208,7 +247,9 @@ export function validateOperation(operation: CRDTOperation): CRDTOperation {
   assert(operation.dot.clientId, "Operation.dot.clientId must be defined");
   if (operation.type === "setRow") {
     assert(
-      typeof operation.fields === "object" && operation.fields !== null && !Array.isArray(operation.fields),
+      typeof operation.fields === "object" &&
+        operation.fields !== null &&
+        !Array.isArray(operation.fields),
       `SetRow operation fields must be a plain object: ${typeof operation.fields}`,
     );
     for (const [fieldKey, value] of Object.entries(operation.fields)) {

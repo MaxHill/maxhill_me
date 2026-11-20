@@ -59,7 +59,7 @@ function findDisallowedIdentifier(name, replacements) {
   }
 
   const lowered = name.toLowerCase();
-  const replacement = replacements[lowered];
+  const replacement = Object.hasOwn(replacements, lowered) ? replacements[lowered] : null;
   if (!replacement) {
     return null;
   }
@@ -102,6 +102,15 @@ const noAbbreviationsRule = {
     const replacements = normalizeReplacements(ruleOptions.replacements ?? DEFAULT_REPLACEMENTS);
 
     function reportIfNeeded(node) {
+      const parent = node.parent;
+      // Property names can be imposed by an external API; check bindings instead.
+      if (parent && !parent.computed && (
+        (parent.type === 'MemberExpression' && parent.property === node) ||
+        (parent.type === 'Property' && parent.key === node && !parent.shorthand) ||
+        (parent.type === 'MethodDefinition' && parent.key === node)
+      )) {
+        return;
+      }
       const name = getNodeName(node);
       const violation = findDisallowedIdentifier(name, replacements);
       if (!violation) {

@@ -17,9 +17,9 @@ const VPS_HOST = requireVpsHost("deploy:golf");
 
 for (const line of (await readFile("vps/golf/golf.build.env", "utf8")).split(/\r?\n/)) {
 	const trimmed = line.trim();
-	if (!trimmed || trimmed.startsWith("#")) continue;
+	if (!trimmed || trimmed.startsWith("#")) {continue;}
 	const eq = trimmed.indexOf("=");
-	if (eq <= 0) continue;
+	if (eq <= 0) {continue;}
 	const key = trimmed.slice(0, eq).trim();
 	const value = trimmed.slice(eq + 1).trim();
 	process.env[key] = value;
@@ -40,13 +40,15 @@ await withCwd("apps/golf", async () => {
 	await $`pnpm exec vite build`;
 });
 
-await $`ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=5 -o ServerAliveCountMax=3 deploy@${VPS_HOST} ${`mkdir -p ${releaseDir}`}`;
+await $`ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=5 -o \
+  ServerAliveCountMax=3 deploy@${VPS_HOST} ${`mkdir -p ${releaseDir}`}`;
 await $`rsync -a --delete -e ${SSH_TRANSPORT} apps/golf/dist/ deploy@${VPS_HOST}:${releaseDir}/`;
-await $`rsync -e ${SSH_TRANSPORT} vps/golf/dist/deploy-remote deploy@${VPS_HOST}:${remoteRunnerPath}`;
+await $`rsync -e ${SSH_TRANSPORT} vps/golf/dist/deploy-remote \
+  deploy@${VPS_HOST}:${remoteRunnerPath}`;
 await runRemoteBinaryAndCleanup({
 	host: VPS_HOST,
 	remotePath: remoteRunnerPath,
-	args: [releaseDir],
+	remoteArguments: [releaseDir],
 	useSshOptions: true,
 });
 

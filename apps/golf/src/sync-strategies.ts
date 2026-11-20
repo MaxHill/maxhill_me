@@ -158,7 +158,9 @@ export function onUpstreamChange(options: {
       // Same as wake-up: catch-up must not block open/reconnect control flow on sync.
       void options.requestSync("upstream-reconnect");
     },
-    onUnauthorized: options.onUnauthorized,
+    ...(options.onUnauthorized
+      ? { onUnauthorized: options.onUnauthorized }
+      : {}),
     signal: abort.signal,
   }).catch((error) => {
     if (!abort.signal.aborted) {

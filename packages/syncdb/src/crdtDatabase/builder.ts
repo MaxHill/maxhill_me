@@ -40,10 +40,7 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
     return this;
   }
 
-  addTable<
-    TTableName extends string,
-    TIndexes extends Record<string, string[]>,
-  >(
+  addTable<TTableName extends string, TIndexes extends Record<string, string[]>>(
     table: TTableName,
     indexes: TIndexes,
   ): CRDTDatabaseBuilder<MergeSchema<TSchema, TTableName, TIndexes>> {
@@ -70,13 +67,13 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
     return this;
   }
 
-  withSyncHeaders(fn: SyncHeadersProvider): CRDTDatabaseBuilder<TSchema> {
-    this.headersProvider = fn;
+  withSyncHeaders(handler: SyncHeadersProvider): CRDTDatabaseBuilder<TSchema> {
+    this.headersProvider = handler;
     return this;
   }
 
-  withOnUnauthorized(fn: OnUnauthorizedHandler): CRDTDatabaseBuilder<TSchema> {
-    this.onUnauthorized = fn;
+  withOnUnauthorized(handler: OnUnauthorizedHandler): CRDTDatabaseBuilder<TSchema> {
+    this.onUnauthorized = handler;
     return this;
   }
 
@@ -93,7 +90,8 @@ export class CRDTDatabaseBuilder<TSchema extends DatabaseSchema = EmptySchema> {
     const clientState = new ClientState();
     const rowStore = new RowStore(lifecycle.indexes);
     const operationLog = new OperationLog();
-    const syncManager = this.syncManager ||
+    const syncManager =
+      this.syncManager ||
       new Sync(clientState, rowStore, operationLog, this.headersProvider, this.onUnauthorized);
     const syncRemote = this.syncRemote || "";
 

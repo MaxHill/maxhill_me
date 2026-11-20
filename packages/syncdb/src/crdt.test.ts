@@ -7,8 +7,8 @@ import {
   type Dot,
   type LWWField,
   type ORMapRow,
-  TABLE_NAME,
   ROW_KEY,
+  TABLE_NAME,
 } from "./crdt.ts";
 
 //  ------------------------------------------------------------------------
@@ -31,9 +31,9 @@ const generateLWWField = (): fc.Arbitrary<LWWField> =>
   });
 
 const generateSafeFieldName = (): fc.Arbitrary<string> =>
-  fc.string({ minLength: 1, maxLength: 10 }).filter(
-    (s) => !["__proto__", "constructor", "prototype", "toString", "valueOf"].includes(s),
-  );
+  fc
+    .string({ minLength: 1, maxLength: 10 })
+    .filter((s) => !["__proto__", "constructor", "prototype", "toString", "valueOf"].includes(s));
 
 const generateORMapRow = (): fc.Arbitrary<ORMapRow> =>
   fc.record({
@@ -50,18 +50,20 @@ const generateORMapRow = (): fc.Arbitrary<ORMapRow> =>
   });
 
 const generateSetOperation = (): fc.Arbitrary<CRDTOperation> =>
-  fc.tuple(
-    generateSafeFieldName(),
-    fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
-    generateDot(),
-    fc.string(),
-  ).map(([fieldKey, value, dot, rowKey]) => ({
-    type: "setRow" as const,
-    tableName: "test_table",
-    rowKey,
-    fields: { [fieldKey]: value },
-    dot,
-  }));
+  fc
+    .tuple(
+      generateSafeFieldName(),
+      fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
+      generateDot(),
+      fc.string(),
+    )
+    .map(([fieldKey, value, dot, rowKey]) => ({
+      type: "setRow" as const,
+      tableName: "test_table",
+      rowKey,
+      fields: { [fieldKey]: value },
+      dot,
+    }));
 
 const generateSetRowOperation = (): fc.Arbitrary<CRDTOperation> =>
   fc.record({
@@ -91,6 +93,8 @@ const generateCRDTOperation = (): fc.Arbitrary<CRDTOperation> =>
 //  compareDots Tests
 //  ------------------------------------------------------------------------
 
+// Suite registration groups related tests; individual tests remain line-limited.
+// eslint-disable-next-line max-lines-per-function
 describe("compareDots", () => {
   describe("unit tests", () => {
     it("should return negative when a.version < b.version", () => {
@@ -173,11 +177,15 @@ describe("compareDots", () => {
 //  applyOpToRow Tests
 //  ------------------------------------------------------------------------
 
+// Suite registration groups related tests; individual tests remain line-limited.
+// eslint-disable-next-line max-lines-per-function
 describe("applyOpToRow", () => {
+  // Suite registration groups related tests; individual tests remain line-limited.
+  // eslint-disable-next-line max-lines-per-function
   describe("set operations", () => {
     it("should apply set to empty row", () => {
       const row: ORMapRow = { [TABLE_NAME]: "test", [ROW_KEY]: "row1", fields: {} };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "setRow",
         tableName: "test",
         rowKey: "row1",
@@ -185,7 +193,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 1 },
       };
 
-      applyOperationToRow(row, op);
+      applyOperationToRow(row, operation);
 
       expect(row.fields.name).toEqual({
         value: "Alice",
@@ -201,7 +209,7 @@ describe("applyOpToRow", () => {
           name: { value: "Alice", dot: { clientId: "client1", version: 1 } },
         },
       };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "setRow",
         tableName: "test",
         rowKey: "row1",
@@ -209,7 +217,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 2 },
       };
 
-      applyOperationToRow(row, op);
+      applyOperationToRow(row, operation);
 
       expect(row.fields.name.value).toBe("Bob");
       expect(row.fields.name.dot.version).toBe(2);
@@ -223,7 +231,7 @@ describe("applyOpToRow", () => {
           name: { value: "Bob", dot: { clientId: "client1", version: 5 } },
         },
       };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "setRow",
         tableName: "test",
         rowKey: "row1",
@@ -231,7 +239,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 3 },
       };
 
-      applyOperationToRow(row, op);
+      applyOperationToRow(row, operation);
 
       expect(row.fields.name.value).toBe("Bob");
       expect(row.fields.name.dot.version).toBe(5);
@@ -245,7 +253,7 @@ describe("applyOpToRow", () => {
           name: { value: "Alice", dot: { clientId: "client1", version: 5 } },
         },
       };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "setRow",
         tableName: "test",
         rowKey: "row1",
@@ -253,7 +261,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client2", version: 5 },
       };
 
-      applyOperationToRow(row, op);
+      applyOperationToRow(row, operation);
 
       // client2 > client1 lexicographically
       expect(row.fields.name.value).toBe("Bob");
@@ -268,7 +276,7 @@ describe("applyOpToRow", () => {
           value: { value: "z", dot: { clientId: "client1", version: 1 } },
         },
       };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "setRow",
         tableName: "test",
         rowKey: "row1",
@@ -276,14 +284,14 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 1 },
       };
 
-      expect(() => applyOperationToRow(row, op)).toThrow(
+      expect(() => applyOperationToRow(row, operation)).toThrow(
         'CRDT invariant violated: duplicate dot for field "value"',
       );
     });
 
     it("should throw error when field is missing in set operation", () => {
       const row: ORMapRow = { [TABLE_NAME]: "test", [ROW_KEY]: "row1", fields: {} };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "setRow",
         tableName: "test",
         rowKey: "row1",
@@ -291,7 +299,9 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 1 },
       };
 
-      expect(() => applyOperationToRow(row, op)).toThrow("SetRow operation fields must be a plain object");
+      expect(() => applyOperationToRow(row, operation)).toThrow(
+        "SetRow operation fields must be a plain object",
+      );
     });
 
     it("should reject set dominated by tombstone", () => {
@@ -304,7 +314,7 @@ describe("applyOpToRow", () => {
           versionVector: { client1: 5 },
         },
       };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "setRow",
         tableName: "test",
         rowKey: "row1",
@@ -312,7 +322,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 5 },
       };
 
-      applyOperationToRow(row, op);
+      applyOperationToRow(row, operation);
 
       expect(row.fields.name).toBeUndefined();
     });
@@ -327,7 +337,7 @@ describe("applyOpToRow", () => {
           versionVector: { client1: 5 },
         },
       };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "setRow",
         tableName: "test",
         rowKey: "row1",
@@ -335,7 +345,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 6 },
       };
 
-      applyOperationToRow(row, op);
+      applyOperationToRow(row, operation);
 
       expect(row.fields.name).toEqual({
         value: "Alice",
@@ -353,7 +363,7 @@ describe("applyOpToRow", () => {
           versionVector: { client1: 5 },
         },
       };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "setRow",
         tableName: "test",
         rowKey: "row1",
@@ -361,7 +371,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client2", version: 1 },
       };
 
-      applyOperationToRow(row, op);
+      applyOperationToRow(row, operation);
 
       expect(row.fields.name).toEqual({
         value: "Alice",
@@ -378,11 +388,16 @@ describe("applyOpToRow", () => {
             // Ensure all ops target the same field. Duplicate dots for the
             // same field are invalid CRDT input, so skip those cases.
             const field = "testField";
-            const normalizedOperations = operations.map((operation) => ({ ...operation, field }));
+            const normalizedOperations = operations.map((operation) => ({
+              ...operation,
+              field,
+            }));
             fc.pre(
-              new Set(normalizedOperations.map((operation) =>
-                `${operation.dot.clientId}:${operation.dot.version}`
-              )).size === normalizedOperations.length,
+              new Set(
+                normalizedOperations.map(
+                  (operation) => `${operation.dot.clientId}:${operation.dot.version}`,
+                ),
+              ).size === normalizedOperations.length,
             );
 
             // Apply in original order
@@ -393,9 +408,9 @@ describe("applyOpToRow", () => {
             // Apply in reverse order
             const row2: ORMapRow = JSON.parse(JSON.stringify(initialRow));
             delete row2.fields[field];
-            [...normalizedOperations].reverse().forEach((operation) =>
-              applyOperationToRow(row2, operation)
-            );
+            [...normalizedOperations]
+              .reverse()
+              .forEach((operation) => applyOperationToRow(row2, operation));
 
             // Both should converge to same result
             expect(row1.fields[field]).toEqual(row2.fields[field]);
@@ -405,6 +420,8 @@ describe("applyOpToRow", () => {
     });
   });
 
+  // Suite registration groups related tests; individual tests remain line-limited.
+  // eslint-disable-next-line max-lines-per-function
   describe("setRow operations", () => {
     it("should set multiple fields with same dot", () => {
       const row: ORMapRow = { [TABLE_NAME]: "test", [ROW_KEY]: "row1", fields: {} };
@@ -437,7 +454,7 @@ describe("applyOpToRow", () => {
           age: { value: 25, dot: { clientId: "client1", version: 2 } },
         },
       };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "setRow",
         tableName: "test",
         rowKey: "row1",
@@ -445,7 +462,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 3 },
       };
 
-      applyOperationToRow(row, op);
+      applyOperationToRow(row, operation);
 
       // name stays Bob (version 5 > 3)
       expect(row.fields.name.value).toBe("Bob");
@@ -463,7 +480,7 @@ describe("applyOpToRow", () => {
           versionVector: { client1: 5 },
         },
       };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "setRow",
         tableName: "test",
         rowKey: "row1",
@@ -471,7 +488,7 @@ describe("applyOpToRow", () => {
         dot: { clientId: "client1", version: 5 },
       };
 
-      applyOperationToRow(row, op);
+      applyOperationToRow(row, operation);
 
       expect(Object.keys(row.fields)).toHaveLength(0);
     });
@@ -500,6 +517,8 @@ describe("applyOpToRow", () => {
     });
   });
 
+  // Suite registration groups related tests; individual tests remain line-limited.
+  // eslint-disable-next-line max-lines-per-function
   describe("remove operations", () => {
     it("should create tombstone and remove dominated fields", () => {
       const row: ORMapRow = {
@@ -510,7 +529,7 @@ describe("applyOpToRow", () => {
           age: { value: 30, dot: { clientId: "client2", version: 2 } },
         },
       };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "removeRow",
         tableName: "test",
         rowKey: "row1",
@@ -518,7 +537,7 @@ describe("applyOpToRow", () => {
         versionVector: { client1: 5, client2: 2 },
       };
 
-      applyOperationToRow(row, op);
+      applyOperationToRow(row, operation);
 
       // age is dominated (client2: 2 <= 2), name is not (client1: 3 > 5 is false, but 3 <= 5)
       expect(row.fields.name).toBeUndefined();
@@ -538,7 +557,7 @@ describe("applyOpToRow", () => {
           age: { value: 30, dot: { clientId: "client2", version: 2 } },
         },
       };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "removeRow",
         tableName: "test",
         rowKey: "row1",
@@ -546,7 +565,7 @@ describe("applyOpToRow", () => {
         versionVector: { client1: 5, client2: 2 },
       };
 
-      applyOperationToRow(row, op);
+      applyOperationToRow(row, operation);
 
       // name survives (6 > 5), age is removed (2 <= 2)
       expect(row.fields.name).toEqual({
@@ -565,7 +584,7 @@ describe("applyOpToRow", () => {
           age: { value: 30, dot: { clientId: "client3", version: 1 } },
         },
       };
-      const op: CRDTOperation = {
+      const operation: CRDTOperation = {
         type: "removeRow",
         tableName: "test",
         rowKey: "row1",
@@ -573,7 +592,7 @@ describe("applyOpToRow", () => {
         versionVector: { client1: 5 },
       };
 
-      applyOperationToRow(row, op);
+      applyOperationToRow(row, operation);
 
       // age survives (client3 not in context)
       expect(row.fields.name).toBeUndefined();
@@ -589,28 +608,39 @@ describe("applyOpToRow", () => {
           generateRemoveOperation(),
           fc.array(generateSetOperation(), { minLength: 1, maxLength: 5 }),
           (removeOp, setOps) => {
-            const row: ORMapRow = { [TABLE_NAME]: "test_table", [ROW_KEY]: "test_row", fields: {} };
+            const row: ORMapRow = {
+              [TABLE_NAME]: "test_table",
+              [ROW_KEY]: "test_row",
+              fields: {},
+            };
 
             // Apply all sets with versions <= context
-            const dominatedSets = setOps.map((op) => {
-              const clientId = op.dot.clientId;
-              if (removeOp.type !== "removeRow") throw new Error("Type should be remove");
+            const dominatedSets = setOps.map((operation) => {
+              const clientId = operation.dot.clientId;
+              if (removeOp.type !== "removeRow") {
+                throw new Error("Type should be remove");
+              }
               const contextVersion = removeOp.versionVector[clientId];
               if (contextVersion !== undefined) {
                 return {
-                  ...op,
-                  dot: { clientId, version: Math.min(op.dot.version, contextVersion) },
+                  ...operation,
+                  dot: {
+                    clientId,
+                    version: Math.min(operation.dot.version, contextVersion),
+                  },
                 };
               }
-              return op;
+              return operation;
             });
 
-            dominatedSets.forEach((op) => applyOperationToRow(row, op));
+            dominatedSets.forEach((operation) => applyOperationToRow(row, operation));
             applyOperationToRow(row, removeOp);
 
             // All fields from clients in context with version <= context should be gone
             Object.values(row.fields).forEach((field) => {
-              if (removeOp.type !== "removeRow") throw new Error("Type should be remove");
+              if (removeOp.type !== "removeRow") {
+                throw new Error("Type should be remove");
+              }
               const contextVersion = removeOp.versionVector[field.dot.clientId];
               if (contextVersion !== undefined) {
                 expect(field.dot.version).toBeGreaterThan(contextVersion);
@@ -660,13 +690,21 @@ describe("applyOpToRow", () => {
 
   describe("checkpoint merge", () => {
     it("preserves original field clocks and merges tombstone context", () => {
-      const row: ORMapRow = { [TABLE_NAME]: "test", [ROW_KEY]: "r", fields: {
-        keep: { value: "new", dot: { clientId: "b", version: 5 } },
-        gone: { value: "old", dot: { clientId: "a", version: 2 } },
-      }, tombstone: { dot: { clientId: "a", version: 3 }, versionVector: { a: 1 } } };
+      const row: ORMapRow = {
+        [TABLE_NAME]: "test",
+        [ROW_KEY]: "r",
+        fields: {
+          keep: { value: "new", dot: { clientId: "b", version: 5 } },
+          gone: { value: "old", dot: { clientId: "a", version: 2 } },
+        },
+        tombstone: { dot: { clientId: "a", version: 3 }, versionVector: { a: 1 } },
+      };
       const checkpoint: CRDTOperation = {
-        type: "checkpointRow", tableName: "test", rowKey: "r",
-        dot: { clientId: "server", version: 99 }, checkpointSeenServerVersion: 20,
+        type: "checkpointRow",
+        tableName: "test",
+        rowKey: "r",
+        dot: { clientId: "server", version: 99 },
+        checkpointSeenServerVersion: 20,
         fields: {
           keep: { value: "older", dot: { clientId: "b", version: 4 } },
           gone: { value: "old", dot: { clientId: "a", version: 2 } },
@@ -674,9 +712,15 @@ describe("applyOpToRow", () => {
         tombstone: { dot: { clientId: "c", version: 4 }, versionVector: { a: 2, c: 1 } },
       };
       applyOperationToRow(row, checkpoint);
-      expect(row.fields.keep).toEqual({ value: "new", dot: { clientId: "b", version: 5 } });
+      expect(row.fields.keep).toEqual({
+        value: "new",
+        dot: { clientId: "b", version: 5 },
+      });
       expect(row.fields.gone).toBeUndefined();
-      expect(row.tombstone).toEqual({ dot: { clientId: "c", version: 4 }, versionVector: { a: 2, c: 1 } });
+      expect(row.tombstone).toEqual({
+        dot: { clientId: "c", version: 4 },
+        versionVector: { a: 2, c: 1 },
+      });
       applyOperationToRow(row, checkpoint);
       expect(row.fields.keep.dot).toEqual({ clientId: "b", version: 5 });
     });
@@ -691,10 +735,10 @@ describe("applyOpToRow", () => {
           (initialRow, ops) => {
             // Apply in original order
             const row1: ORMapRow = JSON.parse(JSON.stringify(initialRow));
-            ops.forEach((op) => {
+            ops.forEach((operation) => {
               try {
-                applyOperationToRow(row1, op);
-              } catch (e) {
+                applyOperationToRow(row1, operation);
+              } catch {
                 // Ignore errors from missing fields in set ops
               }
             });
@@ -702,10 +746,10 @@ describe("applyOpToRow", () => {
             // Apply in shuffled order
             const row2: ORMapRow = JSON.parse(JSON.stringify(initialRow));
             const shuffled = [...ops].sort(() => Math.random() - 0.5);
-            shuffled.forEach((op) => {
+            shuffled.forEach((operation) => {
               try {
-                applyOperationToRow(row2, op);
-              } catch (e) {
+                applyOperationToRow(row2, operation);
+              } catch {
                 // Ignore errors from missing fields in set ops
               }
             });
@@ -722,7 +766,7 @@ describe("applyOpToRow", () => {
 type ReplayKind = "setRow" | "checkpointRow";
 const replayKinds: ReplayKind[] = ["setRow", "checkpointRow"];
 const replayOrders = replayKinds.flatMap((first) =>
-  replayKinds.map((second) => ({ first, second }))
+  replayKinds.map((second) => ({ first, second })),
 );
 
 function replayRow(): ORMapRow {
@@ -733,9 +777,12 @@ function replayOperation(kind: ReplayKind, value: unknown, version = 1): CRDTOpe
   const dot = { clientId: "writer", version };
   if (kind === "checkpointRow") {
     return {
-      type: kind, tableName: "test", rowKey: "r",
+      type: kind,
+      tableName: "test",
+      rowKey: "r",
       dot: { clientId: "checkpoint", version: 99 },
-      checkpointSeenServerVersion: 10, fields: { payload: { value, dot } },
+      checkpointSeenServerVersion: 10,
+      fields: { payload: { value, dot } },
     };
   }
   return { type: kind, tableName: "test", rowKey: "r", dot, fields: { payload: value } };
@@ -756,19 +803,25 @@ describe("equal-dot field replay", () => {
   it.each(replayOrders)("rejects conflicting $first then $second", ({ first, second }) => {
     const row = replayRow();
     applyOperationToRow(row, replayOperation(first, { nested: [1, 2] }));
-    expect(() => applyOperationToRow(row, replayOperation(second, { nested: [2, 1] })))
-      .toThrow('CRDT invariant violated: duplicate dot for field "payload"');
+    expect(() => applyOperationToRow(row, replayOperation(second, { nested: [2, 1] }))).toThrow(
+      'CRDT invariant violated: duplicate dot for field "payload"',
+    );
     expect(row.fields.payload.value).toEqual({ nested: [1, 2] });
   });
 
   it.each([
     [new Date("2026-01-01"), "2026-01-01T00:00:00.000Z"],
-    [NaN, null], [Infinity, null], [1, "1"], [{ a: 1 }, {}], [[], {}],
+    [NaN, null],
+    [Infinity, null],
+    [1, "1"],
+    [{ a: 1 }, {}],
+    [[], {}],
   ])("does not coerce or drop values for equal dots (case %#)", (existing, incoming) => {
     const row = replayRow();
     row.fields.payload = { value: existing, dot: { clientId: "writer", version: 1 } };
-    expect(() => applyOperationToRow(row, replayOperation("setRow", incoming)))
-      .toThrow("duplicate dot");
+    expect(() => applyOperationToRow(row, replayOperation("setRow", incoming))).toThrow(
+      "duplicate dot",
+    );
   });
 });
 
@@ -779,15 +832,21 @@ describe("replay preserves clock and tombstone rules", () => {
     applyOperationToRow(row, replayOperation(kind, "older", 0));
     expect(row.fields.payload.value).toBe("current");
     applyOperationToRow(row, replayOperation(kind, "newer", 2));
-    expect(row.fields.payload).toEqual({ value: "newer", dot: { clientId: "writer", version: 2 } });
+    expect(row.fields.payload).toEqual({
+      value: "newer",
+      dot: { clientId: "writer", version: 2 },
+    });
   });
 
   it("does not resurrect a tombstone-dominated field through checkpoints or write replay", () => {
     const row = replayRow();
     applyOperationToRow(row, replayOperation("setRow", "deleted"));
     applyOperationToRow(row, {
-      type: "removeRow", tableName: "test", rowKey: "r",
-      dot: { clientId: "deleter", version: 2 }, versionVector: { writer: 1 },
+      type: "removeRow",
+      tableName: "test",
+      rowKey: "r",
+      dot: { clientId: "deleter", version: 2 },
+      versionVector: { writer: 1 },
     });
     applyOperationToRow(row, replayOperation("checkpointRow", "deleted"));
     applyOperationToRow(row, replayOperation("setRow", "deleted"));
@@ -802,7 +861,9 @@ function reorderJson(value: unknown): unknown {
   }
   if (value !== null && typeof value === "object") {
     return Object.fromEntries(
-      Object.entries(value).reverse().map(([key, child]) => [key, reorderJson(child)]),
+      Object.entries(value)
+        .reverse()
+        .map(([key, child]) => [key, reorderJson(child)]),
     );
   }
   return value;
@@ -810,20 +871,22 @@ function reorderJson(value: unknown): unknown {
 
 describe("property: equal-dot JSON field replay", () => {
   it("is idempotent and symmetric across checkpoint/write delivery order", () => {
-    fc.assert(fc.property(fc.jsonValue(), (value) => {
-      const row = replayRow();
-      applyOperationToRow(row, replayOperation("setRow", value));
-      const original = row.fields.payload;
-      applyOperationToRow(row, replayOperation("checkpointRow", reorderJson(value)));
-      applyOperationToRow(row, replayOperation("setRow", reorderJson(value)));
-      expect(row.fields.payload).toBe(original);
-      expect(row.fields.payload.value).toEqual(value);
+    fc.assert(
+      fc.property(fc.jsonValue(), (value) => {
+        const row = replayRow();
+        applyOperationToRow(row, replayOperation("setRow", value));
+        const original = row.fields.payload;
+        applyOperationToRow(row, replayOperation("checkpointRow", reorderJson(value)));
+        applyOperationToRow(row, replayOperation("setRow", reorderJson(value)));
+        expect(row.fields.payload).toBe(original);
+        expect(row.fields.payload.value).toEqual(value);
 
-      const reversed = replayRow();
-      applyOperationToRow(reversed, replayOperation("checkpointRow", reorderJson(value)));
-      applyOperationToRow(reversed, replayOperation("setRow", value));
-      expect(reversed).toEqual(row);
-    }), { seed: 714810052, numRuns: 200 });
+        const reversed = replayRow();
+        applyOperationToRow(reversed, replayOperation("checkpointRow", reorderJson(value)));
+        applyOperationToRow(reversed, replayOperation("setRow", value));
+        expect(reversed).toEqual(row);
+      }),
+      { seed: 714810052, numRuns: 200 },
+    );
   });
-
 });

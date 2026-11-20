@@ -17,9 +17,12 @@ import MListingPage from "./features/bag/m-listing-page/index.ts";
 import { MBagListPage } from "./features/bag/pages/m-bag-list-page";
 import { MBagAddPage } from "./features/bag/pages/m-bag-add-page";
 import { MBagEditPage } from "./features/bag/pages/m-bag-edit-page";
-import { MLagPuttingListingPage } from "./features/pratice-games/lag-putting/m-lag-putting-listing-page";
-import { MCreateLagPuttingGameForm } from "./features/pratice-games/lag-putting/m-create-lag-putting-game-form"
-
+import {
+  MLagPuttingListingPage,
+} from "./features/pratice-games/lag-putting/m-lag-putting-listing-page";
+import {
+  MCreateLagPuttingGameForm,
+} from "./features/pratice-games/lag-putting/m-create-lag-putting-game-form";
 
 // Register app components
 MShotTypeList.define();
@@ -52,7 +55,9 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
 
   let refreshing = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (refreshing) return;
+    if (refreshing) {
+      return;
+    }
     refreshing = true;
     console.log("Service Worker updated, reloading page...");
     window.location.reload();

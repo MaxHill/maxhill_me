@@ -15,7 +15,9 @@ function renderAuthStatus() {
   const containers = document.querySelectorAll<HTMLElement>(".auth-status");
   const renderVersion = ++authRenderVersion;
   void authClient.getToken().then((token) => {
-    if (renderVersion !== authRenderVersion) return;
+    if (renderVersion !== authRenderVersion) {
+      return;
+    }
 
     for (const container of containers) {
       container.replaceChildren();
@@ -38,7 +40,9 @@ function renderAuthStatus() {
         container.append(signOutButton);
 
         void authClient.getUserEmail(token).then((address) => {
-          if (renderVersion !== authRenderVersion || !address) return;
+          if (renderVersion !== authRenderVersion || !address) {
+            return;
+          }
           email.textContent = address;
           email.hidden = false;
         });

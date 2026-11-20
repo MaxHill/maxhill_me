@@ -1,15 +1,19 @@
-import { expect, html, fixture } from '@open-wc/testing';
-import { MTab } from './index';
-import { MTabList } from '../m-tab-list';
-import { MTabPanel } from '../m-tab-panel';
+import { expect, html, fixture } from "@open-wc/testing";
+import { MTab } from "./index";
+import { MTabList } from "../m-tab-list";
+import { MTabPanel } from "../m-tab-panel";
 
 MTab.define();
 MTabList.define();
 MTabPanel.define();
 
-describe('m-tab', () => {
-  describe('accessibility', () => {
-    it('should be accessible within m-tab-list', async () => {
+// Suite registration groups independent tests, not runtime logic.
+// oxlint-disable-next-line max-lines-per-function
+describe("m-tab", () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("accessibility", () => {
+    it("should be accessible within m-tab-list", async () => {
       const el = await fixture(html`
         <m-tab-list label="Test tabs">
           <m-tab panel="panel-1">Tab 1</m-tab>

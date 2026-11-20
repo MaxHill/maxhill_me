@@ -24,12 +24,18 @@ export class MBagEditPage extends MElement {
   @BindAttribute({ attribute: "club-key" })
   clubKey: string = "";
 
-  attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
+  attributeChangedCallback(
+    name: string,
+    oldValue: unknown,
+    newValue: unknown,
+  ): void {
     super.attributeChangedCallback(name, oldValue, newValue);
     // Re-render to propagate the new club-key down to the list & form.
     // Skipped until first connection so we don't render into a detached
     // shadow root during construction-time attribute setup.
-    if (this.isConnected) this.render();
+    if (this.isConnected) {
+      this.render();
+    }
   }
 
   constructor() {
@@ -50,7 +56,11 @@ export class MBagEditPage extends MElement {
       html`
         <div class="page-container">
           <m-fit-text font-display class="title">Hardware</m-fit-text>
-          <m-club-list interactive selected-club-key=${this.clubKey} class="club-list"></m-club-list>
+          <m-club-list
+            interactive
+            selected-club-key=${this.clubKey}
+            class="club-list"
+          ></m-club-list>
           <m-club-form club-key=${this.clubKey} class="form"></m-club-form>
         </div>
       `,
@@ -60,4 +70,3 @@ export class MBagEditPage extends MElement {
 }
 
 export default MBagEditPage;
-

@@ -27,16 +27,20 @@ await withCwd("apps/auth", async () => {
 });
 
 console.log("deploying");
-await $`ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=5 -o ServerAliveCountMax=3 deploy@${VPS_HOST} ${`mkdir -p ${releaseDir}`}`;
-await $`rsync -avP --stats --timeout=30 -e ${SSH_TRANSPORT} apps/auth/dist/auth-exe deploy@${VPS_HOST}:${releaseDir}/auth-exe`;
-await $`rsync -avP --stats --timeout=30 -e ${SSH_TRANSPORT} vps/auth/auth.prod.enc.env deploy@${VPS_HOST}:/tmp/auth.prod.enc.env`;
-await $`rsync -avP --stats --timeout=30 -e ${SSH_TRANSPORT} vps/auth/dist/deploy-remote deploy@${VPS_HOST}:${remoteRunnerPath}`;
+await $`ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=5 -o \
+  ServerAliveCountMax=3 deploy@${VPS_HOST} ${`mkdir -p ${releaseDir}`}`;
+await $`rsync -avP --stats --timeout=30 -e ${SSH_TRANSPORT} apps/auth/dist/auth-exe \
+  deploy@${VPS_HOST}:${releaseDir}/auth-exe`;
+await $`rsync -avP --stats --timeout=30 -e ${SSH_TRANSPORT} vps/auth/auth.prod.enc.env \
+  deploy@${VPS_HOST}:/tmp/auth.prod.enc.env`;
+await $`rsync -avP --stats --timeout=30 -e ${SSH_TRANSPORT} vps/auth/dist/deploy-remote \
+  deploy@${VPS_HOST}:${remoteRunnerPath}`;
 
 console.log("releasing");
 await runRemoteBinaryAndCleanup({
 	host: VPS_HOST,
 	remotePath: remoteRunnerPath,
-	args: [releaseDir],
+	remoteArguments: [releaseDir],
 	useSshOptions: true,
 });
 

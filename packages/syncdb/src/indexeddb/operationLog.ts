@@ -1,10 +1,6 @@
 import { assert } from "@maxhill/stdx";
 import { CRDTOperation } from "../crdt.ts";
-import {
-  asyncCursorIterator,
-  promisifyIDBRequest,
-  validateTransactionStores,
-} from "../utils.ts";
+import { asyncCursorIterator, promisifyIDBRequest, validateTransactionStores } from "../utils.ts";
 import { OPERATIONS_STORE } from "./lifecycle.ts";
 
 const SYNCED_STATUS = {
@@ -15,7 +11,10 @@ const SYNCED_STATUS = {
 const BY_SYNCED_INDEX = "by-synced";
 const BY_CLIENT_SYNCED_INDEX = "by-client-synced";
 export type PendingMutationRecord = {
-  /** This ID stays separate from the logical clock so the server can detect upload gaps and acknowledge a complete prefix. */
+  /**
+   * This ID stays separate from the logical clock so the server can detect upload gaps and
+   * acknowledge a complete prefix.
+   */
   mutationID: number;
   operation: CRDTOperation;
 };
@@ -30,11 +29,13 @@ export class OperationLog {
     );
 
     const store = tx.objectStore(OPERATIONS_STORE);
-    await promisifyIDBRequest(store.add({
-      operation: operation,
-      synced: SYNCED_STATUS.SYNCED,
-      serverVersion: operation.serverVersion,
-    }));
+    await promisifyIDBRequest(
+      store.add({
+        operation: operation,
+        synced: SYNCED_STATUS.SYNCED,
+        serverVersion: operation.serverVersion,
+      }),
+    );
   }
 
   async saveLocalPendingOperation(
@@ -50,11 +51,13 @@ export class OperationLog {
     assert(Number.isSafeInteger(mutationID) && mutationID > 0, "Invalid pending mutation ID");
 
     const store = tx.objectStore(OPERATIONS_STORE);
-    await promisifyIDBRequest(store.add({
-      operation: operation,
-      synced: SYNCED_STATUS.NOT_SYNCED,
-      mutationID,
-    }));
+    await promisifyIDBRequest(
+      store.add({
+        operation: operation,
+        synced: SYNCED_STATUS.NOT_SYNCED,
+        mutationID,
+      }),
+    );
   }
 
   async batchSaveOperations(tx: IDBTransaction, operations: CRDTOperation[]): Promise<void> {
@@ -70,7 +73,9 @@ export class OperationLog {
     checkpoints: readonly Extract<CRDTOperation, { type: "checkpointRow" }>[],
   ): Promise<void> {
     validateTransactionStores(tx, [OPERATIONS_STORE], "readwrite");
-    if (checkpoints.length === 0) {return;}
+    if (checkpoints.length === 0) {
+      return;
+    }
 
     const cutoffsByTable = new Map<string, Map<string, number>>();
     for (const checkpoint of checkpoints) {
@@ -81,10 +86,7 @@ export class OperationLog {
       }
       cutoffsByRow.set(
         checkpoint.rowKey,
-        Math.max(
-          cutoffsByRow.get(checkpoint.rowKey) ?? -1,
-          checkpoint.checkpointSeenServerVersion,
-        ),
+        Math.max(cutoffsByRow.get(checkpoint.rowKey) ?? -1, checkpoint.checkpointSeenServerVersion),
       );
     }
 
@@ -92,9 +94,13 @@ export class OperationLog {
     const syncedIndex = store.index(BY_SYNCED_INDEX);
     const cursorRequest = syncedIndex.openCursor(IDBKeyRange.only(SYNCED_STATUS.SYNCED));
     for await (const record of asyncCursorIterator<{
-      operation: CRDTOperation; synced: number; serverVersion?: number;
+      operation: CRDTOperation;
+      synced: number;
+      serverVersion?: number;
     }>(cursorRequest)) {
-      if (record.serverVersion === undefined) {continue;}
+      if (record.serverVersion === undefined) {
+        continue;
+      }
       const cutoff = cutoffsByTable.get(record.operation.tableName)?.get(record.operation.rowKey);
       if (cutoff !== undefined && record.serverVersion < cutoff) {
         await promisifyIDBRequest(
@@ -167,6 +173,4 @@ export class OperationLog {
       }
     }
   }
-
-
 }

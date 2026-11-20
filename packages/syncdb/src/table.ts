@@ -162,11 +162,13 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
     try {
       const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
 
-      // Build version vector from current fields.
-      const versionVector: Record<string, number> = {};
+      // A local delete observes all retained writes, not only the visible winners.
+      const versionVector: Record<string, number> = { ...row.tombstone?.versionVector };
       for (const fieldState of Object.values(row.fields)) {
-        const clientId = fieldState.dot.clientId;
-        versionVector[clientId] = Math.max(versionVector[clientId] ?? 0, fieldState.dot.version);
+        for (const candidate of [fieldState, ...(fieldState.contenders ?? [])]) {
+          const clientId = candidate.dot.clientId;
+          versionVector[clientId] = Math.max(versionVector[clientId] ?? 0, candidate.dot.version);
+        }
       }
 
       const { dot, mutationID } = await this.nextMutation(tx);

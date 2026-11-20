@@ -17,14 +17,14 @@ describe("CRDTDatabase sync transaction liveness", () => {
       const name = db.name;
       db.close();
       await new Promise<void>((resolve, reject) => {
-        const req = indexedDB.deleteDatabase(name);
-        req.onsuccess = () => resolve();
-        req.onerror = () => reject(req.error);
+        const request = indexedDB.deleteDatabase(name);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
       });
     }
   });
 
-  it("keeps write transaction alive by validating response hash before opening readwrite tx", async () => {
+  it("validates response hash before opening the write transaction", async () => {
     const dbName = `sync-liveness-${crypto.randomUUID()}`;
     const lifecycle = new Lifecycle([]);
     const sync = new Sync(new ClientState(), new RowStore([]), new OperationLog());
@@ -66,7 +66,10 @@ describe("CRDTDatabase sync transaction liveness", () => {
     });
 
     await expect(db.sync(response)).resolves.toBeUndefined();
-    await expect(db.table("users").get("u1")).resolves.toEqual({ _key: "u1", name: "Alice" });
+    await expect(db.table("users").get("u1")).resolves.toEqual({
+      _key: "u1",
+      name: "Alice",
+    });
 
     await db.close();
   });

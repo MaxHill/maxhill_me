@@ -1,77 +1,83 @@
-import { playwrightLauncher } from '@web/test-runner-playwright';
-import { esbuildPlugin } from '@web/dev-server-esbuild';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
+import { playwrightLauncher } from "@web/test-runner-playwright";
+import { esbuildPlugin } from "@web/dev-server-esbuild";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Plugin to handle .css?inline imports (Vite-style)
 const cssInlinePlugin = () => ({
-  name: 'css-inline',
+  name: "css-inline",
   serve(context) {
-    if (context.path.endsWith('.css')) {
+    if (context.path.endsWith(".css")) {
       const fullPath = resolve(__dirname, context.path.slice(1));
-      
+
       try {
-        const cssContent = readFileSync(fullPath, 'utf-8');
+        const cssContent = readFileSync(fullPath, "utf-8");
         return {
           body: `export default ${JSON.stringify(cssContent)};`,
-          type: 'js',
+          type: "js",
         };
-      } catch (err) {
-        console.error(`Failed to read CSS file: ${fullPath}`, err);
+      } catch (error) {
+        console.error(`Failed to read CSS file: ${fullPath}`, error);
         return {
           body: `export default '';`,
-          type: 'js',
+          type: "js",
         };
       }
     }
   },
   resolveImport({ source }) {
-    if (source === '@maxhill/css/background-patterns.css?inline') {
-      return '/node_modules/@maxhill/css/dist/background-patterns.css';
+    if (source === "@maxhill/css/background-patterns.css?inline") {
+      return "/node_modules/@maxhill/css/dist/background-patterns.css";
     }
-    if (source.endsWith('?inline')) {
-      return source.replace('?inline', '');
+    if (source.endsWith("?inline")) {
+      return source.replace("?inline", "");
     }
   },
 });
 
 export default {
-  files: 'src/**/*.test.ts',
+  files: "src/**/*.test.ts",
   nodeResolve: true,
   plugins: [
-    esbuildPlugin({ 
+    esbuildPlugin({
       ts: true,
       tsx: false,
-      target: 'auto',
-      tsconfig: './tsconfig.json',
+      target: "auto",
+      tsconfig: "./tsconfig.json",
     }),
     cssInlinePlugin(),
   ],
   coverageConfig: {
     report: true,
-    reportDir: 'coverage',
+    reportDir: "coverage",
   },
   testFramework: {
     config: {
-      ui: 'bdd',
+      ui: "bdd",
       timeout: 5000,
     },
   },
   browsers: [
-    playwrightLauncher({ product: 'chromium' }),
+    playwrightLauncher({
+      product: "chromium",
+      launchOptions: process.env.CHROMIUM_PATH
+        ? { executablePath: process.env.CHROMIUM_PATH }
+        : {},
+    }),
   ],
   filterBrowserLogs: (log) => {
-    return !log.args.some(arg => 
-      typeof arg === 'string' && arg.includes('Lit is in dev mode')
+    return !log["args"].some(
+      (argument) =>
+        typeof argument === "string" && argument.includes("Lit is in dev mode"),
     );
   },
   testsFinishTimeout: 60000,
   browserStartTimeout: 30000,
-  testRunnerHtml: testFramework => `
+  testRunnerHtml: (testFramework) => `
     <!DOCTYPE html>
     <html>
       <head></head>

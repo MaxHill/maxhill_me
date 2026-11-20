@@ -35,20 +35,31 @@ export class MNotifications extends MElement {
 
   disconnectedCallback() {
     document.removeEventListener("club-saved", this.handleClubSaved);
-    document.removeEventListener("shot-type-created", this.handleShotTypeCreated);
-    if (this.hideTimer) clearTimeout(this.hideTimer);
+    document.removeEventListener(
+      "shot-type-created",
+      this.handleShotTypeCreated,
+    );
+    if (this.hideTimer) {
+      clearTimeout(this.hideTimer);
+    }
   }
 
   private handleClubSaved = (event: Event) => {
     const { club, mode } = (event as CustomEvent).detail ?? {};
-    if (!club?.name || !club?.clubType || (mode !== "add" && mode !== "edit")) return;
+    if (!club?.name || !club?.clubType || (mode !== "add" && mode !== "edit")) {
+      return;
+    }
 
-    this.showMessage(`Club ${club.name} ${club.clubType} ${mode === "add" ? "added" : "saved"}`);
+    this.showMessage(
+      `Club ${club.name} ${club.clubType} ${mode === "add" ? "added" : "saved"}`,
+    );
   };
 
   private handleShotTypeCreated = (event: Event) => {
     const { name } = (event as CustomEvent).detail ?? {};
-    if (!name) return;
+    if (!name) {
+      return;
+    }
 
     this.showMessage(`Shot type ${name} added`);
   };
@@ -61,7 +72,9 @@ export class MNotifications extends MElement {
     void this.messageElement.offsetWidth;
     this.messageElement.classList.add("enter");
 
-    if (this.hideTimer) clearTimeout(this.hideTimer);
+    if (this.hideTimer) {
+      clearTimeout(this.hideTimer);
+    }
     this.hideTimer = setTimeout(() => {
       this.messageElement.hidden = true;
     }, 4000);
