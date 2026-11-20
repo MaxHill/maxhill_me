@@ -49,7 +49,7 @@ export class MLandingPage extends MElement {
                 this.showBanner = false;
             } else {
                 this.showBanner = true;
-                void this.settings!.remove("banner_dismissed");
+                void this.settings!.kv.remove("banner_dismissed");
             }
             this.render();
         });
@@ -58,9 +58,9 @@ export class MLandingPage extends MElement {
         if (!this.isConnected) return;
 
         if (!token) {
-            const dismissed = await this.settings.get<boolean>("banner_dismissed");
+            const dismissed = await this.settings.kv.get("banner_dismissed");
             if (!this.isConnected) return;
-            this.showBanner = !dismissed;
+            this.showBanner = dismissed !== true;
         }
 
         this.render();
@@ -72,7 +72,7 @@ export class MLandingPage extends MElement {
 
     private dismiss() {
         this.showBanner = false;
-        this.settings!.set("banner_dismissed", true);
+        void this.settings!.kv.set("banner_dismissed", true);
         this.render();
     }
 
