@@ -32,11 +32,6 @@ val init_schema : connection -> (unit, error) result
 val count_operations : connection -> tenant_id:string -> db_name:string -> (int, error) result
 val insert_crdt_operation : connection -> db_crdt_operation -> (int64, error) result
 
-val insert_crdt_operations
-  :  connection
-  -> db_crdt_operation list
-  -> (int64 list, error) result
-
 val get_operations_since
   :  connection
   -> tenant_id:string

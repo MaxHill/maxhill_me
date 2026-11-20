@@ -143,14 +143,11 @@ let auto_compact_request_rows connection ~tenant_id ~db_name
 
 let accept_operation connection ~tenant_id ~db_name (operation : crdt_operation) =
   let map_storage_error error = Storage_error (Repository.error_to_string error) in
-  if operation.dot.client_id = "" then Error (Decode_error "missing operation dot.clientId")
-  else if operation.dot.version < 0L then Error (Decode_error "dot.version must be >= 0")
-  else
-    let* db_operation =
-      Sync_engine_persistence.db_operation_of_crdt_operation ~tenant_id ~db_name operation
-      |> Result.map_error (fun message -> Decode_error message)
-    in
-    Repository.insert_crdt_operation connection db_operation |> Result.map_error map_storage_error
+  let* db_operation =
+    Sync_engine_persistence.db_operation_of_crdt_operation ~tenant_id ~db_name operation
+    |> Result.map_error (fun message -> Decode_error message)
+  in
+  Repository.insert_crdt_operation connection db_operation |> Result.map_error map_storage_error
 
 let process_sync_request_with_connection ?checkpoint_threshold_operations
     ?checkpoint_threshold_bytes connection ~tenant_id ~db_name request =

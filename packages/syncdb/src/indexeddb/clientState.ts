@@ -60,12 +60,6 @@ export class ClientState {
     await promisifyIDBRequest(store.put(newServerVersion, LAST_SEEN_SERVER_VERSION));
   }
 
-  async getLastMutationID(tx: IDBTransaction): Promise<number> {
-    validateTransactionStores(tx, [CLIENT_STATE_STORE]);
-    const store = tx.objectStore(CLIENT_STATE_STORE);
-    return await promisifyIDBRequest(store.get(LAST_MUTATION_ID));
-  }
-
   async setLastMutationID(tx: IDBTransaction, mutationID: number): Promise<void> {
     validateTransactionStores(tx, [CLIENT_STATE_STORE], "readwrite");
     const store = tx.objectStore(CLIENT_STATE_STORE);

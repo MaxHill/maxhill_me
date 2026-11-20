@@ -294,16 +294,6 @@ let insert_crdt_operation (module Db : Caqti_eio.CONNECTION) operation =
                    }))
       else Error (Database (Caqti_error.show err))
 
-let insert_crdt_operations connection operations =
-  let rec loop acc = function
-    | [] -> Ok (List.rev acc)
-    | operation :: rest -> (
-        match insert_crdt_operation connection operation with
-        | Error _ as err -> err
-        | Ok server_version -> loop (server_version :: acc) rest)
-  in
-  loop [] operations
-
 let get_operations_since (module Db : Caqti_eio.CONNECTION) ~tenant_id ~db_name ~server_version ~limit ~exclude_client_id =
   match
     Db.collect_list get_operations_since_query

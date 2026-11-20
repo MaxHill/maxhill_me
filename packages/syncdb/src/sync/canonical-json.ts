@@ -68,7 +68,7 @@ function encodeFloat64Hex(value: number): string {
   return Array.from(bytes).map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-function compareUtf8(left: string, right: string): number {
+export function compareUtf8(left: string, right: string): number {
   const leftBytes = utf8Encoder.encode(left);
   const rightBytes = utf8Encoder.encode(right);
   const minLength = Math.min(leftBytes.length, rightBytes.length);
