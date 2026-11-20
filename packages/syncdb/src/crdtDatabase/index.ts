@@ -10,7 +10,6 @@ import { RowStore } from "../indexeddb/rowStore.ts";
 import { LWWField, ROW_KEY } from "../crdt.ts";
 import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
 import { Sync, SyncResponse } from "../sync/index.ts";
-import { SyncErrorCode } from "../sync/errors.ts";
 import { promisifyIDBRequest } from "../utils.ts";
 import { Table } from "../table.ts";
 import { DatabaseSchema, EmptySchema } from "../types.ts";
@@ -97,16 +96,15 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
           `Available tables: ${available}`,
       );
     }
-    return new Table(
-      tableName,
-      indexes,
-      this.lifecycle,
-      this.rowStore,
-      this.operationLog,
-      this.clientId,
-      this.logicalClock,
-      this.tableSubscriptions,
-    );
+    return new Table(tableName, indexes, {
+      lifecycle: this.lifecycle,
+      rowStore: this.rowStore,
+      operationLog: this.operationLog,
+      clientId: this.clientId,
+      logicalClock: this.logicalClock,
+      clientState: this.clientState,
+      tableSubscriptions: this.tableSubscriptions,
+    });
   }
 
   /**
@@ -136,59 +134,34 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
   }
 
   async sync(response?: SyncResponse): Promise<void> {
-    try {
-      // To be able to more easily test this method we take an optional response
-      if (!response) {
-        const tx = this.lifecycle.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE]);
-        const syncRequest = await this.syncManager.createSyncRequest(tx, this.dbName);
+    // To be able to more easily test this method we take an optional response
+    if (!response) {
+      const tx = this.lifecycle.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE]);
+      const syncRequest = await this.syncManager.createSyncRequest(tx, this.dbName);
 
-        response = await this.syncManager.sendSyncRequest(this.syncRemote, syncRequest);
-      }
+      response = await this.syncManager.sendSyncRequest(this.syncRemote, syncRequest);
+    }
 
-      const responseIsValid = await this.syncManager.validateResponseHash(response);
-      if (!responseIsValid) {
-        console.warn("Dropping invalid sync response without crashing the client.");
-        return;
-      }
+    const responseIsValid = await this.syncManager.validateResponseHash(response);
+    if (!responseIsValid) {
+      console.warn("Dropping invalid sync response without crashing the client.");
+      return;
+    }
 
-      const writeTx = this.lifecycle.transaction([
-        CLIENT_STATE_STORE,
-        OPERATIONS_STORE,
-        ROWS_STORE,
-      ], "readwrite");
-      await this.syncManager.handleSyncResponse(writeTx, this.logicalClock, response);
-      await this.lifecycle.commit(writeTx);
+    const writeTx = this.lifecycle.transaction([
+      CLIENT_STATE_STORE,
+      OPERATIONS_STORE,
+      ROWS_STORE,
+    ], "readwrite");
+    const changedTables = await this.syncManager.handleSyncResponse(
+      writeTx,
+      this.logicalClock,
+      response,
+    );
+    await this.lifecycle.commit(writeTx);
 
-      const changedTables = new Set(
-        response.operations.map((operation) => operation.tableName),
-      );
-      for (const table of changedTables) {
-        this.tableSubscriptions.notify(table, "remote");
-      }
-    } catch (error: any) {
-      // Check if this is a "client state out of sync" error using the error name
-      if (error.name === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {
-        console.warn(
-          "Client state is out of sync with server. Resetting local state...",
-          error.message,
-        );
-
-        // Reset the client state
-        const resetTx = this.lifecycle.transaction(
-          [CLIENT_STATE_STORE, OPERATIONS_STORE],
-          "readwrite",
-        );
-        await this.operationLog.resetSyncState(resetTx);
-        await this.lifecycle.commit(resetTx);
-
-        console.log("Client state reset complete. Retrying sync...");
-
-        // Retry sync after reset
-        return this.sync();
-      }
-
-      // Re-throw other errors
-      throw error;
+    for (const table of changedTables) {
+      this.tableSubscriptions.notify(table, "remote");
     }
   }
 

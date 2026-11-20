@@ -772,10 +772,10 @@ describe("equal-dot field replay", () => {
   it.each([
     [new Date("2026-01-01"), "2026-01-01T00:00:00.000Z"],
     [NaN, null], [Infinity, null], [1, "1"], [{ a: 1 }, {}], [[], {}],
-  ])("does not coerce or drop values for equal dots (case %#)", (first, second) => {
+  ])("does not coerce or drop values for equal dots (case %#)", (existing, incoming) => {
     const row = replayRow();
-    applyOperationToRow(row, replayOperation("setRow", first));
-    expect(() => applyOperationToRow(row, replayOperation("setRow", second)))
+    row.fields.payload = { value: existing, dot: { clientId: "writer", version: 1 } };
+    expect(() => applyOperationToRow(row, replayOperation("setRow", incoming)))
       .toThrow("duplicate dot");
   });
 });

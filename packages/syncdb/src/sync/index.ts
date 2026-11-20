@@ -1,4 +1,4 @@
-import { applyOperationToRow, CRDTOperation, Dot } from "../crdt.ts";
+import { applyOperationToRow, CRDTOperation } from "../crdt.ts";
 import {
   CLIENT_STATE_STORE,
   OPERATIONS_STORE,
@@ -8,75 +8,82 @@ import { RowStore } from "../indexeddb/rowStore.ts";
 import { OperationLog } from "../indexeddb/operationLog.ts";
 import { ClientState } from "../indexeddb/clientState.ts";
 import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
-import { validateTransactionStores } from "../utils.ts";
-import { isSyncError, SyncErrorCode } from "./errors.ts";
+import { abortFailedTransaction, validateTransactionStores } from "../utils.ts";
+import { isSyncError } from "./errors.ts";
 import { assertValidDbName } from "../dbName.ts";
+import { encodeCanonicalJson } from "./canonical-json.ts";
+
+const WIRE_PROTOCOL_VERSION = 3;
+
+type Mutation = {
+  /** This ID lets the server detect missing uploads because logical-clock versions can jump. */
+  id: number;
+  operation: CRDTOperation;
+};
 
 export interface SyncRequest {
+  protocolVersion: 3;
   clientId: string;
   dbName: string;
-
-  /**
-   * Local changes that need to be persisted on the server. These operations
-   * will be assigned server versions and become part of the global operation log.
-   */
-  operations: CRDTOperation[];
-
-  /**
-   * Establishes the baseline for determining which remote operations to return.
-   * Operations with higher server versions represent changes this client hasn't
-   * seen yet.
-   */
+  /** This frontier lets the client send only work after the last complete prefix the server committed. */
+  clientLastMutationID: number;
+  mutations: Mutation[];
+  /** This cursor tracks downloads separately because upload acknowledgement does not prove the client received server changes. */
   lastSeenServerVersion: number;
-
-  /**
-   * Detects corruption during transmission. Network issues or middleware could
-   * silently modify the request, leading to data inconsistency.
-   */
   requestHash: string;
 }
 
 export interface SyncResponse {
-  /**
-   * Detects race conditions where multiple syncs are in flight but returned out
-   * of order. This ensures responses are applied in the correct sequence.
-   */
+  protocolVersion: 3;
+  clientId: string;
   baseServerVersion: number;
-
-  /**
-   * Represents the new synchronization checkpoint. This value becomes the baseline
-   * for the next sync, ensuring continuity in the operation stream.
-   */
   latestServerVersion: number;
-
-  /**
-   * Detects corruption during transmission. Applying corrupted operations would
-   * permanently diverge the client's state from other replicas.
-   */
+  /** This frontier lets the client retire only mutations the server committed as a complete prefix. */
+  lastMutationID: number;
   responseHash: string;
-
-  /**
-   * Contains changes from other clients that need to be merged locally. These
-   * operations bring this client's view of the data up to date with the global state.
-   */
   operations: CRDTOperation[];
-
-  /**
-   * Confirms local operations persisted or already covered by a server checkpoint.
-   * serverVersion identifies the stored operation or covering checkpoint for cleanup;
-   * it is not the operation's logical clock or a field-dominance comparison.
-   */
-  syncedOperations: { dot: Dot; serverVersion: number }[];
 }
 
 export type SyncHeadersProvider = () => Promise<Record<string, string>>;
-
-/**
- * Called when a sync request receives a 401 Unauthorized response.
- * Return true to retry the request (e.g. after refreshing a token),
- * or false to give up.
- */
 export type OnUnauthorizedHandler = () => Promise<boolean>;
+
+async function readServerError(response: Response): Promise<Error> {
+  let data: unknown;
+  const fallback = `Sync failed (${response.status}): ${response.statusText || "Unknown error"}`;
+  try {
+    data = await response.json();
+  } catch (cause) {
+    return new Error(fallback, { cause });
+  }
+  if (isSyncError(data)) {
+    const error = new Error(data.message);
+    error.name = data.code;
+    return error;
+  }
+  if (data !== null && typeof data === "object") {
+    const fields = data as Record<string, unknown>;
+    const message = typeof fields.error === "string" ? fields.error : fields.message;
+    if (typeof message === "string" && message) {
+      return new Error(`Sync failed (${response.status}): ${message}`);
+    }
+  }
+  return new Error(fallback);
+}
+
+function requireResponseMetadata(value: unknown): asserts value is SyncResponse {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Invalid sync response");
+  }
+  const response = value as Record<string, unknown>;
+  if (response.protocolVersion !== WIRE_PROTOCOL_VERSION ||
+      typeof response.clientId !== "string" || !response.clientId ||
+      !Number.isSafeInteger(response.baseServerVersion) ||
+      !Number.isSafeInteger(response.latestServerVersion) ||
+      !Number.isSafeInteger(response.lastMutationID) || (response.lastMutationID as number) < 0 ||
+      !Array.isArray(response.operations) || typeof response.responseHash !== "string") {
+    throw new Error("Invalid sync response metadata");
+  }
+}
 
 export class Sync {
   private clientState: ClientState;
@@ -86,143 +93,122 @@ export class Sync {
   private onUnauthorized?: OnUnauthorizedHandler;
 
   constructor(
-    clientState: ClientState,
-    rowStore: RowStore,
-    operationLog: OperationLog,
-    headersProvider?: SyncHeadersProvider,
-    onUnauthorized?: OnUnauthorizedHandler,
+    ...parameters: [
+      clientState: ClientState,
+      rowStore: RowStore,
+      operationLog: OperationLog,
+      headersProvider?: SyncHeadersProvider,
+      onUnauthorized?: OnUnauthorizedHandler,
+    ]
   ) {
+    const [clientState, rowStore, operationLog, headersProvider, onUnauthorized] = parameters;
     this.clientState = clientState;
     this.rowStore = rowStore;
     this.operationLog = operationLog;
-    if (headersProvider) this.headersProvider = headersProvider;
-    if (onUnauthorized) this.onUnauthorized = onUnauthorized;
+    if (headersProvider) {
+      this.headersProvider = headersProvider;
+    }
+    if (onUnauthorized) {
+      this.onUnauthorized = onUnauthorized;
+    }
   }
 
-  /**
-   * Creates a sync request containing local changes to send to the server.
-   *
-   * Transaction requirements:
-   * - Stores: [CLIENT_STATE_STORE, OPERATIONS_STORE]
-   * - Mode: "readonly" (queries client state and unsynced operations)
-   *
-   * Example:
-   * ```typescript
-   * const tx = repo.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE], "readonly");
-   * const request = await sync.createSyncRequest(tx);
-   * // Transaction auto-completes when all requests finish - no need to wait explicitly
-   * ```
-   * @param tx - Transaction with required stores (see above)
-   * @returns Sync request ready to send to server
-   * @throws {Error} If transaction is missing required stores
-   */
   async createSyncRequest(tx: IDBTransaction, dbName: string): Promise<SyncRequest> {
     assertValidDbName(dbName);
     validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE]);
 
-    const { clientId, lastSeenServerVersion } = await this.clientState
-      .getClientState(tx);
+    const { clientId, lastSeenServerVersion, lastMutationID, lastGeneratedMutationID } =
+      await this.clientState.getClientState(tx);
 
-    // Extract operations using optimized compound index query
-    const operations = await this.operationLog.getUnsyncedOperationsByClient(tx, clientId);
+    const pendingMutations = await this.operationLog.getPendingMutationsByClient(tx, clientId);
+    const expectedCount = lastGeneratedMutationID - lastMutationID;
+    if (pendingMutations.length !== expectedCount) {
+      throw new Error(
+        "Pending mutation count mismatch. " +
+          `expected=${expectedCount}, actual=${pendingMutations.length}`,
+      );
+    }
 
-    // create integrity hash
+    for (let i = 0; i < pendingMutations.length; i++) {
+      const expectedID = lastMutationID + i + 1;
+      if (pendingMutations[i].mutationID !== expectedID) {
+        throw new Error(
+          "Pending mutations must be contiguous. " +
+            `expected=${expectedID}, actual=${pendingMutations[i].mutationID}`,
+        );
+      }
+    }
+
+    const mutations = pendingMutations.map((entry) => ({
+      id: entry.mutationID,
+      operation: entry.operation,
+    }));
+
     const requestHash = await this.createRequestHash({
+      protocolVersion: WIRE_PROTOCOL_VERSION,
       clientId,
       dbName,
+      clientLastMutationID: lastMutationID,
       lastSeenServerVersion,
-      operations,
+      mutations,
     });
 
     return {
+      protocolVersion: WIRE_PROTOCOL_VERSION,
       clientId,
       dbName,
+      clientLastMutationID: lastMutationID,
       lastSeenServerVersion,
-      operations,
+      mutations,
       requestHash,
     };
   }
 
   async sendSyncRequest(endpointUrl: string, request: SyncRequest): Promise<SyncResponse> {
-    const body = JSON.stringify(request);
-
     const doFetch = async (): Promise<Response> => {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (this.headersProvider) {
-        const customHeaders = await this.headersProvider();
-        Object.assign(headers, customHeaders);
+        Object.assign(headers, await this.headersProvider());
       }
-
       return fetch(endpointUrl, {
         method: "POST",
         headers,
-        body,
+        body: JSON.stringify(request),
       });
     };
-
     try {
       let response = await doFetch();
-
-      // 401 retry: refresh credentials and try once more
-      if (response.status === 401 && this.onUnauthorized) {
-        const shouldRetry = await this.onUnauthorized();
-        if (shouldRetry) {
-          response = await doFetch();
-        }
+      if (
+        response.status === 401 &&
+        this.onUnauthorized &&
+        await this.onUnauthorized()
+      ) {
+        response = await doFetch();
       }
-
       if (!response.ok) {
-        // Try to parse structured error from response
-        try {
-          const errorData = await response.json();
-
-          // Check if this is a structured SyncError
-          if (isSyncError(errorData)) {
-            // For CLIENT_STATE_OUT_OF_SYNC, throw a special error that the client can catch
-            if (errorData.code === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {
-              const error = new Error(errorData.message);
-              error.name = SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC;
-              throw error;
-            }
-
-            // For other sync errors, include the code in the error message
-            throw new Error(`Sync error [${errorData.code}]: ${errorData.message}`);
-          }
-
-          // Fallback for non-structured errors
-          const message = errorData.error || errorData.message || "Unknown error";
-          throw new Error(`Sync failed (${response.status}): ${message}`);
-        } catch (parseError) {
-          // If we can't parse the response, use status text
-          throw new Error(
-            `Sync failed (${response.status}): ${response.statusText || "Unknown error"}`,
-          );
-        }
+        throw await readServerError(response);
       }
-
-      let syncResponse: SyncResponse = await response.json();
-
-      return syncResponse;
-    } catch (error: any) {
-      if (!error || !error.message) {
-        throw new Error(`Unknown error occurred during sync: ${error}`);
-      }
-
-      // Re-throw CLIENT_STATE_OUT_OF_SYNC errors as-is so they can be handled by the caller
-      if (error.name === SyncErrorCode.CLIENT_STATE_OUT_OF_SYNC) {
-        throw error;
-      }
-
-      if (error instanceof TypeError || error.message.includes("fetch")) {
-        // Network error - potentially retryable
+      const parsed: unknown = await response.json();
+      requireResponseMetadata(parsed);
+      this.validateReplyForRequest(parsed, request);
+      return parsed;
+    } catch (error) {
+      if (error instanceof TypeError) {
         throw new Error(`Sync network failure: ${error.message}`, { cause: error });
-      } else {
-        // Other error - likely non-retryable
-        throw error;
       }
+      throw error;
+    }
+  }
+
+  private validateReplyForRequest(response: SyncResponse, request: SyncRequest): void {
+    if (response.clientId !== request.clientId) {
+      throw new Error(`Invalid sync response clientId ${response.clientId}`);
+    }
+    if (response.baseServerVersion !== request.lastSeenServerVersion) {
+      throw new Error("Invalid sync response baseServerVersion");
+    }
+    if (response.lastMutationID < request.clientLastMutationID) {
+      throw new Error("Server mutation frontier regressed");
     }
   }
 
@@ -230,221 +216,205 @@ export class Sync {
     tx: IDBTransaction,
     logicalClock: PersistedLogicalClock,
     response: SyncResponse,
-  ): Promise<void> {
-    validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE], "readwrite");
+  ): Promise<Set<string>> {
+    validateTransactionStores(
+      tx,
+      [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE],
+      "readwrite",
+    );
 
-    const { clientId, lastSeenServerVersion } = await this.clientState.getClientState(tx);
+    const { clientId, lastSeenServerVersion, lastMutationID, lastGeneratedMutationID } =
+      await this.clientState.getClientState(tx);
 
-    const firstSyncedOperation = response.syncedOperations[0]?.dot;
-    if (firstSyncedOperation && firstSyncedOperation.clientId !== clientId) {
-      console.warn(
-        `Dropping sync response: expected clientId ${clientId}, got ${firstSyncedOperation.clientId}`,
+    if (response.protocolVersion !== WIRE_PROTOCOL_VERSION) {
+      throw new Error(`Unsupported sync protocol version ${response.protocolVersion}`);
+    }
+    if (response.clientId !== clientId) {
+      throw new Error(
+        `Dropping sync response: expected clientId ${clientId}, got ${response.clientId}`,
       );
-      return;
+    }
+    if (!Number.isSafeInteger(response.lastMutationID) || response.lastMutationID < 0) {
+      throw new Error(`Invalid sync response lastMutationID: ${response.lastMutationID}`);
+    }
+    if (response.lastMutationID > lastGeneratedMutationID) {
+      throw new Error(
+        `Server acknowledged mutation ${response.lastMutationID} ` +
+          `beyond local frontier ${lastGeneratedMutationID}`,
+      );
     }
 
-    // Check if response is stale/out-of-order - if so, drop it
-    if (lastSeenServerVersion !== response.baseServerVersion) {
-      console.warn(
-        `Dropping stale sync response: expected base ${lastSeenServerVersion}, got ${response.baseServerVersion}. ` +
-          `This can happen with delayed syncs arriving after newer syncs have completed.`,
-      );
-      return;
-    }
+    const nextAck = Math.max(lastMutationID, response.lastMutationID);
+    const staleBase = lastSeenServerVersion !== response.baseServerVersion;
 
     try {
-      // Save operations and apply operations to materialized view
-      await this.applyRemoteOperations(tx, response.operations);
-      const checkpoints = response.operations.filter(
-        (operation): operation is Extract<CRDTOperation, { type: "checkpointRow" }> =>
-          operation.type === "checkpointRow",
-      );
-      await this.operationLog.deleteCoveredAcceptedOperations(tx, checkpoints);
-
-      // update lastSeenServerVersion to latestServerVersion from response
-      await this.clientState.saveServerVersion(tx, response.latestServerVersion);
-
-      // update synced field on the synced local entries
-      const operationsPromises: Promise<void>[] = [];
-      for (const accepted of response.syncedOperations) {
-        operationsPromises.push(
-          this.operationLog.saveOperationAsSynced(tx, accepted.dot, accepted.serverVersion),
+      if (staleBase) {
+        console.warn(
+          `Skipping stale sync operations: expected base ${lastSeenServerVersion}, ` +
+            `got ${response.baseServerVersion}.`,
         );
-      }
-      await Promise.all(operationsPromises);
-
-      // We only sync the clocks if we get any new operations from the server
-      // otherwise it would be unnesesary work where we'd sync the clock with -1
-      // and keep the current value
-      if (response.operations.length) {
-        const highestVersion = response.operations.reduce((prev, curr) => {
-          return Math.max(prev, curr.dot.version);
-        }, -1);
-        await logicalClock.sync(tx, highestVersion);
+      } else {
+        await this.applyFreshSyncResponse(tx, logicalClock, response);
       }
 
-      return;
-    } catch (err: any) {
-      // Explicitly abort the transaction to ensure all writes are rolled back
-      // JavaScript errors don't automatically abort transactions, so we must do it explicitly
-      try {
-        tx.abort();
-      } catch (abortErr) {
-        // Ignore abort errors - transaction may already be aborted
-      }
+      await this.clientState.setLastMutationID(tx, nextAck);
+      await this.operationLog.deletePendingMutationsThrough(tx, clientId, nextAck);
+    } catch (error) {
+      abortFailedTransaction(tx);
+      throw error;
+    }
 
-      // Don't re-throw - transaction has been aborted, let it complete
-      // The caller should handle sync failures gracefully and retry
-      console.error("Sync failed, transaction aborted:", err);
-      return;
+    return staleBase
+      ? new Set()
+      : new Set(response.operations.map((operation) => operation.tableName));
+  }
+
+  private async applyFreshSyncResponse(
+    tx: IDBTransaction,
+    logicalClock: PersistedLogicalClock,
+    response: SyncResponse,
+  ): Promise<void> {
+    await this.applyRemoteOperations(tx, response.operations);
+
+    const checkpoints = response.operations.filter(
+      (
+        operation,
+      ): operation is Extract<CRDTOperation, { type: "checkpointRow" }> =>
+        operation.type === "checkpointRow",
+    );
+    await this.operationLog.deleteCoveredAcceptedOperations(tx, checkpoints);
+
+    await this.clientState.saveServerVersion(tx, response.latestServerVersion);
+
+    if (response.operations.length) {
+      const highestVersion = response.operations.reduce(
+        (previous, current) => Math.max(previous, current.dot.version),
+        -1,
+      );
+      await logicalClock.sync(tx, highestVersion);
     }
   }
 
-  /**
-   * Apply remote operations (from sync)
-   */
   private async applyRemoteOperations(
     tx: IDBTransaction,
     operations: CRDTOperation[],
   ): Promise<void> {
-    // Validate operations before processing to fail fast on corrupted data
-    for (const op of operations) {
-      if (op.type === "setRow") {
-        if (typeof op.fields !== "object" || op.fields === null || Array.isArray(op.fields)) {
-          throw new Error(
-            `Invalid setRow operation: fields must be a plain object, got ${typeof op.fields}`,
-          );
-        }
-        if (Object.prototype.hasOwnProperty.call(op.fields, "_key")) {
-          throw new Error(
-            `Operation: ${op.dot} contained illegal _key property. _key should always be stripped out`,
-          );
-        }
-      } else if (op.type === "checkpointRow") {
-        if (!Number.isSafeInteger(op.checkpointSeenServerVersion) || op.checkpointSeenServerVersion < 0 ||
-            typeof op.fields !== "object" || op.fields === null || Array.isArray(op.fields)) {
-          throw new Error("Invalid checkpointRow state");
-        }
-      } else if (op.type === "removeRow") {
+    for (const operation of operations) {
+      if (operation.type === "setRow") {
         if (
-          typeof op.versionVector !== "object" ||
-          op.versionVector === null ||
-          Array.isArray(op.versionVector)
+          typeof operation.fields !== "object" ||
+          operation.fields === null ||
+          Array.isArray(operation.fields)
         ) {
           throw new Error(
-            `Invalid removeRow operation: versionVector must be a plain object, got ${typeof op.versionVector}`,
+            "Invalid setRow operation: fields must be a plain object, " +
+              `got ${typeof operation.fields}`,
+          );
+        }
+        if (Object.prototype.hasOwnProperty.call(operation.fields, "_key")) {
+          throw new Error(`Operation: ${operation.dot} contained illegal _key property.`);
+        }
+      } else if (operation.type === "checkpointRow") {
+        if (
+          !Number.isSafeInteger(operation.checkpointSeenServerVersion) ||
+          operation.checkpointSeenServerVersion < 0 ||
+          typeof operation.fields !== "object" ||
+          operation.fields === null ||
+          Array.isArray(operation.fields)
+        ) {
+          throw new Error("Invalid checkpointRow state");
+        }
+      } else if (operation.type === "removeRow") {
+        if (
+          typeof operation.versionVector !== "object" ||
+          operation.versionVector === null ||
+          Array.isArray(operation.versionVector)
+        ) {
+          throw new Error(
+            "Invalid removeRow operation: versionVector must be a plain object",
           );
         }
       } else {
-        throw new Error(`Unsupported operation type: ${(op as { type?: unknown }).type}`);
+        throw new Error(
+          `Unsupported operation type: ${(operation as { type?: unknown }).type}`,
+        );
       }
     }
 
-    // Group operations by row for batch processing
     const operationsByRow = new Map<string, CRDTOperation[]>();
-
     for (const operation of operations) {
       const key = `${operation.tableName}:${String(operation.rowKey)}`;
-      if (!operationsByRow.has(key)) {
-        operationsByRow.set(key, []);
-      }
+      if (!operationsByRow.has(key)) {operationsByRow.set(key, []);}
       operationsByRow.get(key)!.push(operation);
     }
 
-    const saveOperationsPromise = this.operationLog.batchSaveOperations(tx, operations);
-    const savePromises = this.batchUpdateRows(tx, Array.from(operationsByRow.values()));
-
-    await saveOperationsPromise;
-    await savePromises;
+    await this.operationLog.batchSaveOperations(tx, operations);
+    await this.batchUpdateRows(tx, Array.from(operationsByRow.values()));
   }
 
-  /**
-   * Batch apply operations to rows
-   * @param {IDBTransaction} tx - IDBTransaction
-   * @param {Map} operationGroups - Map of operations grouped by row
-   * @returns {Promise<void>}
-   */
   private async batchUpdateRows(
     tx: IDBTransaction,
     operationGroups: CRDTOperation[][],
   ): Promise<void> {
-    // Fetch all rows in parallel
     const rowsData = await Promise.all(
       operationGroups.map(async (rowOperations) => {
         const firstOp = rowOperations[0];
-        const row = await this.rowStore.getRow(
-          tx,
-          firstOp.tableName,
-          firstOp.rowKey,
-        );
+        const row = await this.rowStore.getRow(tx, firstOp.tableName, firstOp.rowKey);
         return { row, rowOperations };
       }),
     );
-    // Apply operations to each row in memory (synchronous)
+
     for (const { row, rowOperations } of rowsData) {
-      for (const operation of rowOperations) {
-        applyOperationToRow(row, operation);
-      }
+      for (const operation of rowOperations) {applyOperationToRow(row, operation);}
     }
-    // Save all rows in parallel
-    await Promise.all(rowsData.map(({ row }) => this.rowStore.saveRow(tx, row)));
+
+    await Promise.all(
+      rowsData.map(({ row }) => this.rowStore.saveRow(tx, row)),
+    );
   }
 
-  //  ------------------------------------------------------------------------
-  //  Integrity hashing
-  //  ------------------------------------------------------------------------
-  //  As a way to handle broken requests and responses each sync request
-  //  has a hash that is validated both on the server and client, this
-  //  is not done for security reasons (even if it might help). Rather it's
-  //  done to ensure correctness.
-  private async createRequestHash(req: Omit<SyncRequest, "requestHash">): Promise<string> {
+  private async createRequestHash(request: Omit<SyncRequest, "requestHash">): Promise<string> {
     const parts: string[] = [
-      req.clientId,
-      req.dbName,
-      String(req.lastSeenServerVersion),
+      String(request.protocolVersion),
+      request.clientId,
+      request.dbName,
+      String(request.clientLastMutationID),
+      String(request.lastSeenServerVersion),
     ];
 
-    for (const op of req.operations) {
+    for (const mutation of request.mutations) {
+      const operation = mutation.operation;
       let value = "null";
-      let valueKey = "null";
-
-      if (op.type === "setRow") {
-        value = JSON.stringify(op.fields);
-      } else if (op.type === "checkpointRow") {
-        value = JSON.stringify({
-          fields: op.fields,
-          ...(op.tombstone ? { tombstone: op.tombstone } : {}),
-        });
-        valueKey = String(op.checkpointSeenServerVersion);
+      if (operation.type === "setRow") {
+        value = encodeCanonicalJson(operation.fields);
+      } else if (operation.type === "removeRow") {
+        value = encodeCanonicalJson(operation.versionVector);
       }
 
-      // op.type === "removeRow"
-      // value & valueKey stay "null" (matches Go)
-
       parts.push(
-        String(op.rowKey),
-        op.tableName,
-        op.type,
+        String(mutation.id),
+        String(operation.rowKey),
+        operation.tableName,
+        operation.type,
         value,
-        valueKey,
-        String(op.dot.version),
-        op.dot.clientId,
+        "null",
+        String(operation.dot.version),
+        operation.dot.clientId,
       );
     }
 
-    const result = await this.sha256Array(parts);
-    return result;
+    return this.sha256Array(parts);
   }
 
-  private async createResponseHash(
-    response: Omit<SyncResponse, "responseHash">,
-  ) {
+  private async createResponseHash(response: Omit<SyncResponse, "responseHash">) {
     const parts: string[] = [
+      String(response.protocolVersion),
+      response.clientId,
       String(response.baseServerVersion),
       String(response.latestServerVersion),
+      String(response.lastMutationID),
     ];
 
-    // Add operation fields - must match server hash logic exactly
     for (const operation of response.operations) {
       parts.push(operation.type);
       parts.push(operation.tableName);
@@ -452,35 +422,29 @@ export class Sync {
       parts.push(operation.dot.clientId);
       parts.push(String(operation.dot.version));
 
-      // Include operation-specific fields
       if (operation.type === "setRow") {
-        parts.push("null"); // field placeholder for consistency
-        parts.push(JSON.stringify(operation.fields));
+        parts.push("null");
+        parts.push(encodeCanonicalJson(operation.fields));
       } else if (operation.type === "checkpointRow") {
         parts.push("null");
-        parts.push(JSON.stringify({
+        const checkpointPayload = {
           fields: operation.fields,
           ...(operation.tombstone ? { tombstone: operation.tombstone } : {}),
-        }));
+        };
+        parts.push(encodeCanonicalJson(checkpointPayload));
         parts.push(String(operation.checkpointSeenServerVersion));
       } else if (operation.type === "removeRow") {
-        parts.push("null"); // field placeholder
-        parts.push("null"); // value placeholder
-        // Add context for removeRow operations
-        const contextKeys = Object.keys(operation.versionVector).sort();
+        parts.push("null");
+        parts.push("null");
+        const contextKeys = Object.keys(operation.versionVector).sort(
+          (left, right) => this.compareUtf8(left, right),
+        );
         for (const key of contextKeys) {
           parts.push(key);
           parts.push(String(operation.versionVector[key]));
         }
       }
       parts.push(String(operation.serverVersion));
-    }
-
-    // Add synced operations
-    for (const accepted of response.syncedOperations) {
-      parts.push(accepted.dot.clientId);
-      parts.push(String(accepted.dot.version));
-      parts.push(String(accepted.serverVersion));
     }
 
     return this.sha256Array(parts);
@@ -495,7 +459,6 @@ export class Sync {
         baseServerVersion: response.baseServerVersion,
         latestServerVersion: response.latestServerVersion,
         operationCount: response.operations.length,
-        syncedOperationCount: response.syncedOperations.length,
       };
       console.warn("Dropping sync response with invalid integrity hash", debugInfo);
       return false;
@@ -503,16 +466,20 @@ export class Sync {
     return true;
   }
 
-  /**
-   * Compute SHA-256 hash from an array of strings.
-   * Used for integrity verification of sync requests and responses.
-   */
+  private compareUtf8(a: string, b: string): number {
+    const encoder = new TextEncoder();
+    const aBytes = encoder.encode(a);
+    const bBytes = encoder.encode(b);
+    const length = Math.min(aBytes.length, bBytes.length);
+    for (let i = 0; i < length; i++) {
+      if (aBytes[i] !== bBytes[i]) {return aBytes[i] - bBytes[i];}
+    }
+    return aBytes.length - bBytes.length;
+  }
+
   private async sha256Array(parts: string[]): Promise<string> {
     const combined = parts.join("|");
-    const buffer = await crypto.subtle.digest(
-      "SHA-256",
-      new TextEncoder().encode(combined),
-    );
+    const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(combined));
     const hashArray = Array.from(new Uint8Array(buffer));
     return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
   }

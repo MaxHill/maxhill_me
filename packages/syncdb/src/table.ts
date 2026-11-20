@@ -17,12 +17,24 @@ import { OperationLog } from "./indexeddb/operationLog.ts";
 import { Index, QueryCondition } from "./indexes.ts";
 import { asc, Direction, resolveQueryArgs } from "./direction.ts";
 import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
+import { ClientState } from "./indexeddb/clientState.ts";
 import {
   type SourceFilter,
   SubscriptionCallbackHandler,
   TableSubscriptions,
 } from "./tableSubscriptions.ts";
 import { assert } from "@maxhill/stdx";
+import { abortFailedTransaction } from "./utils.ts";
+
+type TableDependencies = {
+  lifecycle: Lifecycle;
+  rowStore: RowStore;
+  operationLog: OperationLog;
+  clientId: string;
+  logicalClock: PersistedLogicalClock;
+  clientState: ClientState;
+  tableSubscriptions: TableSubscriptions;
+};
 
 export class Table<TIndexes extends Record<string, string[]> = Record<string, string[]>> {
   private tableName: string;
@@ -32,26 +44,23 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
   private operationLog: OperationLog;
   private clientId: string;
   private logicalClock: PersistedLogicalClock;
+  private clientState: ClientState;
   private tableSubscriptions: TableSubscriptions;
 
   constructor(
     tableName: string,
     indexes: Map<string, string[]>,
-    lifecycle: Lifecycle,
-    rowStore: RowStore,
-    operationLog: OperationLog,
-    clientId: string,
-    logicalClock: PersistedLogicalClock,
-    tableSubscriptions: TableSubscriptions,
+    dependencies: TableDependencies,
   ) {
     this.tableName = tableName;
     this.indexes = indexes;
-    this.lifecycle = lifecycle;
-    this.rowStore = rowStore;
-    this.operationLog = operationLog;
-    this.clientId = clientId;
-    this.logicalClock = logicalClock;
-    this.tableSubscriptions = tableSubscriptions;
+    this.lifecycle = dependencies.lifecycle;
+    this.rowStore = dependencies.rowStore;
+    this.operationLog = dependencies.operationLog;
+    this.clientId = dependencies.clientId;
+    this.logicalClock = dependencies.logicalClock;
+    this.clientState = dependencies.clientState;
+    this.tableSubscriptions = dependencies.tableSubscriptions;
   }
 
   subscribe(
@@ -78,25 +87,31 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
       [CLIENT_STATE_STORE, ROWS_STORE, OPERATIONS_STORE],
       "readwrite",
     );
-    const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
 
-    const dot = await this.nextDot(tx);
-    const op: CRDTOperation = {
-      type: "setRow",
-      tableName: this.tableName,
-      rowKey,
-      fields: value,
-      dot,
-    };
+    try {
+      const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
 
-    applyOperationToRow(row, op);
+      const { dot, mutationID } = await this.nextMutation(tx);
+      const operation: CRDTOperation = {
+        type: "setRow",
+        tableName: this.tableName,
+        rowKey,
+        fields: value,
+        dot,
+      };
 
-    await Promise.all([
-      this.rowStore.saveRow(tx, row),
-      this.operationLog.saveOperation(tx, op),
-    ]);
-    await this.lifecycle.commit(tx);
-    this.tableSubscriptions.notify(this.tableName, "local");
+      applyOperationToRow(row, operation);
+
+      await Promise.all([
+        this.rowStore.saveRow(tx, row),
+        this.operationLog.saveLocalPendingOperation(tx, operation, mutationID),
+      ]);
+      await this.lifecycle.commit(tx);
+      this.tableSubscriptions.notify(this.tableName, "local");
+    } catch (error) {
+      abortFailedTransaction(tx);
+      throw error;
+    }
   }
 
   async setField(rowKey: ValidKey, field: any, value: any): Promise<void> {
@@ -114,55 +129,67 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
       ["clientState", "rows", "operations"],
       "readwrite",
     );
-    const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
 
-    const dot = await this.nextDot(tx);
-    const op: CRDTOperation = {
-      type: "setRow",
-      tableName: this.tableName,
-      rowKey,
-      fields: { [field]: value },
-      dot,
-    };
+    try {
+      const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
 
-    applyOperationToRow(row, op);
+      const { dot, mutationID } = await this.nextMutation(tx);
+      const operation: CRDTOperation = {
+        type: "setRow",
+        tableName: this.tableName,
+        rowKey,
+        fields: { [field]: value },
+        dot,
+      };
 
-    await Promise.all([
-      this.rowStore.saveRow(tx, row),
-      this.operationLog.saveOperation(tx, op),
-    ]);
-    await this.lifecycle.commit(tx);
-    this.tableSubscriptions.notify(this.tableName, "local");
+      applyOperationToRow(row, operation);
+
+      await Promise.all([
+        this.rowStore.saveRow(tx, row),
+        this.operationLog.saveLocalPendingOperation(tx, operation, mutationID),
+      ]);
+      await this.lifecycle.commit(tx);
+      this.tableSubscriptions.notify(this.tableName, "local");
+    } catch (error) {
+      abortFailedTransaction(tx);
+      throw error;
+    }
   }
 
   async deleteRow(rowKey: ValidKey) {
     const tx = this.lifecycle.transaction(["clientState", "rows", "operations"], "readwrite");
-    const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
 
-    // Build version vector from current fields.
-    const versionVector: Record<string, number> = {};
-    for (const fieldState of Object.values(row.fields)) {
-      const clientId = fieldState.dot.clientId;
-      versionVector[clientId] = Math.max(versionVector[clientId] ?? 0, fieldState.dot.version);
+    try {
+      const row = await this.rowStore.getRow(tx, this.tableName, rowKey);
+
+      // Build version vector from current fields.
+      const versionVector: Record<string, number> = {};
+      for (const fieldState of Object.values(row.fields)) {
+        const clientId = fieldState.dot.clientId;
+        versionVector[clientId] = Math.max(versionVector[clientId] ?? 0, fieldState.dot.version);
+      }
+
+      const { dot, mutationID } = await this.nextMutation(tx);
+      const operation: CRDTOperation = {
+        type: "removeRow",
+        tableName: this.tableName,
+        rowKey,
+        dot,
+        versionVector,
+      };
+
+      applyOperationToRow(row, operation);
+
+      await Promise.all([
+        this.rowStore.saveRow(tx, row),
+        this.operationLog.saveLocalPendingOperation(tx, operation, mutationID),
+      ]);
+      await this.lifecycle.commit(tx);
+      this.tableSubscriptions.notify(this.tableName, "local");
+    } catch (error) {
+      abortFailedTransaction(tx);
+      throw error;
     }
-
-    const dot = await this.nextDot(tx);
-    const op: CRDTOperation = {
-      type: "removeRow",
-      tableName: this.tableName,
-      rowKey,
-      dot,
-      versionVector,
-    };
-
-    applyOperationToRow(row, op);
-
-    await Promise.all([
-      this.rowStore.saveRow(tx, row),
-      this.operationLog.saveOperation(tx, op),
-    ]);
-    await this.lifecycle.commit(tx);
-    this.tableSubscriptions.notify(this.tableName, "local");
   }
 
   //  ------------------------------------------------------------------------
@@ -210,9 +237,9 @@ export class Table<TIndexes extends Record<string, string[]> = Record<string, st
   //  ------------------------------------------------------------------------
   //  Private
   //  ------------------------------------------------------------------------
-  //  TODO: Move nextDot function to logicalClock
-  private async nextDot(tx: IDBTransaction): Promise<Dot> {
+  private async nextMutation(tx: IDBTransaction): Promise<{ dot: Dot; mutationID: number }> {
+    const mutationID = await this.clientState.allocateMutationID(tx);
     const version = await this.logicalClock.tick(tx);
-    return { clientId: this.clientId, version };
+    return { dot: { clientId: this.clientId, version }, mutationID };
   }
 }
