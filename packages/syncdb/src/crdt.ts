@@ -1,4 +1,5 @@
 import { assert } from "@maxhill/stdx";
+import { jsonValuesEqual } from "./json-values-equal.ts";
 
 //  ------------------------------------------------------------------------
 //  Types
@@ -6,6 +7,7 @@ import { assert } from "@maxhill/stdx";
 // Unique identifier for each operation
 export type Dot = {
   clientId: string;
+  /** This clock orders CRDT changes because remote observations can make its values jump. */
   version: number;
 };
 
@@ -18,6 +20,7 @@ export type CRDTOperation =
     rowKey: ValidKey;
     fields: Record<string, any>;
     dot: Dot;
+    /** This tracks pull progress because upload acknowledgements do not show which server changes the client received. */
     serverVersion?: number;
   }
   | {
@@ -26,6 +29,7 @@ export type CRDTOperation =
     rowKey: ValidKey;
     dot: Dot;
     versionVector: Record<string, number>;
+    /** This tracks pull progress because upload acknowledgements do not show which server changes the client received. */
     serverVersion?: number;
   }
   | {
@@ -36,6 +40,7 @@ export type CRDTOperation =
     checkpointSeenServerVersion: number;
     fields: Record<string, LWWField>;
     tombstone?: { dot: Dot; versionVector: Record<string, number> };
+    /** This tracks pull progress because upload acknowledgements do not show which server changes the client received. */
     serverVersion?: number;
   };
 
@@ -87,6 +92,19 @@ export function compareDots(a: Dot, b: Dot): number {
   return a.clientId.localeCompare(b.clientId);
 }
 
+function mergeField(row: ORMapRow, field: string, incoming: LWWField): void {
+  const existing = row.fields[field];
+  const order = existing ? compareDots(incoming.dot, existing.dot) : 1;
+  if (order > 0) {
+    row.fields[field] = incoming;
+  } else if (order === 0) {
+    assert(
+      jsonValuesEqual(incoming.value, existing.value),
+      `CRDT invariant violated: duplicate dot for field "${field}"`,
+    );
+  }
+}
+
 export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): void {
   row = validateRow(row);
   operation = validateOperation(operation);
@@ -101,30 +119,13 @@ export function applyOperationToRow(row: ORMapRow, operation: CRDTOperation): vo
     }
 
     for (const [field, value] of Object.entries(operation.fields)) {
-      const existing = row.fields[field];
-
-      if (!existing) {
-        // No existing value, just set it
-        row.fields[field] = { value, dot: operation.dot };
-      } else {
-        const cmp = compareDots(operation.dot, existing.dot);
-        if (cmp > 0) {
-          // New dot is higher, replace
-          row.fields[field] = { value, dot: operation.dot };
-        } else {
-          assert(cmp !== 0, `CRDT invariant violated: duplicate dot for field "${field}"`);
-        }
-        // Otherwise keep existing (cmp < 0)
-      }
+      mergeField(row, field, { value, dot: operation.dot });
     }
   } else if (operation.type === "checkpointRow") {
     // Merge the snapshot using original CRDT clocks. The checkpoint's publication
     // dot is deliberately not used to date fields or the tombstone.
     for (const [field, incoming] of Object.entries(operation.fields)) {
-      const existing = row.fields[field];
-      if (!existing || compareDots(incoming.dot, existing.dot) > 0) {
-        row.fields[field] = incoming;
-      }
+      mergeField(row, field, incoming);
     }
     if (operation.tombstone) {
       const current = row.tombstone;
@@ -229,13 +230,5 @@ export function validateOperation(operation: CRDTOperation): CRDTOperation {
 }
 
 export function isSerializable(value: any): boolean {
-  if (value === undefined || typeof value === "function" || typeof value === "symbol") {
-    return false;
-  }
-  try {
-    JSON.stringify(value);
-    return true;
-  } catch {
-    return false; // Circular reference
-  }
+  return jsonValuesEqual(value, value);
 }

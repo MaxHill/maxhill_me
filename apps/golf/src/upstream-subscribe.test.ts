@@ -8,7 +8,7 @@ import {
 
 describe("upstream-subscribe helpers", () => {
   it("builds subscribe URL from sync URL", () => {
-    expect(subscribeUrlFromSyncUrl("http://localhost:3001/v2/sync", "golf", "cid-1")).to.equal(
+    expect(subscribeUrlFromSyncUrl("http://localhost:3001/v3/sync", "golf", "cid-1")).to.equal(
       "http://localhost:3001/subscribe/golf?clientId=cid-1",
     );
     expect(subscribeUrlFromSyncUrl("http://localhost:3001/sync", "golf", "cid-2")).to.equal(

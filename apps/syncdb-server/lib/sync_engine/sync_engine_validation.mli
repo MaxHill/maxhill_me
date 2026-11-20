@@ -1,6 +1,8 @@
 open Sync_engine_core
 
 (** Fail fast on tampered or corrupted payloads before touching storage. *)
+val ensure_mutation_request_valid : sync_request -> (unit, sync_error) result
+
 val ensure_request_hash_valid : sync_request -> (unit, sync_error) result
 
 (** Prevent clients from syncing against a server state that cannot exist yet. *)
@@ -8,6 +10,3 @@ val ensure_client_not_ahead
   :  last_seen:int64
   -> max_server:int64
   -> (unit, sync_error) result
-
-(** Preserve per-client causality so merge semantics stay deterministic. *)
-val ensure_versions_monotonic : crdt_operation list -> (unit, sync_error) result

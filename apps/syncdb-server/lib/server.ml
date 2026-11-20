@@ -24,12 +24,24 @@ module Log = (val Logs.src_log src : Logs.LOG)
 let status_of_sync_error = function
   | Sync_engine.Request_integrity_failed
   | Sync_engine.Client_state_out_of_sync _
-  | Sync_engine.Non_monotonic_versions _ ->
+  | Sync_engine.Client_mutation_state_diverged _
+  | Sync_engine.Client_mutation_gap _
+  | Sync_engine.Logical_clock_regression _ ->
       `Bad_request
-  | Sync_engine.Storage_error _ | Sync_engine.Decode_error _ ->
-      `Internal_server_error
+  | Sync_engine.Decode_error _ -> `Bad_request
+  | Sync_engine.Storage_error _ -> `Internal_server_error
 
-let current_sync_path = "/v2/sync"
+let sync_error_response error =
+  let message = match error with
+    | Sync_engine.Storage_error _ -> "Sync storage temporarily unavailable"
+    | _ -> Sync_engine.sync_error_to_string error
+  in
+  { status = status_of_sync_error error;
+    body = Yojson.Safe.to_string (`Assoc [
+      ("code", `String (Sync_engine.sync_error_code error));
+      ("message", `String message)]) }
+
+let current_sync_path = "/v3/sync"
 
 let legacy_sync_response =
   {
@@ -38,13 +50,13 @@ let legacy_sync_response =
       Yojson.Safe.to_string
         (`Assoc
           [ ("code", `String "SYNC_ENDPOINT_RETIRED");
-            ("message", `String "POST /sync is retired; use POST /v2/sync") ]);
+            ("message", `String "POST /sync is retired; use POST /v3/sync") ]);
   }
 
 let route ~meth ~target =
   match (meth, target) with
   | `GET, "/health" -> ({ status = `OK; body = "ok" }, `Text)
-  | `POST, "/sync" -> (legacy_sync_response, `Json)
+  | `POST, "/sync" | `POST, "/v2/sync" -> (legacy_sync_response, `Json)
   | _ -> ({ status = `Not_found; body = "not found" }, `Text)
 
 let cors_headers =
@@ -203,11 +215,11 @@ let request_handler (context : context) _client_addr reqd =
   let path = Uri.path uri in
   Log.info (fun m -> m "%s %s" (Httpun.Method.to_string meth) target);
   match (meth, path) with
-  | `OPTIONS, path when path = "/sync" || path = current_sync_path ->
+  | `OPTIONS, path when path = "/sync" || path = "/v2/sync" || path = current_sync_path ->
       respond_text reqd { status = `No_content; body = "" }
   | `OPTIONS, path when Option.is_some (subscribe_db_name path) ->
       respond_text reqd { status = `No_content; body = "" }
-  | `POST, "/sync" -> respond_json reqd legacy_sync_response
+  | `POST, "/sync" | `POST, "/v2/sync" -> respond_json reqd legacy_sync_response
   | `POST, path when path = current_sync_path -> (
       let authorization = Httpun.Headers.get request.headers "authorization" in
       match Auth.validate_bearer context.auth authorization with
@@ -242,7 +254,9 @@ let request_handler (context : context) _client_addr reqd =
               match result with
               | Error (`Decode msg) ->
                   Log.err (fun m -> m "sync decode error: %s" msg);
-                  respond_text reqd { status = `Bad_request; body = msg }
+                  respond_json reqd { status = `Bad_request;
+                    body = Yojson.Safe.to_string (`Assoc [
+                      ("code", `String "INVALID_OPERATION"); ("message", `String msg)]) }
               | Error (`Db err) ->
                   Log.err (fun m -> m "sync db error: %s" (Caqti_error.show err));
                   respond_text reqd
@@ -253,10 +267,9 @@ let request_handler (context : context) _client_addr reqd =
               | Error (`Sync err) ->
                   let msg = Sync_engine.sync_error_to_string err in
                   Log.err (fun m -> m "sync process error: %s" msg);
-                  respond_text reqd
-                    { status = status_of_sync_error err; body = msg }
+                  respond_json reqd (sync_error_response err)
               | Ok (sync_request, response) ->
-                  if sync_request.operations <> [] then
+                  if sync_request.mutations <> [] then
                     Event_hub.publish context.event_hub ~tenant_id:user.id
                       ~db_name:sync_request.db_name
                       ~exclude_client_id:sync_request.client_id

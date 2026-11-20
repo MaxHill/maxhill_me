@@ -260,7 +260,7 @@ describe("applyOpToRow", () => {
       expect(row.fields.name.dot.clientId).toBe("client2");
     });
 
-    it("should reject duplicate dots for the same field", () => {
+    it("should reject conflicting values at the same dot", () => {
       const row: ORMapRow = {
         [TABLE_NAME]: "test",
         [ROW_KEY]: "row1",
@@ -717,4 +717,113 @@ describe("applyOpToRow", () => {
       );
     });
   });
+});
+
+type ReplayKind = "setRow" | "checkpointRow";
+const replayKinds: ReplayKind[] = ["setRow", "checkpointRow"];
+const replayOrders = replayKinds.flatMap((first) =>
+  replayKinds.map((second) => ({ first, second }))
+);
+
+function replayRow(): ORMapRow {
+  return { [TABLE_NAME]: "test", [ROW_KEY]: "r", fields: {} };
+}
+
+function replayOperation(kind: ReplayKind, value: unknown, version = 1): CRDTOperation {
+  const dot = { clientId: "writer", version };
+  if (kind === "checkpointRow") {
+    return {
+      type: kind, tableName: "test", rowKey: "r",
+      dot: { clientId: "checkpoint", version: 99 },
+      checkpointSeenServerVersion: 10, fields: { payload: { value, dot } },
+    };
+  }
+  return { type: kind, tableName: "test", rowKey: "r", dot, fields: { payload: value } };
+}
+
+describe("equal-dot field replay", () => {
+  it.each(replayOrders)("keeps state for identical $first then $second", ({ first, second }) => {
+    const row = replayRow();
+    const value = Object.freeze({ a: [true, null], b: { count: 1 } });
+    applyOperationToRow(row, replayOperation(first, value));
+    const existing = row.fields.payload;
+    applyOperationToRow(row, replayOperation(second, { b: { count: 1 }, a: [true, null] }));
+    expect(row.fields.payload).toBe(existing);
+    expect(row.fields.payload.value).toBe(value);
+    expect(row.fields.payload.dot).toEqual({ clientId: "writer", version: 1 });
+  });
+
+  it.each(replayOrders)("rejects conflicting $first then $second", ({ first, second }) => {
+    const row = replayRow();
+    applyOperationToRow(row, replayOperation(first, { nested: [1, 2] }));
+    expect(() => applyOperationToRow(row, replayOperation(second, { nested: [2, 1] })))
+      .toThrow('CRDT invariant violated: duplicate dot for field "payload"');
+    expect(row.fields.payload.value).toEqual({ nested: [1, 2] });
+  });
+
+  it.each([
+    [new Date("2026-01-01"), "2026-01-01T00:00:00.000Z"],
+    [NaN, null], [Infinity, null], [1, "1"], [{ a: 1 }, {}], [[], {}],
+  ])("does not coerce or drop values for equal dots (case %#)", (existing, incoming) => {
+    const row = replayRow();
+    row.fields.payload = { value: existing, dot: { clientId: "writer", version: 1 } };
+    expect(() => applyOperationToRow(row, replayOperation("setRow", incoming)))
+      .toThrow("duplicate dot");
+  });
+});
+
+describe("replay preserves clock and tombstone rules", () => {
+  it.each(replayKinds)("ignores older clocks and replaces newer clocks for %s", (kind) => {
+    const row = replayRow();
+    applyOperationToRow(row, replayOperation("setRow", "current"));
+    applyOperationToRow(row, replayOperation(kind, "older", 0));
+    expect(row.fields.payload.value).toBe("current");
+    applyOperationToRow(row, replayOperation(kind, "newer", 2));
+    expect(row.fields.payload).toEqual({ value: "newer", dot: { clientId: "writer", version: 2 } });
+  });
+
+  it("does not resurrect a tombstone-dominated field through checkpoints or write replay", () => {
+    const row = replayRow();
+    applyOperationToRow(row, replayOperation("setRow", "deleted"));
+    applyOperationToRow(row, {
+      type: "removeRow", tableName: "test", rowKey: "r",
+      dot: { clientId: "deleter", version: 2 }, versionVector: { writer: 1 },
+    });
+    applyOperationToRow(row, replayOperation("checkpointRow", "deleted"));
+    applyOperationToRow(row, replayOperation("setRow", "deleted"));
+    expect(row.fields).toEqual({});
+    expect(row.tombstone?.versionVector).toEqual({ writer: 1 });
+  });
+});
+
+function reorderJson(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(reorderJson);
+  }
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).reverse().map(([key, child]) => [key, reorderJson(child)]),
+    );
+  }
+  return value;
+}
+
+describe("property: equal-dot JSON field replay", () => {
+  it("is idempotent and symmetric across checkpoint/write delivery order", () => {
+    fc.assert(fc.property(fc.jsonValue(), (value) => {
+      const row = replayRow();
+      applyOperationToRow(row, replayOperation("setRow", value));
+      const original = row.fields.payload;
+      applyOperationToRow(row, replayOperation("checkpointRow", reorderJson(value)));
+      applyOperationToRow(row, replayOperation("setRow", reorderJson(value)));
+      expect(row.fields.payload).toBe(original);
+      expect(row.fields.payload.value).toEqual(value);
+
+      const reversed = replayRow();
+      applyOperationToRow(reversed, replayOperation("checkpointRow", reorderJson(value)));
+      applyOperationToRow(reversed, replayOperation("setRow", value));
+      expect(reversed).toEqual(row);
+    }), { seed: 714810052, numRuns: 200 });
+  });
+
 });

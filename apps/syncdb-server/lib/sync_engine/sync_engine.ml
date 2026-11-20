@@ -6,33 +6,27 @@ let hash_sync_request = Sync_engine_hash.hash_sync_request
 let hash_sync_response = Sync_engine_hash.hash_sync_response
 let ( let* ) = Result.bind
 
-let compute_latest_server_version request inserted_versions unseen_rows ~page_limit =
-  let max_unseen =
+let compute_latest_server_version request unseen_rows ~page_limit ~max_server_version =
+  if List.length unseen_rows >= page_limit then
     List.fold_left
       (fun latest row -> Int64.max latest row.Repository.server_version)
       request.last_seen_server_version unseen_rows
-  in
-  if List.length unseen_rows >= page_limit then
-    max_unseen
   else
-    List.fold_left Int64.max request.last_seen_server_version inserted_versions
-    |> fun acc -> Int64.max acc max_unseen
+    max_server_version
 
-let build_sync_response request ~inserted_versions ~unseen_operations
-    ~unseen_rows ~page_limit =
-  let response =
-    {
-      base_server_version = request.last_seen_server_version;
-      latest_server_version =
-        compute_latest_server_version request inserted_versions unseen_rows
-          ~page_limit;
-      operations = unseen_operations;
-      operation_server_versions = [];
-      synced_operations = [];
-      response_hash = "";
-    }
-  in
-  response
+let build_sync_response (request : sync_request) ~last_mutation_id ~max_server_version
+    ~unseen_operations ~unseen_rows ~page_limit =
+  {
+    protocol_version = 3;
+    client_id = request.client_id;
+    base_server_version = request.last_seen_server_version;
+    latest_server_version =
+      compute_latest_server_version request unseen_rows ~page_limit ~max_server_version;
+    last_mutation_id;
+    operations = unseen_operations;
+    operation_server_versions = [];
+    response_hash = "";
+  }
 
 let compact_row_with_connection connection ~tenant_id ~db_name ~table_name ~row_key
     ~checkpoint_seen_server_version =
@@ -75,12 +69,12 @@ let compact_row_with_connection connection ~tenant_id ~db_name ~table_name ~row_
       Ok operation)
 
 let auto_compact_request_rows connection ~tenant_id ~db_name
-    ~operation_threshold ~byte_threshold (request : sync_request) =
+    ~operation_threshold ~byte_threshold (operations : crdt_operation list) =
   match (operation_threshold, byte_threshold) with
   | None, None -> ()
   | _ ->
       let rows =
-        request.operations
+        operations
         |> List.map (fun op -> (op.table_name, op.row_key))
         |> List.sort_uniq compare
       in
@@ -147,64 +141,84 @@ let auto_compact_request_rows connection ~tenant_id ~db_name
                 "automatic checkpoint compaction failures=%d tenant=%s db=%s table=%s row=%s cutoff=%s error=%s"
                 !failure_count tenant_id db_name table_name row_key cutoff error)
 
+let accept_operation connection ~tenant_id ~db_name (operation : crdt_operation) =
+  let map_storage_error error = Storage_error (Repository.error_to_string error) in
+  let* db_operation =
+    Sync_engine_persistence.db_operation_of_crdt_operation ~tenant_id ~db_name operation
+    |> Result.map_error (fun message -> Decode_error message)
+  in
+  Repository.insert_crdt_operation connection db_operation |> Result.map_error map_storage_error
+
 let process_sync_request_with_connection ?checkpoint_threshold_operations
     ?checkpoint_threshold_bytes connection ~tenant_id ~db_name request =
   let open Sync_engine_validation in
   let* () = ensure_request_hash_valid request in
+  let* () = ensure_mutation_request_valid request in
+  if request.db_name <> db_name then Error (Decode_error "request database partition mismatch")
+  else
+  let mutation_ops = List.map (fun (m : mutation) -> m.operation) request.mutations in
   let* response = Repository.with_transaction connection
     ~map_tx_error:(fun err -> Storage_error (Repository.error_to_string err))
     (fun conn ->
-      let* () = ensure_versions_monotonic request.operations in
-      (* Intentionally trust removeRow version vectors. Compaction removes covered
-         original dots while offline clients may still cite them. This permits
-         those deletes, but forged counters can suppress unrelated future writes. *)
-      let* db_operations =
-        Sync_engine_persistence.db_operations_of_crdt_operations ~tenant_id ~db_name
-          request.operations
+      let* client_state =
+        Repository.get_or_create_client_state conn ~tenant_id ~db_name ~client_id:request.client_id
+        |> Result.map_error (fun err -> Storage_error (Repository.error_to_string err))
       in
-      let* inserted_versions =
-        Repository.insert_crdt_operations conn db_operations
-        |> Result.map_error (fun err ->
-            Storage_error (Repository.error_to_string err))
-      in
-
-      let* max_server_version =
-        Repository.get_max_server_version conn ~tenant_id ~db_name
-        |> Result.map_error (fun err ->
-            Storage_error (Repository.error_to_string err))
+      if request.client_last_mutation_id > client_state.last_mutation_id then
+        Error (Client_mutation_state_diverged {
+          client_last_mutation_id = request.client_last_mutation_id;
+          server_last_mutation_id = client_state.last_mutation_id;
+        })
+      else
+      let* new_state =
+        List.fold_left (fun acc (mutation : mutation) ->
+            let* state = acc in
+            if mutation.id <= state.Repository.last_mutation_id then Ok state
+            else if mutation.id <> Int64.succ state.Repository.last_mutation_id then
+              Error (Client_mutation_gap { expected = Int64.succ state.Repository.last_mutation_id; received = mutation.id })
+            else if mutation.operation.dot.version <= state.Repository.last_client_version then
+              Error (Logical_clock_regression {
+                client_id = request.client_id;
+                expected_gt = state.Repository.last_client_version;
+                received = mutation.operation.dot.version;
+              })
+            else
+              let* _server_version = accept_operation conn ~tenant_id ~db_name mutation.operation in
+              Ok { Repository.last_mutation_id = mutation.id;
+                   last_client_version = mutation.operation.dot.version })
+          (Ok client_state) request.mutations
       in
       let* () =
-        ensure_client_not_ahead ~last_seen:request.last_seen_server_version
-          ~max_server:max_server_version
+        Repository.update_client_state conn ~tenant_id ~db_name ~client_id:request.client_id
+          ~last_mutation_id:new_state.last_mutation_id ~last_client_version:new_state.last_client_version
+        |> Result.map_error (fun err -> Storage_error (Repository.error_to_string err))
       in
-
+      let* max_server_version =
+        Repository.get_max_server_version conn ~tenant_id ~db_name
+        |> Result.map_error (fun err -> Storage_error (Repository.error_to_string err))
+      in
+      let* () =
+        ensure_client_not_ahead ~last_seen:request.last_seen_server_version ~max_server:max_server_version
+      in
       let page_limit = 1000 in
       let* unseen_rows =
         Repository.get_operations_since conn ~tenant_id ~db_name
           ~server_version:request.last_seen_server_version ~limit:page_limit
           ~exclude_client_id:request.client_id
-        |> Result.map_error (fun err ->
-            Storage_error (Repository.error_to_string err))
+        |> Result.map_error (fun err -> Storage_error (Repository.error_to_string err))
       in
-
-      let* unseen_operations =
-        Sync_engine_persistence.decode_operations unseen_rows
-      in
+      let* unseen_operations = Sync_engine_persistence.decode_operations unseen_rows in
       let response =
-        build_sync_response request ~inserted_versions ~unseen_operations
-          ~unseen_rows ~page_limit
+        build_sync_response request ~last_mutation_id:new_state.last_mutation_id
+          ~max_server_version ~unseen_operations ~unseen_rows ~page_limit
       in
       let response =
         { response with
-          operation_server_versions = List.map (fun row -> row.Repository.server_version) unseen_rows;
-          synced_operations = List.map2
-            (fun (operation : crdt_operation) server_version ->
-              ({ dot = operation.dot; server_version } : synced_operation))
-            request.operations inserted_versions }
+          operation_server_versions = List.map (fun row -> row.Repository.server_version) unseen_rows }
       in
       Ok { response with response_hash = hash_sync_response response })
   in
   auto_compact_request_rows connection ~tenant_id ~db_name
     ~operation_threshold:checkpoint_threshold_operations
-    ~byte_threshold:checkpoint_threshold_bytes request;
+    ~byte_threshold:checkpoint_threshold_bytes mutation_ops;
   Ok response

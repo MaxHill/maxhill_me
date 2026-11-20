@@ -1,5 +1,10 @@
 import { assert } from "@maxhill/stdx";
 
+/** Abort a failed transaction without masking an error if it already ended. */
+export function abortFailedTransaction(transaction: IDBTransaction): void {
+  try { transaction.abort(); } catch { /* The original failure must reach the caller. */ }
+}
+
 /**
  * Wrap a IDBRequest in a promise for convenience
  * @param tx - Transaction to use.

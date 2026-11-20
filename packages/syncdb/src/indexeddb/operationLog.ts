@@ -1,7 +1,11 @@
 import { assert } from "@maxhill/stdx";
-import { CRDTOperation, Dot } from "../crdt.ts";
-import { asyncCursorIterator, promisifyIDBRequest, validateTransactionStores } from "../utils.ts";
-import { OPERATIONS_STORE, CLIENT_STATE_STORE } from "./lifecycle.ts";
+import { CRDTOperation } from "../crdt.ts";
+import {
+  asyncCursorIterator,
+  promisifyIDBRequest,
+  validateTransactionStores,
+} from "../utils.ts";
+import { OPERATIONS_STORE } from "./lifecycle.ts";
 
 const SYNCED_STATUS = {
   NOT_SYNCED: 0,
@@ -10,39 +14,55 @@ const SYNCED_STATUS = {
 
 const BY_SYNCED_INDEX = "by-synced";
 const BY_CLIENT_SYNCED_INDEX = "by-client-synced";
-const LAST_SEEN_SERVER_VERSION = "lastSeenServerVersion";
+export type PendingMutationRecord = {
+  /** This ID stays separate from the logical clock so the server can detect upload gaps and acknowledge a complete prefix. */
+  mutationID: number;
+  operation: CRDTOperation;
+};
 
 export class OperationLog {
-  async saveOperation(tx: IDBTransaction, operation: CRDTOperation): Promise<void> {
+  async saveRemoteOperation(tx: IDBTransaction, operation: CRDTOperation): Promise<void> {
     validateTransactionStores(tx, [OPERATIONS_STORE]);
     assert(operation, "CRDTOperation must be set when saving row");
+    assert(
+      Number.isSafeInteger(operation.serverVersion) && operation.serverVersion! >= 0,
+      "Remote operation requires a server version",
+    );
 
     const store = tx.objectStore(OPERATIONS_STORE);
     await promisifyIDBRequest(store.add({
-      op: operation,
-      synced: operation.serverVersion === undefined ? SYNCED_STATUS.NOT_SYNCED : SYNCED_STATUS.SYNCED,
-      ...(operation.serverVersion === undefined ? {} : { serverVersion: operation.serverVersion }),
+      operation: operation,
+      synced: SYNCED_STATUS.SYNCED,
+      serverVersion: operation.serverVersion,
+    }));
+  }
+
+  async saveLocalPendingOperation(
+    tx: IDBTransaction,
+    operation: CRDTOperation,
+    mutationID: number,
+  ): Promise<void> {
+    validateTransactionStores(tx, [OPERATIONS_STORE], "readwrite");
+    assert(
+      operation.serverVersion === undefined,
+      "Local pending operation cannot have serverVersion",
+    );
+    assert(Number.isSafeInteger(mutationID) && mutationID > 0, "Invalid pending mutation ID");
+
+    const store = tx.objectStore(OPERATIONS_STORE);
+    await promisifyIDBRequest(store.add({
+      operation: operation,
+      synced: SYNCED_STATUS.NOT_SYNCED,
+      mutationID,
     }));
   }
 
   async batchSaveOperations(tx: IDBTransaction, operations: CRDTOperation[]): Promise<void> {
     const savePromises: Promise<void>[] = [];
     for (const operation of operations) {
-      savePromises.push(this.saveOperation(tx, operation));
+      savePromises.push(this.saveRemoteOperation(tx, operation));
     }
     await Promise.all(savePromises);
-  }
-
-  async saveOperationAsSynced(tx: IDBTransaction, operationDot: Dot, serverVersion: number): Promise<void> {
-    validateTransactionStores(tx, [OPERATIONS_STORE], "readwrite");
-
-    const store = tx.objectStore(OPERATIONS_STORE);
-    const key = [operationDot.clientId, operationDot.version];
-    const record = await promisifyIDBRequest(store.get(key));
-
-    if (!record) return;
-
-    await promisifyIDBRequest(store.put({ ...record, synced: SYNCED_STATUS.SYNCED, serverVersion }));
   }
 
   async deleteCoveredAcceptedOperations(
@@ -50,7 +70,7 @@ export class OperationLog {
     checkpoints: readonly Extract<CRDTOperation, { type: "checkpointRow" }>[],
   ): Promise<void> {
     validateTransactionStores(tx, [OPERATIONS_STORE], "readwrite");
-    if (checkpoints.length === 0) return;
+    if (checkpoints.length === 0) {return;}
 
     const cutoffsByTable = new Map<string, Map<string, number>>();
     for (const checkpoint of checkpoints) {
@@ -72,29 +92,16 @@ export class OperationLog {
     const syncedIndex = store.index(BY_SYNCED_INDEX);
     const cursorRequest = syncedIndex.openCursor(IDBKeyRange.only(SYNCED_STATUS.SYNCED));
     for await (const record of asyncCursorIterator<{
-      op: CRDTOperation; synced: number; serverVersion?: number;
+      operation: CRDTOperation; synced: number; serverVersion?: number;
     }>(cursorRequest)) {
-      if (record.serverVersion === undefined) continue;
-      const cutoff = cutoffsByTable.get(record.op.tableName)?.get(record.op.rowKey);
+      if (record.serverVersion === undefined) {continue;}
+      const cutoff = cutoffsByTable.get(record.operation.tableName)?.get(record.operation.rowKey);
       if (cutoff !== undefined && record.serverVersion < cutoff) {
-        await promisifyIDBRequest(store.delete([record.op.dot.clientId, record.op.dot.version]));
+        await promisifyIDBRequest(
+          store.delete([record.operation.dot.clientId, record.operation.dot.version]),
+        );
       }
     }
-  }
-
-  async getUnsyncedOperations(tx: IDBTransaction): Promise<CRDTOperation[]> {
-    validateTransactionStores(tx, [OPERATIONS_STORE]);
-    const store = tx.objectStore(OPERATIONS_STORE);
-    const index = store.index(BY_SYNCED_INDEX);
-
-    const result: CRDTOperation[] = [];
-    const cursorRequest = index.openCursor(IDBKeyRange.only(SYNCED_STATUS.NOT_SYNCED));
-
-    for await (const record of asyncCursorIterator<{ op: CRDTOperation }>(cursorRequest)) {
-      result.push(record.op);
-    }
-
-    return result;
   }
 
   async countUnsyncedOperations(tx: IDBTransaction): Promise<number> {
@@ -106,49 +113,60 @@ export class OperationLog {
     return await promisifyIDBRequest(countRequest);
   }
 
-  async getUnsyncedOperationsByClient(
+  async getPendingMutationsByClient(
     tx: IDBTransaction,
     clientId: string,
-  ): Promise<CRDTOperation[]> {
+  ): Promise<PendingMutationRecord[]> {
     validateTransactionStores(tx, [OPERATIONS_STORE]);
     const store = tx.objectStore(OPERATIONS_STORE);
     const index = store.index(BY_CLIENT_SYNCED_INDEX);
 
-    const result: CRDTOperation[] = [];
+    const result: PendingMutationRecord[] = [];
     const cursorRequest = index.openCursor(IDBKeyRange.only([clientId, SYNCED_STATUS.NOT_SYNCED]));
 
-    for await (const record of asyncCursorIterator<{ op: CRDTOperation }>(cursorRequest)) {
-      result.push(record.op);
+    for await (const record of asyncCursorIterator<{
+      operation: CRDTOperation;
+      mutationID?: number;
+    }>(cursorRequest)) {
+      if (!Number.isSafeInteger(record.mutationID) || record.mutationID! <= 0) {
+        throw new Error("Pending record is missing a valid mutation ID");
+      }
+      result.push({ mutationID: record.mutationID!, operation: record.operation });
     }
 
+    result.sort((a, b) => a.mutationID - b.mutationID);
     return result;
   }
 
-  async getAllOperations(tx: IDBTransaction): Promise<CRDTOperation[]> {
-    validateTransactionStores(tx, [OPERATIONS_STORE]);
-    const store = tx.objectStore(OPERATIONS_STORE);
-
-    const result: CRDTOperation[] = [];
-    const cursorRequest = store.openCursor();
-
-    for await (const record of asyncCursorIterator<{ op: CRDTOperation }>(cursorRequest)) {
-      result.push(record.op);
-    }
-
-    return result;
-  }
-
-  async resetSyncState(tx: IDBTransaction): Promise<void> {
-    validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE], "readwrite");
-
-    const operationsStore = tx.objectStore(OPERATIONS_STORE);
-    await promisifyIDBRequest(operationsStore.clear());
-
-    const clientStateStore = tx.objectStore(CLIENT_STATE_STORE);
-    await promisifyIDBRequest(clientStateStore.put(-1, LAST_SEEN_SERVER_VERSION));
-
-    console.warn(
-      "Client sync state has been reset. All local unsynced operations have been cleared.",
+  async deletePendingMutationsThrough(
+    tx: IDBTransaction,
+    clientId: string,
+    ackMutationID: number,
+  ): Promise<void> {
+    validateTransactionStores(tx, [OPERATIONS_STORE], "readwrite");
+    assert(
+      Number.isSafeInteger(ackMutationID) && ackMutationID >= 0,
+      "Invalid acknowledged mutation ID",
     );
+    if (ackMutationID === 0) {
+      return;
+    }
+
+    const store = tx.objectStore(OPERATIONS_STORE);
+    const index = store.index(BY_CLIENT_SYNCED_INDEX);
+    const cursorRequest = index.openCursor(IDBKeyRange.only([clientId, SYNCED_STATUS.NOT_SYNCED]));
+
+    for await (const record of asyncCursorIterator<{
+      operation: CRDTOperation;
+      mutationID?: number;
+    }>(cursorRequest)) {
+      if (record.mutationID !== undefined && record.mutationID <= ackMutationID) {
+        await promisifyIDBRequest(
+          store.delete([record.operation.dot.clientId, record.operation.dot.version]),
+        );
+      }
+    }
   }
+
+
 }

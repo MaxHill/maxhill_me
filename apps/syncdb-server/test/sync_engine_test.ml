@@ -1,229 +1,88 @@
-let assert_reject_set_operation_request () =
-  let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"set\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fieldKey\":\"title\",\"jsonValue\":\"Buy milk\",\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
-  in
-  match Sync.Sync_engine.decode_sync_request request_json with
-  | Ok _ -> failwith "expected set decode rejection"
-  | Error msg -> assert (msg = "unsupported operation type: set")
+let decode_or_fail raw =
+  match Sync.Sync_engine.decode_sync_request raw with
+  | Ok request -> request
+  | Error msg -> failwith msg
 
-let assert_decode_set_row_operation_request () =
-  let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
+let assert_decode_new_request_shape () =
+  let request =
+    decode_or_fail
+      "{\"protocolVersion\":3,\"clientId\":\"client-1\",\"dbName\":\"main\",\"clientLastMutationID\":0,\"mutations\":[{\"id\":1,\"operation\":{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}}],\"lastSeenServerVersion\":0,\"requestHash\":\"x\"}"
   in
-  match Sync.Sync_engine.decode_sync_request request_json with
-  | Error msg -> failwith ("expected decode success, got error: " ^ msg)
-  | Ok request -> (
-      match request.operations with
-      | [ operation ] -> (
-          match operation.payload with
-          | Sync.Sync_engine.Set_row payload ->
-              assert (Yojson.Safe.to_string payload.fields = "{\"title\":\"Buy milk\"}" )
-          | _ -> failwith "expected Set_row payload")
-      | _ -> failwith "expected exactly one operation")
+  assert (request.protocol_version = 3);
+  assert (request.client_last_mutation_id = 0L);
+  assert (List.length request.mutations = 1)
 
-let assert_hash_sync_response_matches_expected_for_empty_case () =
-  let response =
-    {
-      Sync.Sync_engine.base_server_version = 0L;
+let assert_hash_set_request_golden () =
+  let request =
+    decode_or_fail
+      "{\"protocolVersion\":3,\"clientId\":\"cli-α\",\"dbName\":\"main\",\"clientLastMutationID\":7,\"mutations\":[{\"id\":8,\"operation\":{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"row-1\",\"fields\":{\"z\":0.000001,\"a\":0.0000001,\"é\":9007199254740991,\"nested\":{\"ß\":-0,\"中\":[1.25,2,3.5]}},\"dot\":{\"clientId\":\"cli-α\",\"version\":99}}}],\"lastSeenServerVersion\":123,\"requestHash\":\"x\"}"
+  in
+  let hash = Sync.Sync_engine.hash_sync_request request in
+  let expected = "a954556be2df764901106dce60e5f9a0946327a4fa907f277bcc1f6dba7cedcb" in
+  if hash <> expected then failwith ("setRow hash mismatch: " ^ hash)
+
+let assert_hash_remove_request_golden () =
+  let request =
+    decode_or_fail
+      "{\"protocolVersion\":3,\"clientId\":\"cli-α\",\"dbName\":\"main\",\"clientLastMutationID\":8,\"mutations\":[{\"id\":9,\"operation\":{\"type\":\"removeRow\",\"tableName\":\"todos\",\"rowKey\":\"row-1\",\"versionVector\":{\"é\":4,\"a\":2,\"中\":3},\"dot\":{\"clientId\":\"cli-α\",\"version\":100}}}],\"lastSeenServerVersion\":123,\"requestHash\":\"x\"}"
+  in
+  let hash = Sync.Sync_engine.hash_sync_request request in
+  let expected = "00aca8e589967ecf81db5523e2e7ed5503d9c8d1dd4fb2b106bc0946577538bd" in
+  if hash <> expected then failwith ("remove hash mismatch: " ^ hash)
+
+let assert_hash_response_golden () =
+  let state = Yojson.Safe.from_string
+    "{\"fields\":{\"title\":{\"value\":\"Hi\",\"dot\":{\"clientId\":\"client-1\",\"version\":3}},\"numbers\":{\"value\":[0.000001,1e-7,1e20],\"dot\":{\"clientId\":\"client-1\",\"version\":3}}},\"tombstone\":{\"dot\":{\"clientId\":\"deleter\",\"version\":3},\"versionVector\":{\"client-1\":2}}}" in
+  let response : Sync.Sync_engine.sync_response = {
+    protocol_version = 3; client_id = "reader"; base_server_version = 0L;
+    latest_server_version = 9L; last_mutation_id = 4L;
+    operations = [{
+      table_name = "todos"; row_key = "r1";
+      dot = {client_id = "checkpoint:todos:r1"; version = 9L};
+      payload = Checkpoint_row {checkpoint_seen_server_version = 8L; state};
+    }];
+    operation_server_versions = [9L]; response_hash = "";
+  } in
+  assert (Sync.Sync_engine.hash_sync_response response =
+    "87dc05ab1b0b1a0b28433266924ea61c89870c5a496cf402ce7fe9795a7b462f")
+
+let assert_decode_validation_errors () =
+  let expect_error raw =
+    match Sync.Sync_engine.decode_sync_request raw with
+    | Ok _ -> failwith "expected decode error"
+    | Error _ -> ()
+  in
+  expect_error
+    "{\"protocolVersion\":3,\"clientId\":\"\",\"dbName\":\"main\",\"clientLastMutationID\":0,\"mutations\":[],\"lastSeenServerVersion\":0,\"requestHash\":\"x\"}";
+  expect_error
+    "{\"protocolVersion\":3,\"clientId\":\"c\",\"dbName\":\"main\",\"clientLastMutationID\":\"nan\",\"mutations\":[],\"lastSeenServerVersion\":0,\"requestHash\":\"x\"}";
+  expect_error
+    "{\"protocolVersion\":3,\"clientId\":\"c\",\"dbName\":\"main\",\"clientLastMutationID\":0,\"mutations\":[{\"id\":0,\"operation\":{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{},\"dot\":{\"clientId\":\"c\",\"version\":1}}}],\"lastSeenServerVersion\":0,\"requestHash\":\"x\"}";
+  expect_error
+    "{\"protocolVersion\":3,\"clientId\":\"c\",\"dbName\":\"main\",\"clientLastMutationID\":0,\"mutations\":[{\"id\":1,\"operation\":{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"a\":1,\"a\":2},\"dot\":{\"clientId\":\"c\",\"version\":1}}}],\"lastSeenServerVersion\":0,\"requestHash\":\"x\"}";
+  expect_error
+    "{\"protocolVersion\":3,\"clientId\":\"c\",\"dbName\":\"main\",\"clientLastMutationID\":0,\"mutations\":[{\"id\":1,\"operation\":{\"type\":\"removeRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"versionVector\":{\"x\":1,\"x\":2},\"dot\":{\"clientId\":\"c\",\"version\":1}}}],\"lastSeenServerVersion\":0,\"requestHash\":\"x\"}"
+
+let assert_encode_response_shape () =
+  let response : Sync.Sync_engine.sync_response =
+    { protocol_version = 3;
+      client_id = "client-1";
+      base_server_version = 0L;
       latest_server_version = 0L;
+      last_mutation_id = 0L;
       operations = [];
       operation_server_versions = [];
-      synced_operations = [];
-      response_hash = "";
-    }
+      response_hash = "h" }
   in
-  assert
-    (Sync.Sync_engine.hash_sync_response response
-    = "0642c4ea7d881e66f5380be9a70f0ab7644cfd3a87830a074f3ca14fbc42b69c")
-
-let assert_hash_sync_request_mismatch_detected () =
-  let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[],\"lastSeenServerVersion\":0,\"requestHash\":\"wrong\"}"
-  in
-  let request =
-    match Sync.Sync_engine.decode_sync_request request_json with
-    | Error msg -> failwith ("unexpected decode error: " ^ msg)
-    | Ok value -> value
-  in
-  assert (Sync.Sync_engine.hash_sync_request request <> request.request_hash)
-
-let assert_decode_remove_operation_request () =
-  let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"removeRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"versionVector\":{\"client-1\":1,\"client-2\":3},\"dot\":{\"clientId\":\"client-1\",\"version\":2}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
-  in
-  match Sync.Sync_engine.decode_sync_request request_json with
-  | Error msg -> failwith ("expected decode success, got error: " ^ msg)
-  | Ok request -> (
-      match request.operations with
-      | [ operation ] -> (
-          match operation.payload with
-          | Sync.Sync_engine.Remove_row payload ->
-              assert (List.assoc "client-1" payload.version_vector = 1L);
-              assert (List.assoc "client-2" payload.version_vector = 3L)
-          | _ -> failwith "expected Remove_row payload")
-      | _ -> failwith "expected exactly one operation")
-
-let assert_reject_set_row_with_field () =
-  let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fieldKey\":\"title\",\"jsonValue\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
-  in
-  match Sync.Sync_engine.decode_sync_request request_json with
-  | Ok _ -> failwith "expected mismatch decode error"
-  | Error _ -> ()
-
-let assert_reject_invalid_db_name () =
-  let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"bad db\",\"operations\":[],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
-  in
-  match Sync.Sync_engine.decode_sync_request request_json with
-  | Ok _ -> failwith "expected invalid dbName decode error"
-  | Error _ -> ()
-
-let assert_hash_sync_request_matches_expected_for_set_row () =
-  let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"fields\":{\"title\":\"Buy milk\"},\"dot\":{\"clientId\":\"client-1\",\"version\":1}}],\"lastSeenServerVersion\":0,\"requestHash\":\"3bb9f2e08c455c6da0664d246563b8fd2aa6ca4daf31f2eecc18f8b60d3b3605\"}"
-  in
-  let request =
-    match Sync.Sync_engine.decode_sync_request request_json with
-    | Error msg -> failwith ("unexpected decode error: " ^ msg)
-    | Ok value -> value
-  in
-  assert
-    (Sync.Sync_engine.hash_sync_request request
-    = "3bb9f2e08c455c6da0664d246563b8fd2aa6ca4daf31f2eecc18f8b60d3b3605")
-
-let assert_hash_sync_request_matches_expected_for_remove () =
-  let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"removeRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"versionVector\":{\"client-1\":1,\"client-2\":3},\"dot\":{\"clientId\":\"client-1\",\"version\":2}}],\"lastSeenServerVersion\":0,\"requestHash\":\"d30be6870a193c65c0dd56409ceed24017197a0d7d325652df6b014bda207b29\"}"
-  in
-  let request =
-    match Sync.Sync_engine.decode_sync_request request_json with
-    | Error msg -> failwith ("unexpected decode error: " ^ msg)
-    | Ok value -> value
-  in
-  assert
-    (Sync.Sync_engine.hash_sync_request request
-    = "d30be6870a193c65c0dd56409ceed24017197a0d7d325652df6b014bda207b29")
-
-let assert_hash_sync_request_matches_expected_for_multi_operation () =
-  let request_json =
-    "{\"clientId\":\"client-abc\",\"dbName\":\"main\",\"operations\":[{\"type\":\"setRow\",\"tableName\":\"posts\",\"rowKey\":\"p1\",\"fields\":{\"title\":\"Hello\"},\"dot\":{\"clientId\":\"client-abc\",\"version\":6}},{\"type\":\"removeRow\",\"tableName\":\"posts\",\"rowKey\":\"p2\",\"versionVector\":{\"client-abc\":7},\"dot\":{\"clientId\":\"client-abc\",\"version\":7}}],\"lastSeenServerVersion\":5,\"requestHash\":\"e9bbcc78f4771c714b9f6a1925feb0a34ccd556f9d523c5f0068d9d2275418c2\"}"
-  in
-  let request =
-    match Sync.Sync_engine.decode_sync_request request_json with
-    | Error msg -> failwith ("unexpected decode error: " ^ msg)
-    | Ok value -> value
-  in
-  assert (Sync.Sync_engine.hash_sync_request request = "e9bbcc78f4771c714b9f6a1925feb0a34ccd556f9d523c5f0068d9d2275418c2")
-
-let assert_encode_sync_response_matches_go_bytes_for_empty_case () =
-  let response =
-    {
-      Sync.Sync_engine.base_server_version = 0L;
-      latest_server_version = 0L;
-      operations = [];
-      operation_server_versions = [];
-      synced_operations = [];
-      response_hash = "0642c4ea7d881e66f5380be9a70f0ab7644cfd3a87830a074f3ca14fbc42b69c";
-    }
-  in
-  let encoded = Sync.Sync_engine.encode_sync_response response in
-  let expected =
-    "{\"baseServerVersion\":0,\"latestServerVersion\":0,\"operations\":[],\"syncedOperations\":[],\"responseHash\":\"0642c4ea7d881e66f5380be9a70f0ab7644cfd3a87830a074f3ca14fbc42b69c\"}"
-  in
-  assert (encoded = expected)
-
-let assert_encode_sync_response_includes_set_row_operation_shape () =
-  let op =
-    {
-      Sync.Sync_engine.table_name = "todos";
-      row_key = "r1";
-      dot = { client_id = "client-1"; version = 1L };
-      payload = Set_row { fields = `Assoc [ ("title", `String "Buy milk") ] };
-    }
-  in
-  let response =
-    {
-      Sync.Sync_engine.base_server_version = 0L;
-      latest_server_version = 1L;
-      operations = [ op ];
-      operation_server_versions = [ 1L ];
-      synced_operations = [ { dot = { client_id = "client-1"; version = 1L }; server_version = 1L } ];
-      response_hash = "hash";
-    }
-  in
-  let encoded = Sync.Sync_engine.encode_sync_response response in
-  let json = Yojson.Safe.from_string encoded in
-  let open Yojson.Safe.Util in
-  let operations = json |> member "operations" |> to_list in
-  match operations with
-  | [ first ] ->
-      assert (first |> member "type" |> to_string = "setRow");
-      assert (first |> member "fields" |> Yojson.Safe.to_string = "{\"title\":\"Buy milk\"}");
-      let keys = first |> to_assoc |> List.map fst in
-      assert (not (List.mem "fieldKey" keys));
-      assert (not (List.mem "versionVector" keys))
-  | _ -> failwith "expected one operation"
-
-let assert_checkpoint_wire_round_trip () =
-  let request_json =
-    "{\"clientId\":\"client-1\",\"dbName\":\"main\",\"operations\":[{\"type\":\"checkpointRow\",\"tableName\":\"todos\",\"rowKey\":\"r1\",\"dot\":{\"clientId\":\"server\",\"version\":9},\"checkpointSeenServerVersion\":7,\"fields\":{\"title\":{\"value\":\"Hi\",\"dot\":{\"clientId\":\"client-1\",\"version\":2}}},\"tombstone\":{\"dot\":{\"clientId\":\"deleter\",\"version\":3},\"versionVector\":{\"client-1\":2}}}],\"lastSeenServerVersion\":0,\"requestHash\":\"abc\"}"
-  in
-  match Sync.Sync_engine.decode_sync_request request_json with
-  | Error msg -> failwith ("expected checkpoint decode success: " ^ msg)
-  | Ok request ->
-      (match request.operations with
-      | [ { payload = Checkpoint_row { checkpoint_seen_server_version; state }; _ } ] ->
-          assert (checkpoint_seen_server_version = 7L);
-          assert (Yojson.Safe.Util.member "fields" state <> `Null);
-          assert (Yojson.Safe.Util.member "tombstone" state <> `Null)
-      | _ -> failwith "expected checkpointRow payload")
-
-let assert_checkpoint_response_uses_client_wire_shape () =
-  let operation =
-    {
-      Sync.Sync_engine.table_name = "todos";
-      row_key = "r1";
-      dot = { client_id = "server"; version = 9L };
-      payload =
-        Checkpoint_row
-          { checkpoint_seen_server_version = 7L;
-            state =
-              `Assoc
-                [ ("fields", `Assoc [ ("title", `Assoc [ ("value", `String "Hi"); ("dot", `Assoc [ ("clientId", `String "client-1"); ("version", `Int 2) ]) ]) ]);
-                  ("tombstone", `Assoc [ ("dot", `Assoc [ ("clientId", `String "deleter"); ("version", `Int 3) ]); ("versionVector", `Assoc [ ("client-1", `Int 2) ]) ]) ] };
-    }
-  in
-  let response =
-    { Sync.Sync_engine.base_server_version = 0L;
-      latest_server_version = 8L;
-      operations = [ operation ];
-      operation_server_versions = [ 8L ];
-      synced_operations = [];
-      response_hash = "hash" }
-  in
-  assert
-    (Sync.Sync_engine.hash_sync_response response
-    = "0a330e88ebc6f8da31563f3a6b46f0c32f2fed49dea522ec9dba1f4bd97af11a");
   let json = Yojson.Safe.from_string (Sync.Sync_engine.encode_sync_response response) in
-  let encoded_operation = json |> Yojson.Safe.Util.member "operations" |> Yojson.Safe.Util.to_list |> List.hd in
-  assert (Yojson.Safe.Util.member "fields" encoded_operation <> `Null);
-  assert (Yojson.Safe.Util.member "tombstone" encoded_operation <> `Null);
-  assert (Yojson.Safe.Util.member "state" encoded_operation = `Null);
-  assert (Yojson.Safe.Util.member "checkpointSeenServerVersion" encoded_operation = `Int 7)
+  assert (Yojson.Safe.Util.member "protocolVersion" json = `Int 3);
+  assert (Yojson.Safe.Util.member "clientId" json = `String "client-1");
+  assert (Yojson.Safe.Util.member "lastMutationID" json = `Int 0)
 
 let () =
-  assert_checkpoint_wire_round_trip ();
-  assert_checkpoint_response_uses_client_wire_shape ();
-  assert_reject_set_operation_request ();
-  assert_decode_set_row_operation_request ();
-  assert_decode_remove_operation_request ();
-  assert_reject_set_row_with_field ();
-  assert_reject_invalid_db_name ();
-  assert_hash_sync_response_matches_expected_for_empty_case ();
-  assert_hash_sync_request_mismatch_detected ();
-  assert_hash_sync_request_matches_expected_for_set_row ();
-  assert_hash_sync_request_matches_expected_for_remove ();
-  assert_hash_sync_request_matches_expected_for_multi_operation ();
-  assert_encode_sync_response_matches_go_bytes_for_empty_case ();
-  assert_encode_sync_response_includes_set_row_operation_shape ()
+  assert_decode_new_request_shape ();
+  assert_hash_set_request_golden ();
+  assert_hash_remove_request_golden ();
+  assert_hash_response_golden ();
+  assert_decode_validation_errors ();
+  assert_encode_response_shape ()

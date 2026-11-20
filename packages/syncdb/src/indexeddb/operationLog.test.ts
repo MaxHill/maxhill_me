@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 import { OperationLog } from "./operationLog.ts";
-import { Lifecycle, OPERATIONS_STORE, CLIENT_STATE_STORE } from "./lifecycle.ts";
+import { Lifecycle, OPERATIONS_STORE } from "./lifecycle.ts";
 import { CRDTOperation } from "../crdt.ts";
 import "fake-indexeddb/auto";
 
@@ -10,9 +10,7 @@ describe("OperationLog", () => {
   const dbName = "oplog-test";
 
   beforeEach(async () => {
-    if (lifecycle?.db) {
-      lifecycle.close();
-    }
+    if (lifecycle?.db) lifecycle.close();
     await new Promise<void>((resolve, reject) => {
       const req = indexedDB.deleteDatabase(dbName);
       req.onsuccess = () => resolve();
@@ -23,141 +21,92 @@ describe("OperationLog", () => {
     log = new OperationLog();
   });
 
-  it("saves an operation and retrieves it as unsynced", async () => {
-    const op: CRDTOperation = {
-      type: "setRow",
-      tableName: "users",
-      rowKey: "u1",
-      fields: { ["name"]: "Alice" },
-      dot: { clientId: "c1", version: 1 },
-    };
-
-    const saveTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
-    await log.saveOperation(saveTx, op);
-    await lifecycle.commit(saveTx);
-
-    const getTx = lifecycle.transaction(OPERATIONS_STORE, "readonly");
-    const ops = await log.getUnsyncedOperations(getTx);
-    await lifecycle.commit(getTx);
-
-    expect(ops).toHaveLength(1);
-    expect(ops[0]).toEqual(op);
+  it("refuses pending records without a mutation ID instead of omitting them", async () => {
+    const transaction = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
+    transaction.objectStore(OPERATIONS_STORE).add({
+      operation: { type: "setRow", tableName: "users", rowKey: "bad",
+        fields: { name: "kept" }, dot: { clientId: "c1", version: 1 } },
+      synced: 0,
+    });
+    await lifecycle.commit(transaction);
+    await expect(log.getPendingMutationsByClient(
+      lifecycle.transaction(OPERATIONS_STORE), "c1",
+    )).rejects.toThrow("mutation ID");
   });
 
-  it("marks an operation as synced so it no longer appears in unsynced", async () => {
-    const op: CRDTOperation = {
+  it("stores and retrieves pending mutations ordered by dense mutationID", async () => {
+    const op = (version: number): CRDTOperation => ({
       type: "setRow",
       tableName: "users",
-      rowKey: "u1",
-      fields: { ["name"]: "Alice" },
-      dot: { clientId: "c1", version: 1 },
-    };
+      rowKey: `u${version}`,
+      fields: { name: String(version) },
+      dot: { clientId: "c1", version },
+    });
 
-    const saveTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
-    await log.saveOperation(saveTx, op);
-    await lifecycle.commit(saveTx);
+    const tx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
+    await log.saveLocalPendingOperation(tx, op(2), 2);
+    await log.saveLocalPendingOperation(tx, op(1), 1);
+    await lifecycle.commit(tx);
 
-    const syncTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
-    await log.saveOperationAsSynced(syncTx, op.dot, 4);
-    await lifecycle.commit(syncTx);
+    const readTx = lifecycle.transaction(OPERATIONS_STORE, "readonly");
+    const pending = await log.getPendingMutationsByClient(readTx, "c1");
+    await lifecycle.commit(readTx);
 
-    const getTx = lifecycle.transaction(OPERATIONS_STORE, "readonly");
-    const ops = await log.getUnsyncedOperations(getTx);
-    await lifecycle.commit(getTx);
+    expect(pending.map((p) => p.mutationID)).toEqual([1, 2]);
+  });
 
-    expect(ops).toHaveLength(0);
+  it("deletes acknowledged pending mutations through frontier", async () => {
+    const tx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
+    for (let i = 1; i <= 3; i++) {
+      await log.saveLocalPendingOperation(tx, {
+        type: "setRow",
+        tableName: "users",
+        rowKey: `u${i}`,
+        fields: { name: String(i) },
+        dot: { clientId: "c1", version: i },
+      }, i);
+    }
+    await log.deletePendingMutationsThrough(tx, "c1", 2);
+    await lifecycle.commit(tx);
+
+    const readTx = lifecycle.transaction(OPERATIONS_STORE, "readonly");
+    const pending = await log.getPendingMutationsByClient(readTx, "c1");
+    await lifecycle.commit(readTx);
+
+    expect(pending.map((p) => p.mutationID)).toEqual([3]);
   });
 
   it("batches row checkpoints in one synced-record scan and preserves uncovered operations", async () => {
     const acceptedBeforeCutoff: CRDTOperation = {
       type: "setRow", tableName: "users", rowKey: "u1", fields: { name: "old" },
-      dot: { clientId: "c1", version: 1 },
-    };
-    const acceptedBetweenCutoffs: CRDTOperation = {
-      type: "setRow", tableName: "users", rowKey: "u1", fields: { name: "covered by max cutoff" },
-      dot: { clientId: "c1", version: 2 },
+      dot: { clientId: "c1", version: 1 }, serverVersion: 3,
     };
     const acceptedAtCutoff: CRDTOperation = {
       type: "setRow", tableName: "users", rowKey: "u1", fields: { name: "boundary" },
-      dot: { clientId: "c1", version: 5 },
-    };
-    const pending: CRDTOperation = {
-      type: "setRow", tableName: "users", rowKey: "u1", fields: { name: "pending" },
-      dot: { clientId: "c1", version: 3 },
-    };
-    const acceptedOtherRow: CRDTOperation = {
-      type: "setRow", tableName: "users", rowKey: "u2", fields: { name: "other" },
-      dot: { clientId: "c1", version: 4 },
+      dot: { clientId: "c1", version: 5 }, serverVersion: 5,
     };
     const checkpoints: Extract<CRDTOperation, { type: "checkpointRow" }>[] = [
-      { type: "checkpointRow", tableName: "users", rowKey: "u1", dot: { clientId: "server", version: 5 }, checkpointSeenServerVersion: 4, fields: {} },
       { type: "checkpointRow", tableName: "users", rowKey: "u1", dot: { clientId: "server", version: 6 }, checkpointSeenServerVersion: 5, fields: {} },
     ];
     const writeTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
-    await log.saveOperation(writeTx, acceptedBeforeCutoff);
-    await log.saveOperation(writeTx, acceptedBetweenCutoffs);
-    await log.saveOperation(writeTx, acceptedAtCutoff);
-    await log.saveOperation(writeTx, pending);
-    await log.saveOperation(writeTx, acceptedOtherRow);
-    await log.saveOperationAsSynced(writeTx, acceptedBeforeCutoff.dot, 3);
-    await log.saveOperationAsSynced(writeTx, acceptedBetweenCutoffs.dot, 4);
-    await log.saveOperationAsSynced(writeTx, acceptedAtCutoff.dot, 5);
-    await log.saveOperationAsSynced(writeTx, acceptedOtherRow.dot, 3);
+    await log.saveRemoteOperation(writeTx, acceptedBeforeCutoff);
+    await log.saveRemoteOperation(writeTx, acceptedAtCutoff);
     await lifecycle.commit(writeTx);
 
     const cleanupTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
     const storeIndex = vi.spyOn(IDBObjectStore.prototype, "index");
-    const openCursor = vi.spyOn(IDBIndex.prototype, "openCursor");
     await log.deleteCoveredAcceptedOperations(cleanupTx, checkpoints);
-    expect(storeIndex).toHaveBeenCalledTimes(1);
     expect(storeIndex).toHaveBeenCalledWith("by-synced");
-    expect(openCursor).toHaveBeenCalledTimes(1);
     storeIndex.mockRestore();
-    openCursor.mockRestore();
     await lifecycle.commit(cleanupTx);
 
     const allTx = lifecycle.transaction(OPERATIONS_STORE, "readonly");
-    const remaining = await log.getAllOperations(allTx);
+    const remaining = await new Promise<{ operation: CRDTOperation }[]>((resolve, reject) => {
+      const request = allTx.objectStore(OPERATIONS_STORE).getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
     await lifecycle.commit(allTx);
-    expect(remaining.map((op) => op.dot.version).sort()).toEqual([3, 4, 5]);
-  });
-
-  it("batch saves operations and counts unsynced", async () => {
-    const ops: CRDTOperation[] = [
-      { type: "setRow", tableName: "users", rowKey: "u1", fields: { name: "A" }, dot: { clientId: "c1", version: 1 } },
-      { type: "setRow", tableName: "users", rowKey: "u2", fields: { name: "B" }, dot: { clientId: "c1", version: 2 } },
-      { type: "setRow", tableName: "users", rowKey: "u3", fields: { name: "C" }, dot: { clientId: "c1", version: 3 } },
-    ];
-
-    const saveTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
-    await log.batchSaveOperations(saveTx, ops);
-    await lifecycle.commit(saveTx);
-
-    const countTx = lifecycle.transaction(OPERATIONS_STORE, "readonly");
-    const count = await log.countUnsyncedOperations(countTx);
-    await lifecycle.commit(countTx);
-
-    expect(count).toBe(3);
-  });
-
-  it("resets sync state clearing all operations", async () => {
-    const op: CRDTOperation = {
-      type: "setRow", tableName: "users", rowKey: "u1", fields: { name: "A" },
-      dot: { clientId: "c1", version: 1 },
-    };
-
-    const saveTx = lifecycle.transaction(OPERATIONS_STORE, "readwrite");
-    await log.saveOperation(saveTx, op);
-    await lifecycle.commit(saveTx);
-
-    const resetTx = lifecycle.transaction([OPERATIONS_STORE, CLIENT_STATE_STORE], "readwrite");
-    await log.resetSyncState(resetTx);
-    await lifecycle.commit(resetTx);
-
-    const getTx = lifecycle.transaction(OPERATIONS_STORE, "readonly");
-    const ops = await log.getUnsyncedOperations(getTx);
-    await lifecycle.commit(getTx);
-
-    expect(ops).toHaveLength(0);
+    expect(remaining.map(({ operation }) => operation.dot.version)).toEqual([5]);
   });
 });

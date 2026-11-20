@@ -229,7 +229,7 @@ describe("CRDTDatabase", () => {
         req.onerror = () => reject(req.error);
       });
 
-      expect(operations.at(-1)?.op).toMatchObject({
+      expect(operations.at(-1)?.operation).toMatchObject({
         type: "setRow",
         tableName: "users",
         rowKey: "u1",

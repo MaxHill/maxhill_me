@@ -77,6 +77,14 @@ device, or simulator instance). Distinct replicas of the same tenant
 must not share a client id.
 _Avoid_: device id, session id, user id.
 
+**Mutation id**: A position in one client's ordered sequence of local
+changes. It is not a CRDT logical clock or server change-stream position.
+_Avoid_: dot version, server version (when referring to upload order).
+
+**Mutation watermark**: The last committed mutation id in one client's
+processed prefix. It is separate from the client's pull cursor.
+_Avoid_: highest seen version (does not imply a committed prefix).
+
 **Local change**: A data change that originated from a write on this
 replica (`setRow` / `setField` / `deleteRow`).
 _Avoid_: local event, write event.

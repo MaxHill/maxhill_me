@@ -47,6 +47,7 @@ export class PersistedLogicalClock {
     const currentVersion = await this.clientState.getVersion(tx);
 
     const newVersion = currentVersion + 1;
+    assert(Number.isSafeInteger(newVersion), "Logical clock must remain a safe integer");
     await this.clientState.setVersion(tx, newVersion);
 
     assert(newVersion >= 0, "Version could never be less than 0 after ticking. Got: " + newVersion);
@@ -71,7 +72,8 @@ export class PersistedLogicalClock {
       tx.objectStoreNames.contains("clientState"),
       "Transaction is missing clientState objectStore",
     );
-    assert(otherVersion >= -1, `Cannot sync with invalid version: ${otherVersion}`);
+    assert(Number.isSafeInteger(otherVersion) && otherVersion >= -1,
+      `Cannot sync with invalid version: ${otherVersion}`);
 
     // Read current version
     const currentVersion = await this.clientState.getVersion(tx);

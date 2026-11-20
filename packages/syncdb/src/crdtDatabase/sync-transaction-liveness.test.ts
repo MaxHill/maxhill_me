@@ -39,28 +39,30 @@ describe("CRDTDatabase sync transaction liveness", () => {
 
     openDbs.push(lifecycle.db!);
 
-    const responseWithoutHash = {
+    const response = {
+      protocolVersion: 3 as const,
+      clientId: "client-1",
       baseServerVersion: -1,
       latestServerVersion: 0,
+      lastMutationID: 0,
       operations: [
         {
           type: "setRow" as const,
           tableName: "users",
           rowKey: "u1",
-          fields: { ["name"]: "Alice" },
+          fields: { name: "Alice" },
           dot: { clientId: "server", version: 0 },
+          serverVersion: 0,
         },
       ],
-      syncedOperations: [],
+      // Generated with the production OCaml response encoder and hash routine.
+      responseHash: "bc7864034def63d4f1d7d86f6b57a25e1555ec08dbb6f40831a852d5bb665059",
     };
 
-    const responseHash = await (sync as any).createResponseHash(responseWithoutHash);
-    const response = { ...responseWithoutHash, responseHash };
-
     const originalDigest = crypto.subtle.digest.bind(crypto.subtle);
-    vi.spyOn(crypto.subtle, "digest").mockImplementation(async (...args: any[]) => {
+    vi.spyOn(crypto.subtle, "digest").mockImplementation(async (...digestArguments: any[]) => {
       await new Promise((resolve) => setTimeout(resolve, 0));
-      return originalDigest(...(args as Parameters<SubtleCrypto["digest"]>));
+      return originalDigest(...(digestArguments as Parameters<SubtleCrypto["digest"]>));
     });
 
     await expect(db.sync(response)).resolves.toBeUndefined();
