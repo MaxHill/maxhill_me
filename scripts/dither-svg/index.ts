@@ -16,6 +16,7 @@
  * nearest ancestor app's public/ directory.
  */
 
+import assert from "node:assert/strict";
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
@@ -55,7 +56,9 @@ function parseRect(attrs: string): Rect | null {
 	const w = Number(attr(attrs, "width") ?? "0");
 	const h = Number(attr(attrs, "height") ?? "0");
 	const fill = (attr(attrs, "fill") ?? "").toLowerCase();
-	if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(w) || !Number.isFinite(h)) return null;
+	if (![x, y, w, h].every(Number.isFinite)) {return null;}
+	assert(w >= 0, "Rectangle width must not be negative");
+	assert(h >= 0, "Rectangle height must not be negative");
 	return { x, y, w, h, fill };
 }
 
@@ -74,9 +77,12 @@ function sortRects(a: Rect, b: Rect): number {
 function mergeRects(rects: Rect[]): Rect[] {
 	const merged: Rect[] = [];
 	for (const rect of [...rects].sort(sortRects)) {
-		const prev = merged.at(-1);
-		if (prev && prev.y === rect.y && prev.h === rect.h && prev.x + prev.w === rect.x) {
-			prev.w += rect.w;
+		const previous = merged.at(-1);
+		if (
+			previous && previous.y === rect.y && previous.h === rect.h &&
+			previous.x + previous.w === rect.x
+		) {
+			previous.w += rect.w;
 			continue;
 		}
 		merged.push({ ...rect });
@@ -85,17 +91,19 @@ function mergeRects(rects: Rect[]): Rect[] {
 }
 
 function getBounds(rects: Rect[]): Bounds | null {
-	if (rects.length === 0) return null;
+	if (rects.length === 0) {return null;}
 	let minX = Infinity;
 	let minY = Infinity;
 	let maxX = -Infinity;
 	let maxY = -Infinity;
 	for (const rect of rects) {
-		if (rect.x < minX) minX = rect.x;
-		if (rect.y < minY) minY = rect.y;
-		if (rect.x + rect.w > maxX) maxX = rect.x + rect.w;
-		if (rect.y + rect.h > maxY) maxY = rect.y + rect.h;
+		if (rect.x < minX) {minX = rect.x;}
+		if (rect.y < minY) {minY = rect.y;}
+		if (rect.x + rect.w > maxX) {maxX = rect.x + rect.w;}
+		if (rect.y + rect.h > maxY) {maxY = rect.y + rect.h;}
 	}
+	assert(minX <= maxX, "Artwork X bounds must be ordered");
+	assert(minY <= maxY, "Artwork Y bounds must be ordered");
 	return { minX, minY, maxX, maxY };
 }
 
@@ -127,7 +135,7 @@ function processSvg(input: string): ProcessResult {
 
 	const nonBlackRectsRemoved = input.replace(RECT_RE, (match, attrs: string) => {
 		const rect = parseRect(attrs);
-		if (!rect) return match;
+		if (!rect) {return match;}
 		if (isBlack(rect.fill)) {
 			dropped++;
 			return "";
@@ -146,7 +154,11 @@ function processSvg(input: string): ProcessResult {
 		return { svg: nonBlackRectsRemoved, bounds: null, kept, dropped, merged: 0 };
 	}
 
-	const viewBox = `${bounds.minX} ${bounds.minY} ${bounds.maxX - bounds.minX} ${bounds.maxY - bounds.minY}`;
+	assert(mergedRects.length <= kept, "Merging must not add rectangles");
+	assert(kept === whiteRects.length, "Kept count must match white artwork");
+	const viewBox = [
+		bounds.minX, bounds.minY, bounds.maxX - bounds.minX, bounds.maxY - bounds.minY,
+	].join(" ");
 	const path = `<path d="${rectsToPath(mergedRects)}"/>`;
 	const withRoot = updateRootSvg(nonBlackRectsRemoved, viewBox);
 	const svg = replaceSvgChildren(withRoot, path);
@@ -154,8 +166,8 @@ function processSvg(input: string): ProcessResult {
 }
 
 function fmtBytes(n: number): string {
-	if (n < 1024) return `${n} B`;
-	if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+	if (n < 1024) {return `${n} B`;}
+	if (n < 1024 * 1024) {return `${(n / 1024).toFixed(1)} KB`;}
 	return `${(n / (1024 * 1024)).toFixed(2)} MB`;
 }
 
@@ -168,15 +180,15 @@ async function findNearestPublicDir(fromDir: string): Promise<string | null> {
 	while (true) {
 		const candidate = join(current, "public");
 		const found = await stat(candidate).catch(() => null);
-		if (found?.isDirectory()) return candidate;
+		if (found?.isDirectory()) {return candidate;}
 		const parent = dirname(current);
-		if (parent === current) return null;
+		if (parent === current) {return null;}
 		current = parent;
 	}
 }
 
 async function resolveOutputDir(inputDir: string, outArg?: string): Promise<string> {
-	if (outArg) return resolve(outArg);
+	if (outArg) {return resolve(outArg);}
 	const publicDir = await findNearestPublicDir(inputDir);
 	if (!publicDir) {
 		throw new Error(`Could not find ancestor public/ directory for ${inputDir}`);
@@ -236,7 +248,8 @@ async function main() {
 
 		const pct = ((1 - outBytes / inBytes) * 100).toFixed(1);
 		console.log(
-			`done  ${fmtBytes(inBytes)} → ${fmtBytes(outBytes)} (-${pct}%)  kept ${kept}, merged ${merged}, dropped ${dropped}`,
+			`done  ${fmtBytes(inBytes)} → ${fmtBytes(outBytes)} (-${pct}%)  ` +
+			`kept ${kept}, merged ${merged}, dropped ${dropped}`,
 		);
 	}
 
@@ -246,7 +259,7 @@ async function main() {
 	}
 }
 
-main().catch((err) => {
-	console.error(err);
+main().catch((error) => {
+	console.error(error);
 	process.exit(1);
 });

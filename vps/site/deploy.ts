@@ -29,7 +29,7 @@ await $`rsync vps/site/dist/deploy-remote deploy@${VPS_HOST}:${remoteRunnerPath}
 await runRemoteBinaryAndCleanup({
 	host: VPS_HOST,
 	remotePath: remoteRunnerPath,
-	args: [releaseDir],
+	remoteArguments: [releaseDir],
 });
 
 console.log(`site deployed at ${sha}`);

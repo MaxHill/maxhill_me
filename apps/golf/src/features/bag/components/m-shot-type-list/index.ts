@@ -3,7 +3,6 @@ import styles from "./index.css?inline";
 import { html, render } from "lit-html";
 import { get_DB } from "../../../../db";
 import { ShotType, ShotTypeService } from "../../shot-type-service";
-import { TableChangeEvent } from "@maxhill/syncdb";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import "@maxhill/components/m-card";
 
@@ -38,7 +37,7 @@ export class MShotTypeList extends MElement {
     const db = await get_DB();
     this.shot_type_repository = new ShotTypeService(db);
 
-    this.unsubscribe = this.shot_type_repository.subscribe(async (_: TableChangeEvent) => {
+    this.unsubscribe = this.shot_type_repository.subscribe(async () => {
       await this.renderComponent();
     });
 
@@ -75,7 +74,9 @@ export class MShotTypeList extends MElement {
                   <div class="name">
                     ${shotType.name}
                   </div>
-                  ${shotType.description ? html`<div class="description">${shotType.description}</div>` : null}
+                  ${shotType.description
+                    ? html`<div class="description">${shotType.description}</div>`
+                    : null}
                 </div>
               </m-card>
             `})}
@@ -94,7 +95,8 @@ export class MShotTypeList extends MElement {
         ` : html`
           <m-empty-state
             title="$ shottype --list"
-            message="No shot types configured. Add shot types to categorize different ways you can hit each club."
+            message=${"No shot types configured. Add shot types to " +
+                    "categorize different ways you can hit each club."}
           >
             <a slot="action" href="/bag/shot-type/add">+ Add Shot Type</a>
           </m-empty-state>

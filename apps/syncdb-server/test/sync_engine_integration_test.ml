@@ -254,6 +254,42 @@ let assert_pull_cursor_full_page_with_own_upload () =
   in
   assert (response.latest_server_version = max_returned)
 
+let assert_compaction_preserves_unobserved_contender () =
+  with_connection @@ fun conn ->
+  assert (Sync.Repository.init_schema conn = Ok ());
+  let upload client_id ack operation =
+    ignore (submit_ok conn ~tenant_id:"user-1"
+      (make_request ~client_id ~db_name:"main" ~client_last_mutation_id:ack
+        ~last_seen_server_version:(-1L)
+        ~mutations:[{Sync.Sync_engine.id = Int64.succ ack; operation}]))
+  in
+  let compact cutoff =
+    match Sync.Sync_engine.compact_row_with_connection conn ~tenant_id:"user-1"
+      ~db_name:"main" ~table_name:"todos" ~row_key:"r1"
+      ~checkpoint_seen_server_version:cutoff with
+    | Ok _ -> ()
+    | Error e -> failwith (Sync.Sync_engine.sync_error_to_string e)
+  in
+  let read_field () =
+    let response = submit_ok conn ~tenant_id:"user-1"
+      (make_request ~client_id:"reader" ~db_name:"main" ~client_last_mutation_id:0L
+        ~last_seen_server_version:(-1L) ~mutations:[]) in
+    match response.operations with
+    | [{payload = Checkpoint_row {state; _}; _}] ->
+        state |> Yojson.Safe.Util.member "fields" |> Yojson.Safe.Util.member "title"
+    | _ -> failwith "expected persisted checkpoint"
+  in
+  upload "a" 0L (make_set_op ~client_id:"a" ~dot_version:1L ~row_key:"r1");
+  upload "b" 0L (make_set_op ~client_id:"b" ~dot_version:1L ~row_key:"r1");
+  compact 3L;
+  assert (Yojson.Safe.Util.member "contenders" (read_field ()) <> `Null);
+  upload "b" 1L (make_remove_op ~client_id:"b" ~dot_version:2L ~row_key:"r1"
+    ~version_vector:[("b", 1L)]);
+  compact 5L;
+  let field = read_field () in
+  assert (field |> Yojson.Safe.Util.member "dot" |> Yojson.Safe.Util.member "clientId" = `String "a");
+  assert (Yojson.Safe.Util.member "contenders" field = `Null)
+
 let assert_duplicate_after_compaction_with_constant_metadata () =
   with_connection @@ fun conn ->
   assert (Sync.Repository.init_schema conn = Ok ());
@@ -338,4 +374,5 @@ let () =
   assert_process_rejects_actor_mismatch_and_checkpoint_uploads ();
   assert_partition_isolation ();
   assert_pull_cursor_full_page_with_own_upload ();
+  assert_compaction_preserves_unobserved_contender ();
   assert_duplicate_after_compaction_with_constant_metadata ()

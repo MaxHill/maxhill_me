@@ -20,11 +20,9 @@ export function getOrCreateUser(db: Database, email: string): string {
 
     if (createdUser) {
       const tenantID = crypto.randomUUID();
-      db.query("INSERT INTO tenants (id, name, created_at) VALUES (?, ?, ?)").run(
-        tenantID,
-        "Personal",
-        now,
-      );
+      db.query(
+        "INSERT INTO tenants (id, name, created_at) VALUES (?, ?, ?)",
+      ).run(tenantID, "Personal", now);
       db.query(
         `INSERT INTO memberships (tenant_id, user_id, role, created_at)
          VALUES (?, ?, 'owner', ?)`,
@@ -62,71 +60,94 @@ export const routes = (
 
   return {
     "/me": {
-      OPTIONS: (request: Bun.BunRequest<"/me">) => {
-        const headers = corsHeadersForOrigin(request.headers.get("origin"));
-        if (!headers.has("Access-Control-Allow-Origin")) {
-          return new Response(null, { status: 403, headers });
-        }
-        return new Response(null, { status: 204, headers });
-      },
-      GET: async (request: Bun.BunRequest<"/me">) => {
-        const origin = request.headers.get("origin");
-        const headers = corsHeadersForOrigin(origin);
-        if (origin && !headers.has("Access-Control-Allow-Origin")) {
-          return Response.json({ error: "Forbidden" }, { status: 403 });
-        }
-
-        const token = request.headers
-          .get("authorization")
-          ?.match(/^Bearer\s+(\S+)$/i)?.[1];
-        if (!token) {
-          return Response.json({ error: "Unauthorized" }, { status: 401, headers });
-        }
-
-        const verified = await auth.verify(subjects, token);
-        if (verified.err) {
-          return Response.json({ error: "Unauthorized" }, { status: 401, headers });
-        }
-
-        const email = getEmailForUser(db, verified.subject.properties.userID);
-        if (!email) {
-          return Response.json({ error: "User not found" }, { status: 404, headers });
-        }
-
-        headers.set("Cache-Control", "no-store");
-        return Response.json({ email }, { status: 200, headers });
-      },
+      OPTIONS: (request: Bun.BunRequest<"/me">) =>
+        handleMeOptions(request, corsHeadersForOrigin),
+      GET: (request: Bun.BunRequest<"/me">) =>
+        handleMe(request, db, auth, corsHeadersForOrigin),
     },
     "/me/roles": {
-      GET: async (request: Bun.BunRequest<"/me/roles">) => {
-        const token = request.headers
-          .get("authorization")
-          ?.match(/^Bearer\s+(\S+)$/i)?.[1];
+      GET: (request: Bun.BunRequest<"/me/roles">) =>
+        handleMeRoles(request, db, auth),
+    },
+  };
+};
 
-        if (!token) {
-          return Response.json({ error: "Unauthorized" }, { status: 401 });
-        }
+function handleMeOptions(
+  request: Request,
+  corsHeadersForOrigin: (origin: string | null) => Headers,
+): Response {
+  const headers = corsHeadersForOrigin(request.headers.get("origin"));
+  if (!headers.has("Access-Control-Allow-Origin")) {
+    return new Response(null, { status: 403, headers });
+  }
+  return new Response(null, { status: 204, headers });
+}
 
-        const verified = await auth.verify(subjects, token);
-        if (verified.err) {
-          return Response.json({ error: "Unauthorized" }, { status: 401 });
-        }
+async function handleMe(
+  request: Request,
+  db: Database,
+  auth: ReturnType<typeof createClient>,
+  corsHeadersForOrigin: (origin: string | null) => Headers,
+): Promise<Response> {
+  const origin = request.headers.get("origin");
+  const headers = corsHeadersForOrigin(origin);
+  if (origin && !headers.has("Access-Control-Allow-Origin")) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
 
-        const userID = verified.subject.properties.userID;
-        const roles = db
-          .query<{ id: string; role: string }, [string]>(`
+  const token = request.headers
+    .get("authorization")
+    ?.match(/^Bearer\s+(\S+)$/i)?.[1];
+  if (!token) {
+    return Response.json({ error: "Unauthorized" }, { status: 401, headers });
+  }
+
+  const verified = await auth.verify(subjects, token);
+  if (verified.err) {
+    return Response.json({ error: "Unauthorized" }, { status: 401, headers });
+  }
+
+  const email = getEmailForUser(db, verified.subject.properties.userID);
+  if (!email) {
+    return Response.json({ error: "User not found" }, { status: 404, headers });
+  }
+
+  headers.set("Cache-Control", "no-store");
+  return Response.json({ email }, { status: 200, headers });
+}
+
+async function handleMeRoles(
+  request: Request,
+  db: Database,
+  auth: ReturnType<typeof createClient>,
+): Promise<Response> {
+  const token = request.headers
+    .get("authorization")
+    ?.match(/^Bearer\s+(\S+)$/i)?.[1];
+
+  if (!token) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const verified = await auth.verify(subjects, token);
+  if (verified.err) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userID = verified.subject.properties.userID;
+  const roles = db
+    .query<{ id: string; role: string }, [string]>(
+      `
             SELECT tenants.id as tenant_id, tenants.name, memberships.role
             FROM users 
             JOIN memberships on memberships.user_id = users.id
             JOIN tenants on tenants.id = memberships.tenant_id
-            WHERE users.id = ?`)
-          .all(userID);
+            WHERE users.id = ?`,
+    )
+    .all(userID);
 
-        return Response.json(roles, { status: 200 });
-      },
-    },
-  };
-};
+  return Response.json(roles, { status: 200 });
+}
 
 /** Keep the existing token subject ID format until the planned UUID migration. */
 function hashEmail(email: string): string {

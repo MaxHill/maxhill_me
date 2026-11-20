@@ -1,40 +1,40 @@
-import { playwrightLauncher } from '@web/test-runner-playwright';
-import { esbuildPlugin } from '@web/dev-server-esbuild';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
+import { playwrightLauncher } from "@web/test-runner-playwright";
+import { esbuildPlugin } from "@web/dev-server-esbuild";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const cssInlinePlugin = () => ({
-  name: 'css-inline',
+  name: "css-inline",
   serve(context) {
-    if (context.path.endsWith('.css')) {
+    if (context.path.endsWith(".css")) {
       const fullPath = resolve(__dirname, context.path.slice(1));
-      
+
       try {
-        const cssContent = readFileSync(fullPath, 'utf-8');
+        const cssContent = readFileSync(fullPath, "utf-8");
         return {
           body: `export default ${JSON.stringify(cssContent)};`,
-          type: 'js',
+          type: "js",
         };
-      } catch (err) {
-        console.error(`Failed to read CSS file: ${fullPath}`, err);
+      } catch (error) {
+        console.error(`Failed to read CSS file: ${fullPath}`, error);
         return {
           body: `export default '';`,
-          type: 'js',
+          type: "js",
         };
       }
     }
   },
   resolveImport({ source }) {
     let normalized = source;
-    if (normalized.endsWith('?inline')) {
-      normalized = normalized.slice(0, -'?inline'.length);
+    if (normalized.endsWith("?inline")) {
+      normalized = normalized.slice(0, -"?inline".length);
     }
-    if (normalized === '@maxhill/css') {
-      return '/node_modules/@maxhill/css/dist/style.css';
+    if (normalized === "@maxhill/css") {
+      return "/node_modules/@maxhill/css/dist/style.css";
     }
     if (normalized !== source) {
       return normalized;
@@ -43,41 +43,51 @@ const cssInlinePlugin = () => ({
 });
 
 export default {
-  files: ['src/**/*.test.ts', '!src/**/*.unit.test.ts'],
-  nodeResolve: { browser: true, exportConditions: ['browser'], preferBuiltins: false },
+  files: ["src/**/*.test.ts", "!src/**/*.unit.test.ts"],
+  nodeResolve: {
+    browser: true,
+    exportConditions: ["browser"],
+    preferBuiltins: false,
+  },
   plugins: [
-    esbuildPlugin({ 
+    esbuildPlugin({
       ts: true,
       tsx: false,
-      target: 'auto',
-      tsconfig: './tsconfig.json',
+      target: "auto",
+      tsconfig: "./tsconfig.json",
       define: {
-        'import.meta.env': JSON.stringify({}),
+        "import.meta.env": JSON.stringify({}),
       },
     }),
     cssInlinePlugin(),
   ],
   coverageConfig: {
     report: true,
-    reportDir: 'coverage',
+    reportDir: "coverage",
   },
   testFramework: {
     config: {
-      ui: 'bdd',
+      ui: "bdd",
       timeout: 5000,
     },
   },
   browsers: [
-    playwrightLauncher({ product: 'chromium' }),
+    playwrightLauncher({
+      product: "chromium",
+      launchOptions: process.env.CHROMIUM_PATH
+        ? { executablePath: process.env.CHROMIUM_PATH }
+        : {},
+    }),
   ],
   filterBrowserLogs: (log) => {
-    return !log.args.some(arg => 
-      typeof arg === 'string' && arg.includes('Lit is in dev mode')
+    return !log["args"].some(
+      (argument) =>
+        typeof argument === "string" && argument.includes("Lit is in dev mode"),
     );
   },
   testsFinishTimeout: 60000,
   browserStartTimeout: 30000,
-  testRunnerHtml: testFramework => `
+  testRunnerHtml: (testFramework) => `
     <!DOCTYPE html>
     <html>
       <head></head>

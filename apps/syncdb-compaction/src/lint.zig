@@ -386,7 +386,7 @@ pub fn lintSource(
 ) !void {
     assert(filename.len > 0);
 
-    var tree = try Ast.parse(gpa, source, .zig);
+    var tree = try Ast.parse(gpa, source, .{ .mode = .zig });
     defer tree.deinit(gpa);
 
     if (tree.errors.len > 0) {

@@ -3,7 +3,7 @@ import { MBagEditPage } from './index';
 
 describe('MBagEditPage', () => {
   it('should be defined', () => {
-    expect(MBagEditPage).to.exist;
+    expect(MBagEditPage).to.be.a('function');
   });
 
   it('should have the correct tag name', () => {

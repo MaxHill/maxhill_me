@@ -38,15 +38,38 @@ let tombstone_of_state json =
   | `Assoc _ as tombstone -> Some tombstone
   | _ -> None
 
+let contenders field =
+  let extra = match Yojson.Safe.Util.member "contenders" field with
+    | `List entries -> entries
+    | _ -> []
+  in
+  field :: extra
+
+let encode_contenders entries =
+  let sorted = List.sort (fun a b ->
+    compare_dot (b |> Yojson.Safe.Util.member "dot" |> dot_of_json)
+      (a |> Yojson.Safe.Util.member "dot" |> dot_of_json)) entries in
+  match sorted with
+  | [] -> None
+  | winner :: rest ->
+      let base = [ ("value", Yojson.Safe.Util.member "value" winner);
+                   ("dot", Yojson.Safe.Util.member "dot" winner) ] in
+      Some (`Assoc (base @ if rest = [] then [] else [ ("contenders", `List rest) ]))
+
 let merge_field fields (name, incoming) =
-  let incoming_dot = incoming |> Yojson.Safe.Util.member "dot" |> dot_of_json in
-  match List.assoc_opt name fields with
-  | None -> (name, incoming) :: fields
-  | Some existing ->
-      let existing_dot = existing |> Yojson.Safe.Util.member "dot" |> dot_of_json in
-      if compare_dot incoming_dot existing_dot > 0 then
-        (name, incoming) :: List.remove_assoc name fields
-      else fields
+  let existing = List.assoc_opt name fields |> Option.fold ~none:[] ~some:contenders in
+  let candidates = List.fold_left (fun acc candidate ->
+    let dot = candidate |> Yojson.Safe.Util.member "dot" |> dot_of_json in
+    match List.assoc_opt dot.client_id acc with
+    | Some previous when compare_dot dot (previous |> Yojson.Safe.Util.member "dot" |> dot_of_json) <= 0 -> acc
+    | _ ->
+        let candidate = `Assoc [ ("value", Yojson.Safe.Util.member "value" candidate);
+                                ("dot", dot_json dot) ] in
+        (dot.client_id, candidate) :: List.remove_assoc dot.client_id acc)
+    [] (existing @ contenders incoming) in
+  match encode_contenders (List.map snd candidates) with
+  | None -> List.remove_assoc name fields
+  | Some field -> (name, field) :: List.remove_assoc name fields
 
 let merge_tombstone current incoming =
   match current with
@@ -97,16 +120,18 @@ let apply_operation (fields, tombstone) operation =
 let fold operations =
   let fields, tombstone = List.fold_left apply_operation ([], None) operations in
   let fields =
-    List.filter
-      (fun (_, field) ->
-        match tombstone with
-        | None -> true
-        | Some tombstone ->
-            let dot = field |> Yojson.Safe.Util.member "dot" |> dot_of_json in
-            let vector = tombstone |> Yojson.Safe.Util.member "versionVector" |> version_vector_of_json in
-            match List.assoc_opt dot.client_id vector with
-            | None -> true
-            | Some version -> dot.version > version)
+    List.filter_map
+      (fun (name, field) ->
+        let retained = List.filter (fun candidate ->
+          match tombstone with
+          | None -> true
+          | Some tombstone ->
+              let dot = candidate |> Yojson.Safe.Util.member "dot" |> dot_of_json in
+              let vector = tombstone |> Yojson.Safe.Util.member "versionVector" |> version_vector_of_json in
+              match List.assoc_opt dot.client_id vector with
+              | None -> true
+              | Some version -> dot.version > version) (contenders field) in
+        Option.map (fun field -> (name, field)) (encode_contenders retained))
       fields
   in
   `Assoc

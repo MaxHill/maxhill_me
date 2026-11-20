@@ -12,102 +12,101 @@ baseStyleSheet.replaceSync(styles);
  *
  * @customElement
  * @tagname m-option
- * 
+ *
  * @slot - The default slot contains the visible content of the option
  */
 export class MOption extends MElement {
-    static tagName = 'm-option';
+  static tagName = "m-option";
 
-    /**
-     * The value associated with this item.
-     * This value is submitted with the form when the item is selected.
-     * 
-     * @attr value
-     */
-    @BindAttribute()
-    value: string = '';
+  /**
+   * The value associated with this item.
+   * This value is submitted with the form when the item is selected.
+   *
+   * @attr value
+   */
+  @BindAttribute()
+  value: string = "";
 
-    /**
-     * Whether this item is currently selected.
-     * 
-     * @attr selected
-     */
-    @BindAttribute()
-    selected: boolean = false;
+  /**
+   * Whether this item is currently selected.
+   *
+   * @attr selected
+   */
+  @BindAttribute()
+  selected: boolean = false;
 
-    /**
-     * Whether this item has virtual keyboard focus.
-     * Managed by the parent m-list-box component.
-     * 
-     * @attr focused
-     */
-    @BindAttribute()
-    focused: boolean = false;
+  /**
+   * Whether this item has virtual keyboard focus.
+   * Managed by the parent m-list-box component.
+   *
+   * @attr focused
+   */
+  @BindAttribute()
+  focused: boolean = false;
 
-    /**
-     * Whether this item is disabled and cannot be selected.
-     * 
-     * @attr disabled
-     */
-    @BindAttribute()
-    disabled: boolean = false;
+  /**
+   * Whether this item is disabled and cannot be selected.
+   *
+   * @attr disabled
+   */
+  @BindAttribute()
+  disabled: boolean = false;
 
-    _internals: ElementInternals;
+  _internals: ElementInternals;
 
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
-        this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
-        this._internals = this.attachInternals();
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this.shadowRoot!.adoptedStyleSheets = [baseStyleSheet];
+    this._internals = this.attachInternals();
+  }
+
+  connectedCallback() {
+    if (!this.id) {
+      this.id = `option-${generateUUID()}`;
+    }
+    this.render();
+    this.setAttribute("role", "option");
+    this.setAttribute("aria-selected", String(this.selected));
+    this.updateDisabledState();
+  }
+
+  attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
+    super.attributeChangedCallback(name, oldValue, newValue);
+
+    if (name === "selected") {
+      this.setAttribute("aria-selected", String(this.selected));
+      this.dispatchEvent(
+        new MOptionSelectedChangeEvent({ selected: this.selected }),
+      );
     }
 
-    connectedCallback() {
-         if (!this.id) {
-            this.id = `option-${generateUUID()}`;
-        }
-        this.render();
-        this.setAttribute('role', 'option');
-        this.setAttribute('aria-selected', String(this.selected));
-        this.updateDisabledState();
-    }
-    
-    attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
-        super.attributeChangedCallback(name, oldValue, newValue);
-
-        if (name === 'selected') {
-            this.setAttribute('aria-selected', String(this.selected));
-            this.dispatchEvent(
-                new MOptionSelectedChangeEvent({ selected: this.selected })
-            );
-        }
-
-        if (name === 'disabled') {
-            this.updateDisabledState();
-        }
-
-        if (name === 'focused') {
-            if (this.focused) {
-                this._internals.states.add('focus');
-            } else {
-                this._internals.states.delete('focus');
-            }
-        }
-
+    if (name === "disabled") {
+      this.updateDisabledState();
     }
 
-    private updateDisabledState() {
-        if (this.disabled) {
-            this.setAttribute('aria-disabled', 'true');
-        } else {
-            this.removeAttribute('aria-disabled');
-        }
+    if (name === "focused") {
+      if (this.focused) {
+        this._internals.states.add("focus");
+      } else {
+        this._internals.states.delete("focus");
+      }
     }
+  }
 
-    render() {
-        this.shadowRoot!.innerHTML = `
+  private updateDisabledState() {
+    if (this.disabled) {
+      this.setAttribute("aria-disabled", "true");
+    } else {
+      this.removeAttribute("aria-disabled");
+    }
+  }
+
+  render() {
+    this.shadowRoot!.innerHTML = `
             <slot></slot>
         `;
-    }
+  }
 }
 
 // Auto-define when using default import

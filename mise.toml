@@ -7,10 +7,12 @@ config_roots = [
   "apps/golf",
   "apps/site",
   "apps/syncdb-server",
+  "apps/syncdb-compaction",
   "packages/components",
   "packages/css",
   "packages/oxlint-config",
   "packages/syncdb",
+  "packages/ts-stdx",
   "packages/web-component-utils",
 ]
 
@@ -48,18 +50,25 @@ run = "pnpm exec playwright install --only-shell chromium"
 # --- test / fuzz — fan out the canonical verbs across every workspace project ---
 
 [tasks.test]
-description = "Run every workspace project's `test` task (fail-fast)."
+description = "Build workspace libraries, then run root lint and all bounded project checks."
 run = """
+pnpm exec oxlint oxlint.config.ts plopfile.js scripts vps
+mise run '//packages/components:deploy' ::: '//packages/syncdb:deploy' ::: '//packages/ts-stdx:deploy'
+status=0
 for d in apps/*/ packages/*/; do
+  # Data-only directories have no task file; never inherit the root test task.
+  [ -f "$d/mise.toml" ] || continue
   echo "::: $d test :::"
-  (cd "$d" && mise run test) || exit 1
+  (cd "$d" && mise run test) || status=1
 done
+exit "$status"
 """
 
 [tasks.fuzz]
 description = "Run every workspace project's `fuzz` task (fail-fast)."
 run = """
 for d in apps/*/ packages/*/; do
+  [ -f "$d/mise.toml" ] || continue
   echo "::: $d fuzz :::"
   (cd "$d" && mise run fuzz) || exit 1
 done

@@ -13,8 +13,8 @@ const routes = [
     action: async () => {
       try {
         await authClient.handleCallback();
-      } catch (err) {
-        console.error("Auth callback failed:", err);
+      } catch (error) {
+        console.error("Auth callback failed:", error);
       }
       window.history.replaceState({}, "", "/");
       resolve("/");
@@ -25,35 +25,31 @@ const routes = [
     path: "",
     action: () => {
       document.title = "Max Hill";
-      return html`
-        <m-landing-page></m-landing-page>
-      `;
+      return html` <m-landing-page></m-landing-page> `;
     },
   },
   {
     path: "/lag-putting",
     action: () => {
       document.title = "Lagputt";
-      return html`
-        <m-lag-putting-listing-page></m-lag-putting-listing-page>
-      `;
+      return html` <m-lag-putting-listing-page></m-lag-putting-listing-page> `;
     },
   },
   {
     path: "/lag-putting/regler",
     action: () => {
       document.title = "Lag Putting - Rules";
-      return html`
-        <m-lag-putting-rules-page></m-lag-putting-rules-page>
-      `;
+      return html` <m-lag-putting-rules-page></m-lag-putting-rules-page> `;
     },
   },
   {
     path: "/lag-putting/:key",
-    action: ({ params }: RouteContext) => {
+    action: (context: RouteContext) => {
       document.title = "Lag putting game";
       return html`
-        <m-lag-putting-scorecard-page game-key="${params.key}"></m-lag-putting-scorecard-page>
+        <m-lag-putting-scorecard-page
+          game-key="${context["params"].key}"
+        ></m-lag-putting-scorecard-page>
       `;
     },
   },
@@ -61,26 +57,22 @@ const routes = [
     path: "/bag",
     action: () => {
       document.title = "Golf Bag Tracker";
-      return html`
-        <m-bag-list-page></m-bag-list-page>
-      `;
+      return html` <m-bag-list-page></m-bag-list-page> `;
     },
   },
   {
     path: "/bag/add",
     action: () => {
       document.title = "Add Club - Golf Bag Tracker";
-      return html`
-        <m-bag-add-page></m-bag-add-page>
-      `;
+      return html` <m-bag-add-page></m-bag-add-page> `;
     },
   },
   {
     path: "/bag/edit/:key",
-    action: ({ params }: RouteContext) => {
+    action: (context: RouteContext) => {
       document.title = `Edit Club - Golf Bag Tracker`;
       return html`
-        <m-bag-edit-page club-key=${params.key}></m-bag-edit-page>
+        <m-bag-edit-page club-key=${context["params"].key}></m-bag-edit-page>
       `;
     },
   },
@@ -98,11 +90,11 @@ const routes = [
   },
   {
     path: "/bag/club/:key/edit",
-    action: ({ params }: RouteContext) => {
+    action: (context: RouteContext) => {
       document.title = `Edit Club - Golf Bag Tracker`;
       return html`
         <div class="stack" data-gap="4">
-          <m-club-form club-key="${params.key}"></m-club-form>
+          <m-club-form club-key="${context["params"].key}"></m-club-form>
           <a href="/" aria-label="Go back to home page">Back</a>
         </div>
       `;
@@ -113,7 +105,11 @@ const routes = [
     action: () => {
       document.title = "Add Shot Type - Golf Bag Tracker";
       return html`
-        <div class="stack" data-gap="4" style="max-width: var(--size-content-3);">
+        <div
+          class="stack"
+          data-gap="4"
+          style="max-width: var(--size-content-3);"
+        >
           <m-shot-type-form></m-shot-type-form>
           <a href="/bag" aria-label="Go back to bag page">Back</a>
         </div>
@@ -122,11 +118,17 @@ const routes = [
   },
   {
     path: "/bag/shot-type/edit/:key",
-    action: ({ params }: RouteContext) => {
+    action: (context: RouteContext) => {
       document.title = "Edit Shot Type - Golf Bag Tracker";
       return html`
-        <div class="stack" data-gap="4" style="max-width: var(--size-content-3);">
-          <m-shot-type-form shot-type-key="${params.key}"></m-shot-type-form>
+        <div
+          class="stack"
+          data-gap="4"
+          style="max-width: var(--size-content-3);"
+        >
+          <m-shot-type-form
+            shot-type-key="${context["params"].key}"
+          ></m-shot-type-form>
           <a href="/bag" aria-label="Go back to bag page">Back</a>
         </div>
       `;
@@ -152,9 +154,13 @@ const router = new UniversalRouter<RouteResult>(routes);
 async function resolve(path?: string) {
   const pathname = path || window.location.pathname;
   const template = await router.resolve({ pathname });
-  if (!template) return;
+  if (!template) {
+    return;
+  }
   const app = document.getElementById("app");
-  if (!app) return;
+  if (!app) {
+    return;
+  }
   render(template, app);
 }
 
@@ -165,12 +171,18 @@ document.addEventListener("click", (e) => {
     (el) => el instanceof HTMLElement && el.hasAttribute?.("href"),
   ) as HTMLElement | undefined;
 
-  if (!elementWithHref) return;
+  if (!elementWithHref) {
+    return;
+  }
 
   // Get href from attribute (works for custom elements) or property (works for <a>)
-  const href = elementWithHref.getAttribute("href") || (elementWithHref as HTMLAnchorElement).href;
+  const href =
+    elementWithHref.getAttribute("href") ||
+    (elementWithHref as HTMLAnchorElement).href;
 
-  if (!href) return;
+  if (!href) {
+    return;
+  }
 
   if (
     elementWithHref instanceof HTMLAnchorElement &&

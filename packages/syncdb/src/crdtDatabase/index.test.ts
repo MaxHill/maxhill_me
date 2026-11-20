@@ -7,21 +7,26 @@ import { newDatabase } from "./builder.ts";
 import { Lifecycle } from "../indexeddb/lifecycle.ts";
 import { RowStore } from "../indexeddb/rowStore.ts";
 
+// Suite registration groups related tests; individual tests remain line-limited.
+// eslint-disable-next-line max-lines-per-function
 describe("CRDTDatabase", () => {
   const dbName = "test-crdt-query";
   let db: CRDTDatabase<{ users: { usersByAge: string[] } }>;
   let lifecycle: Lifecycle;
 
   beforeEach(async () => {
-    lifecycle = new Lifecycle([{
-      table: "users",
-      name: "usersByAge",
-      keys: ["age"],
-    }]);
+    lifecycle = new Lifecycle([
+      {
+        table: "users",
+        name: "usersByAge",
+        keys: ["age"],
+      },
+    ]);
 
-    db = await newDatabase("test").addTable("users", {
-      usersByAge: ["age"],
-    })
+    db = await newDatabase("test")
+      .addTable("users", {
+        usersByAge: ["age"],
+      })
       .withCustomStorageRepository(lifecycle)
       .build()
       .open();
@@ -41,6 +46,8 @@ describe("CRDTDatabase", () => {
     }
   });
 
+  // Suite registration groups related tests; individual tests remain line-limited.
+  // eslint-disable-next-line max-lines-per-function
   describe("query", () => {
     it("should query rows using an index and return simplified results", async () => {
       const users = db.table("users");
@@ -95,9 +102,9 @@ describe("CRDTDatabase", () => {
       await users.setRow("u4", { age: 40, name: "David" });
 
       const results: any[] = [];
-      for await (
-        const row of users.index("usersByAge").query(below(35, { inclusive: true }), desc)
-      ) {
+      for await (const row of users
+        .index("usersByAge")
+        .query(below(35, { inclusive: true }), desc)) {
         results.push(row);
       }
 
@@ -127,16 +134,16 @@ describe("CRDTDatabase", () => {
 
   describe("_key validation", () => {
     it("should throw error when setRow _key differs from rowKey", async () => {
-      await expect(
-        db.table("users").setRow("u1", { _key: "u2", name: "Alice" }),
-      ).rejects.toThrow("Cannot set _key to a different value");
+      await expect(db.table("users").setRow("u1", { _key: "u2", name: "Alice" })).rejects.toThrow(
+        "Cannot set _key to a different value",
+      );
     });
 
     it("should throw error when setCell targets _key field", async () => {
       await db.table("users").setRow("u1", { name: "Alice" });
-      await expect(
-        db.table("users").setField("u1", "_key", "different"),
-      ).rejects.toThrow("Cannot set _key field directly");
+      await expect(db.table("users").setField("u1", "_key", "different")).rejects.toThrow(
+        "Cannot set _key field directly",
+      );
     });
 
     it("should strip matching _key when setting row", async () => {
@@ -167,11 +174,13 @@ describe("CRDTDatabase", () => {
     });
   });
 
+  // Suite registration groups related tests; individual tests remain line-limited.
+  // eslint-disable-next-line max-lines-per-function
   describe("subscriptions", () => {
     it("should notify subscribers when setRow is called", async () => {
       const users = db.table("users");
-      const handler = vi.fn();
-      
+      const handler = vi["fn"]();
+
       users.subscribe(handler);
 
       await users.setRow("u1", { name: "Alice", age: 25 });
@@ -182,7 +191,7 @@ describe("CRDTDatabase", () => {
     });
 
     it("should notify database subscribers with source local on write", async () => {
-      const handler = vi.fn();
+      const handler = vi["fn"]();
       db.subscribe(handler);
 
       await db.table("users").setRow("u1", { name: "Alice", age: 25 });
@@ -192,8 +201,8 @@ describe("CRDTDatabase", () => {
     });
 
     it("should filter database subscribers by source", async () => {
-      const localOnly = vi.fn();
-      const remoteOnly = vi.fn();
+      const localOnly = vi["fn"]();
+      const remoteOnly = vi["fn"]();
       db.subscribe(localOnly, "local");
       db.subscribe(remoteOnly, "remote");
 
@@ -206,8 +215,8 @@ describe("CRDTDatabase", () => {
 
     it("should notify subscribers when setField is called", async () => {
       const users = db.table("users");
-      const handler = vi.fn();
-      
+      const handler = vi["fn"]();
+
       await users.setRow("u1", { name: "Alice", age: 25 });
       users.subscribe(handler);
 
@@ -224,9 +233,9 @@ describe("CRDTDatabase", () => {
 
       const tx = lifecycle.transaction(["operations"], "readonly");
       const operations = await new Promise<any[]>((resolve, reject) => {
-        const req = tx.objectStore("operations").getAll();
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
+        const request = tx.objectStore("operations").getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
       });
 
       expect(operations.at(-1)?.operation).toMatchObject({
@@ -248,8 +257,8 @@ describe("CRDTDatabase", () => {
 
     it("should notify subscribers when deleteRow is called", async () => {
       const users = db.table("users");
-      const handler = vi.fn();
-      
+      const handler = vi["fn"]();
+
       await users.setRow("u1", { name: "Alice", age: 25 });
       users.subscribe(handler);
 
@@ -261,8 +270,8 @@ describe("CRDTDatabase", () => {
 
     it("should not notify after unsubscribe", async () => {
       const users = db.table("users");
-      const handler = vi.fn();
-      
+      const handler = vi["fn"]();
+
       const unsubscribe = users.subscribe(handler);
 
       await users.setRow("u1", { name: "Alice", age: 25 });

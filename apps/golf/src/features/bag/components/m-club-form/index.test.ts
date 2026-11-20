@@ -6,14 +6,21 @@ import { ShotTypeService } from "../../shot-type-service";
 
 MClubForm.define();
 
+// Suite registration keeps related cases together.
+// oxlint-disable-next-line max-lines-per-function
 describe("m-club-form", () => {
+  // Suite registration keeps related cases together.
+  // oxlint-disable-next-line max-lines-per-function
   describe("regression: dirty value flag blocks navigation updates", () => {
     it("updates the name input when club-key changes after the user has typed", async () => {
       const db = await get_DB();
       const shotTypeService = new ShotTypeService(db);
       const clubService = new ClubService(db);
 
-      const shotType = { name: "Full swing", description: "A regular full swing" };
+      const shotType = {
+        name: "Full swing",
+        description: "A regular full swing",
+      };
       // addShotType creates the row with a generated key; fetch it back
       await shotTypeService.addShotType(shotType);
       const shotTypes: any[] = [];
@@ -43,7 +50,9 @@ describe("m-club-form", () => {
 
       const nameInput = form.shadowRoot!.querySelector(
         'm-input[name="name"]',
-      ) as HTMLElement & { value: string };
+      ) as HTMLElement & {
+        value: string;
+      };
       const innerNativeInput = (): HTMLInputElement =>
         nameInput.shadowRoot!.querySelector("input")!;
 
@@ -75,7 +84,8 @@ describe("m-club-form", () => {
       for await (const st of shotTypeService.table.query()) {
         shotTypes.push(st);
       }
-      const sharedShotType = shotTypes.find((s) => s.name === "Stock") ?? shotTypes[0];
+      const sharedShotType =
+        shotTypes.find((s) => s.name === "Stock") ?? shotTypes[0];
 
       const keyA = `test-club-a-${crypto.randomUUID()}`;
       const keyB = `test-club-b-${crypto.randomUUID()}`;
@@ -104,7 +114,9 @@ describe("m-club-form", () => {
         'm-listbox[name="shotTypes"]',
       ) as any;
 
-      expect(shotTypesListbox.selectedValues).to.deep.equal([sharedShotType._key]);
+      expect(shotTypesListbox.selectedValues).to.deep.equal([
+        sharedShotType._key,
+      ]);
     });
   });
 });

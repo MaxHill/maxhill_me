@@ -43,12 +43,21 @@ export class MEmptyState extends MElement {
   }
 
   disconnectedCallback() {
-    this.actionSlot?.removeEventListener("slotchange", this.handleActionSlotChange);
+    this.actionSlot?.removeEventListener(
+      "slotchange",
+      this.handleActionSlotChange,
+    );
   }
 
-  attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
+  attributeChangedCallback(
+    name: string,
+    oldValue: unknown,
+    newValue: unknown,
+  ): void {
     super.attributeChangedCallback(name, oldValue, newValue);
-    if (oldValue === newValue) return;
+    if (oldValue === newValue) {
+      return;
+    }
     this.render();
     this.updateActionPresence();
     this.warnIfMissingContent();
@@ -67,7 +76,9 @@ export class MEmptyState extends MElement {
   }
 
   private warnIfMissingContent() {
-    if (this.hasWarnedMissingContent) return;
+    if (this.hasWarnedMissingContent) {
+      return;
+    }
 
     const missingTitle = this.title.trim().length === 0;
     const missingMessage = this.message.trim().length === 0;
@@ -84,7 +95,9 @@ export class MEmptyState extends MElement {
   }
 
   private render() {
-    if (!this.shadowRoot) return;
+    if (!this.shadowRoot) {
+      return;
+    }
 
     this.shadowRoot.innerHTML = `
       <div class="empty-state">
@@ -96,8 +109,14 @@ export class MEmptyState extends MElement {
       </div>
     `;
 
-    this.actionSlot?.removeEventListener("slotchange", this.handleActionSlotChange);
-    this.actionSlot?.addEventListener("slotchange", this.handleActionSlotChange);
+    this.actionSlot?.removeEventListener(
+      "slotchange",
+      this.handleActionSlotChange,
+    );
+    this.actionSlot?.addEventListener(
+      "slotchange",
+      this.handleActionSlotChange,
+    );
   }
 }
 

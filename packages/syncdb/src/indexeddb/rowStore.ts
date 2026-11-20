@@ -1,11 +1,6 @@
 import { assert } from "@maxhill/stdx";
 import { ORMapRow, ROW_KEY, TABLE_NAME, ValidKey } from "../crdt.ts";
-import {
-  createIndexName,
-  IndexDefinition,
-  QueryCondition,
-  queryToIDBRange,
-} from "../indexes.ts";
+import { createIndexName, IndexDefinition, QueryCondition, queryToIDBRange } from "../indexes.ts";
 import { asyncCursorIterator, promisifyIDBRequest, validateTransactionStores } from "../utils.ts";
 import { ROWS_STORE } from "./lifecycle.ts";
 
@@ -13,7 +8,9 @@ export class RowStore {
   indexes?: IndexDefinition[];
 
   constructor(indexes?: IndexDefinition[]) {
-    if (indexes) this.indexes = indexes;
+    if (indexes) {
+      this.indexes = indexes;
+    }
   }
 
   async saveRow(tx: IDBTransaction, row: ORMapRow): Promise<void> {
@@ -31,10 +28,7 @@ export class RowStore {
     if (Object.keys(row.fields).length > 0 || row.tombstone) {
       await promisifyIDBRequest(store.put(row));
     } else {
-      await promisifyIDBRequest(store.delete([
-        row[TABLE_NAME],
-        row[ROW_KEY] as IDBValidKey,
-      ]));
+      await promisifyIDBRequest(store.delete([row[TABLE_NAME], row[ROW_KEY] as IDBValidKey]));
     }
   }
 
@@ -45,14 +39,13 @@ export class RowStore {
     assert(rowKey, "RowKey must be set when getting Row");
 
     const store = tx.objectStore(ROWS_STORE);
-    const result = await promisifyIDBRequest(store.get([
-      tableName,
-      rowKey as IDBValidKey,
-    ]));
+    const result = await promisifyIDBRequest(store.get([tableName, rowKey as IDBValidKey]));
 
     return result ?? { [TABLE_NAME]: tableName, [ROW_KEY]: rowKey, fields: {} };
   }
 
+  // Preserve the existing positional public API for callers.
+  // eslint-disable-next-line max-params
   query(
     tx: IDBTransaction,
     table: string,
@@ -64,9 +57,9 @@ export class RowStore {
     const indexNames = (this.indexes || []).map((index) => index.name);
     assert(
       !indexName || indexNames.includes(indexName),
-      `Specified index ${indexName} does not exist in indexes:/n${
-        indexNames.map((index) => `   ${index} /n`)
-      }`,
+      `Specified index ${indexName} does not exist in indexes:/n${indexNames.map(
+        (index) => `   ${index} /n`,
+      )}`,
     );
 
     let source: IDBObjectStore | IDBIndex = tx.objectStore(ROWS_STORE);

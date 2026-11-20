@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import "fake-indexeddb/auto";
 import { newDatabase } from "../crdtDatabase/builder.ts";
 import {
-  Lifecycle,
   CLIENT_STATE_STORE,
+  Lifecycle,
   OPERATIONS_STORE,
   ROWS_STORE,
 } from "../indexeddb/lifecycle.ts";
@@ -57,7 +57,7 @@ afterEach(async () => {
 });
 
 describe("Sync protocol v3 mutation frontier", () => {
-  it("keeps mutation IDs dense across failed writes, remote clock advances, and reopen", async () => {
+  it("keeps mutation IDs dense after failed writes, remote clocks, and reopen", async () => {
     const dbName = `sync-${crypto.randomUUID()}`;
     const fixture = await setup(dbName);
     open.push({ dbName, db: fixture.db });
@@ -193,19 +193,15 @@ describe("Sync protocol v3 response validation", () => {
       "readwrite",
     );
     await expect(
-      fixture.sync.handleSyncResponse(
-        transaction,
-        new PersistedLogicalClock(fixture.clientState),
-        {
-          protocolVersion: 3,
-          clientId: "c1",
-          baseServerVersion: -1,
-          latestServerVersion: 1,
-          lastMutationID: 2,
-          operations: [],
-          responseHash: "irrelevant",
-        },
-      ),
+      fixture.sync.handleSyncResponse(transaction, new PersistedLogicalClock(fixture.clientState), {
+        protocolVersion: 3,
+        clientId: "c1",
+        baseServerVersion: -1,
+        latestServerVersion: 1,
+        lastMutationID: 2,
+        operations: [],
+        responseHash: "irrelevant",
+      }),
     ).rejects.toThrow("beyond local frontier");
 
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
@@ -241,10 +237,7 @@ describe("Sync protocol v3 response validation", () => {
 });
 
 async function expectDenseMutations(fixture: Fixture, expected: number[]): Promise<void> {
-  const readTx = fixture.lifecycle.transaction(
-    [CLIENT_STATE_STORE, OPERATIONS_STORE],
-    "readonly",
-  );
+  const readTx = fixture.lifecycle.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE], "readonly");
   const syncRequest = await fixture.sync.createSyncRequest(readTx, "db");
   expect(syncRequest.protocolVersion).toBe(3);
   expect(syncRequest.clientLastMutationID).toBe(0);

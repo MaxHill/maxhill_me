@@ -3,7 +3,7 @@ import { MBagListPage } from './index';
 
 describe('MBagListPage', () => {
   it('should be defined', () => {
-    expect(MBagListPage).to.exist;
+    expect(MBagListPage).to.be.a('function');
   });
 
   it('should have the correct tag name', () => {

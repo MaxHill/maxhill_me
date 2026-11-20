@@ -57,19 +57,25 @@ class MBgPattern extends MElement {
 
   private updatePattern() {
     const supportedPatterns = ["lines", "dots", "diagonal", "grid"];
-    const pattern = supportedPatterns.includes(this.pattern) ? this.pattern : "grid";
-    this.shadowRoot?.querySelectorAll(".background-pattern").forEach((layer) => {
-      layer.setAttribute("data-pattern", pattern);
-      if (this.size) {
-        layer.setAttribute("data-size", this.size);
-      } else {
-        layer.removeAttribute("data-size");
-      }
-    });
+    const pattern = supportedPatterns.includes(this.pattern)
+      ? this.pattern
+      : "grid";
+    this.shadowRoot
+      ?.querySelectorAll(".background-pattern")
+      .forEach((layer) => {
+        layer.setAttribute("data-pattern", pattern);
+        if (this.size) {
+          layer.setAttribute("data-size", this.size);
+        } else {
+          layer.removeAttribute("data-size");
+        }
+      });
   }
 
   private handlePointerMove = (event: PointerEvent) => {
-    if (!this.spot) return;
+    if (!this.spot) {
+      return;
+    }
     const bounds = this.getBoundingClientRect();
     const x = event.clientX - bounds.left;
     const y = event.clientY - bounds.top;
@@ -81,11 +87,15 @@ class MBgPattern extends MElement {
   };
 
   private handlePointerLeave = () => {
-    if (this.spot) this.spot.style.opacity = "0";
+    if (this.spot) {
+      this.spot.style.opacity = "0";
+    }
   };
 
   private render() {
-    if (!this.shadowRoot) return;
+    if (!this.shadowRoot) {
+      return;
+    }
     this.shadowRoot.adoptedStyleSheets = [patternStyleSheet, baseStyleSheet];
     this.shadowRoot.innerHTML = `
       <div class="grid background-pattern" aria-hidden="true">
@@ -98,7 +108,9 @@ class MBgPattern extends MElement {
   }
 
   static define(tag = "m-bg-pattern", registry = customElements) {
-    if (!registry.get(tag)) registry.define(tag, this);
+    if (!registry.get(tag)) {
+      registry.define(tag, this);
+    }
     return this;
   }
 }

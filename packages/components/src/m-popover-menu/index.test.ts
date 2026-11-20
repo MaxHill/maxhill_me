@@ -1,132 +1,148 @@
-import { expect, html, fixture, waitUntil } from '@open-wc/testing';
-import { MPopoverMenu } from './index';
+import { expect, html, fixture, waitUntil } from "@open-wc/testing";
+import { MPopoverMenu } from "./index";
 
 MPopoverMenu.define();
 
-describe('m-popover-menu', () => {
-    describe('accessibility', () => {
-        it('should be accessible', async () => {
-            const container = await fixture(html`
-                <div>
-                    <button id="trigger-btn" popovertarget="test-menu">Open Menu</button>
-                    <m-popover-menu id="test-menu" popover anchor="trigger-btn">
-                        <a href="/link">Link</a>
-                    </m-popover-menu>
-                </div>
-            `);
+// Suite registration groups independent tests, not runtime logic.
+// oxlint-disable-next-line max-lines-per-function
+describe("m-popover-menu", () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("accessibility", () => {
+    it("should be accessible", async () => {
+      const container = await fixture(html`
+        <div>
+          <button id="trigger-btn" popovertarget="test-menu">Open Menu</button>
+          <m-popover-menu id="test-menu" popover anchor="trigger-btn">
+            <a href="/link">Link</a>
+          </m-popover-menu>
+        </div>
+      `);
 
-            const menu = container.querySelector('m-popover-menu');
-            await expect(menu).to.be.accessible();
-        });
-
-        it('should have role="menu" by default', async () => {
-            const el = await fixture(html`
-                <m-popover-menu id="test-menu" popover anchor="trigger">
-                    <button>Action</button>
-                </m-popover-menu>
-            `);
-
-            // Check internals role (ElementInternals.role)
-            const menu = el as MPopoverMenu;
-            expect(menu['internals'].role).to.equal('menu');
-        });
-
-        it('should allow role override', async () => {
-            const el = await fixture(html`
-                <m-popover-menu id="test-menu" popover anchor="trigger" role="dialog">
-                    <p>Content</p>
-                </m-popover-menu>
-            `);
-
-            expect(el.getAttribute('role')).to.equal('dialog');
-        });
+      const menu = container.querySelector("m-popover-menu");
+      await expect(menu).to.be.accessible();
     });
 
-    describe('anchor resolution', () => {
-        it('should find anchor element by ID', async () => {
-            const container = await fixture(html`
-                <div>
-                    <button id="my-trigger" popovertarget="my-menu">Open</button>
-                    <m-popover-menu id="my-menu" popover anchor="my-trigger">
-                        Content
-                    </m-popover-menu>
-                </div>
-            `);
+    it('should have role="menu" by default', async () => {
+      const el = await fixture(html`
+        <m-popover-menu id="test-menu" popover anchor="trigger">
+          <button>Action</button>
+        </m-popover-menu>
+      `);
 
-            const menu = container.querySelector('m-popover-menu') as MPopoverMenu;
-            expect(menu.anchor).to.equal('my-trigger');
-        });
+      // Check internals role (ElementInternals.role)
+      const menu = el as MPopoverMenu;
+      expect(menu["internals"].role).to.equal("menu");
     });
 
-    describe('positioning', () => {
-        it('should apply positioning when popover opens', async () => {
-            const container = await fixture(html`
-                <div>
-                    <button id="pos-trigger" popovertarget="pos-menu">Open</button>
-                    <m-popover-menu id="pos-menu" popover anchor="pos-trigger">
-                        Content
-                    </m-popover-menu>
-                </div>
-            `);
+    it("should allow role override", async () => {
+      const el = await fixture(html`
+        <m-popover-menu id="test-menu" popover anchor="trigger" role="dialog">
+          <p>Content</p>
+        </m-popover-menu>
+      `);
 
-            const button = container.querySelector('button') as HTMLButtonElement;
-            const menu = container.querySelector('m-popover-menu') as MPopoverMenu;
+      expect(el.getAttribute("role")).to.equal("dialog");
+    });
+  });
 
-            button.click();
-            
-            await waitUntil(() => menu.matches(':popover-open'));
-            
-            // Wait for positioning to be applied (needs a microtask)
-            await new Promise(resolve => setTimeout(resolve, 10));
-            
-            // Should have positioning styles applied
-            expect(menu.style.left).to.not.equal('');
-            expect(menu.style.top).to.not.equal('');
-        });
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("anchor resolution", () => {
+    it("should find anchor element by ID", async () => {
+      const container = await fixture(html`
+        <div>
+          <button id="my-trigger" popovertarget="my-menu">Open</button>
+          <m-popover-menu id="my-menu" popover anchor="my-trigger">
+            Content
+          </m-popover-menu>
+        </div>
+      `);
+
+      const menu = container.querySelector("m-popover-menu") as MPopoverMenu;
+      expect(menu.anchor).to.equal("my-trigger");
+    });
+  });
+
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("positioning", () => {
+    it("should apply positioning when popover opens", async () => {
+      const container = await fixture(html`
+        <div>
+          <button id="pos-trigger" popovertarget="pos-menu">Open</button>
+          <m-popover-menu id="pos-menu" popover anchor="pos-trigger">
+            Content
+          </m-popover-menu>
+        </div>
+      `);
+
+      const button = container.querySelector("button") as HTMLButtonElement;
+      const menu = container.querySelector("m-popover-menu") as MPopoverMenu;
+
+      button.click();
+
+      await waitUntil(() => menu.matches(":popover-open"));
+
+      // Wait for positioning to be applied (needs a microtask)
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // Should have positioning styles applied
+      expect(menu.style.left).to.not.equal("");
+      expect(menu.style.top).to.not.equal("");
+    });
+  });
+
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("link behavior", () => {
+    it("closes when a link inside the popover is clicked", async () => {
+      const container = await fixture(html`
+        <div>
+          <button id="link-trigger" popovertarget="link-menu">Open</button>
+          <m-popover-menu id="link-menu" popover anchor="link-trigger">
+            <a href="/next">Next</a>
+          </m-popover-menu>
+        </div>
+      `);
+
+      const button = container.querySelector(
+        "#link-trigger",
+      ) as HTMLButtonElement;
+      const menu = container.querySelector("#link-menu") as MPopoverMenu;
+      const link = container.querySelector("a") as HTMLAnchorElement;
+
+      button.click();
+      await waitUntil(() => menu.matches(":popover-open"));
+
+      link.addEventListener("click", (event) => event.preventDefault());
+      link.click();
+      await waitUntil(() => !menu.matches(":popover-open"));
     });
 
-    describe('link behavior', () => {
-        it('closes when a link inside the popover is clicked', async () => {
-            const container = await fixture(html`
-                <div>
-                    <button id="link-trigger" popovertarget="link-menu">Open</button>
-                    <m-popover-menu id="link-menu" popover anchor="link-trigger">
-                        <a href="/next">Next</a>
-                    </m-popover-menu>
-                </div>
-            `);
+    it("stays open when a button inside the popover is clicked", async () => {
+      const container = await fixture(html`
+        <div>
+          <button id="button-trigger" popovertarget="button-menu">Open</button>
+          <m-popover-menu id="button-menu" popover anchor="button-trigger">
+            <button type="button">Keep open</button>
+          </m-popover-menu>
+        </div>
+      `);
 
-            const button = container.querySelector('#link-trigger') as HTMLButtonElement;
-            const menu = container.querySelector('#link-menu') as MPopoverMenu;
-            const link = container.querySelector('a') as HTMLAnchorElement;
+      const trigger = container.querySelector(
+        "#button-trigger",
+      ) as HTMLButtonElement;
+      const menu = container.querySelector("#button-menu") as MPopoverMenu;
+      const innerButton = container.querySelector(
+        "m-popover-menu button",
+      ) as HTMLButtonElement;
 
-            button.click();
-            await waitUntil(() => menu.matches(':popover-open'));
+      trigger.click();
+      await waitUntil(() => menu.matches(":popover-open"));
 
-            link.addEventListener('click', (event) => event.preventDefault());
-            link.click();
-            await waitUntil(() => !menu.matches(':popover-open'));
-        });
-
-        it('stays open when a button inside the popover is clicked', async () => {
-            const container = await fixture(html`
-                <div>
-                    <button id="button-trigger" popovertarget="button-menu">Open</button>
-                    <m-popover-menu id="button-menu" popover anchor="button-trigger">
-                        <button type="button">Keep open</button>
-                    </m-popover-menu>
-                </div>
-            `);
-
-            const trigger = container.querySelector('#button-trigger') as HTMLButtonElement;
-            const menu = container.querySelector('#button-menu') as MPopoverMenu;
-            const innerButton = container.querySelector('m-popover-menu button') as HTMLButtonElement;
-
-            trigger.click();
-            await waitUntil(() => menu.matches(':popover-open'));
-
-            innerButton.click();
-            expect(menu.matches(':popover-open')).to.equal(true);
-        });
+      innerButton.click();
+      expect(menu.matches(":popover-open")).to.equal(true);
     });
+  });
 });

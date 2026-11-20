@@ -14,7 +14,12 @@ export function sortClubs<T extends ClubOrderable>(clubs: T[]): T[] {
   return [...clubs].sort((a, b) => {
     const typeOrder = clubTypeRank(a.clubType) - clubTypeRank(b.clubType);
 
-    if (typeOrder !== 0) return typeOrder;
-    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+    if (typeOrder !== 0) {
+      return typeOrder;
+    }
+    return a.name.localeCompare(b.name, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
   });
 }

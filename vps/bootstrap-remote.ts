@@ -44,14 +44,14 @@ async function downloadToPath(url: string, destination: string): Promise<void> {
 //  ------------------------------------------------------------------------
 async function installedLitestreamVersion(): Promise<string | null> {
   const result = await $`litestream version`.stdout("piped").noThrow();
-  if (result.code !== 0) return null;
+  if (result.code !== 0) {return null;}
   const match = result.stdout.match(/\b\d+\.\d+\.\d+\b/);
   return match?.[0] ?? null;
 }
 
 async function ensureLitestream() {
   const installedVersion = await installedLitestreamVersion();
-  if (installedVersion === LITESTREAM_VERSION) return;
+  if (installedVersion === LITESTREAM_VERSION) {return;}
 
   if (!(await commandExists("litestream")) || installedVersion !== LITESTREAM_VERSION) {
     const arch = await dpkgArchitecture();
@@ -78,14 +78,14 @@ async function ensureLitestream() {
 //  ------------------------------------------------------------------------
 async function installedSopsVersion(): Promise<string | null> {
   const result = await $`sops --version`.stdout("piped").noThrow();
-  if (result.code !== 0) return null;
+  if (result.code !== 0) {return null;}
   const match = result.stdout.match(/\b\d+\.\d+\.\d+\b/);
   return match?.[0] ?? null;
 }
 
 async function ensureSops() {
   const installedVersion = await installedSopsVersion();
-  if (installedVersion === SOPS_VERSION) return;
+  if (installedVersion === SOPS_VERSION) {return;}
 
   if (!(await commandExists("sops")) || installedVersion !== SOPS_VERSION) {
     const arch = await dpkgArchitecture();
@@ -110,7 +110,8 @@ if ((await $`getent group sops-readers`.noThrow()).code !== 0) {
 await $`usermod -aG sops-readers deploy`;
 
 await $`install -d -o deploy -g deploy -m 700 /home/deploy/.ssh`;
-await $`install -o deploy -g deploy -m 600 /home/ubuntu/.ssh/authorized_keys /home/deploy/.ssh/authorized_keys`;
+await $`install -o deploy -g deploy -m 600 /home/ubuntu/.ssh/authorized_keys \
+  /home/deploy/.ssh/authorized_keys`;
 
 await $`install -m 644 ${`${V}/sshd-hardening.conf`} /etc/ssh/sshd_config.d/10-maxhill.conf`;
 await $`sshd -t`;
@@ -141,12 +142,14 @@ await $`install -d -m 700 -o deploy -g deploy /etc/litestream`;
 await $`install -m 644 ${`${V}/litestream/litestream.yml`} /etc/litestream.yml`;
 await $`chown deploy:deploy /etc/litestream.yml`;
 await $`mkdir -p /etc/systemd/journald.conf.d`;
-await $`install -m 644 ${`${V}/journald-retention.conf`} /etc/systemd/journald.conf.d/retention.conf`;
+await $`install -m 644 ${`${V}/journald-retention.conf`} \
+  /etc/systemd/journald.conf.d/retention.conf`;
 await $`install -m 440 ${`${V}/sudoers.deploy`} /etc/sudoers.d/deploy`;
 await $`visudo -c -f /etc/sudoers.d/deploy`;
 
 await $`mkdir -p /etc/caddy/sites`;
-await $`install -m 644 ${`${V}/syncdb-server/syncdb-server.service`} /etc/systemd/system/syncdb-server.service`;
+await $`install -m 644 ${`${V}/syncdb-server/syncdb-server.service`} \
+  /etc/systemd/system/syncdb-server.service`;
 await $`install -m 644 ${`${V}/syncdb-server/sync.caddy`} /etc/caddy/sites/sync.caddy`;
 
 await $`install -m 644 ${`${V}/auth/auth.service`} /etc/systemd/system/auth.service`;
@@ -159,8 +162,10 @@ await $`install -m 644 ${`${V}/site/site.caddy`} /etc/caddy/sites/site.caddy`;
 
 await $`install -m 644 ${`${V}/golf/golf.caddy`} /etc/caddy/sites/golf.caddy`;
 
-await $`install -m 644 ${`${V}/alert-on-failure/alert-on-failure@.service`} /etc/systemd/system/alert-on-failure@.service`;
-await $`install -D -m 644 ${`${V}/litestream/litestream.override.service`} /etc/systemd/system/litestream.service.d/override.conf`;
+await $`install -m 644 ${`${V}/alert-on-failure/alert-on-failure@.service`} \
+  /etc/systemd/system/alert-on-failure@.service`;
+await $`install -D -m 644 ${`${V}/litestream/litestream.override.service`} \
+  /etc/systemd/system/litestream.service.d/override.conf`;
 
 for (const app of ["syncdb-server", "auth", "site", "golf", "alert-on-failure"]) {
   await $`mkdir -p /opt/${app} /etc/${app}`;

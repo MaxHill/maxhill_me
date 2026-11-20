@@ -1,8 +1,8 @@
-import { expect, html, fixture, waitUntil } from '@open-wc/testing';
-import { MCombobox } from './index';
-import { MOption } from '../m-option';
-import { MSearchList} from '../m-search-list/';
-import MInput from '../m-input';
+import { expect, html, fixture, waitUntil } from "@open-wc/testing";
+import { MCombobox } from "./index";
+import { MOption } from "../m-option";
+import { MSearchList } from "../m-search-list/";
+import MInput from "../m-input";
 
 MCombobox.define();
 MOption.define();
@@ -11,16 +11,38 @@ MInput.define();
 
 beforeEach(() => {
   if (!HTMLElement.prototype.showPopover) {
-    HTMLElement.prototype.showPopover = function() {};
+    HTMLElement.prototype.showPopover = function () {};
   }
   if (!HTMLElement.prototype.hidePopover) {
-    HTMLElement.prototype.hidePopover = function() {};
+    HTMLElement.prototype.hidePopover = function () {};
   }
 });
 
-describe('m-combobox', () => {
-  describe('basic rendering', () => {
-    it('should render', async () => {
+async function selectFirstOptionWithKeyboard(
+  el: MCombobox,
+  firstOption: Element,
+) {
+  // Select spain
+  el.focus();
+  el.dispatchEvent(
+    new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+  );
+  await waitUntil(
+    () => el.getAttribute("aria-activedescendant") === firstOption.id,
+  );
+  el.dispatchEvent(
+    new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+  );
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+// Suite registration groups independent tests, not runtime logic.
+// oxlint-disable-next-line max-lines-per-function
+describe("m-combobox", () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("basic rendering", () => {
+    it("should render", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox name="test-combobox">
           <m-option value="1">Item 1</m-option>
@@ -29,51 +51,53 @@ describe('m-combobox', () => {
       `);
 
       expect(el).to.be.instanceOf(MCombobox);
-      expect(el.name).to.equal('test-combobox');
+      expect(el.name).to.equal("test-combobox");
     });
 
-    it('should have default values', async () => {
+    it("should have default values", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
 
-      expect(el.name).to.be.undefined;
+      expect(el.name).to.equal(undefined);
       expect(el.disabled).to.equal(false);
       expect(el.multiple).to.equal(false);
       expect(el.value).to.equal(null);
     });
   });
 
-  describe('form association', () => {
-    it('should be form-associated', async () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("form association", () => {
+    it("should be form-associated", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox name="test">
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
 
-      expect(el).to.have.property('form');
+      expect(el).to.have.property("form");
     });
 
-    it('should reflect name attribute', async () => {
+    it("should reflect name attribute", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox name="initial">
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
 
-      expect(el.name).to.equal('initial');
-      expect(el.getAttribute('name')).to.equal('initial');
+      expect(el.name).to.equal("initial");
+      expect(el.getAttribute("name")).to.equal("initial");
 
-      el.name = 'updated';
-      await new Promise(resolve => setTimeout(resolve, 0));
+      el.name = "updated";
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(el.getAttribute('name')).to.equal('updated');
+      expect(el.getAttribute("name")).to.equal("updated");
     });
 
-    it('should reflect disabled attribute', async () => {
+    it("should reflect disabled attribute", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox disabled>
           <m-option value="1">Item 1</m-option>
@@ -81,10 +105,10 @@ describe('m-combobox', () => {
       `);
 
       expect(el.disabled).to.equal(true);
-      expect(el.hasAttribute('disabled')).to.equal(true);
+      expect(el.hasAttribute("disabled")).to.equal(true);
     });
 
-    it('should reflect multiple attribute', async () => {
+    it("should reflect multiple attribute", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox multiple>
           <m-option value="1">Item 1</m-option>
@@ -93,13 +117,14 @@ describe('m-combobox', () => {
       `);
 
       expect(el.multiple).to.equal(true);
-      expect(el.hasAttribute('multiple')).to.equal(true);
+      expect(el.hasAttribute("multiple")).to.equal(true);
     });
-
   });
 
-  describe('value management', () => {
-    it('should return null when no items selected', async () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("value management", () => {
+    it("should return null when no items selected", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -107,12 +132,12 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       expect(el.value).to.equal(null);
     });
 
-    it('should return empty array for multiple mode when no items selected', async () => {
+    it("should return empty array for multiple mode when no items selected", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox multiple name="test">
           <m-option value="1">Item 1</m-option>
@@ -120,13 +145,13 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       expect(Array.isArray(el.value)).to.equal(true);
       expect(el.value).to.deep.equal([]);
     });
 
-    it('should initialize value from pre-selected option', async () => {
+    it("should initialize value from pre-selected option", async () => {
       const form = await fixture<HTMLFormElement>(html`
         <form>
           <m-combobox name="fruit">
@@ -137,22 +162,22 @@ describe('m-combobox', () => {
         </form>
       `);
 
-      await waitUntil(() => form.querySelectorAll('m-option').length === 3);
-      const combobox = form.querySelector('m-combobox') as MCombobox;
-      
+      await waitUntil(() => form.querySelectorAll("m-option").length === 3);
+      const combobox = form.querySelector("m-combobox") as MCombobox;
+
       // Value should be set
-      expect(combobox.value).to.equal('pear');
-      
+      expect(combobox.value).to.equal("pear");
+
       // Input field should display the selected option's text
-      const input = combobox.shadowRoot!.querySelector('m-input') as any;
-      expect(input.value).to.equal('Pear');
-      
+      const input = combobox.shadowRoot!.querySelector("m-input") as any;
+      expect(input.value).to.equal("Pear");
+
       // Form data should include the value
       const formData = new FormData(form);
-      expect(formData.get('fruit')).to.equal('pear');
+      expect(formData.get("fruit")).to.equal("pear");
     });
 
-    it('should initialize value from multiple pre-selected options', async () => {
+    it("should initialize value from multiple pre-selected options", async () => {
       const form = await fixture<HTMLFormElement>(html`
         <form>
           <m-combobox name="fruits" multiple>
@@ -163,27 +188,31 @@ describe('m-combobox', () => {
         </form>
       `);
 
-      await waitUntil(() => form.querySelectorAll('m-option').length === 3);
-      const combobox = form.querySelector('m-combobox') as MCombobox;
-      
+      await waitUntil(() => form.querySelectorAll("m-option").length === 3);
+      const combobox = form.querySelector("m-combobox") as MCombobox;
+
       // Value should be an array of selected values
-      expect(combobox.value).to.deep.equal(['apple', 'cherry']);
-      expect(combobox.selectedValues).to.deep.equal(['apple', 'cherry']);
-      
+      expect(combobox.value).to.deep.equal(["apple", "cherry"]);
+      expect(combobox.selectedValues).to.deep.equal(["apple", "cherry"]);
+
       // Multiselect chips should be rendered
-      const multiSelectList = combobox.shadowRoot!.querySelector('#multi-select-list') as HTMLUListElement;
+      const multiSelectList = combobox.shadowRoot!.querySelector(
+        "#multi-select-list",
+      ) as HTMLUListElement;
       expect(multiSelectList.children.length).to.equal(2);
-      expect(multiSelectList.textContent).to.include('Apple');
-      expect(multiSelectList.textContent).to.include('Cherry');
-      
+      expect(multiSelectList.textContent).to.include("Apple");
+      expect(multiSelectList.textContent).to.include("Cherry");
+
       // Form data should include all values
       const formData = new FormData(form);
-      expect(formData.getAll('fruits')).to.deep.equal(['apple', 'cherry']);
+      expect(formData.getAll("fruits")).to.deep.equal(["apple", "cherry"]);
     });
   });
 
-  describe('events', () => {
-    it('should dispatch m-combobox-change event on selection', async () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("events", () => {
+    it("should dispatch m-combobox-change event on selection", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -191,40 +220,40 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       let eventFired = false;
       let eventDetail: any;
 
-      el.addEventListener('m-combobox-change', (e: Event) => {
+      el.addEventListener("m-combobox-change", (e: Event) => {
         eventFired = true;
         eventDetail = (e as CustomEvent).detail;
       });
 
       const option = el.querySelector('m-option[value="1"]') as MOption;
       option.selected = true;
-      
+
       const shadowRoot = el.shadowRoot!;
-      const popover = shadowRoot.querySelector('#popover') as HTMLDivElement;
+      const popover = shadowRoot.querySelector("#popover") as HTMLDivElement;
       popover.showPopover();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
       el.dispatchEvent(
-        new CustomEvent('m-combobox-change', {
-          detail: { selected: ['1'] },
+        new CustomEvent("m-combobox-change", {
+          detail: { selected: ["1"] },
           bubbles: true,
-          composed: true
-        })
+          composed: true,
+        }),
       );
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(eventFired).to.equal(true);
-      expect(eventDetail.selected).to.deep.equal(['1']);
+      expect(eventDetail.selected).to.deep.equal(["1"]);
     });
 
-    it('should dispatch m-combobox-select event when option is selected', async () => {
+    it("should dispatch m-combobox-select event when option is selected", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -232,12 +261,12 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       let eventFired = false;
       let eventDetail: any;
 
-      el.addEventListener('m-combobox-select', (e: Event) => {
+      el.addEventListener("m-combobox-select", (e: Event) => {
         eventFired = true;
         eventDetail = (e as CustomEvent).detail;
       });
@@ -245,14 +274,14 @@ describe('m-combobox', () => {
       const option = el.querySelector('m-option[value="1"]') as MOption;
       option.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(eventFired).to.equal(true);
       expect(eventDetail.option).to.equal(option);
       expect(eventDetail.selected).to.equal(true);
     });
 
-    it('should dispatch m-combobox-unselected event when option is deselected', async () => {
+    it("should dispatch m-combobox-unselected event when option is deselected", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -260,33 +289,33 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       const option1 = el.querySelector('m-option[value="1"]') as MOption;
       const option2 = el.querySelector('m-option[value="2"]') as MOption;
 
       // Select first option
       option1.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       let eventFired = false;
       let eventDetail: any;
 
-      el.addEventListener('m-combobox-unselected', (e: Event) => {
+      el.addEventListener("m-combobox-unselected", (e: Event) => {
         eventFired = true;
         eventDetail = (e as CustomEvent).detail;
       });
 
       // Select second option (should deselect first in single-select mode)
       option2.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(eventFired).to.equal(true);
       expect(eventDetail.option).to.equal(option1);
       expect(eventDetail.selected).to.equal(false);
     });
 
-    it('should dispatch m-combobox-focus-change event when focus moves between options', async () => {
+    it("dispatches m-combobox-focus-change when focus moves", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -294,60 +323,64 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       let eventFired = false;
       let eventDetail: any;
 
-      el.addEventListener('m-combobox-focus-change', (e: Event) => {
+      el.addEventListener("m-combobox-focus-change", (e: Event) => {
         eventFired = true;
         eventDetail = (e as CustomEvent).detail;
       });
 
       const option1 = el.querySelector('m-option[value="1"]') as MOption;
-      
+
       el.focus();
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      
-      await new Promise(resolve => setTimeout(resolve, 0));
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(eventFired).to.equal(true);
       expect(eventDetail.option).to.equal(option1);
     });
 
-    it('should dispatch m-combobox-focus-change with null when focus is cleared', async () => {
+    it("should dispatch m-combobox-focus-change with null when focus is cleared", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
-      const option1 = el.querySelector('m-option[value="1"]') as MOption;
-      
+      const _option1 = el.querySelector('m-option[value="1"]') as MOption;
+
       // Focus an option first
       el.focus();
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      await new Promise(resolve => setTimeout(resolve, 0));
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       let eventFired = false;
       let eventDetail: any;
 
-      el.addEventListener('m-combobox-focus-change', (e: Event) => {
+      el.addEventListener("m-combobox-focus-change", (e: Event) => {
         eventFired = true;
         eventDetail = (e as CustomEvent).detail;
       });
 
       // Clear focus
       el.focusBlur();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(eventFired).to.equal(true);
       expect(eventDetail.option).to.equal(null);
     });
 
-    it('should dispatch events in correct order for single-select mode', async () => {
+    it("should dispatch events in correct order for single-select mode", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -355,34 +388,38 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       const option1 = el.querySelector('m-option[value="1"]') as MOption;
       const option2 = el.querySelector('m-option[value="2"]') as MOption;
 
       const events: string[] = [];
 
-      el.addEventListener('m-combobox-unselected', () => events.push('unselected'));
-      el.addEventListener('m-combobox-select', () => events.push('select'));
-      el.addEventListener('m-combobox-change', () => events.push('change'));
+      el.addEventListener("m-combobox-unselected", () =>
+        events.push("unselected"),
+      );
+      el.addEventListener("m-combobox-select", () => events.push("select"));
+      el.addEventListener("m-combobox-change", () => events.push("change"));
 
       // Select first option
       option1.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(events).to.deep.equal(['select', 'change']);
+      expect(events).to.deep.equal(["select", "change"]);
 
       events.length = 0;
 
       // Select second option (should deselect first)
       option2.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(events).to.deep.equal(['unselected', 'select', 'change']);
+      expect(events).to.deep.equal(["unselected", "select", "change"]);
     });
   });
-  describe('accessibility', () => {
-    it('passes automated a11y tests', async () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("accessibility", () => {
+    it("passes automated a11y tests", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox label="Choose a fruit">
           <m-option value="apple">Apple</m-option>
@@ -395,67 +432,69 @@ describe('m-combobox', () => {
     });
   });
 
-
-
-  describe('aria-label support', () => {
-    it('should set aria-label when label attribute is provided', async () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("aria-label support", () => {
+    it("should set aria-label when label attribute is provided", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox label="Select a fruit">
           <m-option value="apple">Apple</m-option>
         </m-combobox>
       `);
 
-      expect(el.getAttribute('aria-label')).to.equal('Select a fruit');
-      expect(el.label).to.equal('Select a fruit');
+      expect(el.getAttribute("aria-label")).to.equal("Select a fruit");
+      expect(el.label).to.equal("Select a fruit");
     });
 
-    it('should update aria-label when label property changes', async () => {
+    it("should update aria-label when label property changes", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox label="Original label">
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
 
-      expect(el.getAttribute('aria-label')).to.equal('Original label');
+      expect(el.getAttribute("aria-label")).to.equal("Original label");
 
-      el.label = 'Updated label';
-      await new Promise(resolve => setTimeout(resolve, 0));
+      el.label = "Updated label";
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(el.getAttribute('aria-label')).to.equal('Updated label');
+      expect(el.getAttribute("aria-label")).to.equal("Updated label");
     });
 
-    it('should remove aria-label when label is removed', async () => {
+    it("should remove aria-label when label is removed", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox label="Test label">
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
 
-      expect(el.hasAttribute('aria-label')).to.equal(true);
+      expect(el.hasAttribute("aria-label")).to.equal(true);
 
-      el.removeAttribute('label');
-      await new Promise(resolve => setTimeout(resolve, 0));
+      el.removeAttribute("label");
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(el.hasAttribute('aria-label')).to.equal(false);
+      expect(el.hasAttribute("aria-label")).to.equal(false);
     });
 
-    it('should pass label to inner m-input element', async () => {
+    it("should pass label to inner m-input element", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox label="Select item">
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input).to.exist;
-      expect(input!.getAttribute('label')).to.equal('Select item');
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input).to.not.equal(null);
+      expect(input!.getAttribute("label")).to.equal("Select item");
     });
   });
 
-  describe('aria-activedescendant', () => {
-    it('should set aria-activedescendant when an option is focused', async () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("aria-activedescendant", () => {
+    it("should set aria-activedescendant when an option is focused", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -463,19 +502,19 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      await waitUntil(() => el.querySelectorAll("m-option").length === 2);
 
       const firstOption = el.querySelector('m-option[value="1"]') as MOption;
       el.focusedElement = firstOption;
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      const ariaActiveDescendant = el.getAttribute('aria-activedescendant');
+      const ariaActiveDescendant = el.getAttribute("aria-activedescendant");
       expect(ariaActiveDescendant).to.equal(firstOption.id);
       expect(firstOption.id).to.match(/^option-/);
     });
 
-    it('should update aria-activedescendant when focus changes', async () => {
+    it("should update aria-activedescendant when focus changes", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -483,46 +522,50 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      await waitUntil(() => el.querySelectorAll("m-option").length === 2);
 
-      const options = el.querySelectorAll('m-option');
+      const options = el.querySelectorAll("m-option");
       const firstOption = options[0] as MOption;
       const secondOption = options[1] as MOption;
 
       el.focusedElement = firstOption;
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(el.getAttribute('aria-activedescendant')).to.equal(firstOption.id);
+      expect(el.getAttribute("aria-activedescendant")).to.equal(firstOption.id);
 
       el.focusedElement = secondOption;
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(el.getAttribute('aria-activedescendant')).to.equal(secondOption.id);
+      expect(el.getAttribute("aria-activedescendant")).to.equal(
+        secondOption.id,
+      );
     });
 
-    it('should remove aria-activedescendant when no option is focused', async () => {
+    it("should remove aria-activedescendant when no option is focused", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 1);
+      await waitUntil(() => el.querySelectorAll("m-option").length === 1);
 
-      const option = el.querySelector('m-option') as MOption;
+      const option = el.querySelector("m-option") as MOption;
       el.focusedElement = option;
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(el.hasAttribute('aria-activedescendant')).to.equal(true);
+      expect(el.hasAttribute("aria-activedescendant")).to.equal(true);
 
       el.focusedElement = null;
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(el.hasAttribute('aria-activedescendant')).to.equal(false);
+      expect(el.hasAttribute("aria-activedescendant")).to.equal(false);
     });
   });
 
-  describe('popover listbox ARIA attributes', () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("popover listbox ARIA attributes", () => {
     it('should have aria-multiselectable="true" on listbox when multiple', async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox multiple>
@@ -530,34 +573,36 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      const popover = el.shadowRoot!.querySelector('#popover');
-      expect(popover!.getAttribute('aria-multiselectable')).to.equal('true');
+      const popover = el.shadowRoot!.querySelector("#popover");
+      expect(popover!.getAttribute("aria-multiselectable")).to.equal("true");
     });
 
-    it('should not have aria-multiselectable on listbox when single select', async () => {
+    it("should not have aria-multiselectable on listbox when single select", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
 
-      const popover = el.shadowRoot!.querySelector('#popover');
-      expect(popover!.hasAttribute('aria-multiselectable')).to.equal(false);
+      const popover = el.shadowRoot!.querySelector("#popover");
+      expect(popover!.hasAttribute("aria-multiselectable")).to.equal(false);
     });
 
-    it('should not have aria-label on popover', async () => {
+    it("should not have aria-label on popover", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox label="Test label">
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
 
-      const popover = el.shadowRoot!.querySelector('#popover');
-      expect(popover!.hasAttribute('aria-label')).to.equal(false);
+      const popover = el.shadowRoot!.querySelector("#popover");
+      expect(popover!.hasAttribute("aria-label")).to.equal(false);
     });
   });
 
-  describe('inner input element', () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("inner input element", () => {
     it('should not have role="combobox" on inner m-input', async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
@@ -565,14 +610,16 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input).to.exist;
-      expect(input!.hasAttribute('role')).to.equal(false);
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input).to.not.equal(null);
+      expect(input!.hasAttribute("role")).to.equal(false);
     });
   });
 
-  describe('m-option ARIA attributes', () => {
-    it('should auto-generate IDs for options', async () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("m-option ARIA attributes", () => {
+    it("should auto-generate IDs for options", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -580,16 +627,18 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const options = el.querySelectorAll('m-option');
+      await waitUntil(() => el.querySelectorAll("m-option").length === 2);
+      const options = el.querySelectorAll("m-option");
 
-      options.forEach(option => {
+      options.forEach((option) => {
         expect(option.id).to.match(/^option-/);
       });
     });
   });
 
-  describe('aria-expanded state management', () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("aria-expanded state management", () => {
     it('should set aria-expanded="true" when popover is shown', async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
@@ -597,13 +646,13 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      expect(el.getAttribute('aria-expanded')).to.equal('false');
+      expect(el.getAttribute("aria-expanded")).to.equal("false");
 
-      el.dispatchEvent(new FocusEvent('focus'));
+      el.dispatchEvent(new FocusEvent("focus"));
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(el.getAttribute('aria-expanded')).to.equal('true');
+      expect(el.getAttribute("aria-expanded")).to.equal("true");
     });
 
     it('should set aria-expanded="false" when popover is closed with blur', async () => {
@@ -614,12 +663,12 @@ describe('m-combobox', () => {
       `);
 
       el.focus();
-      await waitUntil(() => el.getAttribute('aria-expanded') === 'true');
+      await waitUntil(() => el.getAttribute("aria-expanded") === "true");
 
-      el.dispatchEvent(new FocusEvent('blur'));
-      await new Promise(resolve => setTimeout(resolve, 0));
+      el.dispatchEvent(new FocusEvent("blur"));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(el.getAttribute('aria-expanded')).to.equal('false');
+      expect(el.getAttribute("aria-expanded")).to.equal("false");
     });
 
     it('should set aria-expanded="false" when option is selected in single mode', async () => {
@@ -630,17 +679,17 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      await waitUntil(() => el.querySelectorAll("m-option").length === 2);
 
       el.focus();
-      await waitUntil(() => el.getAttribute('aria-expanded') === 'true');
+      await waitUntil(() => el.getAttribute("aria-expanded") === "true");
 
       const option = el.querySelector('m-option[value="1"]') as MOption;
       option.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(el.getAttribute('aria-expanded')).to.equal('false');
+      expect(el.getAttribute("aria-expanded")).to.equal("false");
     });
 
     it('should keep aria-expanded="true" when option is selected in multiple mode', async () => {
@@ -651,17 +700,17 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      await waitUntil(() => el.querySelectorAll("m-option").length === 2);
 
       el.focus();
-      await waitUntil(() => el.getAttribute('aria-expanded') === 'true');
+      await waitUntil(() => el.getAttribute("aria-expanded") === "true");
 
       const option = el.querySelector('m-option[value="1"]') as MOption;
       option.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(el.getAttribute('aria-expanded')).to.equal('true');
+      expect(el.getAttribute("aria-expanded")).to.equal("true");
     });
 
     it('should set aria-expanded="false" when Escape is pressed', async () => {
@@ -672,18 +721,21 @@ describe('m-combobox', () => {
       `);
 
       el.focus();
-      await waitUntil(() => el.getAttribute('aria-expanded') === 'true');
+      await waitUntil(() => el.getAttribute("aria-expanded") === "true");
 
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      await new Promise(resolve => setTimeout(resolve, 0));
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(el.getAttribute('aria-expanded')).to.equal('false');
+      expect(el.getAttribute("aria-expanded")).to.equal("false");
     });
-
   });
 
-  describe('selection updates input value', () => {
-    it('should update input value when option is selected in single mode', async () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("selection updates input value", () => {
+    it("should update input value when option is selected in single mode", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="apple">Apple</m-option>
@@ -691,20 +743,20 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      await waitUntil(() => el.querySelectorAll("m-option").length === 2);
 
-      const input = el.shadowRoot!.querySelector('m-input') as any;
-      expect(input.value).to.equal('');
+      const input = el.shadowRoot!.querySelector("m-input") as any;
+      expect(input.value).to.equal("");
 
       const option = el.querySelector('m-option[value="apple"]') as MOption;
       option.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(input.value).to.equal('Apple');
+      expect(input.value).to.equal("Apple");
     });
 
-    it('should replace input value when selecting different option in single mode', async () => {
+    it("should replace input value when selecting different option in single mode", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="apple">Apple</m-option>
@@ -712,27 +764,30 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      await waitUntil(() => el.querySelectorAll("m-option").length === 2);
 
-      const input = el.shadowRoot!.querySelector('m-input') as any;
+      const input = el.shadowRoot!.querySelector("m-input") as any;
 
-      const firstOption = el.querySelector('m-option[value="apple"]') as MOption;
+      const firstOption = el.querySelector(
+        'm-option[value="apple"]',
+      ) as MOption;
       firstOption.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
-      expect(input.value).to.equal('Apple');
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(input.value).to.equal("Apple");
 
       el.focus();
-      await waitUntil(() => el.getAttribute('aria-expanded') === 'true');
+      await waitUntil(() => el.getAttribute("aria-expanded") === "true");
 
-      const secondOption = el.querySelector('m-option[value="banana"]') as MOption;
+      const secondOption = el.querySelector(
+        'm-option[value="banana"]',
+      ) as MOption;
       secondOption.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(input.value).to.equal('Banana');
+      expect(input.value).to.equal("Banana");
     });
 
-
-    it('should not update input value in multiple mode (uses tags instead)', async () => {
+    it("should not update input value in multiple mode (uses tags instead)", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox multiple>
           <m-option value="apple">Apple</m-option>
@@ -740,20 +795,20 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      await waitUntil(() => el.querySelectorAll("m-option").length === 2);
 
-      const input = el.shadowRoot!.querySelector('m-input') as any;
+      const input = el.shadowRoot!.querySelector("m-input") as any;
       const initialValue = input.value;
 
       const option = el.querySelector('m-option[value="apple"]') as MOption;
       option.click();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(input.value).to.equal(initialValue);
     });
 
-    it('should preserve input value when filtering options', async () => {
+    it("should preserve input value when filtering options", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="apple">Apple</m-option>
@@ -762,22 +817,22 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 3);
+      await waitUntil(() => el.querySelectorAll("m-option").length === 3);
 
-      const input = el.shadowRoot!.querySelector('m-input') as any;
-      
+      const input = el.shadowRoot!.querySelector("m-input") as any;
+
       el.focus();
-      await waitUntil(() => el.getAttribute('aria-expanded') === 'true');
+      await waitUntil(() => el.getAttribute("aria-expanded") === "true");
 
-      input.value = 'ap';
-      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.value = "ap";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(input.value).to.equal('ap');
+      expect(input.value).to.equal("ap");
     });
 
-    it('should reflect programmatic selection in input value', async () => {
+    it("should reflect programmatic selection in input value", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="apple">Apple</m-option>
@@ -785,21 +840,25 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+      await waitUntil(() => el.querySelectorAll("m-option").length === 2);
 
-      const input = el.shadowRoot!.querySelector('m-input') as any;
+      const input = el.shadowRoot!.querySelector("m-input") as any;
       const option = el.querySelector('m-option[value="banana"]') as MOption;
 
       option.selected = true;
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(input.value).to.equal('Banana');
+      expect(input.value).to.equal("Banana");
     });
   });
 
-  describe('keyboard navigation', () => {
-    describe('ArrowDown', () => {
-      it('should open popup when closed', async () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("keyboard navigation", () => {
+    // Suite registration groups independent tests, not runtime logic.
+    // oxlint-disable-next-line max-lines-per-function
+    describe("ArrowDown", () => {
+      it("should open popup when closed", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="1">Item 1</m-option>
@@ -807,19 +866,21 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+        await waitUntil(() => el.querySelectorAll("m-option").length === 2);
 
-        expect(el.getAttribute('aria-expanded')).to.equal('false');
+        expect(el.getAttribute("aria-expanded")).to.equal("false");
 
         el.focus();
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
 
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        expect(el.getAttribute('aria-expanded')).to.equal('true');
+        expect(el.getAttribute("aria-expanded")).to.equal("true");
       });
 
-      it('should wrap from first to last option', async () => {
+      it("should wrap from first to last option", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="apple">Apple</m-option>
@@ -827,24 +888,32 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-        const options = el.querySelectorAll('m-option');
+        await waitUntil(() => el.querySelectorAll("m-option").length === 2);
+        const options = el.querySelectorAll("m-option");
         const firstOption = options[0] as MOption;
         const lastOption = options[1] as MOption;
 
         el.focus();
         el.focusedElement = firstOption;
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
-        await waitUntil(() => el.getAttribute('aria-activedescendant') === lastOption.id);
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }),
+        );
+        await waitUntil(
+          () => el.getAttribute("aria-activedescendant") === lastOption.id,
+        );
 
-        expect(el.getAttribute('aria-activedescendant')).to.equal(lastOption.id);
+        expect(el.getAttribute("aria-activedescendant")).to.equal(
+          lastOption.id,
+        );
       });
     });
 
-    describe('Enter key', () => {
-      it('should accept focused option', async () => {
+    // Suite registration groups independent tests, not runtime logic.
+    // oxlint-disable-next-line max-lines-per-function
+    describe("Enter key", () => {
+      it("should accept focused option", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="apple">Apple</m-option>
@@ -852,25 +921,35 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-        const options = el.querySelectorAll('m-option');
+        await waitUntil(() => el.querySelectorAll("m-option").length === 2);
+        const options = el.querySelectorAll("m-option");
         const secondOption = options[1] as MOption;
 
         el.focus();
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await waitUntil(() => el.getAttribute('aria-activedescendant') !== null);
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
+        await waitUntil(
+          () => el.getAttribute("aria-activedescendant") !== null,
+        );
 
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await waitUntil(() => el.getAttribute('aria-activedescendant') === secondOption.id);
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
+        await waitUntil(
+          () => el.getAttribute("aria-activedescendant") === secondOption.id,
+        );
 
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-        await new Promise(resolve => setTimeout(resolve, 0));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        expect(el.value).to.equal('banana');
-        expect(secondOption.getAttribute('aria-selected')).to.equal('true');
+        expect(el.value).to.equal("banana");
+        expect(secondOption.getAttribute("aria-selected")).to.equal("true");
       });
 
-      it('should update input value with selected option text', async () => {
+      it("should update input value with selected option text", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="apple">Apple</m-option>
@@ -878,26 +957,36 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-        const secondOption = el.querySelectorAll('m-option')[1] as MOption;
+        await waitUntil(() => el.querySelectorAll("m-option").length === 2);
+        const secondOption = el.querySelectorAll("m-option")[1] as MOption;
 
         el.focus();
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await waitUntil(() => !!el.getAttribute('aria-activedescendant'));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
+        await waitUntil(() => !!el.getAttribute("aria-activedescendant"));
 
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await waitUntil(() => el.getAttribute('aria-activedescendant') === secondOption.id);
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
+        await waitUntil(
+          () => el.getAttribute("aria-activedescendant") === secondOption.id,
+        );
 
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-        await new Promise(resolve => setTimeout(resolve, 0));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        const input = el.shadowRoot!.querySelector('m-input') as any;
-        expect(input.value).to.equal('Banana');
+        const input = el.shadowRoot!.querySelector("m-input") as any;
+        expect(input.value).to.equal("Banana");
       });
     });
 
-    describe('Escape key', () => {
-      it('should close popup when open', async () => {
+    // Suite registration groups independent tests, not runtime logic.
+    // oxlint-disable-next-line max-lines-per-function
+    describe("Escape key", () => {
+      it("should close popup when open", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="apple">Apple</m-option>
@@ -905,21 +994,25 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+        await waitUntil(() => el.querySelectorAll("m-option").length === 2);
 
         el.focus();
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await waitUntil(() => el.getAttribute('aria-expanded') === 'true');
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
+        await waitUntil(() => el.getAttribute("aria-expanded") === "true");
 
-        expect(el.getAttribute('aria-expanded')).to.equal('true');
+        expect(el.getAttribute("aria-expanded")).to.equal("true");
 
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-        await new Promise(resolve => setTimeout(resolve, 0));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        expect(el.getAttribute('aria-expanded')).to.equal('false');
+        expect(el.getAttribute("aria-expanded")).to.equal("false");
       });
 
-      it('should reset input value to last selected item in single mode', async () => {
+      it("should reset input value to last selected item in single mode", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="apple">Apple</m-option>
@@ -927,31 +1020,41 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-        const firstOption = el.querySelectorAll('m-option')[0] as MOption;
+        await waitUntil(() => el.querySelectorAll("m-option").length === 2);
+        const firstOption = el.querySelectorAll("m-option")[0] as MOption;
 
         el.focus();
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
+        await waitUntil(
+          () => el.getAttribute("aria-activedescendant") === firstOption.id,
+        );
 
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-        await new Promise(resolve => setTimeout(resolve, 0));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        const input = el.shadowRoot!.querySelector('m-input') as any;
-        expect(input.value).to.equal('Apple');
+        const input = el.shadowRoot!.querySelector("m-input") as any;
+        expect(input.value).to.equal("Apple");
 
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await waitUntil(() => el.getAttribute('aria-expanded') === 'true');
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
+        await waitUntil(() => el.getAttribute("aria-expanded") === "true");
 
-        input.value = 'test input';
+        input.value = "test input";
 
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-        await new Promise(resolve => setTimeout(resolve, 0));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        expect(input.value).to.equal('Apple');
+        expect(input.value).to.equal("Apple");
       });
 
-      it('should clear input value in multiple mode', async () => {
+      it("should clear input value in multiple mode", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox multiple>
             <m-option value="apple">Apple</m-option>
@@ -959,22 +1062,26 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 2);
+        await waitUntil(() => el.querySelectorAll("m-option").length === 2);
 
         el.focus();
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await waitUntil(() => el.getAttribute('aria-expanded') === 'true');
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
+        await waitUntil(() => el.getAttribute("aria-expanded") === "true");
 
-        const input = el.shadowRoot!.querySelector('m-input') as any;
-        input.value = 'test search';
+        const input = el.shadowRoot!.querySelector("m-input") as any;
+        input.value = "test search";
 
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-        await new Promise(resolve => setTimeout(resolve, 0));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        expect(input.value).to.equal('');
+        expect(input.value).to.equal("");
       });
 
-      it('should reset filter when input is reset to empty', async () => {
+      it("should reset filter when input is reset to empty", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="spain">Spain</m-option>
@@ -983,36 +1090,38 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 3);
-        const options = el.querySelectorAll('m-option');
+        await waitUntil(() => el.querySelectorAll("m-option").length === 3);
+        const options = el.querySelectorAll("m-option");
 
         el.focus();
-        const input = el.shadowRoot!.querySelector('m-input') as any;
-        
+        const input = el.shadowRoot!.querySelector("m-input") as any;
+
         // Type to filter
-        input.value = 'spain';
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        await new Promise(resolve => setTimeout(resolve, 200));
+        input.value = "spain";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        await new Promise((resolve) => setTimeout(resolve, 200));
 
         // Verify filtering happened
-        expect(options[0].getAttribute('data-match')).to.equal('true');
-        expect(options[1].getAttribute('data-match')).to.equal('false');
-        expect(options[2].getAttribute('data-match')).to.equal('false');
+        expect(options[0].getAttribute("data-match")).to.equal("true");
+        expect(options[1].getAttribute("data-match")).to.equal("false");
+        expect(options[2].getAttribute("data-match")).to.equal("false");
 
         // Hit Escape to reset
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-        await new Promise(resolve => setTimeout(resolve, 200));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 200));
 
         // Input should be empty
-        expect(input.value).to.equal('');
+        expect(input.value).to.equal("");
 
         // All options should be unfiltered (data-match="true" or no data-match)
-        expect(options[0].getAttribute('data-match')).to.not.equal('false');
-        expect(options[1].getAttribute('data-match')).to.not.equal('false');
-        expect(options[2].getAttribute('data-match')).to.not.equal('false');
+        expect(options[0].getAttribute("data-match")).to.not.equal("false");
+        expect(options[1].getAttribute("data-match")).to.not.equal("false");
+        expect(options[2].getAttribute("data-match")).to.not.equal("false");
       });
 
-      it('should reset filter to match selected value on escape', async () => {
+      it("should reset filter to match selected value on escape", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="spain">Spain</m-option>
@@ -1021,69 +1130,68 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 3);
-        const options = el.querySelectorAll('m-option');
+        await waitUntil(() => el.querySelectorAll("m-option").length === 3);
+        const options = el.querySelectorAll("m-option");
 
-        // Select spain
-        el.focus();
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await waitUntil(() => el.getAttribute('aria-activedescendant') === options[0].id);
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await selectFirstOptionWithKeyboard(el, options[0]);
 
-        const input = el.shadowRoot!.querySelector('m-input') as any;
-        expect(input.value).to.equal('Spain');
-        expect(el.getAttribute('aria-expanded')).to.equal('false'); // Popover closed after selection
-        expect(el.value).to.equal('spain'); // Verify Spain is actually selected
+        const input = el.shadowRoot!.querySelector("m-input") as any;
+        expect(input.value).to.equal("Spain");
+        expect(el.getAttribute("aria-expanded")).to.equal("false");
+        expect(el.value).to.equal("spain"); // Verify Spain is actually selected
         expect(el.selectedOptions.length).to.equal(1);
         expect(el.selectedOptions[0]).to.equal(options[0]);
 
         // Blur the element to ensure clean state
         el.blur();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
 
         // Focus and set input to "france" to filter
         el.focus();
-        await new Promise(resolve => setTimeout(resolve, 50));
-        input.value = 'france';
-        
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        input.value = "france";
+
         // Manually trigger filter to match input value
-        const searchList = el.shadowRoot!.querySelector('m-search-list') as any;
+        const searchList = el.shadowRoot!.querySelector("m-search-list") as any;
         searchList.filter();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
 
         // Verify popover opened and filtering to france
-        await waitUntil(() => el.getAttribute('aria-expanded') === 'true');
-        expect(options[0].getAttribute('data-match')).to.equal('false');
-        expect(options[1].getAttribute('data-match')).to.equal('true');
-        expect(options[2].getAttribute('data-match')).to.equal('false');
+        await waitUntil(() => el.getAttribute("aria-expanded") === "true");
+        expect(options[0].getAttribute("data-match")).to.equal("false");
+        expect(options[1].getAttribute("data-match")).to.equal("true");
+        expect(options[2].getAttribute("data-match")).to.equal("false");
 
         // Verify popover is open before Escape
-        const popover = el.shadowRoot!.querySelector('#popover') as HTMLElement;
-        expect(popover.matches(':popover-open')).to.equal(true);
+        const popover = el.shadowRoot!.querySelector("#popover") as HTMLElement;
+        expect(popover.matches(":popover-open")).to.equal(true);
 
         // Debug: check what text content we have
         const selectedOption = el.selectedOptions[0];
-        const expectedText = selectedOption?.textContent || '';
-        
+        const expectedText = selectedOption?.textContent || "";
+
         // Hit Escape to reset to selected value
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-        await new Promise(resolve => setTimeout(resolve, 50));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 50));
 
         // Input should reset to selected option's text
         expect(input.value).to.equal(expectedText.trim());
 
         // Wait for filter to complete
-        await waitUntil(() => options[0].getAttribute('data-match') === 'true');
-        
+        await waitUntil(() => options[0].getAttribute("data-match") === "true");
+
         // Filter should reset - Spain should match
-        expect(options[0].getAttribute('data-match')).to.equal('true');
+        expect(options[0].getAttribute("data-match")).to.equal("true");
         // Note: fuzzy search may match other items too, so we just verify Spain matches
       });
     });
 
-    describe('Home/End keys', () => {
-      it('should move focus to first option with Home', async () => {
+    // Suite registration groups independent tests, not runtime logic.
+    // oxlint-disable-next-line max-lines-per-function
+    describe("Home/End keys", () => {
+      it("should move focus to first option with Home", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="apple">Apple</m-option>
@@ -1092,18 +1200,24 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 3);
-        const options = el.querySelectorAll('m-option');
+        await waitUntil(() => el.querySelectorAll("m-option").length === 3);
+        const options = el.querySelectorAll("m-option");
         const firstOption = options[0] as MOption;
 
         el.focus();
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Home", bubbles: true }),
+        );
 
-        await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
-        expect(el.getAttribute('aria-activedescendant')).to.equal(firstOption.id);
+        await waitUntil(
+          () => el.getAttribute("aria-activedescendant") === firstOption.id,
+        );
+        expect(el.getAttribute("aria-activedescendant")).to.equal(
+          firstOption.id,
+        );
       });
 
-      it('should move focus to last option with End', async () => {
+      it("should move focus to last option with End", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="apple">Apple</m-option>
@@ -1112,21 +1226,29 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 3);
-        const options = el.querySelectorAll('m-option');
+        await waitUntil(() => el.querySelectorAll("m-option").length === 3);
+        const options = el.querySelectorAll("m-option");
         const lastOption = options[2] as MOption;
 
         el.focus();
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "End", bubbles: true }),
+        );
 
-        await waitUntil(() => el.getAttribute('aria-activedescendant') === lastOption.id);
-        expect(el.getAttribute('aria-activedescendant')).to.equal(lastOption.id);
+        await waitUntil(
+          () => el.getAttribute("aria-activedescendant") === lastOption.id,
+        );
+        expect(el.getAttribute("aria-activedescendant")).to.equal(
+          lastOption.id,
+        );
       });
     });
   });
 
-  describe('focus management', () => {
-    it('should set actual focus on host element when focused', async () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("focus management", () => {
+    it("should set actual focus on host element when focused", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -1134,12 +1256,12 @@ describe('m-combobox', () => {
       `);
 
       el.focus();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(document.activeElement).to.equal(el);
     });
 
-    it('should manage virtual focus on options via aria-activedescendant', async () => {
+    it("should manage virtual focus on options via aria-activedescendant", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -1147,20 +1269,24 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const options = el.querySelectorAll('m-option');
+      await waitUntil(() => el.querySelectorAll("m-option").length === 2);
+      const options = el.querySelectorAll("m-option");
       const firstOption = options[0] as MOption;
 
       el.focus();
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+      );
 
-      await waitUntil(() => el.getAttribute('aria-activedescendant') === firstOption.id);
+      await waitUntil(
+        () => el.getAttribute("aria-activedescendant") === firstOption.id,
+      );
 
       expect(document.activeElement).to.equal(el);
-      expect(el.getAttribute('aria-activedescendant')).to.equal(firstOption.id);
+      expect(el.getAttribute("aria-activedescendant")).to.equal(firstOption.id);
     });
 
-    it('should set focused attribute on virtually focused option', async () => {
+    it("should set focused attribute on virtually focused option", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -1168,21 +1294,23 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const options = el.querySelectorAll('m-option');
+      await waitUntil(() => el.querySelectorAll("m-option").length === 2);
+      const options = el.querySelectorAll("m-option");
       const firstOption = options[0] as MOption;
       const secondOption = options[1] as MOption;
 
       el.focus();
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+      );
 
-      await waitUntil(() => firstOption.hasAttribute('focused'));
+      await waitUntil(() => firstOption.hasAttribute("focused"));
 
-      expect(firstOption.hasAttribute('focused')).to.equal(true);
-      expect(secondOption.hasAttribute('focused')).to.equal(false);
+      expect(firstOption.hasAttribute("focused")).to.equal(true);
+      expect(secondOption.hasAttribute("focused")).to.equal(false);
     });
 
-    it('should move focused attribute when virtual focus changes', async () => {
+    it("should move focused attribute when virtual focus changes", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -1190,23 +1318,27 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const options = el.querySelectorAll('m-option');
+      await waitUntil(() => el.querySelectorAll("m-option").length === 2);
+      const options = el.querySelectorAll("m-option");
       const firstOption = options[0] as MOption;
       const secondOption = options[1] as MOption;
 
       el.focus();
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      await waitUntil(() => firstOption.hasAttribute('focused'));
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+      );
+      await waitUntil(() => firstOption.hasAttribute("focused"));
 
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      await waitUntil(() => secondOption.hasAttribute('focused'));
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+      );
+      await waitUntil(() => secondOption.hasAttribute("focused"));
 
-      expect(firstOption.hasAttribute('focused')).to.equal(false);
-      expect(secondOption.hasAttribute('focused')).to.equal(true);
+      expect(firstOption.hasAttribute("focused")).to.equal(false);
+      expect(secondOption.hasAttribute("focused")).to.equal(true);
     });
 
-    it('should not move actual focus to options (only virtual focus)', async () => {
+    it("should not move actual focus to options (only virtual focus)", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -1214,19 +1346,21 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const options = el.querySelectorAll('m-option');
+      await waitUntil(() => el.querySelectorAll("m-option").length === 2);
+      const options = el.querySelectorAll("m-option");
 
       el.focus();
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+      );
 
-      await waitUntil(() => (options[0] as MOption).hasAttribute('focused'));
+      await waitUntil(() => (options[0] as MOption).hasAttribute("focused"));
 
       expect(document.activeElement).to.equal(el);
       expect(document.activeElement).to.not.equal(options[0]);
     });
 
-    it('should clear virtual focus when popup closes', async () => {
+    it("should clear virtual focus when popup closes", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
@@ -1234,25 +1368,33 @@ describe('m-combobox', () => {
         </m-combobox>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-      const options = el.querySelectorAll('m-option');
+      await waitUntil(() => el.querySelectorAll("m-option").length === 2);
+      const options = el.querySelectorAll("m-option");
       const firstOption = options[0] as MOption;
 
       el.focus();
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      await waitUntil(() => firstOption.hasAttribute('focused'));
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+      );
+      await waitUntil(() => firstOption.hasAttribute("focused"));
 
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      await waitUntil(() => el.getAttribute('aria-expanded') === 'false');
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      await waitUntil(() => el.getAttribute("aria-expanded") === "false");
 
-      expect(firstOption.hasAttribute('focused')).to.equal(false);
-      expect(el.hasAttribute('aria-activedescendant')).to.equal(false);
+      expect(firstOption.hasAttribute("focused")).to.equal(false);
+      expect(el.hasAttribute("aria-activedescendant")).to.equal(false);
     });
   });
 
-  describe('edge cases', () => {
-    describe('disabled state', () => {
-      it('should not open popup when disabled and focused', async () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("edge cases", () => {
+    // Suite registration groups independent tests, not runtime logic.
+    // oxlint-disable-next-line max-lines-per-function
+    describe("disabled state", () => {
+      it("should not open popup when disabled and focused", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox disabled>
             <m-option value="1">Item 1</m-option>
@@ -1260,12 +1402,12 @@ describe('m-combobox', () => {
         `);
 
         el.focus();
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        expect(el.getAttribute('aria-expanded')).to.equal('false');
+        expect(el.getAttribute("aria-expanded")).to.equal("false");
       });
 
-      it('should not respond to keyboard events when disabled', async () => {
+      it("should not respond to keyboard events when disabled", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox disabled>
             <m-option value="1">Item 1</m-option>
@@ -1274,17 +1416,21 @@ describe('m-combobox', () => {
         `);
 
         el.focus();
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
 
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        expect(el.getAttribute('aria-expanded')).to.equal('false');
-        expect(el.hasAttribute('aria-activedescendant')).to.equal(false);
+        expect(el.getAttribute("aria-expanded")).to.equal("false");
+        expect(el.hasAttribute("aria-activedescendant")).to.equal(false);
       });
     });
 
-    describe('disabled options', () => {
-      it('should skip disabled options when navigating with ArrowDown', async () => {
+    // Suite registration groups independent tests, not runtime logic.
+    // oxlint-disable-next-line max-lines-per-function
+    describe("disabled options", () => {
+      it("should skip disabled options when navigating with ArrowDown", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="apple">Apple</m-option>
@@ -1293,21 +1439,27 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 3);
-        const options = el.querySelectorAll('m-option');
+        await waitUntil(() => el.querySelectorAll("m-option").length === 3);
+        const options = el.querySelectorAll("m-option");
         const appleOption = options[0] as MOption;
         const orangeOption = options[2] as MOption;
 
         el.focus();
         el.focusedElement = appleOption;
 
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
 
-        await waitUntil(() => el.getAttribute('aria-activedescendant') === orangeOption.id);
-        expect(el.getAttribute('aria-activedescendant')).to.equal(orangeOption.id);
+        await waitUntil(
+          () => el.getAttribute("aria-activedescendant") === orangeOption.id,
+        );
+        expect(el.getAttribute("aria-activedescendant")).to.equal(
+          orangeOption.id,
+        );
       });
 
-      it('should skip disabled options when navigating with ArrowUp', async () => {
+      it("should skip disabled options when navigating with ArrowUp", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="apple">Apple</m-option>
@@ -1316,21 +1468,27 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 3);
-        const options = el.querySelectorAll('m-option');
+        await waitUntil(() => el.querySelectorAll("m-option").length === 3);
+        const options = el.querySelectorAll("m-option");
         const appleOption = options[0] as MOption;
         const orangeOption = options[2] as MOption;
 
         el.focus();
         el.focusedElement = orangeOption;
 
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }),
+        );
 
-        await waitUntil(() => el.getAttribute('aria-activedescendant') === appleOption.id);
-        expect(el.getAttribute('aria-activedescendant')).to.equal(appleOption.id);
+        await waitUntil(
+          () => el.getAttribute("aria-activedescendant") === appleOption.id,
+        );
+        expect(el.getAttribute("aria-activedescendant")).to.equal(
+          appleOption.id,
+        );
       });
 
-      it('should not select disabled options when clicked', async () => {
+      it("should not select disabled options when clicked", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="apple" disabled>Apple</m-option>
@@ -1338,66 +1496,67 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-        const disabledOption = el.querySelector('m-option[disabled]') as MOption;
+        await waitUntil(() => el.querySelectorAll("m-option").length === 2);
+        const disabledOption = el.querySelector(
+          "m-option[disabled]",
+        ) as MOption;
 
         el.focus();
-        await waitUntil(() => el.getAttribute('aria-expanded') === 'true');
+        await waitUntil(() => el.getAttribute("aria-expanded") === "true");
 
         disabledOption.click();
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        expect(disabledOption.getAttribute('aria-selected')).to.equal('false');
+        expect(disabledOption.getAttribute("aria-selected")).to.equal("false");
       });
     });
 
-    describe('empty list', () => {
-      it('should have no aria-activedescendant when no options exist', async () => {
-        const el = await fixture<MCombobox>(html`
-          <m-combobox>
-          </m-combobox>
-        `);
+    // Suite registration groups independent tests, not runtime logic.
+    // oxlint-disable-next-line max-lines-per-function
+    describe("empty list", () => {
+      it("should have no aria-activedescendant when no options exist", async () => {
+        const el = await fixture<MCombobox>(html` <m-combobox> </m-combobox> `);
 
         el.focus();
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        expect(el.hasAttribute('aria-activedescendant')).to.equal(false);
+        expect(el.hasAttribute("aria-activedescendant")).to.equal(false);
       });
 
-      it('should not error when navigating with ArrowDown in empty list', async () => {
-        const el = await fixture<MCombobox>(html`
-          <m-combobox>
-          </m-combobox>
-        `);
+      it("should not error when navigating with ArrowDown in empty list", async () => {
+        const el = await fixture<MCombobox>(html` <m-combobox> </m-combobox> `);
 
         el.focus();
-        
+
         expect(() => {
-          el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+          el.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+          );
         }).to.not.throw();
 
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        expect(el.hasAttribute('aria-activedescendant')).to.equal(false);
+        expect(el.hasAttribute("aria-activedescendant")).to.equal(false);
       });
 
-      it('should not error when pressing Enter in empty list', async () => {
-        const el = await fixture<MCombobox>(html`
-          <m-combobox>
-          </m-combobox>
-        `);
+      it("should not error when pressing Enter in empty list", async () => {
+        const el = await fixture<MCombobox>(html` <m-combobox> </m-combobox> `);
 
         el.focus();
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
         expect(() => {
-          el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+          el.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+          );
         }).to.not.throw();
       });
     });
 
-    describe('filtered results', () => {
-      it('should maintain aria-activedescendant on visible options after filtering', async () => {
+    // Suite registration groups independent tests, not runtime logic.
+    // oxlint-disable-next-line max-lines-per-function
+    describe("filtered results", () => {
+      it("should maintain aria-activedescendant on visible options after filtering", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="apple">Apple</m-option>
@@ -1406,24 +1565,30 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 3);
-        const options = el.querySelectorAll('m-option');
+        await waitUntil(() => el.querySelectorAll("m-option").length === 3);
+        const options = el.querySelectorAll("m-option");
         const appleOption = options[0] as MOption;
 
         el.focus();
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await waitUntil(() => el.getAttribute('aria-activedescendant') === appleOption.id);
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
+        await waitUntil(
+          () => el.getAttribute("aria-activedescendant") === appleOption.id,
+        );
 
-        const input = el.shadowRoot!.querySelector('m-input') as any;
-        input.value = 'ap';
-        input.dispatchEvent(new Event('input', { bubbles: true }));
+        const input = el.shadowRoot!.querySelector("m-input") as any;
+        input.value = "ap";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
 
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        expect(el.getAttribute('aria-activedescendant')).to.equal(appleOption.id);
+        expect(el.getAttribute("aria-activedescendant")).to.equal(
+          appleOption.id,
+        );
       });
 
-      it('should skip hidden options when navigating after filtering', async () => {
+      it("should skip hidden options when navigating after filtering", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox debounce="0">
             <m-option value="apple">Apple</m-option>
@@ -1432,54 +1597,66 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 3);
-        const options = el.querySelectorAll('m-option');
+        await waitUntil(() => el.querySelectorAll("m-option").length === 3);
+        const options = el.querySelectorAll("m-option");
         const appleOption = options[0] as MOption;
         const apricotOption = options[2] as MOption;
 
         el.focus();
-        
-        const input = el.shadowRoot!.querySelector('m-input') as any;
-        input.value = 'ap';
-        input.dispatchEvent(new Event('input', { bubbles: true }));
 
-        await new Promise(resolve => setTimeout(resolve, 0));
+        const input = el.shadowRoot!.querySelector("m-input") as any;
+        input.value = "ap";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
 
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await waitUntil(() => el.getAttribute('aria-activedescendant') === appleOption.id);
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await waitUntil(() => el.getAttribute('aria-activedescendant') === apricotOption.id);
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
+        await waitUntil(
+          () => el.getAttribute("aria-activedescendant") === appleOption.id,
+        );
 
-        expect(el.getAttribute('aria-activedescendant')).to.equal(apricotOption.id);
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
+        await waitUntil(
+          () => el.getAttribute("aria-activedescendant") === apricotOption.id,
+        );
+
+        expect(el.getAttribute("aria-activedescendant")).to.equal(
+          apricotOption.id,
+        );
       });
     });
 
-    describe('dynamic options', () => {
-      it('should handle options added after initialization', async () => {
+    // Suite registration groups independent tests, not runtime logic.
+    // oxlint-disable-next-line max-lines-per-function
+    describe("dynamic options", () => {
+      it("should handle options added after initialization", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="apple">Apple</m-option>
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 1);
+        await waitUntil(() => el.querySelectorAll("m-option").length === 1);
 
-        const newOption = document.createElement('m-option') as MOption;
-        newOption.value = 'banana';
-        newOption.textContent = 'Banana';
+        const newOption = document.createElement("m-option") as MOption;
+        newOption.value = "banana";
+        newOption.textContent = "Banana";
         el.appendChild(newOption);
 
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        const options = el.querySelectorAll('m-option');
+        const options = el.querySelectorAll("m-option");
         expect(options.length).to.equal(2);
-        expect(newOption.hasAttribute('role')).to.equal(true);
-        expect(newOption.getAttribute('role')).to.equal('option');
+        expect(newOption.hasAttribute("role")).to.equal(true);
+        expect(newOption.getAttribute("role")).to.equal("option");
         expect(newOption.id).to.match(/^option-/);
       });
 
-      it('should handle options removed after initialization', async () => {
+      it("should handle options removed after initialization", async () => {
         const el = await fixture<MCombobox>(html`
           <m-combobox>
             <m-option value="apple">Apple</m-option>
@@ -1487,321 +1664,337 @@ describe('m-combobox', () => {
           </m-combobox>
         `);
 
-        await waitUntil(() => el.querySelectorAll('m-option').length === 2);
-        const optionToRemove = el.querySelector('m-option[value="apple"]') as MOption;
-        const remainingOption = el.querySelector('m-option[value="banana"]') as MOption;
+        await waitUntil(() => el.querySelectorAll("m-option").length === 2);
+        const optionToRemove = el.querySelector(
+          'm-option[value="apple"]',
+        ) as MOption;
+        const remainingOption = el.querySelector(
+          'm-option[value="banana"]',
+        ) as MOption;
 
         el.focusedElement = optionToRemove;
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
         optionToRemove.remove();
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        expect(el.querySelectorAll('m-option').length).to.equal(1);
-        
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await waitUntil(() => el.getAttribute('aria-activedescendant') === remainingOption.id);
+        expect(el.querySelectorAll("m-option").length).to.equal(1);
 
-        expect(el.getAttribute('aria-activedescendant')).to.equal(remainingOption.id);
+        el.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
+        await waitUntil(
+          () => el.getAttribute("aria-activedescendant") === remainingOption.id,
+        );
+
+        expect(el.getAttribute("aria-activedescendant")).to.equal(
+          remainingOption.id,
+        );
       });
     });
   });
 
-  describe('m-input attribute passthrough', () => {
-    it('should pass placeholder to m-input on initial render', async () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("m-input attribute passthrough", () => {
+    it("should pass placeholder to m-input on initial render", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox placeholder="Search...">
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.getAttribute('placeholder')).to.equal('Search...');
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.getAttribute("placeholder")).to.equal("Search...");
     });
 
-    it('should update placeholder on m-input when attribute changes', async () => {
+    it("should update placeholder on m-input when attribute changes", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox placeholder="Initial">
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.getAttribute('placeholder')).to.equal('Initial');
-      
-      el.setAttribute('placeholder', 'Updated');
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      expect(input!.getAttribute('placeholder')).to.equal('Updated');
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.getAttribute("placeholder")).to.equal("Initial");
+
+      el.setAttribute("placeholder", "Updated");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(input!.getAttribute("placeholder")).to.equal("Updated");
     });
 
-    it('should pass clearable to m-input on initial render', async () => {
+    it("should pass clearable to m-input on initial render", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox clearable>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.hasAttribute('clearable')).to.equal(true);
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.hasAttribute("clearable")).to.equal(true);
     });
 
-    it('should have clearable=true by default', async () => {
+    it("should have clearable=true by default", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.hasAttribute('clearable')).to.equal(true);
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.hasAttribute("clearable")).to.equal(true);
     });
 
-    it('should have clearable enabled by default', async () => {
+    it("should have clearable enabled by default", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
+
       // Clearable is true by default
       expect(el.clearable).to.equal(true);
-      
-      const input = el.shadowRoot!.querySelector('m-input')!;
-      expect(input.hasAttribute('clearable')).to.equal(true);
+
+      const input = el.shadowRoot!.querySelector("m-input")!;
+      expect(input.hasAttribute("clearable")).to.equal(true);
     });
 
-    it('should allow explicitly setting clearable attribute', async () => {
+    it("should allow explicitly setting clearable attribute", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox clearable>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input')!;
+
+      const input = el.shadowRoot!.querySelector("m-input")!;
       expect(el.clearable).to.equal(true);
-      expect(input.hasAttribute('clearable')).to.equal(true);
+      expect(input.hasAttribute("clearable")).to.equal(true);
     });
 
-    it('should pass autocomplete to m-input on initial render', async () => {
+    it("should pass autocomplete to m-input on initial render", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox autocomplete="email">
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.getAttribute('autocomplete')).to.equal('email');
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.getAttribute("autocomplete")).to.equal("email");
     });
 
-    it('should update autocomplete on m-input when attribute changes', async () => {
+    it("should update autocomplete on m-input when attribute changes", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox autocomplete="email">
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.getAttribute('autocomplete')).to.equal('email');
-      
-      el.setAttribute('autocomplete', 'username');
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      expect(input!.getAttribute('autocomplete')).to.equal('username');
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.getAttribute("autocomplete")).to.equal("email");
+
+      el.setAttribute("autocomplete", "username");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(input!.getAttribute("autocomplete")).to.equal("username");
     });
 
-    it('should pass size to m-input on initial render', async () => {
+    it("should pass size to m-input on initial render", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox size="30">
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.getAttribute('size')).to.equal('30');
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.getAttribute("size")).to.equal("30");
     });
 
-    it('should update size on m-input when attribute changes', async () => {
+    it("should update size on m-input when attribute changes", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox size="20">
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.getAttribute('size')).to.equal('20');
-      
-      el.setAttribute('size', '30');
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      expect(input!.getAttribute('size')).to.equal('30');
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.getAttribute("size")).to.equal("20");
+
+      el.setAttribute("size", "30");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(input!.getAttribute("size")).to.equal("30");
     });
 
-    it('should pass autofocus to m-input on initial render', async () => {
+    it("should pass autofocus to m-input on initial render", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox autofocus>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.hasAttribute('autofocus')).to.equal(true);
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.hasAttribute("autofocus")).to.equal(true);
     });
 
-    it('should remove attributes from m-input when removed from combobox', async () => {
+    it("should remove attributes from m-input when removed from combobox", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox placeholder="Test" clearable autocomplete="email" size="20">
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      
-      el.removeAttribute('placeholder');
-      await new Promise(resolve => setTimeout(resolve, 0));
-      expect(input!.hasAttribute('placeholder')).to.equal(false);
-      
-      el.removeAttribute('clearable');
-      await new Promise(resolve => setTimeout(resolve, 0));
-      expect(input!.hasAttribute('clearable')).to.equal(false);
-      
-      el.removeAttribute('autocomplete');
-      await new Promise(resolve => setTimeout(resolve, 0));
-      expect(input!.hasAttribute('autocomplete')).to.equal(false);
-      
-      el.removeAttribute('size');
-      await new Promise(resolve => setTimeout(resolve, 0));
-      expect(input!.hasAttribute('size')).to.equal(false);
+
+      const input = el.shadowRoot!.querySelector("m-input");
+
+      el.removeAttribute("placeholder");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(input!.hasAttribute("placeholder")).to.equal(false);
+
+      el.removeAttribute("clearable");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(input!.hasAttribute("clearable")).to.equal(false);
+
+      el.removeAttribute("autocomplete");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(input!.hasAttribute("autocomplete")).to.equal(false);
+
+      el.removeAttribute("size");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(input!.hasAttribute("size")).to.equal(false);
     });
 
-    it('should pass disabled to m-input on initial render', async () => {
+    it("should pass disabled to m-input on initial render", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox disabled>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.hasAttribute('disabled')).to.equal(true);
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.hasAttribute("disabled")).to.equal(true);
     });
 
-    it('should update disabled on m-input when attribute changes', async () => {
+    it("should update disabled on m-input when attribute changes", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.hasAttribute('disabled')).to.equal(false);
-      
-      el.setAttribute('disabled', '');
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      expect(input!.hasAttribute('disabled')).to.equal(true);
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.hasAttribute("disabled")).to.equal(false);
+
+      el.setAttribute("disabled", "");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(input!.hasAttribute("disabled")).to.equal(true);
     });
 
-    it('should pass readonly to m-input on initial render', async () => {
+    it("should pass readonly to m-input on initial render", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox readonly>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.hasAttribute('readonly')).to.equal(true);
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.hasAttribute("readonly")).to.equal(true);
     });
 
-    it('should update readonly on m-input when attribute changes', async () => {
+    it("should update readonly on m-input when attribute changes", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.hasAttribute('readonly')).to.equal(false);
-      
-      el.setAttribute('readonly', '');
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      expect(input!.hasAttribute('readonly')).to.equal(true);
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.hasAttribute("readonly")).to.equal(false);
+
+      el.setAttribute("readonly", "");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(input!.hasAttribute("readonly")).to.equal(true);
     });
 
-    it('should remove disabled from m-input when removed from combobox', async () => {
+    it("should remove disabled from m-input when removed from combobox", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox disabled>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.hasAttribute('disabled')).to.equal(true);
-      
-      el.removeAttribute('disabled');
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      expect(input!.hasAttribute('disabled')).to.equal(false);
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.hasAttribute("disabled")).to.equal(true);
+
+      el.removeAttribute("disabled");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(input!.hasAttribute("disabled")).to.equal(false);
     });
 
-    it('should remove readonly from m-input when removed from combobox', async () => {
+    it("should remove readonly from m-input when removed from combobox", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox readonly>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input!.hasAttribute('readonly')).to.equal(true);
-      
-      el.removeAttribute('readonly');
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      expect(input!.hasAttribute('readonly')).to.equal(false);
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input!.hasAttribute("readonly")).to.equal(true);
+
+      el.removeAttribute("readonly");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(input!.hasAttribute("readonly")).to.equal(false);
     });
   });
 
-  describe('m-input slot passthrough', () => {
-    it('should pass through after slot to m-input', async () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("m-input slot passthrough", () => {
+    it("should pass through after slot to m-input", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox>
           <svg slot="after" data-testid="icon"></svg>
           <m-option value="1">Item 1</m-option>
         </m-combobox>
       `);
-      
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      const input = el.shadowRoot!.querySelector('m-input');
-      expect(input).to.exist;
-      
-      const afterSlot = input!.querySelector('slot[name="after"]') as HTMLSlotElement;
-      expect(afterSlot).to.exist;
-      
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      const input = el.shadowRoot!.querySelector("m-input");
+      expect(input).to.not.equal(null);
+
+      const afterSlot = input!.querySelector(
+        'slot[name="after"]',
+      ) as HTMLSlotElement;
+      expect(afterSlot).to.not.equal(null);
+
       const assignedElements = afterSlot.assignedElements();
       expect(assignedElements.length).to.equal(1);
-      expect(assignedElements[0].getAttribute('data-testid')).to.equal('icon');
+      expect(assignedElements[0].getAttribute("data-testid")).to.equal("icon");
     });
 
-    it('should pass clearable to m-input for clear button functionality', async () => {
+    it("should pass clearable to m-input for clear button functionality", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox value="test">
           <m-option value="test">Test</m-option>
         </m-combobox>
       `);
-      
-      const input = el.shadowRoot!.querySelector('m-input') as any;
-      expect(input).to.exist;
-      
+
+      const input = el.shadowRoot!.querySelector("m-input") as any;
+      expect(input).to.not.equal(null);
+
       // Check that m-input has clearable attribute (from default)
-      expect(input.hasAttribute('clearable')).to.equal(true);
-      
+      expect(input.hasAttribute("clearable")).to.equal(true);
+
       // Verify the m-input has clearable functionality
       // (The actual clear button visibility is tested in m-input tests)
       expect(input.clearable).to.equal(true);
     });
 
-    it('should clear only search input in multiple mode, not selections', async () => {
+    it("should clear only search input in multiple mode, not selections", async () => {
       const el = await fixture<MCombobox>(html`
         <m-combobox multiple>
           <m-option value="1" selected>Item 1</m-option>
@@ -1809,38 +2002,38 @@ describe('m-combobox', () => {
           <m-option value="3">Item 3</m-option>
         </m-combobox>
       `);
-      
+
       await waitUntil(() => {
         const value = el.value;
         return Array.isArray(value) && value.length === 2;
       });
-      
-      expect(el.value).to.deep.equal(['1', '2']);
-      
+
+      expect(el.value).to.deep.equal(["1", "2"]);
+
       // Get the m-input element
-      const input = el.shadowRoot!.querySelector('m-input') as any;
-      
+      const input = el.shadowRoot!.querySelector("m-input") as any;
+
       // Programmatically set a value in the input (simulating typing)
-      input.value = 'search text';
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
+      input.value = "search text";
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       // Verify clearable is enabled
-      expect(input.hasAttribute('clearable')).to.equal(true);
-      
+      expect(input.hasAttribute("clearable")).to.equal(true);
+
       // Click clear button
-      const clearButton = input.shadowRoot!.querySelector('[part="clear-button"]') as HTMLButtonElement;
-      expect(clearButton).to.exist;
+      const clearButton = input.shadowRoot!.querySelector(
+        '[part="clear-button"]',
+      ) as HTMLButtonElement;
+      expect(clearButton).to.not.equal(null);
       clearButton.click();
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       // Selections should remain, only input cleared
       // (This is the natural behavior - m-input clear only clears its own value,
       // not the combobox's selected values)
-      expect(el.value).to.deep.equal(['1', '2']);
-      expect(input.value).to.equal('');
+      expect(el.value).to.deep.equal(["1", "2"]);
+      expect(input.value).to.equal("");
     });
   });
-
-
 });

@@ -21,86 +21,102 @@ baseStyleSheet.replaceSync(styles);
  * @slot - Default slot for page content
  */
 export class MLandingPage extends MElement {
-    static tagName = "m-landing-page";
+  static tagName = "m-landing-page";
 
-    private showBanner = false;
-    private unsubscribe?: () => void;
-    private settings?: UserSettingsService;
+  private showBanner = false;
+  private unsubscribe?: () => void;
+  private settings?: UserSettingsService;
 
-    constructor() {
-        super();
-        this.attachShadow({ mode: "open" });
-        this.shadowRoot!.adoptedStyleSheets = [globalStyleSheet, baseStyleSheet];
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this.shadowRoot!.adoptedStyleSheets = [globalStyleSheet, baseStyleSheet];
+  }
+
+  connectedCallback() {
+    this.render();
+    void this.initialize();
+  }
+
+  private async initialize() {
+    const db = await get_DB();
+    if (!this.isConnected) {
+      return;
     }
 
-    connectedCallback() {
-        this.render();
-        void this.initialize();
-    }
+    this.settings = new UserSettingsService(db);
 
-    private async initialize() {
-        const db = await get_DB();
-        if (!this.isConnected) return;
-
-        this.settings = new UserSettingsService(db);
-
-        this.unsubscribe = authClient.onAuthChange((authenticated) => {
-            if (authenticated) {
-                this.showBanner = false;
-            } else {
-                this.showBanner = true;
-                void this.settings!.kv.remove("banner_dismissed");
-            }
-            this.render();
-        });
-
-        const token = await authClient.getToken();
-        if (!this.isConnected) return;
-
-        if (!token) {
-            const dismissed = await this.settings.kv.get("banner_dismissed");
-            if (!this.isConnected) return;
-            this.showBanner = dismissed !== true;
-        }
-
-        this.render();
-    }
-
-    disconnectedCallback() {
-        this.unsubscribe?.();
-    }
-
-    private dismiss() {
+    this.unsubscribe = authClient.onAuthChange((authenticated) => {
+      if (authenticated) {
         this.showBanner = false;
-        void this.settings!.kv.set("banner_dismissed", true);
-        this.render();
+      } else {
+        this.showBanner = true;
+        void this.settings!.kv.remove("banner_dismissed");
+      }
+      this.render();
+    });
+
+    const token = await authClient.getToken();
+    if (!this.isConnected) {
+      return;
     }
 
-    private render() {
-        render(
-            html`
+    if (!token) {
+      const dismissed = await this.settings.kv.get("banner_dismissed");
+      if (!this.isConnected) {
+        return;
+      }
+      this.showBanner = dismissed !== true;
+    }
+
+    this.render();
+  }
+
+  disconnectedCallback() {
+    this.unsubscribe?.();
+  }
+
+  private dismiss() {
+    this.showBanner = false;
+    void this.settings!.kv.set("banner_dismissed", true);
+    this.render();
+  }
+
+  private render() {
+    render(
+      html`
         <div class="page-container">
           ${renderSyncBanner({
-                visible: this.showBanner,
-                onSignIn: () => authClient.authorize(),
-                onDismiss: () => this.dismiss(),
-            })}
+            visible: this.showBanner,
+            onSignIn: () => authClient.authorize(),
+            onDismiss: () => this.dismiss(),
+          })}
 
           <section class="hero">
             <p class="eyebrow">Golf practice workspace</p>
-            <m-fit-text font-display class="title">Train with intent</m-fit-text>
+            <m-fit-text font-display class="title"
+              >Train with intent</m-fit-text
+            >
             <p class="intro">
-              Start a round, tune your bag, and keep your sessions moving forward.
+              Start a round, tune your bag, and keep your sessions moving
+              forward.
             </p>
           </section>
 
           <section class="actions" aria-label="Next actions">
             <a class="action-card box" href="/lag-putting">
               <div class="action-body">
-                <div class="art" data-art="golfball-big" aria-hidden="true"></div>
+                <div
+                  class="art"
+                  data-art="golfball-big"
+                  aria-hidden="true"
+                ></div>
                 <p class="action-kicker">Practice game</p>
                 <h2>Lag Putting</h2>
-                <p>Start a round, score each putt, and track consistency over 18 holes.</p>
+                <p>
+                  Start a round, score each putt, and track consistency over 18
+                  holes.
+                </p>
               </div>
               <span class="action-link">Open game</span>
             </a>
@@ -110,18 +126,19 @@ export class MLandingPage extends MElement {
                 <div class="art" data-art="clubs" aria-hidden="true"></div>
                 <p class="action-kicker">Equipment</p>
                 <h2>Manage bag</h2>
-                <p>Update clubs and shot types so your practice data stays useful.</p>
+                <p>
+                  Update clubs and shot types so your practice data stays
+                  useful.
+                </p>
               </div>
               <span class="action-link">View bag</span>
             </a>
           </section>
-
-
         </div>
       `,
-            this.shadowRoot!,
-        );
-    }
+      this.shadowRoot!,
+    );
+  }
 }
 
 MLandingPage.define();

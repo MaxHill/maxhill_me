@@ -1,7 +1,7 @@
 import { MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
-import { ref, createRef } from "lit-html/directives/ref.js";
+import { "ref" as reference, createRef } from "lit-html/directives/ref.js";
 import { get_DB } from "../../../../db";
 import { ShotTypeService } from "../../shot-type-service";
 import { globalStyleSheet } from "../../../../styles/global-styles";
@@ -31,7 +31,9 @@ export class MAddShotTypeForm extends MElement {
 
   private handleFormSubmit = async (e: Event) => {
     e.preventDefault();
-    if (!this.formRef.value) return;
+    if (!this.formRef.value) {
+      return;
+    }
 
     const formData = new FormData(this.formRef.value);
     const name = formData.get("name")?.toString();
@@ -50,20 +52,44 @@ export class MAddShotTypeForm extends MElement {
   };
 
   private renderComponent() {
-    render(html`
-      <form 
-        ${ref(this.formRef)}
-        class="form box" 
-        aria-label="Add new shot type form"
-        @submit=${this.handleFormSubmit}
-      >
-        <h2>Add shot type</h2>
-        
-        <m-input required min="2" name="name" label="Name" aria-required="true"></m-input>
-        <m-textarea required minlength="10" name="description" label="Description" rows="4" placeholder="Enter a detailed description..." clearable aria-required="true"></m-textarea>
+    render(
+      html`
+        <form
+          ${reference(this.formRef)}
+          class="form box"
+          aria-label="Add new shot type form"
+          @submit=${this.handleFormSubmit}
+        >
+          <h2>Add shot type</h2>
 
-        <button class="button" type="submit" aria-label="Submit form to add shot type">Add</button>
-      </form>
-    `, this.shadowRoot!);
+          <m-input
+            required
+            min="2"
+            name="name"
+            label="Name"
+            aria-required="true"
+          ></m-input>
+          <m-textarea
+            required
+            minlength="10"
+            name="description"
+            label="Description"
+            rows="4"
+            placeholder="Enter a detailed description..."
+            clearable
+            aria-required="true"
+          ></m-textarea>
+
+          <button
+            class="button"
+            type="submit"
+            aria-label="Submit form to add shot type"
+          >
+            Add
+          </button>
+        </form>
+      `,
+      this.shadowRoot!,
+    );
   }
 }

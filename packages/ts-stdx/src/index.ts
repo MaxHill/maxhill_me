@@ -12,16 +12,16 @@ export function assert(condition: unknown, message = "Assertion failed"): assert
 
 /**
  * Wrap a IDBRequest in a promise for convenience
- * @param tx - Transaction to use.
+ * @param request - Request to wait for.
  * @returns Promise with the Request result on resolve
  */
-export function promisifyIDBRequest<T>(req: IDBRequest<T>): Promise<T> {
+export function promisifyIDBRequest<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
-    req.onsuccess = (event) => {
+    request.onsuccess = (event) => {
       assert(event.target, "No event target returned");
       return resolve((event.target as IDBRequest).result);
     };
-    req.onerror = (event) => {
+    request.onerror = (event) => {
       reject(event.target);
     };
   });

@@ -12,9 +12,9 @@ const resendApiKey = process.env.RESEND_API_KEY;
 const from = process.env.ALERT_EMAIL_FROM;
 const to = process.env.ALERT_EMAIL_TO;
 
-if (!resendApiKey) throw new Error("RESEND_API_KEY not set");
-if (!from) throw new Error("ALERT_EMAIL_FROM not set");
-if (!to) throw new Error("ALERT_EMAIL_TO not set");
+if (!resendApiKey) {throw new Error("RESEND_API_KEY not set");}
+if (!from) {throw new Error("ALERT_EMAIL_FROM not set");}
+if (!to) {throw new Error("ALERT_EMAIL_TO not set");}
 
 const res = await fetch("https://api.resend.com/emails", {
 	method: "POST",

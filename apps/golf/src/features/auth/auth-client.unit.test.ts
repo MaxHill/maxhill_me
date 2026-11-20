@@ -1,8 +1,11 @@
 import { expect, describe, it, afterEach, vi } from "vitest";
 import { AuthClient } from "./auth-client";
 
+// Suite registration keeps related cases together.
+// oxlint-disable-next-line max-lines-per-function
 describe("AuthClient", () => {
-  const initialPath = window.location.pathname + window.location.search + window.location.hash;
+  const initialPath =
+    window.location.pathname + window.location.search + window.location.hash;
 
   afterEach(async () => {
     vi.restoreAllMocks();
@@ -14,12 +17,15 @@ describe("AuthClient", () => {
   it("handleCallback exchanges code and stores access token", async () => {
     const client = new AuthClient({
       exchange: async () => ({
-        err: false,
+        ["err"]: false,
         tokens: { access: "a1", refresh: "r1", expiresIn: 3600 },
       }),
     } as any);
 
-    sessionStorage.setItem("auth_challenge", JSON.stringify({ state: "s", verifier: "v" }));
+    sessionStorage.setItem(
+      "auth_challenge",
+      JSON.stringify({ state: "s", verifier: "v" }),
+    );
     window.history.replaceState({}, "", "/callback?code=abc&state=s");
 
     await client.handleCallback();
@@ -32,7 +38,7 @@ describe("AuthClient", () => {
   it("getUserSubjects returns userID from verified subject", async () => {
     await seedTokens({ access: "a1", refresh: "r1", expiresIn: 3600 });
     const client = new AuthClient({
-      refresh: async () => ({ err: false }),
+      refresh: async () => ({ ["err"]: false }),
       verify: async () => ({
         subject: { type: "user", properties: { userID: "user-123" } },
       }),
@@ -44,10 +50,16 @@ describe("AuthClient", () => {
 
   it("getUserEmail fetches the signed-in user's email with the access token", async () => {
     await seedTokens({ access: "a1", refresh: "r1", expiresIn: 3600 });
-    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ email: "person@example.com" }), { status: 200 }),
-    );
-    const client = new AuthClient({ refresh: async () => ({ err: false }) } as any);
+    const fetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ email: "person@example.com" }), {
+          status: 200,
+        }),
+      );
+    const client = new AuthClient({
+      refresh: async () => ({ ["err"]: false }),
+    } as any);
 
     expect(await client.getUserEmail()).to.equal("person@example.com");
     expect(fetch).toHaveBeenCalledWith("http://localhost:3002/me", {
@@ -57,8 +69,12 @@ describe("AuthClient", () => {
 
   it("getUserEmail returns null when the account request fails", async () => {
     await seedTokens({ access: "a1", refresh: "r1", expiresIn: 3600 });
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 401 }));
-    const client = new AuthClient({ refresh: async () => ({ err: false }) } as any);
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, { status: 401 }),
+    );
+    const client = new AuthClient({
+      refresh: async () => ({ ["err"]: false }),
+    } as any);
 
     expect(await client.getUserEmail()).to.equal(null);
   });
@@ -66,7 +82,7 @@ describe("AuthClient", () => {
   it("getToken returns null and emits unauthenticated when refresh fails near expiry", async () => {
     await seedTokens({ access: "a1", refresh: "r1", expiresIn: 1 });
     const client = new AuthClient({
-      refresh: async () => ({ err: new Error("invalid refresh") }),
+      refresh: async () => ({ ["err"]: new Error("invalid refresh") }),
     } as any);
 
     const states: boolean[] = [];
@@ -83,7 +99,7 @@ describe("AuthClient", () => {
   it("getToken returns cached token when not near expiry", async () => {
     await seedTokens({ access: "a1", refresh: "r1", expiresIn: 3600 });
     const client = new AuthClient({
-      refresh: async () => ({ err: false }),
+      refresh: async () => ({ ["err"]: false }),
     } as any);
 
     const token = await client.getToken();
@@ -107,7 +123,7 @@ describe("AuthClient", () => {
     await seedTokens({ access: "old", refresh: "r1", expiresIn: 1 });
     const client = new AuthClient({
       refresh: async () => ({
-        err: false,
+        ["err"]: false,
         tokens: { access: "new", refresh: "r2", expiresIn: 3600 },
       }),
     } as any);
@@ -121,7 +137,10 @@ describe("AuthClient", () => {
 
   it("handleCallback rejects when state does not match challenge", async () => {
     const client = new AuthClient({} as any);
-    sessionStorage.setItem("auth_challenge", JSON.stringify({ state: "expected", verifier: "v" }));
+    sessionStorage.setItem(
+      "auth_challenge",
+      JSON.stringify({ state: "expected", verifier: "v" }),
+    );
     window.history.replaceState({}, "", "/callback?code=abc&state=wrong");
 
     let caught: unknown;
@@ -149,7 +168,7 @@ async function seedTokens(tokens: {
     store.put(tokens.refresh, "refresh_token");
     store.put(Date.now() + tokens.expiresIn * 1000, "expires_at");
     tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.onerror = () => reject(tx["err"]);
   });
   db.close();
 }
@@ -158,9 +177,9 @@ async function readStoredValue(key: string): Promise<string | null> {
   const db = await openAuthDb();
   const value = await new Promise<unknown>((resolve, reject) => {
     const tx = db.transaction("tokens", "readonly");
-    const req = tx.objectStore("tokens").get(key);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    const request = tx.objectStore("tokens").get(key);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request["err"]);
   });
   db.close();
 
@@ -176,7 +195,7 @@ async function openAuthDb(): Promise<IDBDatabase> {
       }
     };
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onerror = () => reject(request["err"]);
   });
 }
 
@@ -186,7 +205,7 @@ async function clearAuthStore(): Promise<void> {
     const tx = db.transaction("tokens", "readwrite");
     tx.objectStore("tokens").clear();
     tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.onerror = () => reject(tx["err"]);
   });
   db.close();
 }

@@ -154,14 +154,18 @@ async function main() {
   });
   console.log(`auth listening on http://localhost:${server.port} (issuer=${config.issuer})`);
 
-  const shutdown = (signal: string) => {
+  const shutdown = async (signal: string) => {
     console.log(`received ${signal}, shutting down`);
-    server.stop();
+    await server.stop();
     db.close();
     process.exit(0);
   };
-  process.on("SIGTERM", () => shutdown("SIGTERM"));
-  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => {
+    shutdown("SIGTERM").catch(console.error);
+  });
+  process.on("SIGINT", () => {
+    shutdown("SIGINT").catch(console.error);
+  });
 }
 
 main().catch((error) => {

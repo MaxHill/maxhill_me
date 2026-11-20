@@ -3,7 +3,6 @@ import styles from "./index.css?inline";
 import { ClubService } from "../../club-service";
 import { get_DB } from "../../../../db";
 import { ShotType } from "../../shot-type-service";
-import { TableChangeEvent } from "@maxhill/syncdb";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { html, render } from "lit-html";
 import "@maxhill/components/m-card";
@@ -24,7 +23,7 @@ interface Club {
  *
  * @customElement
  * @tagname m-club-list
- * 
+ *
  * @attr {boolean} interactive - Whether cards are clickable (default: true)
  * @attr {string} selected-club-key - Key of the currently selected/editing club
  */
@@ -50,18 +49,26 @@ export class MClubList extends MElement {
   async connectedCallback() {
     const db = await get_DB();
     this.clubService = new ClubService(db);
-    this.unsubscribe = this.clubService.subscribe(async (_: TableChangeEvent) => {
-      await this.loadAndRender();
-    });
+    this.unsubscribe = this.clubService.subscribe(
+      async () => {
+        await this.loadAndRender();
+      },
+    );
     await this.loadAndRender();
   }
 
-  attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
+  attributeChangedCallback(
+    name: string,
+    oldValue: unknown,
+    newValue: unknown,
+  ): void {
     super.attributeChangedCallback(name, oldValue, newValue);
     // Re-render when the selection changes so the `.selected` class on the
     // matching <m-card> stays in sync. Skipped pre-connection to avoid
     // rendering before data has loaded.
-    if (this.isConnected && this.clubs.length > 0) this.render();
+    if (this.isConnected && this.clubs.length > 0) {
+      this.render();
+    }
   }
 
   async disconnectedCallback() {
@@ -77,57 +84,78 @@ export class MClubList extends MElement {
     this.render();
   }
 
+  private renderAddClubCard() {
+    return html`                            <m-card
+                              href="/bag/add"
+                              class="add-club-card"
+                              aria-label="Add new club to bag"
+                            >
+                              <div class="add-club-content">
+                                <span class="plus-icon">+</span>
+                                <span class="label">Add club</span>
+                              </div>
+                            </m-card>`;
+  }
+
   private render() {
     render(
       html`
         <div>
           <h2 class="h1">Clubs</h2>
-          ${this.clubs.length > 0
-            ? html`
-                <div class="clubs" role="list" aria-label="List of clubs in your bag">
-                  ${this.clubs.map(
-                    (club) => html`
-                      <m-card 
-                        href=${this.interactive ? `/bag/edit/${club._key}` : undefined}
-                        class=${club._key === this.selectedClubKey ? 'selected' : ''}
-                        role="listitem"
-                        aria-label=${`${club.name}, ${club.shotTypes?.length || 0} shot types`}
-                        aria-current=${club._key === this.selectedClubKey ? 'true' : undefined}
-                      >
+          ${
+            this.clubs.length > 0
+              ? html`
+                  <div
+                    class="clubs"
+                    role="list"
+                    aria-label="List of clubs in your bag"
+                  >
+                    ${this.clubs.map(
+                      (club) => html`
+                        <m-card
+                          href=${this.interactive ? `/bag/edit/${club._key}` : undefined}
+                          class=${club._key === this.selectedClubKey ? "selected" : ""}
+                          role="listitem"
+                          aria-label=${`${club.name}, ${club.shotTypes?.length || 0} shot types`}
+                          aria-current=${club._key === this.selectedClubKey ? "true" : undefined}
+                        >
                           <div class="card-content">
                             <div class="name">${club.name}</div>
                             <div class="club-type">${club.clubType}</div>
                             <div class="shot-types">
-                              ${club.shotTypes && club.shotTypes.length > 0
-                                ? club.shotTypes.map((shotType: ShotType) => shotType.name).join(", ")
-                                : "No shot types"}
+                              ${
+                                club.shotTypes && club.shotTypes.length > 0
+                                  ? club.shotTypes
+                                      .map(
+                                        (shotType: ShotType) => shotType.name,
+                                      )
+                                      .join(", ")
+                                  : "No shot types"
+                              }
                             </div>
                           </div>
-                      </m-card>
-                    `
-                  )}
-                  ${this.interactive ? html`
-                    <m-card 
-                      href="/bag/add"
-                      class="add-club-card"
-                      aria-label="Add new club to bag"
-                    >
-                      <div class="add-club-content">
-                        <span class="plus-icon">+</span>
-                        <span class="label">Add club</span>
-                      </div>
-                    </m-card>
-                  ` : null}
-                </div>
-              `
-            : html`
-                <m-empty-state
-                  title="$ club --list"
-                  message="No clubs configured. Add clubs to build your bag and assign shot types."
-                >
-                  <a slot="action" href="/bag/add">+ Add Club</a>
-                </m-empty-state>
-              `}
+                        </m-card>
+                      `,
+                    )}
+                    ${
+                      this.interactive
+                        ? html`
+${this.renderAddClubCard()}
+                          `
+                        : null
+                    }
+                  </div>
+                `
+              : html`
+                  <m-empty-state
+                    title="$ club --list"
+                    message=${"No clubs configured. Add clubs to build your bag " +
+                    "and assign shot types."}
+                  >
+                    <a slot="action" href="/bag/add">+ Add Club</a>
+                  </m-empty-state>
+                `
+          }
         </div>
       `,
       this.shadowRoot!,

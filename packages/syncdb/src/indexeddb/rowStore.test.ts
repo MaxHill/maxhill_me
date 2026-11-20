@@ -4,6 +4,8 @@ import { ORMapRow, ROW_KEY, TABLE_NAME } from "../crdt.ts";
 import { below } from "../indexes.ts";
 import "fake-indexeddb/auto";
 
+// Suite registration groups related tests; individual tests remain line-limited.
+// eslint-disable-next-line max-lines-per-function
 describe("RowStore", () => {
   let lifecycle: Lifecycle;
   let rowStore: RowStore;
@@ -14,9 +16,9 @@ describe("RowStore", () => {
       lifecycle.close();
     }
     await new Promise<void>((resolve, reject) => {
-      const req = indexedDB.deleteDatabase(dbName);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
+      const request = indexedDB.deleteDatabase(dbName);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
     });
     lifecycle = new Lifecycle();
     await lifecycle.open(dbName);
@@ -48,7 +50,11 @@ describe("RowStore", () => {
     const result = await rowStore.getRow(tx, "users", "nonexistent");
     await lifecycle.commit(tx);
 
-    expect(result).toEqual({ [TABLE_NAME]: "users", [ROW_KEY]: "nonexistent", fields: {} });
+    expect(result).toEqual({
+      [TABLE_NAME]: "users",
+      [ROW_KEY]: "nonexistent",
+      fields: {},
+    });
   });
 
   it("deletes row when saved with empty fields and no tombstone", async () => {
@@ -82,9 +88,9 @@ describe("RowStore", () => {
     // Re-open with indexes
     lifecycle.close();
     await new Promise<void>((resolve, reject) => {
-      const req = indexedDB.deleteDatabase(dbName);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
+      const request = indexedDB.deleteDatabase(dbName);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
     });
     lifecycle = new Lifecycle(indexes);
     await lifecycle.open(dbName);
@@ -110,7 +116,12 @@ describe("RowStore", () => {
 
     const queryTx = lifecycle.transaction(ROWS_STORE, "readonly");
     const results: ORMapRow[] = [];
-    for await (const row of rowStore.query(queryTx, "users", below(26, { inclusive: true }), "byAge")) {
+    for await (const row of rowStore.query(
+      queryTx,
+      "users",
+      below(26, { inclusive: true }),
+      "byAge",
+    )) {
       results.push(row);
     }
 

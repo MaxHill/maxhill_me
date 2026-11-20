@@ -280,7 +280,8 @@ pub const ORMapRowPoolSlot = struct {
         assert(self.row.table_name.len > 0);
         assert(self.row.row_key.len > 0);
 
-        const field_exists_before = self.row.fields.contains(field_key);
+        const client_index_before = self.row.fields.get_client_index(field_key, dot.client_id);
+        const field_exists_before = client_index_before != null;
         assert(field_exists_before or self.row.fields.count < constants.crdt_fields_count_max);
         const fields_count_before = self.row.fields.count;
 
@@ -288,10 +289,12 @@ pub const ORMapRowPoolSlot = struct {
         const stored_json_value = try self.copy_json_value(json_value);
         self.row.fields.put(stored_field_key, stored_json_value, dot);
 
-        assert(self.row.fields.get(field_key) != null);
-        const field = self.row.fields.get(field_key).?;
-        assert(std.mem.eql(u8, field.value, json_value));
-        assert(std.meta.eql(field.dot, dot));
+        const client_index = self.row.fields.get_client_index(field_key, dot.client_id).?;
+        const stored_dot = self.row.fields.field_dots[client_index];
+        assert(stored_dot.version >= dot.version);
+        if (stored_dot.version == dot.version) {
+            assert(std.mem.eql(u8, self.row.fields.json_values[client_index], json_value));
+        }
         if (field_exists_before) {
             assert(self.row.fields.count == fields_count_before);
         } else {
