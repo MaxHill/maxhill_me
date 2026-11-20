@@ -52,16 +52,15 @@ describe("Lifecycle", () => {
     expect(lifecycle.db).toBeUndefined();
   });
 
-  it("refuses uninitialized stores that already contain data", async () => {
+  it.each([false, true])("refuses uninitialized stores (populated: %s)", async (populated) => {
     await new Promise<void>((resolve, reject) => {
       const req = indexedDB.open(dbName, 1);
       req.onupgradeneeded = () => {
         const db = req.result;
-        db.createObjectStore(ROWS_STORE, { keyPath: ["table_name", "row_key"] }).put({
-          table_name: "clubs",
-          row_key: "driver",
-          fields: {},
-        });
+        const rows = db.createObjectStore(ROWS_STORE, { keyPath: ["table_name", "row_key"] });
+        if (populated) {
+          rows.put({ table_name: "clubs", row_key: "driver", fields: {} });
+        }
         db.createObjectStore(OPERATIONS_STORE, { keyPath: ["op.dot.clientId", "op.dot.version"] });
         db.createObjectStore(CLIENT_STATE_STORE);
       };

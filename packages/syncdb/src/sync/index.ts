@@ -11,7 +11,7 @@ import { PersistedLogicalClock } from "../persistedLogicalClock.ts";
 import { abortFailedTransaction, validateTransactionStores } from "../utils.ts";
 import { isSyncError } from "./errors.ts";
 import { assertValidDbName } from "../dbName.ts";
-import { encodeCanonicalJson } from "./canonical-json.ts";
+import { compareUtf8, encodeCanonicalJson } from "./canonical-json.ts";
 
 const WIRE_PROTOCOL_VERSION = 3;
 
@@ -93,15 +93,12 @@ export class Sync {
   private onUnauthorized?: OnUnauthorizedHandler;
 
   constructor(
-    ...parameters: [
-      clientState: ClientState,
-      rowStore: RowStore,
-      operationLog: OperationLog,
-      headersProvider?: SyncHeadersProvider,
-      onUnauthorized?: OnUnauthorizedHandler,
-    ]
+    clientState: ClientState,
+    rowStore: RowStore,
+    operationLog: OperationLog,
+    headersProvider?: SyncHeadersProvider,
+    onUnauthorized?: OnUnauthorizedHandler,
   ) {
-    const [clientState, rowStore, operationLog, headersProvider, onUnauthorized] = parameters;
     this.clientState = clientState;
     this.rowStore = rowStore;
     this.operationLog = operationLog;
@@ -437,7 +434,7 @@ export class Sync {
         parts.push("null");
         parts.push("null");
         const contextKeys = Object.keys(operation.versionVector).sort(
-          (left, right) => this.compareUtf8(left, right),
+          (left, right) => compareUtf8(left, right),
         );
         for (const key of contextKeys) {
           parts.push(key);
@@ -464,17 +461,6 @@ export class Sync {
       return false;
     }
     return true;
-  }
-
-  private compareUtf8(a: string, b: string): number {
-    const encoder = new TextEncoder();
-    const aBytes = encoder.encode(a);
-    const bBytes = encoder.encode(b);
-    const length = Math.min(aBytes.length, bBytes.length);
-    for (let i = 0; i < length; i++) {
-      if (aBytes[i] !== bBytes[i]) {return aBytes[i] - bBytes[i];}
-    }
-    return aBytes.length - bBytes.length;
   }
 
   private async sha256Array(parts: string[]): Promise<string> {

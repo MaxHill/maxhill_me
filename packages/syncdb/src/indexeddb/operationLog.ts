@@ -32,9 +32,8 @@ export class OperationLog {
     const store = tx.objectStore(OPERATIONS_STORE);
     await promisifyIDBRequest(store.add({
       operation: operation,
-      synced:
-        operation.serverVersion === undefined ? SYNCED_STATUS.NOT_SYNCED : SYNCED_STATUS.SYNCED,
-      ...(operation.serverVersion === undefined ? {} : { serverVersion: operation.serverVersion }),
+      synced: SYNCED_STATUS.SYNCED,
+      serverVersion: operation.serverVersion,
     }));
   }
 
@@ -105,21 +104,6 @@ export class OperationLog {
     }
   }
 
-  async getUnsyncedOperations(tx: IDBTransaction): Promise<CRDTOperation[]> {
-    validateTransactionStores(tx, [OPERATIONS_STORE]);
-    const store = tx.objectStore(OPERATIONS_STORE);
-    const index = store.index(BY_SYNCED_INDEX);
-
-    const result: CRDTOperation[] = [];
-    const cursorRequest = index.openCursor(IDBKeyRange.only(SYNCED_STATUS.NOT_SYNCED));
-
-    for await (const record of asyncCursorIterator<{ operation: CRDTOperation }>(cursorRequest)) {
-      result.push(record.operation);
-    }
-
-    return result;
-  }
-
   async countUnsyncedOperations(tx: IDBTransaction): Promise<number> {
     validateTransactionStores(tx, [OPERATIONS_STORE]);
     const store = tx.objectStore(OPERATIONS_STORE);
@@ -127,24 +111,6 @@ export class OperationLog {
 
     const countRequest = index.count(IDBKeyRange.only(SYNCED_STATUS.NOT_SYNCED));
     return await promisifyIDBRequest(countRequest);
-  }
-
-  async getUnsyncedOperationsByClient(
-    tx: IDBTransaction,
-    clientId: string,
-  ): Promise<CRDTOperation[]> {
-    validateTransactionStores(tx, [OPERATIONS_STORE]);
-    const store = tx.objectStore(OPERATIONS_STORE);
-    const index = store.index(BY_CLIENT_SYNCED_INDEX);
-
-    const result: CRDTOperation[] = [];
-    const cursorRequest = index.openCursor(IDBKeyRange.only([clientId, SYNCED_STATUS.NOT_SYNCED]));
-
-    for await (const record of asyncCursorIterator<{ operation: CRDTOperation }>(cursorRequest)) {
-      result.push(record.operation);
-    }
-
-    return result;
   }
 
   async getPendingMutationsByClient(
@@ -202,18 +168,5 @@ export class OperationLog {
     }
   }
 
-  async getAllOperations(tx: IDBTransaction): Promise<CRDTOperation[]> {
-    validateTransactionStores(tx, [OPERATIONS_STORE]);
-    const store = tx.objectStore(OPERATIONS_STORE);
-
-    const result: CRDTOperation[] = [];
-    const cursorRequest = store.openCursor();
-
-    for await (const record of asyncCursorIterator<{ operation: CRDTOperation }>(cursorRequest)) {
-      result.push(record.operation);
-    }
-
-    return result;
-  }
 
 }

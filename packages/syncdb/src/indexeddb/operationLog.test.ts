@@ -101,8 +101,12 @@ describe("OperationLog", () => {
     await lifecycle.commit(cleanupTx);
 
     const allTx = lifecycle.transaction(OPERATIONS_STORE, "readonly");
-    const remaining = await log.getAllOperations(allTx);
+    const remaining = await new Promise<{ operation: CRDTOperation }[]>((resolve, reject) => {
+      const request = allTx.objectStore(OPERATIONS_STORE).getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
     await lifecycle.commit(allTx);
-    expect(remaining.map((op) => op.dot.version)).toEqual([5]);
+    expect(remaining.map(({ operation }) => operation.dot.version)).toEqual([5]);
   });
 });

@@ -4,13 +4,6 @@ let ( let* ) = Result.bind
 
 let max_safe_integer = 9_007_199_254_740_991L
 
-let parse_int64_field ~name json =
-  try Ok (int64_of_json json) with
-  | Failure _ | Invalid_argument _ ->
-      Error (Printf.sprintf "invalid numeric value for %s" name)
-  | Yojson.Safe.Util.Type_error _ ->
-      Error (Printf.sprintf "invalid request shape: expected int64 for %s" name)
-
 let parse_safe_integer ~name ~minimum json =
   let invalid () = Error (Printf.sprintf "%s must be a numeric safe integer" name) in
   let parsed = match json with
@@ -25,17 +18,10 @@ let parse_safe_integer ~name ~minimum json =
   | Some value when value >= minimum && value <= max_safe_integer -> Ok value
   | _ -> invalid ()
 
-let ensure_safe_nonnegative ~name value =
-  if value < 0L then Error (Printf.sprintf "%s must be >= 0" name)
-  else if value > max_safe_integer then
-    Error (Printf.sprintf "%s must be <= %Ld" name max_safe_integer)
-  else Ok ()
-
 let decode_dot json =
   let open Yojson.Safe.Util in
   let client_id = json |> member "clientId" |> to_string in
   let* version = parse_safe_integer ~name:"dot.version" ~minimum:0L (json |> member "version") in
-  let* () = ensure_safe_nonnegative ~name:"dot.version" version in
   Ok { client_id; version }
 
 let decode_operation json =
@@ -78,59 +64,20 @@ let decode_operation json =
           | [] -> Ok (List.rev acc)
           | (client_id, version_json) :: rest ->
               let* version = parse_safe_integer ~name:("versionVector." ^ client_id) ~minimum:0L version_json in
-              let* () = ensure_safe_nonnegative ~name:("versionVector." ^ client_id) version in
               decode_vector ((client_id, version) :: acc) rest
         in
         let* version_vector = decode_vector [] version_vector_assoc in
         Ok { table_name; row_key; dot; payload = Remove_row { version_vector } }
-  | "checkpointRow" ->
-      if
-        not (has_key "checkpointSeenServerVersion" json && has_key "fields" json)
-        || has_key "state" json || has_key "versionVector" json
-      then Error "checkpointRow payload shape mismatch"
-      else
-        let fields = json |> member "fields" in
-        let tombstone = json |> member "tombstone" in
-        (match fields with
-        | `Assoc _ ->
-            (match (has_key "tombstone" json, tombstone) with
-            | true, `Assoc _ | false, _ ->
-                let* checkpoint_seen_server_version =
-                  parse_int64_field ~name:"checkpointSeenServerVersion"
-                    (json |> member "checkpointSeenServerVersion")
-                in
-                let state =
-                  `Assoc
-                    ([ ("fields", fields) ]
-                    @ if has_key "tombstone" json then [ ("tombstone", tombstone) ] else [])
-                in
-                let* () =
-                  Sync_engine_hash.validate_strict_json state
-                  |> Result.map_error (fun msg -> "invalid checkpointRow state: " ^ msg)
-                in
-                Ok
-                  { table_name; row_key; dot;
-                    payload = Checkpoint_row { checkpoint_seen_server_version; state } }
-            | _ -> Error "checkpointRow tombstone shape mismatch")
-        | _ -> Error "checkpointRow fields must be an object")
+  | "checkpointRow" -> Error "clients cannot upload checkpointRow"
   | _ -> Error ("unsupported operation type: " ^ operation_type)
 
 let decode_mutation ~request_client_id json =
   let open Yojson.Safe.Util in
   let* id = parse_safe_integer ~name:"mutation.id" ~minimum:1L (json |> member "id") in
-  let* () =
-    if id <= 0L then Error "mutation.id must be > 0"
-    else if id > max_safe_integer then
-      Error (Printf.sprintf "mutation.id must be <= %Ld" max_safe_integer)
-    else Ok ()
-  in
   let* operation = json |> member "operation" |> decode_operation in
   if operation.dot.client_id <> request_client_id then
     Error "mutation dot.clientId must equal request clientId"
-  else
-    match operation.payload with
-    | Checkpoint_row _ -> Error "clients cannot upload checkpointRow"
-    | _ -> Ok { id; operation }
+  else Ok { id; operation }
 
 let decode_sync_request raw =
   let open Yojson.Safe.Util in
@@ -146,7 +93,6 @@ let decode_sync_request raw =
     let* client_last_mutation_id =
       parse_safe_integer ~name:"clientLastMutationID" ~minimum:0L (json |> member "clientLastMutationID")
     in
-    let* () = ensure_safe_nonnegative ~name:"clientLastMutationID" client_last_mutation_id in
     let mutations_json = json |> member "mutations" |> to_list in
     let rec decode_all acc = function
       | [] -> Ok (List.rev acc)

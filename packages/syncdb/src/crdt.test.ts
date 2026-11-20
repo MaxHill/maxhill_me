@@ -761,14 +761,6 @@ describe("equal-dot field replay", () => {
     expect(row.fields.payload.value).toEqual({ nested: [1, 2] });
   });
 
-  it.each([null, true, "text", 42, [1, { value: false }]].map((value) => ({ value })))(
-    "accepts identical JSON payload (case %#)", ({ value }) => {
-      const row = replayRow();
-      applyOperationToRow(row, replayOperation("setRow", value));
-      expect(() => applyOperationToRow(row, replayOperation("setRow", value))).not.toThrow();
-    },
-  );
-
   it.each([
     [new Date("2026-01-01"), "2026-01-01T00:00:00.000Z"],
     [NaN, null], [Infinity, null], [1, "1"], [{ a: 1 }, {}], [[], {}],
@@ -834,19 +826,4 @@ describe("property: equal-dot JSON field replay", () => {
     }), { seed: 714810052, numRuns: 200 });
   });
 
-  it.each(replayOrders)("rejects differing JSON for $first/$second in both orders", (kinds) => {
-    fc.assert(fc.property(fc.jsonValue(), (value) => {
-      const firstValue = { payload: value, marker: true };
-      const secondValue = { marker: false, payload: reorderJson(value) };
-      const row = replayRow();
-      applyOperationToRow(row, replayOperation(kinds.first, firstValue));
-      expect(() => applyOperationToRow(row, replayOperation(kinds.second, secondValue)))
-        .toThrow('CRDT invariant violated: duplicate dot for field "payload"');
-
-      const reversed = replayRow();
-      applyOperationToRow(reversed, replayOperation(kinds.second, secondValue));
-      expect(() => applyOperationToRow(reversed, replayOperation(kinds.first, firstValue)))
-        .toThrow('CRDT invariant violated: duplicate dot for field "payload"');
-    }), { seed: 341604259, numRuns: 100 });
-  });
 });

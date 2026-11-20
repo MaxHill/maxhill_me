@@ -57,23 +57,7 @@ afterEach(async () => {
 });
 
 describe("Sync protocol v3 mutation frontier", () => {
-  it("creates request using contiguous pending mutation IDs from real table writes", async () => {
-    const dbName = `sync-${crypto.randomUUID()}`;
-    const { db, lifecycle, sync } = await setup(dbName);
-    open.push({ dbName, db });
-
-    await db.table("users").setRow("u1", { name: "A" });
-    await db.table("users").setRow("u2", { name: "B" });
-
-    const readTx = lifecycle.transaction([CLIENT_STATE_STORE, OPERATIONS_STORE], "readonly");
-    const syncRequest = await sync.createSyncRequest(readTx, "db");
-
-    expect(syncRequest.protocolVersion).toBe(3);
-    expect(syncRequest.clientLastMutationID).toBe(0);
-    expect(syncRequest.mutations.map((mutation) => mutation.id)).toEqual([1, 2]);
-  });
-
-  it("keeps mutation IDs dense across failed writes, acks, and reopen", async () => {
+  it("keeps mutation IDs dense across failed writes, remote clock advances, and reopen", async () => {
     const dbName = `sync-${crypto.randomUUID()}`;
     const fixture = await setup(dbName);
     open.push({ dbName, db: fixture.db });
@@ -187,10 +171,9 @@ describe("Sync protocol v3 stale base handling", () => {
       [CLIENT_STATE_STORE, OPERATIONS_STORE],
       "readonly",
     );
-    const ack = await fixture.clientState.getLastMutationID(readTx);
     const pending = await fixture.operationLog.getPendingMutationsByClient(readTx, "c1");
     const state = await fixture.clientState.getClientState(readTx);
-    expect(ack).toBe(1);
+    expect(state.lastMutationID).toBe(1);
     expect(pending).toHaveLength(0);
     expect(state.lastSeenServerVersion).toBe(-1);
     await expect(fixture.db.table("users").get("remote-stale")).resolves.toBeUndefined();
@@ -263,6 +246,8 @@ async function expectDenseMutations(fixture: Fixture, expected: number[]): Promi
     "readonly",
   );
   const syncRequest = await fixture.sync.createSyncRequest(readTx, "db");
+  expect(syncRequest.protocolVersion).toBe(3);
+  expect(syncRequest.clientLastMutationID).toBe(0);
   expect(syncRequest.mutations.map((mutation) => mutation.id)).toEqual(expected);
 }
 

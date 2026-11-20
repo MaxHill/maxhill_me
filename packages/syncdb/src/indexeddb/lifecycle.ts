@@ -208,25 +208,6 @@ export class Lifecycle {
       return;
     }
 
-    const [rowCount, operationCount, existingClientId] = await Promise.all([
-      promisifyIDBRequest<number>(tx.objectStore(ROWS_STORE).count()),
-      promisifyIDBRequest<number>(tx.objectStore(OPERATIONS_STORE).count()),
-      promisifyIDBRequest<string | undefined>(clientState.get("clientId")),
-    ]);
-
-    const hasPreexistingData = rowCount > 0 || operationCount > 0 || Boolean(existingClientId);
-
-    if (protocolVersion === undefined && !hasPreexistingData) {
-      const writeTx = db.transaction([CLIENT_STATE_STORE], "readwrite");
-      const writeStore = writeTx.objectStore(CLIENT_STATE_STORE);
-      await Promise.all([
-        promisifyIDBRequest(writeStore.put(SYNC_PROTOCOL_VERSION_CURRENT, SYNC_PROTOCOL_VERSION)),
-        promisifyIDBRequest(writeStore.put(0, LAST_MUTATION_ID)),
-        promisifyIDBRequest(writeStore.put(0, LAST_GENERATED_MUTATION_ID)),
-      ]);
-      return;
-    }
-
     throw new Error(
       `Unsupported local sync store protocol: ${protocolVersion ?? "uninitialized"}. ` +
         `Open a fresh empty database for protocol ${SYNC_PROTOCOL_VERSION_CURRENT}. ` +
