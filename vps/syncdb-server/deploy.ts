@@ -10,6 +10,12 @@ import {
 
 chdirFromImportMeta(import.meta.url, "../..");
 
+const args = process.argv.slice(2);
+if (args.some((arg) => arg !== "--stage-only")) {
+	throw new Error("Only --stage-only is supported");
+}
+const stageOnly = args.includes("--stage-only");
+
 const VPS_HOST = requireVpsHost("deploy:sync");
 
 const sha = await gitShortSha();
@@ -33,6 +39,11 @@ opam exec -- dune build ./bin/main.exe --profile release
 
 await $`ssh deploy@${VPS_HOST} ${`mkdir -p ${releaseDir}`}`;
 await $`rsync apps/syncdb-server/_build/default/bin/main.exe deploy@${VPS_HOST}:${releaseDir}/syncdb-server-exe`;
+if (stageOnly) {
+	await $`ssh deploy@${VPS_HOST} ${`chmod 755 ${releaseDir}/syncdb-server-exe`}`;
+	console.log(`syncdb-server staged at ${releaseDir}; current release and service are unchanged`);
+	process.exit(0);
+}
 await $`rsync vps/syncdb-server/syncdb-server.prod.enc.env deploy@${VPS_HOST}:/tmp/syncdb-server.prod.enc.env`;
 await $`rsync vps/syncdb-server/dist/deploy-remote deploy@${VPS_HOST}:${remoteRunnerPath}`;
 await runRemoteBinaryAndCleanup({

@@ -41,6 +41,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
     sync: Sync,
     storageRepository: Lifecycle,
     clientId: string,
+    private localDatabaseName: string = dbName,
   ) {
     assertValidDbName(dbName);
     this.tables = tables;
@@ -58,7 +59,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
   }
 
   async open(): Promise<CRDTDatabase<TSchema>> {
-    await this.lifecycle.open(this.dbName);
+    await this.lifecycle.open(this.localDatabaseName);
     await this.loadClientState();
     return this;
   }

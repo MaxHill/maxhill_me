@@ -1,4 +1,5 @@
 export { CRDTDatabase } from "./crdtDatabase/index.ts";
+export { migrateDrainedReplica } from "./indexeddb/drainedMigration.ts";
 export { CRDTDatabaseBuilder, newDatabase } from "./crdtDatabase/builder.ts";
 export { Table } from "./table.ts";
 export { above, below, between, exact, Index, type QueryCondition } from "./indexes.ts";

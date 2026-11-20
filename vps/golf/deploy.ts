@@ -13,6 +13,12 @@ import {
 
 chdirFromImportMeta(import.meta.url, "../..");
 
+const args = process.argv.slice(2);
+if (args.some((arg) => arg !== "--stage-only")) {
+	throw new Error("Only --stage-only is supported");
+}
+const stageOnly = args.includes("--stage-only");
+
 const VPS_HOST = requireVpsHost("deploy:golf");
 
 for (const line of (await readFile("vps/golf/golf.build.env", "utf8")).split(/\r?\n/)) {
@@ -42,6 +48,10 @@ await withCwd("apps/golf", async () => {
 
 await $`ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=5 -o ServerAliveCountMax=3 deploy@${VPS_HOST} ${`mkdir -p ${releaseDir}`}`;
 await $`rsync -a --delete -e ${SSH_TRANSPORT} apps/golf/dist/ deploy@${VPS_HOST}:${releaseDir}/`;
+if (stageOnly) {
+	console.log(`golf staged at ${releaseDir}; current release is unchanged`);
+	process.exit(0);
+}
 await $`rsync -e ${SSH_TRANSPORT} vps/golf/dist/deploy-remote deploy@${VPS_HOST}:${remoteRunnerPath}`;
 await runRemoteBinaryAndCleanup({
 	host: VPS_HOST,
