@@ -1,9 +1,5 @@
 import { applyOperationToRow, CRDTOperation } from "../crdt.ts";
-import {
-  CLIENT_STATE_STORE,
-  OPERATIONS_STORE,
-  ROWS_STORE,
-} from "../indexeddb/lifecycle.ts";
+import { CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE } from "../indexeddb/lifecycle.ts";
 import { RowStore } from "../indexeddb/rowStore.ts";
 import { OperationLog } from "../indexeddb/operationLog.ts";
 import { ClientState } from "../indexeddb/clientState.ts";
@@ -25,10 +21,16 @@ export interface SyncRequest {
   protocolVersion: 3;
   clientId: string;
   dbName: string;
-  /** This frontier lets the client send only work after the last complete prefix the server committed. */
+  /**
+   * This frontier lets the client send only work after the last complete prefix the server
+   * committed.
+   */
   clientLastMutationID: number;
   mutations: Mutation[];
-  /** This cursor tracks downloads separately because upload acknowledgement does not prove the client received server changes. */
+  /**
+   * This cursor tracks downloads separately because upload acknowledgement does not prove the
+   * client received server changes.
+   */
   lastSeenServerVersion: number;
   requestHash: string;
 }
@@ -38,7 +40,10 @@ export interface SyncResponse {
   clientId: string;
   baseServerVersion: number;
   latestServerVersion: number;
-  /** This frontier lets the client retire only mutations the server committed as a complete prefix. */
+  /**
+   * This frontier lets the client retire only mutations the server committed as a complete
+   * prefix.
+   */
   lastMutationID: number;
   responseHash: string;
   operations: CRDTOperation[];
@@ -75,12 +80,17 @@ function requireResponseMetadata(value: unknown): asserts value is SyncResponse 
     throw new Error("Invalid sync response");
   }
   const response = value as Record<string, unknown>;
-  if (response.protocolVersion !== WIRE_PROTOCOL_VERSION ||
-      typeof response.clientId !== "string" || !response.clientId ||
-      !Number.isSafeInteger(response.baseServerVersion) ||
-      !Number.isSafeInteger(response.latestServerVersion) ||
-      !Number.isSafeInteger(response.lastMutationID) || (response.lastMutationID as number) < 0 ||
-      !Array.isArray(response.operations) || typeof response.responseHash !== "string") {
+  if (
+    response.protocolVersion !== WIRE_PROTOCOL_VERSION ||
+    typeof response.clientId !== "string" ||
+    !response.clientId ||
+    !Number.isSafeInteger(response.baseServerVersion) ||
+    !Number.isSafeInteger(response.latestServerVersion) ||
+    !Number.isSafeInteger(response.lastMutationID) ||
+    (response.lastMutationID as number) < 0 ||
+    !Array.isArray(response.operations) ||
+    typeof response.responseHash !== "string"
+  ) {
     throw new Error("Invalid sync response metadata");
   }
 }
@@ -92,6 +102,8 @@ export class Sync {
   private headersProvider?: SyncHeadersProvider;
   private onUnauthorized?: OnUnauthorizedHandler;
 
+  // Preserve the existing positional public API for callers.
+  // eslint-disable-next-line max-params
   constructor(
     clientState: ClientState,
     rowStore: RowStore,
@@ -175,11 +187,7 @@ export class Sync {
     };
     try {
       let response = await doFetch();
-      if (
-        response.status === 401 &&
-        this.onUnauthorized &&
-        await this.onUnauthorized()
-      ) {
+      if (response.status === 401 && this.onUnauthorized && (await this.onUnauthorized())) {
         response = await doFetch();
       }
       if (!response.ok) {
@@ -214,11 +222,7 @@ export class Sync {
     logicalClock: PersistedLogicalClock,
     response: SyncResponse,
   ): Promise<Set<string>> {
-    validateTransactionStores(
-      tx,
-      [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE],
-      "readwrite",
-    );
+    validateTransactionStores(tx, [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE], "readwrite");
 
     const { clientId, lastSeenServerVersion, lastMutationID, lastGeneratedMutationID } =
       await this.clientState.getClientState(tx);
@@ -274,9 +278,7 @@ export class Sync {
     await this.applyRemoteOperations(tx, response.operations);
 
     const checkpoints = response.operations.filter(
-      (
-        operation,
-      ): operation is Extract<CRDTOperation, { type: "checkpointRow" }> =>
+      (operation): operation is Extract<CRDTOperation, { type: "checkpointRow" }> =>
         operation.type === "checkpointRow",
     );
     await this.operationLog.deleteCoveredAcceptedOperations(tx, checkpoints);
@@ -327,21 +329,19 @@ export class Sync {
           operation.versionVector === null ||
           Array.isArray(operation.versionVector)
         ) {
-          throw new Error(
-            "Invalid removeRow operation: versionVector must be a plain object",
-          );
+          throw new Error("Invalid removeRow operation: versionVector must be a plain object");
         }
       } else {
-        throw new Error(
-          `Unsupported operation type: ${(operation as { type?: unknown }).type}`,
-        );
+        throw new Error(`Unsupported operation type: ${(operation as { type?: unknown }).type}`);
       }
     }
 
     const operationsByRow = new Map<string, CRDTOperation[]>();
     for (const operation of operations) {
       const key = `${operation.tableName}:${String(operation.rowKey)}`;
-      if (!operationsByRow.has(key)) {operationsByRow.set(key, []);}
+      if (!operationsByRow.has(key)) {
+        operationsByRow.set(key, []);
+      }
       operationsByRow.get(key)!.push(operation);
     }
 
@@ -362,12 +362,12 @@ export class Sync {
     );
 
     for (const { row, rowOperations } of rowsData) {
-      for (const operation of rowOperations) {applyOperationToRow(row, operation);}
+      for (const operation of rowOperations) {
+        applyOperationToRow(row, operation);
+      }
     }
 
-    await Promise.all(
-      rowsData.map(({ row }) => this.rowStore.saveRow(tx, row)),
-    );
+    await Promise.all(rowsData.map(({ row }) => this.rowStore.saveRow(tx, row)));
   }
 
   private async createRequestHash(request: Omit<SyncRequest, "requestHash">): Promise<string> {
@@ -433,8 +433,8 @@ export class Sync {
       } else if (operation.type === "removeRow") {
         parts.push("null");
         parts.push("null");
-        const contextKeys = Object.keys(operation.versionVector).sort(
-          (left, right) => compareUtf8(left, right),
+        const contextKeys = Object.keys(operation.versionVector).sort((left, right) =>
+          compareUtf8(left, right),
         );
         for (const key of contextKeys) {
           parts.push(key);

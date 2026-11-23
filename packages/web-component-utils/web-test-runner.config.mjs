@@ -13,6 +13,11 @@ export default {
     }),
   ],
   browsers: [
-    playwrightLauncher({ product: 'chromium' }),
+    playwrightLauncher({
+      product: 'chromium',
+      launchOptions: process.env.CHROMIUM_PATH
+        ? { executablePath: process.env.CHROMIUM_PATH }
+        : {},
+    }),
   ],
 };

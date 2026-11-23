@@ -1,8 +1,8 @@
 // query.ts
 
 export type QueryOptions = {
-    dom: "shadow" | "light" | "document";
-}
+  dom: "shadow" | "light" | "document";
+};
 
 export function query(selector: string, options?: QueryOptions) {
   return function (_value: undefined, context: ClassFieldDecoratorContext) {
@@ -13,13 +13,13 @@ export function query(selector: string, options?: QueryOptions) {
     context.addInitializer(function () {
       Object.defineProperty(this, context.name, {
         get(this: HTMLElement) {
-            let dom:  null | ShadowRoot | Document = this.shadowRoot;
-            if(options && options.dom === "light") {
-                dom = this as unknown as ShadowRoot;
-            }
-            if (options && options.dom === "document") {
-                dom = document;
-            }
+          let dom: null | ShadowRoot | Document = this.shadowRoot;
+          if (options && options.dom === "light") {
+            dom = this as unknown as ShadowRoot;
+          }
+          if (options && options.dom === "document") {
+            dom = document;
+          }
           return dom?.querySelector(selector) ?? null;
         },
         enumerable: true,
@@ -42,13 +42,13 @@ export function queryAll(selector: string, options?: QueryOptions) {
     context.addInitializer(function () {
       Object.defineProperty(this, context.name, {
         get(this: HTMLElement) {
-            let dom:  null | ShadowRoot | Document = this.shadowRoot;
-            if(options && options.dom === "light") {
-                dom = this as unknown as ShadowRoot;
-            }
-            if (options && options.dom === "document") {
-                dom = document;
-            }
+          let dom: null | ShadowRoot | Document = this.shadowRoot;
+          if (options && options.dom === "light") {
+            dom = this as unknown as ShadowRoot;
+          }
+          if (options && options.dom === "document") {
+            dom = document;
+          }
           return Array.from(dom?.querySelectorAll(selector) ?? []);
         },
         enumerable: true,

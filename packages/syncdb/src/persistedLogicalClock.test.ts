@@ -4,6 +4,8 @@ import { PersistedLogicalClock } from "./persistedLogicalClock.ts";
 import { Lifecycle } from "./indexeddb/lifecycle.ts";
 import { ClientState } from "./indexeddb/clientState.ts";
 
+// Suite registration groups related tests; individual tests remain line-limited.
+// eslint-disable-next-line max-lines-per-function
 describe("PersistedLogicalClock", () => {
   let lifecycle: Lifecycle;
   let clientState: ClientState;
@@ -110,22 +112,22 @@ describe("PersistedLogicalClock", () => {
   it("should never decrease through any operation", async () => {
     const tx = lifecycle.transaction("clientState", "readwrite");
     await clientState.setVersion(tx, 10);
-    let prev = await clientState.getVersion(tx);
+    let previous = await clientState.getVersion(tx);
     await lifecycle.commit(tx);
 
     for (let i = 0; i < 10; i++) {
-      const tx = lifecycle.transaction(["clientState"], "readwrite");
+      const updateTransaction = lifecycle.transaction(["clientState"], "readwrite");
       if (Math.random() < 0.5) {
-        await logicalClock.tick(tx);
+        await logicalClock.tick(updateTransaction);
       } else {
-        await logicalClock.sync(tx, Math.floor(Math.random() * 20));
+        await logicalClock.sync(updateTransaction, Math.floor(Math.random() * 20));
       }
-      await lifecycle.commit(tx);
+      await lifecycle.commit(updateTransaction);
 
       const txRead = lifecycle.transaction(["clientState"], "readonly");
       const current = await clientState.getVersion(txRead);
-      expect(current).toBeGreaterThanOrEqual(prev);
-      prev = current;
+      expect(current).toBeGreaterThanOrEqual(previous);
+      previous = current;
     }
   });
 

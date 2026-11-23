@@ -3,6 +3,8 @@ import { get_DB } from "./db";
 import { authClient } from "./features/auth/auth-client";
 import type { UserSubjects } from "./features/auth/auth-client";
 
+// Suite registration keeps related cases together.
+// oxlint-disable-next-line max-lines-per-function
 describe("get_DB ownership bootstrap integration", () => {
   afterEach(async () => {
     await resetDBSingletonForTests();
@@ -22,7 +24,9 @@ describe("get_DB ownership bootstrap integration", () => {
     mockCurrentUser("user-a");
 
     const claimedDB = await get_DB();
-    const owner = await claimedDB.table("user_settings").get("db_owner_user_id");
+    const owner = await claimedDB
+      .table("user_settings")
+      .get("db_owner_user_id");
     const claimedShotType = await claimedDB.table("shot_types").get("seed");
 
     expect(owner?.value).to.equal("user-a");
@@ -62,7 +66,9 @@ describe("get_DB ownership bootstrap integration", () => {
 
     const switchedDB = await get_DB();
     const shotType = await switchedDB.table("shot_types").get("seed");
-    const owner = await switchedDB.table("user_settings").get("db_owner_user_id");
+    const owner = await switchedDB
+      .table("user_settings")
+      .get("db_owner_user_id");
 
     expect(shotType).to.equal(undefined);
     expect(owner?.value).to.equal("user-b");
@@ -85,9 +91,14 @@ describe("get_DB ownership bootstrap integration", () => {
 });
 
 function mockCurrentUser(userID: string | null): void {
-  (authClient as unknown as { getUserSubjects: () => Promise<UserSubjects | null> }).getUserSubjects =
-    async () => (userID ? { userID } : null);
-  (authClient as unknown as { getToken: () => Promise<string | null> }).getToken = async () => null;
+  (
+    authClient as unknown as {
+      getUserSubjects: () => Promise<UserSubjects | null>;
+    }
+  ).getUserSubjects = async () => (userID ? { userID } : null);
+  (
+    authClient as unknown as { getToken: () => Promise<string | null> }
+  ).getToken = async () => null;
 }
 
 async function resetDBSingletonForTests(): Promise<void> {
@@ -115,7 +126,8 @@ async function deleteDatabase(name: string): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const request = indexedDB.deleteDatabase(name);
     request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error ?? new Error(`Failed deleting ${name}`));
+    request.onerror = () =>
+      reject(request.error ?? new Error(`Failed deleting ${name}`));
     request.onblocked = () => reject(new Error(`Delete blocked for ${name}`));
   });
 }

@@ -21,14 +21,33 @@ class ThemeControls {
   private preference: Theme = "system";
 
   start(): void {
-    const scheme = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]')?.content;
-    this.preference = scheme === "light" || scheme === "dark" ? scheme : storedTheme();
+    const scheme = document.querySelector<HTMLMetaElement>(
+      'meta[name="color-scheme"]',
+    )?.content;
+    this.preference =
+      scheme === "light" || scheme === "dark" ? scheme : storedTheme();
     const options = { signal: this.controller.signal };
     document.addEventListener("change", (event) => this.change(event), options);
-    this.mediaQuery.addEventListener("change", () => this.synchronize(), options);
-    window.addEventListener("storage", (event) => this.storageChanged(event), options);
-    document.addEventListener("astro:after-swap", () => this.applyRoot(), options);
-    document.addEventListener("astro:page-load", () => this.synchronize(), options);
+    this.mediaQuery.addEventListener(
+      "change",
+      () => this.synchronize(),
+      options,
+    );
+    window.addEventListener(
+      "storage",
+      (event) => this.storageChanged(event),
+      options,
+    );
+    document.addEventListener(
+      "astro:after-swap",
+      () => this.applyRoot(),
+      options,
+    );
+    document.addEventListener(
+      "astro:page-load",
+      () => this.synchronize(),
+      options,
+    );
     this.synchronize();
   }
 
@@ -47,30 +66,40 @@ class ThemeControls {
 
   private applyRoot(): void {
     this.apply(document.documentElement, this.preference);
-    const meta = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
+    const meta = document.querySelector<HTMLMetaElement>(
+      'meta[name="color-scheme"]',
+    );
     if (meta) {
-      meta.content = this.preference === "system" ? "light dark" : this.preference;
+      meta.content =
+        this.preference === "system" ? "light dark" : this.preference;
     }
   }
 
   private synchronize(): void {
     this.applyRoot();
-    document.querySelectorAll<HTMLFormElement>("form.theme-switcher").forEach((form) => {
-      const target = targetFor(form);
-      if (!target) {
-        return;
-      }
-      const isRoot = target === document.documentElement;
-      const unset = form.getAttribute("data-unset-option") === "none" ? "none" : "system";
-      const theme = isRoot ? this.preference : this.previews.get(target) ?? unset;
-      if (!isRoot) {
-        this.previews.set(target, theme);
-        this.apply(target, theme);
-      }
-      form.querySelectorAll<HTMLInputElement>('input[name="theme"]').forEach((input) => {
-        input.checked = input.value === theme;
+    document
+      .querySelectorAll<HTMLFormElement>("form.theme-switcher")
+      .forEach((form) => {
+        const target = targetFor(form);
+        if (!target) {
+          return;
+        }
+        const isRoot = target === document.documentElement;
+        const unset =
+          form.getAttribute("data-unset-option") === "none" ? "none" : "system";
+        const theme = isRoot
+          ? this.preference
+          : (this.previews.get(target) ?? unset);
+        if (!isRoot) {
+          this.previews.set(target, theme);
+          this.apply(target, theme);
+        }
+        form
+          .querySelectorAll<HTMLInputElement>('input[name="theme"]')
+          .forEach((input) => {
+            input.checked = input.value === theme;
+          });
       });
-    });
     const label = document.getElementById("theme-label");
     if (label) {
       const theme = this.preference;
@@ -86,11 +115,15 @@ class ThemeControls {
     const form = input.closest("form.theme-switcher");
     const target = form ? targetFor(form) : null;
     const theme = input.value;
-    if (!form || !target || !["system", "light", "dark", "none"].includes(theme)) {
+    if (
+      !form ||
+      !target ||
+      !["system", "light", "dark", "none"].includes(theme)
+    ) {
       return;
     }
     if (target === document.documentElement) {
-      this.preference = theme === "none" ? "system" : theme as Theme;
+      this.preference = theme === "none" ? "system" : (theme as Theme);
       if (form.getAttribute("data-persist") === "true") {
         this.persist();
       }
@@ -98,7 +131,9 @@ class ThemeControls {
       this.previews.set(target, theme as PreviewTheme);
     }
     this.synchronize();
-    document.dispatchEvent(new CustomEvent("themechange", { detail: { theme } }));
+    document.dispatchEvent(
+      new CustomEvent("themechange", { detail: { theme } }),
+    );
   }
 
   private persist(): void {

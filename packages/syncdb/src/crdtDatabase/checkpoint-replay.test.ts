@@ -4,6 +4,7 @@ import {
   Lifecycle,
   CLIENT_STATE_STORE,
   OPERATIONS_STORE,
+  ROWS_STORE,
 } from "../indexeddb/lifecycle.ts";
 import { ClientState } from "../indexeddb/clientState.ts";
 import { RowStore } from "../indexeddb/rowStore.ts";
@@ -81,6 +82,28 @@ async function requestState() {
 }
 
 describe("checkpoint replay", () => {
+  it("persists contenders and includes them in a local delete's observed context", async () => {
+    const transaction = fixture.lifecycle.transaction([ROWS_STORE], "readwrite");
+    await new RowStore([]).saveRow(transaction, {
+      table_name: "users", row_key: "u1",
+      fields: {
+        name: {
+          value: "B", dot: { clientId: "b", version: 1 },
+          contenders: [{ value: "A", dot: { clientId: "a", version: 1 } }],
+        },
+      },
+    });
+    await fixture.lifecycle.commit(transaction);
+    await fixture.db.close();
+    await fixture.db.open();
+    await fixture.db.table("users").deleteRow("u1");
+    expect(await fixture.db.table("users").get("u1")).toBeUndefined();
+    const pending = (await requestState()).mutations;
+    expect(pending).toHaveLength(1);
+    expect(pending[0].operation).toMatchObject({
+      type: "removeRow", versionVector: { a: 1, b: 1 },
+    });
+  });
   it("applies checkpoint and overlap write", async () => {
     const incoming = response();
     await expect(fixture.db.sync(incoming)).resolves.toBeUndefined();

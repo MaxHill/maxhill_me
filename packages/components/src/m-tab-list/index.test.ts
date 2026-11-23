@@ -1,23 +1,27 @@
-import { expect, html, fixture, waitUntil } from '@open-wc/testing';
-import { MTabList } from './index';
-import { MTab } from '../m-tab';
-import { MTabPanel } from '../m-tab-panel';
+import { expect, html, fixture, waitUntil } from "@open-wc/testing";
+import { MTabList } from "./index";
+import { MTab } from "../m-tab";
+import { MTabPanel } from "../m-tab-panel";
 
 MTabList.define();
 MTab.define();
 MTabPanel.define();
 
 beforeEach(() => {
-  document.body.innerHTML = '';
+  document.body.innerHTML = "";
 });
 
 afterEach(() => {
-  document.body.innerHTML = '';
+  document.body.innerHTML = "";
 });
 
-describe('m-tab-list', () => {
-  describe('accessibility', () => {
-    it('passes automated a11y tests', async () => {
+// Suite registration groups independent tests, not runtime logic.
+// oxlint-disable-next-line max-lines-per-function
+describe("m-tab-list", () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("accessibility", () => {
+    it("passes automated a11y tests", async () => {
       const el = await fixture<MTabList>(html`
         <m-tab-list label="Settings" tab="general">
           <m-tab name="general">General</m-tab>
@@ -27,7 +31,7 @@ describe('m-tab-list', () => {
         </m-tab-list>
       `);
 
-      await waitUntil(() => el.querySelectorAll('m-tab').length === 2);
+      await waitUntil(() => el.querySelectorAll("m-tab").length === 2);
       await expect(el).to.be.accessible();
     });
   });

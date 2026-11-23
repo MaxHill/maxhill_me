@@ -258,7 +258,15 @@ importers:
         specifier: ^3.0.0
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.9.1)(jsdom@26.1.0)(tsx@4.22.4)(yaml@2.8.1)
 
-  packages/ts-stdx: {}
+  packages/ts-stdx:
+    devDependencies:
+      '@maxhill/oxlint-config':
+        specifier: workspace:*
+        version: link:../oxlint-config
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
 
   packages/web-component-utils:
     devDependencies:

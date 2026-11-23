@@ -14,115 +14,117 @@ const DEFAULT_COPY_ICON = `
 
 /**
  * A button component that copies text to the clipboard with visual feedback.
- * 
+ *
  * @customElement
  * @tagname m-copy-button
- * 
+ *
  * @slot - Default slot for button label/content
  * @slot icon - Optional slot for custom icon (overrides default copy icon)
- * 
+ *
  * @attr {string} value - The text to copy to clipboard (required)
  * @attr {boolean} show-icon - Show/hide the copy icon (default: true)
  * @attr {string} feedback - Custom feedback message shown on successful copy (default: "Copied!")
- * 
+ *
  * @prop {string} value - The text to copy to clipboard (required)
  * @prop {boolean} showIcon - Show/hide the copy icon (default: true)
  * @prop {string} feedback - Custom feedback message shown on successful copy (default: "Copied!")
- * 
+ *
  * @fires copy-success - Fired when text is successfully copied (detail: { value: string })
  * @fires copy-error - Fired when copy fails (detail: { error: Error })
- * 
+ *
  * @cssprop --copy-button-gap - Gap between content and icon (default: var(--size-1))
  * @cssprop --copy-button-icon-size - Size of the icon (default: 1rem)
  * @cssprop --copy-button-icon-opacity - Opacity of icon in normal state (default: 0.5)
  * @cssprop --copy-button-icon-opacity-hover - Opacity of icon on hover (default: 1)
- * 
+ *
  * @csspart button - The button element
  * @csspart icon - Icon wrapper
  * @csspart feedback - Feedback tooltip
  */
 class MCopyButton extends MElement {
-    @BindAttribute() value: string = "";
-    @BindAttribute({ attribute: "show-icon" }) showIcon: boolean = true;
-    @BindAttribute() feedback: string = "Copied!";
+  @BindAttribute() value: string = "";
+  @BindAttribute({ attribute: "show-icon" }) showIcon: boolean = true;
+  @BindAttribute() feedback: string = "Copied!";
 
-    @query("button")
-    private button!: HTMLButtonElement;
+  @query("button")
+  private button!: HTMLButtonElement;
 
-    constructor() {
-        super();
-        this.attachShadow({ mode: "open" });
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+  }
+
+  connectedCallback() {
+    this.render();
+    this.attachEventListeners();
+  }
+
+  render() {
+    if (!this.shadowRoot) {
+      return;
     }
 
-    connectedCallback() {
-        this.render();
-        this.attachEventListeners();
-    }
+    this.shadowRoot.adoptedStyleSheets = [baseStyleSheet];
 
-    render() {
-        if (!this.shadowRoot) return;
+    const hasCustomIcon = this.querySelector('[slot="icon"]');
 
-        this.shadowRoot.adoptedStyleSheets = [baseStyleSheet];
-
-        const hasCustomIcon = this.querySelector('[slot="icon"]');
-
-        this.shadowRoot.innerHTML = `
+    this.shadowRoot.innerHTML = `
       <button type="button" part="button">
         <span class="content">
           <slot></slot>
         </span>
         ${
-            this.showIcon
-                ? `
+          this.showIcon
+            ? `
           <span part="icon" class="icon">
             ${hasCustomIcon ? '<slot name="icon"></slot>' : DEFAULT_COPY_ICON}
           </span>
         `
-                : ""
+            : ""
         }
         <span part="feedback" class="feedback">${this.feedback}</span>
       </button>
     `;
+  }
+
+  attachEventListeners() {
+    if (!this.button) {
+      return;
     }
 
-    attachEventListeners() {
-        if (!this.button) return;
+    this.button.addEventListener("click", async () => {
+      if (!this.value) {
+        return;
+      }
 
-        this.button.addEventListener("click", async () => {
-            if (!this.value) return;
+      try {
+        await navigator.clipboard.writeText(this.value);
 
-            try {
-                await navigator.clipboard.writeText(this.value);
+        this.button.classList.add("copied");
 
-                this.button.classList.add("copied");
+        this.dispatchEvent(new CopySuccessEvent({ value: this.value }));
 
-                this.dispatchEvent(
-                    new CopySuccessEvent({ value: this.value }),
-                );
+        this.button.addEventListener(
+          "animationend",
+          () => {
+            this.button.classList.remove("copied");
+          },
+          { once: true },
+        );
+      } catch (error) {
+        console.error("Failed to copy:", error);
 
-                this.button.addEventListener(
-                    "animationend",
-                    () => {
-                        this.button.classList.remove("copied");
-                    },
-                    { once: true },
-                );
-            } catch (err) {
-                console.error("Failed to copy:", err);
+        this.dispatchEvent(new CopyErrorEvent({ error: error as Error }));
+      }
+    });
+  }
 
-                this.dispatchEvent(
-                    new CopyErrorEvent({ error: err as Error }),
-                );
-            }
-        });
+  static define(tag = "m-copy-button", registry = customElements) {
+    if (!registry.get(tag)) {
+      registry.define(tag, this);
     }
-
-    static define(tag = "m-copy-button", registry = customElements) {
-        if (!registry.get(tag)) {
-            registry.define(tag, this);
-        }
-        return this;
-    }
+    return this;
+  }
 }
 
 // Auto-define when using default import

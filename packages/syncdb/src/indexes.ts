@@ -1,4 +1,4 @@
-import { CLIENT_STATE_STORE, Lifecycle, INDEXES_HASH, ROWS_STORE } from "./indexeddb/lifecycle.ts";
+import { CLIENT_STATE_STORE, INDEXES_HASH, Lifecycle, ROWS_STORE } from "./indexeddb/lifecycle.ts";
 import { RowStore } from "./indexeddb/rowStore.ts";
 import { TABLE_NAME, toUserRow } from "./crdt.ts";
 import { asc, Direction, resolveQueryArgs } from "./direction.ts";
@@ -13,9 +13,9 @@ export class Index {
     const indexNames = (this.lifecycle.indexes || []).map((index) => index.name);
     if (!indexNames.includes(this.indexName)) {
       throw new Error(
-        `Specified index ${indexName} does not exist in indexes:\n${
-          indexNames.map((index) => `   ${index} /n`)
-        }`,
+        `Specified index ${indexName} does not exist in indexes:\n${indexNames.map(
+          (index) => `   ${index} /n`,
+        )}`,
       );
     }
   }
@@ -27,9 +27,9 @@ export class Index {
     const indexNames = (this.lifecycle.indexes || []).map((index) => index.name);
     if (!indexNames.includes(this.indexName)) {
       throw new Error(
-        `Invalid index ${this.indexName} does not exist in indexes:/n${
-          indexNames.map((index) => `   ${index} /n`)
-        }`,
+        `Invalid index ${this.indexName} does not exist in indexes:/n${indexNames.map(
+          (index) => `   ${index} /n`,
+        )}`,
       );
     }
 
@@ -94,9 +94,7 @@ type QueryExact = {
  * const query = exact('user@example.com');
  * ```
  */
-export function exact(
-  value: IDBValidKey,
-): QueryExact {
+export function exact(value: IDBValidKey): QueryExact {
   return { type: "exact", value };
 }
 
@@ -116,7 +114,8 @@ type QueryAbove = {
  *
  * @param value - The lower bound value
  * @param options - Query options
- * @param options.inclusive - If true (default), includes the boundary value (≥). If false, excludes it (>).
+ * @param options.inclusive - If true (default), includes the boundary value
+ * (≥). If false, excludes it (>).
  * @returns A query object for range matching
  *
  * @example
@@ -151,7 +150,8 @@ type QueryBelow = {
  *
  * @param value - The upper bound value
  * @param options - Query options
- * @param options.inclusive - If true (default), includes the boundary value (≤). If false, excludes it (<).
+ * @param options.inclusive - If true (default), includes the boundary value
+ * (≤). If false, excludes it (<).
  * @returns A query object for range matching
  *
  * @example
@@ -257,9 +257,25 @@ export type QueryCondition = QueryAll | QueryAbove | QueryBelow | QueryBetween |
 //  Conversion
 //  ------------------------------------------------------------------------
 const STRING_MIN_BOUND = "";
-const STRING_MAX_BOUND = "\uffff".repeat(1000); // High Unicode character repeated for string upper bound
+// High Unicode character repeated for string upper bound
+const STRING_MAX_BOUND = "\uffff".repeat(1000);
 const DATE_MIN_BOUND = new Date(-8640000000000000);
 const DATE_MAX_BOUND = new Date(8640000000000000);
+
+function validateRangeBounds(
+  lower: IDBValidKey,
+  upper: IDBValidKey,
+  lowerOpen: boolean,
+  upperOpen: boolean,
+): void {
+  if (keysEqual(lower, upper) && (lowerOpen || upperOpen)) {
+    throw new Error(
+      "Invalid range: Cannot create a range where lower and upper bounds are equal " +
+        `(${JSON.stringify(lower)}) ` +
+        "with any bound exclusive. Both bounds must be inclusive.",
+    );
+  }
+}
 
 interface RangeBounds {
   min: IDBValidKey;
@@ -336,23 +352,19 @@ export function calculateBounds(sampleValue: IDBValidKey): RangeBounds {
  */
 export function queryToIDBRange(table: string, query: QueryCondition): IDBKeyRange {
   if (query.type === "all") {
-    return IDBKeyRange.bound(
-      [table],
-      [table, []],
-      false,
-      true,
-    );
+    return IDBKeyRange.bound([table], [table, []], false, true);
   }
   if (query.type === "exact") {
     return IDBKeyRange.only([table, query.value]);
   }
 
   // Get a sample value from the query to determine bounds
-  const sampleValue = query.type === "between"
-    ? query.lowerValue
-    : query.type === "above" || query.type === "below"
-    ? query.value
-    : undefined;
+  const sampleValue =
+    query.type === "between"
+      ? query.lowerValue
+      : query.type === "above" || query.type === "below"
+        ? query.value
+        : undefined;
 
   if (sampleValue === undefined) {
     throw new Error("Unable to determine value from query");
@@ -373,16 +385,7 @@ export function queryToIDBRange(table: string, query: QueryCondition): IDBKeyRan
     const lowerOpen = false;
     const upperOpen = !query.options.inclusive;
 
-    // Validate: can't have same bounds with any open
-    // IDBKeyRange.bound throws if lower === upper and either bound is open
-    if (keysEqual(bounds.min, query.value) && (lowerOpen || upperOpen)) {
-      throw new Error(
-        `Invalid range: Cannot create a range where lower and upper bounds are equal (${
-          JSON.stringify(query.value)
-        }) ` +
-          `with any bound exclusive. Both bounds must be inclusive.`,
-      );
-    }
+    validateRangeBounds(bounds.min, query.value, lowerOpen, upperOpen);
 
     return IDBKeyRange.bound(lower, upper, lowerOpen, upperOpen);
   } else if (query.type === "between") {
@@ -391,16 +394,7 @@ export function queryToIDBRange(table: string, query: QueryCondition): IDBKeyRan
     const lowerOpen = !query.options.inclusiveLower;
     const upperOpen = !query.options.inclusiveUpper;
 
-    // Validate: can't have same bounds with any open
-    // IDBKeyRange.bound throws if lower === upper and either bound is open
-    if (keysEqual(query.lowerValue, query.upperValue) && (lowerOpen || upperOpen)) {
-      throw new Error(
-        `Invalid range: Cannot create a range where lower and upper bounds are equal (${
-          JSON.stringify(query.lowerValue)
-        }) ` +
-          `with any bound exclusive. Both bounds must be inclusive.`,
-      );
-    }
+    validateRangeBounds(query.lowerValue, query.upperValue, lowerOpen, upperOpen);
 
     return IDBKeyRange.bound(lower, upper, lowerOpen, upperOpen);
   }
@@ -427,7 +421,10 @@ export interface IndexDefinition {
   name: string;
   /** The table this index belongs to */
   table: string;
-  /** Field names to index, e.g., ["age"] for single field or ["lastName", "firstName"] for compound */
+  /**
+   * Field names to index, e.g., ["age"] for single field or ["lastName",
+   * "firstName"] for compound
+   */
   keys: string[];
 }
 
@@ -593,7 +590,9 @@ export function createIndexName(table: string, name: string) {
  * @internal
  */
 function keysEqual(a: IDBValidKey, b: IDBValidKey): boolean {
-  if (a === b) return true;
+  if (a === b) {
+    return true;
+  }
   if (a instanceof Date && b instanceof Date) {
     return a.getTime() === b.getTime();
   }

@@ -1,13 +1,12 @@
 import { BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
-import { createRef, ref } from "lit-html/directives/ref.js";
+import { createRef, "ref" as reference } from "lit-html/directives/ref.js";
 import { globalStyleSheet } from "../../../../styles/global-styles";
 import { get_DB } from "../../../../db";
 import { LagPuttingGameService } from "../lag-putting-service";
 import type { LagPuttingGame, PuttResult } from "../lag-putting-service";
 import type { MListboxChangeEvent } from "@maxhill/components/m-listbox";
-
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -129,13 +128,17 @@ export class MLagPuttingScorecardPage extends MElement {
   handleNavClick = (e: MouseEvent) => {
     e.preventDefault();
     const target = e.target as HTMLAnchorElement;
-    if (target.tagName !== "A" || !target.hash) return;
+    if (target.tagName !== "A" || !target.hash) {
+      return;
+    }
 
     const targetId = target.hash.slice(1);
     const targetElement = this.shadowRoot?.getElementById(targetId);
 
     if (targetElement) {
-      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
       targetElement.scrollIntoView({
         behavior: prefersReducedMotion ? "instant" : "smooth",
         block: "nearest",
@@ -145,9 +148,13 @@ export class MLagPuttingScorecardPage extends MElement {
   };
 
   handleChange = async (e: MListboxChangeEvent) => {
-    if (!e.detail.option || !this.currentGame) return;
+    if (!e.detail.option || !this.currentGame) {
+      return;
+    }
 
-    const puttIndexStr = (e.target as HTMLElement).getAttribute("data-putt-index");
+    const puttIndexStr = (e.target as HTMLElement).getAttribute(
+      "data-putt-index",
+    );
     if (!puttIndexStr) {
       console.error("No putt index found on target");
       return;
@@ -156,6 +163,37 @@ export class MLagPuttingScorecardPage extends MElement {
     const puttIndex = parseInt(puttIndexStr, 10);
     const optionValue = e.detail.option.value;
 
+    const result = this.parsePuttResult(optionValue);
+    if (!result) {
+      return;
+    }
+    const currentResult = this.currentGame.putts[puttIndex].result;
+    if (
+      currentResult &&
+      currentResult.outcome === result.outcome &&
+      ("leave" in currentResult ? currentResult.leave : undefined) ===
+        ("leave" in result ? result.leave : undefined)
+    ) {
+      return;
+    }
+
+    this.currentGame.putts[puttIndex].result = result;
+    this.render();
+
+    try {
+      await this.lagPuttingGameService.recordPuttResult(
+        this.currentGame._key,
+        puttIndex,
+        result,
+      );
+    } catch (error) {
+      console.error("Failed to save putt result:", error);
+      // Re-load authoritative state if the write failed.
+      await this.handleGameChanged();
+    }
+  };
+
+  private parsePuttResult(optionValue: string): PuttResult | undefined {
     let result: PuttResult;
     switch (optionValue) {
       case "+3m-long": {
@@ -211,38 +249,27 @@ export class MLagPuttingScorecardPage extends MElement {
       }
     }
 
-    const currentResult = this.currentGame.putts[puttIndex].result;
-    if (
-      currentResult &&
-      currentResult.outcome === result.outcome &&
-      ("leave" in currentResult ? currentResult.leave : undefined) ===
-        ("leave" in result ? result.leave : undefined)
-    ) {
-      return;
-    }
-
-    this.currentGame.putts[puttIndex].result = result;
-    this.render();
-
-    try {
-      await this.lagPuttingGameService.recordPuttResult(this.currentGame._key, puttIndex, result);
-    } catch (error) {
-      console.error("Failed to save putt result:", error);
-      // Re-load authoritative state if the write failed.
-      await this.handleGameChanged();
-    }
-  };
+    return result;
+  }
 
   private getListboxValue(putt: LagPuttingGame["putts"][0]): string {
-    if (!putt.result) return "";
-    if (putt.result.outcome === "holed") return "holed";
+    if (!putt.result) {
+      return "";
+    }
+    if (putt.result.outcome === "holed") {
+      return "holed";
+    }
     return `${putt.result.outcome}-${putt.result.leave}`;
   }
 
   private formatRoundDate(createdAt: string | undefined): string {
-    if (!createdAt) return "—";
+    if (!createdAt) {
+      return "—";
+    }
     const date = new Date(createdAt);
-    if (Number.isNaN(date.getTime())) return "—";
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
     return date.toLocaleDateString(undefined, {
       year: "numeric",
       month: "short",
@@ -251,68 +278,125 @@ export class MLagPuttingScorecardPage extends MElement {
   }
 
   private formatScore(score: number): string {
-    if (score === 0) return "E";
+    if (score === 0) {
+      return "E";
+    }
     return score > 0 ? `+${score}` : `${score}`;
   }
 
   private getScoreClass(putt: LagPuttingGame["putts"][0]): string {
-    if (!putt.result) return "";
+    if (!putt.result) {
+      return "";
+    }
     switch (putt.result.outcome) {
-      case "holed": return "nav--holed";
-      case "0-0.5m": return "nav--birdie";
-      case "0.5-1m": return "nav--par";
-      case "1-2m": return "nav--bogey";
-      case "2-3m": return "nav--double-bogey";
-      case "+3m": return "nav--tripple-bogey";
-      default: return "";
+      case "holed":
+        return "nav--holed";
+      case "0-0.5m":
+        return "nav--birdie";
+      case "0.5-1m":
+        return "nav--par";
+      case "1-2m":
+        return "nav--bogey";
+      case "2-3m":
+        return "nav--double-bogey";
+      case "+3m":
+        return "nav--tripple-bogey";
+      default:
+        return "";
     }
   }
 
-  private render() {
-    if (!this.currentGame) return;
+  private renderResultPicker(putt: LagPuttingGame["putts"][0], index: number) {
+    const options = [
+      ["+3m-long","tripple-bogey","↑ 3m","Triple Bogey"],
+      ["2-3m-long","double-bogey","↑ 2-3m","Double Bogey"],
+      ["1-2m-long","bogey","↑ 1-2m","Bogey"],
+      ["0.5-1m-long","par","↑ 0.5-1m","Par"],
+      ["0-0.5m-long","birdie","↑ 0-0.5m","Birdie"],
+      ["holed","holed","Holed","Eagle"],
+      ["0-0.5m-short","birdie","↓ 0-0.5m","Birdie"],
+      ["0.5-1m-short","par","↓ 0.5-1m","Par"],
+      ["1-2m-short","bogey","↓ 1-2m","Bogey"],
+      ["2-3m-short","double-bogey","↓ 2-3m","Double Bogey"],
+      ["+3m-short","tripple-bogey","↓ 3m","Triple Bogey"],
+    ];
+    return html`<m-listbox
+      data-putt-index="${index}"
+      @m-listbox-change="${this.handleChange}"
+    >
+      ${options.map(([value, className, label, scoreName]) => html`
+        <m-option value=${value} class=${className}
+          ?selected=${this.getListboxValue(putt) === value}>
+          <span>${label}</span><span class="score-name">${scoreName}</span>
+        </m-option>
+      `)}
+    </m-listbox>`;
+  }
 
-    const game = this.currentGame;
+  private renderScores(game: LagPuttingGame) {
     const outScore = this.lagPuttingGameService.calculateOutScore(game.putts);
     const inScore = this.lagPuttingGameService.calculateInScore(game.putts);
-    const totalScore = this.lagPuttingGameService.calculateTotalScore(game.putts);
+    const totalScore = this.lagPuttingGameService.calculateTotalScore(
+      game.putts,
+    );
+    return html` <div class="hud">
+      <div class="hud-cell">
+        <span class="hud-label">Out</span>
+        <span class="hud-value">${this.formatScore(outScore)}</span>
+      </div>
+      <div class="hud-cell">
+        <span class="hud-label">In</span>
+        <span class="hud-value">${this.formatScore(inScore)}</span>
+      </div>
+      <div class="hud-cell">
+        <span class="hud-label">Total</span>
+        <span class="hud-value hud-value--total"
+          >${this.formatScore(totalScore)}</span
+        >
+      </div>
+    </div>`;
+  }
+
+  private render() {
+    if (!this.currentGame) {
+      return;
+    }
+
+    const game = this.currentGame;
 
     render(
       html`
         <div class="page-header">
           <a href="/lag-putting" class="back-link">← All rounds</a>
-          <span class="round-date">${this.formatRoundDate(game.createdAt)}</span>
+          <span class="round-date"
+            >${this.formatRoundDate(game.createdAt)}</span
+          >
         </div>
 
-        <div class="hud">
-          <div class="hud-cell">
-            <span class="hud-label">Out</span>
-            <span class="hud-value">${this.formatScore(outScore)}</span>
-          </div>
-          <div class="hud-cell">
-            <span class="hud-label">In</span>
-            <span class="hud-value">${this.formatScore(inScore)}</span>
-          </div>
-          <div class="hud-cell">
-            <span class="hud-label">Total</span>
-            <span class="hud-value hud-value--total">${this.formatScore(totalScore)}</span>
-          </div>
-        </div>
+        ${this.renderScores(game)}
 
-        <nav class="nav-strip" aria-label="Putt navigation" ${ref(this.navStripRef)} @click="${this.handleNavClick}">
-          ${game.putts.map((putt, index) =>
-            html`
+        <nav
+          class="nav-strip"
+          aria-label="Putt navigation"
+          ${reference(this.navStripRef)}
+          @click="${this.handleNavClick}"
+        >
+          ${game.putts.map(
+            (putt, index) => html`
               <a
                 href="${`#putt-${index + 1}`}"
                 class="${this.getScoreClass(putt)}"
                 ?data-completed="${putt.result !== null}"
-              >${index + 1}</a>
-            `
+                >${index + 1}</a
+              >
+            `,
           )}
         </nav>
 
-        <div class="putts-container" ${ref(this.puttsContainerRef)}>
+        <div class="putts-container" ${reference(this.puttsContainerRef)}>
           ${game.putts.map((putt, index) => {
-            const holeScore = this.lagPuttingGameService.calculateHoleScore(putt);
+            const holeScore =
+              this.lagPuttingGameService.calculateHoleScore(putt);
             return html`
               <div class="putt-card" id="${`putt-${index + 1}`}">
                 <div class="putt-header">
@@ -320,48 +404,19 @@ export class MLagPuttingScorecardPage extends MElement {
                     <span class="putt-number">Putt ${index + 1} / 18</span>
                     <div class="putt-distance">${putt.distance}m</div>
                   </div>
-                  ${putt.result
-                    ? html`<span
-                        class="putt-score"
-                        ?data-negative="${holeScore < 0}"
-                        ?data-positive="${holeScore > 0}"
-                      >${this.formatScore(holeScore)}</span>`
-                    : html`<span class="putt-score">-</span>`}
+                  ${
+                    putt.result
+                      ? html`<span
+                          class="putt-score"
+                          ?data-negative="${holeScore < 0}"
+                          ?data-positive="${holeScore > 0}"
+                          >${this.formatScore(holeScore)}</span
+                        >`
+                      : html`<span class="putt-score">-</span>`
+                  }
                 </div>
 
-                <m-listbox
-                  data-putt-index="${index}"
-                  @m-listbox-change="${this.handleChange}"
-                >
-                  <m-option value="+3m-long" class="tripple-bogey" ?selected="${this
-                    .getListboxValue(putt) === "+3m-long"}"><span>↑ 3m</span><span class="score-name">Triple Bogey</span></m-option>
-                  <m-option value="2-3m-long" class="double-bogey" ?selected="${this
-                    .getListboxValue(putt) === "2-3m-long"}"><span>↑ 2-3m</span><span class="score-name">Double Bogey</span></m-option>
-                  <m-option value="1-2m-long" class="bogey" ?selected="${this.getListboxValue(
-                    putt,
-                  ) === "1-2m-long"}"><span>↑ 1-2m</span><span class="score-name">Bogey</span></m-option>
-                  <m-option value="0.5-1m-long" class="par" ?selected="${this.getListboxValue(
-                    putt,
-                  ) === "0.5-1m-long"}"><span>↑ 0.5-1m</span><span class="score-name">Par</span></m-option>
-                  <m-option value="0-0.5m-long" class="birdie" ?selected="${this.getListboxValue(
-                    putt,
-                  ) === "0-0.5m-long"}"><span>↑ 0-0.5m</span><span class="score-name">Birdie</span></m-option>
-                  <m-option value="holed" class="holed" ?selected="${this.getListboxValue(putt) ===
-                    "holed"}"><span>Holed</span><span class="score-name">Eagle</span></m-option>
-                  <m-option value="0-0.5m-short" class="birdie" ?selected="${this.getListboxValue(
-                    putt,
-                  ) === "0-0.5m-short"}"><span>↓ 0-0.5m</span><span class="score-name">Birdie</span></m-option>
-                  <m-option value="0.5-1m-short" class="par" ?selected="${this.getListboxValue(
-                    putt,
-                  ) === "0.5-1m-short"}"><span>↓ 0.5-1m</span><span class="score-name">Par</span></m-option>
-                  <m-option value="1-2m-short" class="bogey" ?selected="${this.getListboxValue(
-                    putt,
-                  ) === "1-2m-short"}"><span>↓ 1-2m</span><span class="score-name">Bogey</span></m-option>
-                  <m-option value="2-3m-short" class="double-bogey" ?selected="${this
-                    .getListboxValue(putt) === "2-3m-short"}"><span>↓ 2-3m</span><span class="score-name">Double Bogey</span></m-option>
-                  <m-option value="+3m-short" class="tripple-bogey" ?selected="${this
-                    .getListboxValue(putt) === "+3m-short"}"><span>↓ 3m</span><span class="score-name">Triple Bogey</span></m-option>
-                </m-listbox>
+                ${this.renderResultPicker(putt, index)}
               </div>
             `;
           })}

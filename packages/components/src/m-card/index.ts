@@ -61,11 +61,7 @@ class MCard extends MElement {
     this.setupLinkBehavior();
   }
 
-  attributeChangedCallback(
-    name: string,
-    oldValue: unknown,
-    newValue: unknown,
-  ) {
+  attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
     super.attributeChangedCallback(name, oldValue, newValue);
     if (this.shadowRoot) {
       this.render();
@@ -96,7 +92,9 @@ class MCard extends MElement {
   }
 
   private handleClick = (e: MouseEvent) => {
-    if (!this.href) return;
+    if (!this.href) {
+      return;
+    }
 
     // Don't interfere if clicking the internal link directly
     const path = e.composedPath();
@@ -111,7 +109,9 @@ class MCard extends MElement {
   };
 
   private handleKeydown = (e: KeyboardEvent) => {
-    if (!this.href) return;
+    if (!this.href) {
+      return;
+    }
 
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -122,9 +122,10 @@ class MCard extends MElement {
   };
 
   render() {
-    if (!this.shadowRoot) return;
-    const rowCount =
-      1 + (this.titleSlot ? 1 : 0) + (this.footerSlot ? 1 : 0);
+    if (!this.shadowRoot) {
+      return;
+    }
+    const rowCount = 1 + (this.titleSlot ? 1 : 0) + (this.footerSlot ? 1 : 0);
 
     const dynamicStyleSheet = new CSSStyleSheet();
     dynamicStyleSheet.replaceSync(`
@@ -139,10 +140,7 @@ class MCard extends MElement {
             }
           }
         `);
-    this.shadowRoot.adoptedStyleSheets = [
-      baseStyleSheet,
-      dynamicStyleSheet,
-    ];
+    this.shadowRoot.adoptedStyleSheets = [baseStyleSheet, dynamicStyleSheet];
 
     const content = `
           ${this.titleSlot ? '<div class="title"><slot name="title"></slot></div>' : ""}

@@ -74,7 +74,7 @@ export async function runUpstreamSubscription(
         token,
         signal: options.signal,
         onUpstreamChange: options.onUpstreamChange,
-        onCatchUp: options.onCatchUp,
+        ...(options.onCatchUp ? { onCatchUp: options.onCatchUp } : {}),
       });
     } catch (error) {
       if (options.signal.aborted) {
@@ -95,14 +95,11 @@ export async function runUpstreamSubscription(
         }
 
         if (error.status === 429) {
-          console.warn("Upstream subscribe at capacity; backing off", error.message);
-          if (options.onCatchUp) {
-            try {
-              await options.onCatchUp();
-            } catch (catchUpError) {
-              console.warn("Upstream catch-up sync failed", catchUpError);
-            }
-          }
+          console.warn(
+            "Upstream subscribe at capacity; backing off",
+            error.message,
+          );
+          await catchUp(options);
           await sleep(capacityRetryDelayMs, options.signal);
           continue;
         }
@@ -113,17 +110,21 @@ export async function runUpstreamSubscription(
 
     // Stream dropped or non-auth failure — pull once before waiting to reconnect.
     if (!options.signal.aborted && options.onCatchUp) {
-      try {
-        await options.onCatchUp();
-      } catch (error) {
-        console.warn("Upstream catch-up sync failed", error);
-      }
+      await catchUp(options);
     }
 
     if (options.signal.aborted) {
       return;
     }
     await sleep(reconnectDelayMs, options.signal);
+  }
+}
+
+async function catchUp(options: UpstreamSubscribeOptions): Promise<void> {
+  try {
+    await options.onCatchUp?.();
+  } catch (error) {
+    console.warn("Upstream catch-up sync failed", error);
   }
 }
 

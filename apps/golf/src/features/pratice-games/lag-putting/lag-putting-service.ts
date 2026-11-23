@@ -5,9 +5,14 @@ import { PracticeGameMetadata } from "../practice-game";
 export const LagPuttingGameMetadata: PracticeGameMetadata = {
   source: "https://tournytt.se/landslaget/ovningar-tester",
   description:
-    "Ett tävlingslikt test av längdkänsla på 8-22 meter med olika puttar hela tiden. Testet går också bra att använda på banan under till exempel ett inspelsvarv.",
+    "Ett tävlingslikt test av längdkänsla på 8-22 meter med olika " +
+    "puttar hela tiden. Testet går också bra att använda på " +
+      "banan under till exempel ett inspelsvarv.",
   instructions:
-    "18 puttar från 8 till 22 m. En putt per läge. Varje putt skall vara unik och slumpmässigt vald.Mått från mitten av hål till mitten av bollen. Görs testet vid inspel eller träningsspel, en putt per hål",
+    "18 puttar från 8 till 22 m. En putt per läge. Varje putt " +
+    "skall vara unik och slumpmässigt vald.Mått från mitten " +
+      "av hål till mitten av bollen. Görs testet vid inspel " +
+      "eller träningsspel, en putt per hål",
   purpose: "Scoretest för lagputt",
   equipment: "Putter, boll, måttband, tejp på putter vid 50 cm",
   pointSystem: `Hålad - 2 poäng (eagle)
@@ -61,10 +66,14 @@ type ComparisonResultWomen =
   | "HCP 10: +16,3";
 
 export type PuttDistance = 8 | 10 | 12 | 14 | 18 | 22;
-export type PuttOutcome = "holed" | "0-0.5m" | "0.5-1m" | "1-2m" | "2-3m" | "+3m";
+export type PuttOutcome =
+  "holed" | "0-0.5m" | "0.5-1m" | "1-2m" | "2-3m" | "+3m";
 export type PuttResult =
   | { outcome: "holed" }
-  | { outcome: "0-0.5m" | "0.5-1m" | "1-2m" | "2-3m" | "+3m"; leave: "short" | "long" };
+  | {
+      outcome: "0-0.5m" | "0.5-1m" | "1-2m" | "2-3m" | "+3m";
+      leave: "short" | "long";
+    };
 
 const FIXED_PUTT_SEQUENCE: readonly PuttDistance[] = [
   22,
@@ -87,7 +96,10 @@ const FIXED_PUTT_SEQUENCE: readonly PuttDistance[] = [
   8, // Last 6
 ] as const;
 
-function createPuttSequence(): Array<{ distance: PuttDistance; result: PuttResult | null }> {
+function createPuttSequence(): Array<{
+  distance: PuttDistance;
+  result: PuttResult | null;
+}> {
   return FIXED_PUTT_SEQUENCE.map((distance) => ({
     distance,
     result: null,
@@ -106,7 +118,7 @@ export interface LagPuttingGame extends CreateLagPuttingGameInput {
 }
 
 const OUTCOME_POINTS: Record<PuttOutcome, number> = {
-  "holed": -2,
+  holed: -2,
   "0-0.5m": -1,
   "0.5-1m": 0,
   "1-2m": 1,
@@ -155,7 +167,9 @@ export class LagPuttingGameService {
    * Iterate games newest-first using the `byCreatedAt` index in descending order.
    */
   queryGamesNewestFirst(): AsyncIterable<LagPuttingGame> {
-    return this.table.index("byCreatedAt").query(desc) as AsyncIterable<LagPuttingGame>;
+    return this.table
+      .index("byCreatedAt")
+      .query(desc) as AsyncIterable<LagPuttingGame>;
   }
 
   async getGame(gameKey: GameKey): Promise<LagPuttingGame | null> {
@@ -199,19 +213,28 @@ export class LagPuttingGameService {
     return null;
   }
 
-  calculateOutScore(putts: Array<{ distance: PuttDistance; result: PuttResult | null }>): number {
+  calculateOutScore(
+    putts: Array<{ distance: PuttDistance; result: PuttResult | null }>,
+  ): number {
     return this.calculateScore(putts.slice(0, 9));
   }
 
-  calculateInScore(putts: Array<{ distance: PuttDistance; result: PuttResult | null }>): number {
+  calculateInScore(
+    putts: Array<{ distance: PuttDistance; result: PuttResult | null }>,
+  ): number {
     return this.calculateScore(putts.slice(9, 18));
   }
 
-  calculateTotalScore(putts: Array<{ distance: PuttDistance; result: PuttResult | null }>): number {
+  calculateTotalScore(
+    putts: Array<{ distance: PuttDistance; result: PuttResult | null }>,
+  ): number {
     return this.calculateScore(putts);
   }
 
-  calculateHoleScore(putts: { distance: PuttDistance; result: PuttResult | null }): number {
+  calculateHoleScore(putts: {
+    distance: PuttDistance;
+    result: PuttResult | null;
+  }): number {
     return this.calculateScore([putts]);
   }
 
@@ -220,7 +243,9 @@ export class LagPuttingGameService {
     putts: Array<{ distance: PuttDistance; result: PuttResult | null }>,
   ): number {
     return putts.reduce((score, putt) => {
-      if (putt.result === null) return score;
+      if (putt.result === null) {
+        return score;
+      }
       return score + OUTCOME_POINTS[putt.result.outcome];
     }, 0);
   }

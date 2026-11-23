@@ -13,5 +13,9 @@
   },
   "files": [
     "src"
-  ]
+  ],
+  "devDependencies": {
+    "@maxhill/oxlint-config": "workspace:*",
+    "typescript": "^5.9.3"
+  }
 }

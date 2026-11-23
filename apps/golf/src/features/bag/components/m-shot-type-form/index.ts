@@ -1,7 +1,7 @@
 import { BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
-import { createRef, ref } from "lit-html/directives/ref.js";
+import { createRef, "ref" as reference } from "lit-html/directives/ref.js";
 import { get_DB } from "../../../../db";
 import { ShotType, ShotTypeService } from "../../shot-type-service";
 import { globalStyleSheet } from "../../../../styles/global-styles";
@@ -57,7 +57,9 @@ export class MShotTypeForm extends MElement {
 
   private handleFormSubmit = async (e: Event) => {
     e.preventDefault();
-    if (!this.formRef.value) return;
+    if (!this.formRef.value) {
+      return;
+    }
 
     const formData = new FormData(this.formRef.value);
     const name = formData.get("name")?.toString();
@@ -109,11 +111,14 @@ export class MShotTypeForm extends MElement {
   };
 
   private handleDelete = async () => {
-    if (!this.isEditMode || !this.shotType) return;
+    if (!this.isEditMode || !this.shotType) {
+      return;
+    }
 
     if (
       !confirm(
-        `Archive "${this.shotType.name}" shot type? It will be hidden from new clubs but preserved in existing clubs.`,
+        `Archive "${this.shotType.name}" shot type? It will be ` +
+        "hidden from new clubs but preserved in existing clubs.",
       )
     ) {
       return;
@@ -128,22 +133,49 @@ export class MShotTypeForm extends MElement {
     window.history.back();
   };
 
+  private renderNameInput() {
+    return html`<m-input
+      required
+      minlength="2"
+      name="name"
+      label="Name"
+      placeholder="e.g., Full swing, Punch, Flop"
+      value=${this.shotType?.name || ""}
+      ?disabled=${this.isStockShotType}
+      aria-required="true"
+      clearable
+    ></m-input>`;
+  }
+
+  private renderDescriptionInput() {
+    return html` <m-input
+      required
+      minlength="10"
+      name="description"
+      label="Description"
+      placeholder="Describe when and how you use this shot"
+      value=${this.shotType?.description || ""}
+      aria-required="true"
+      clearable
+    ></m-input>`;
+  }
+
   private renderComponent() {
     const title = this.isEditMode
       ? `Edit${this.isStockShotType ? " Stock Shot Type" : " Shot Type"}`
       : this.inline
-      ? "New Shot Type"
-      : "Add Shot Type";
+        ? "New Shot Type"
+        : "Add Shot Type";
     const submitLabel = this.isEditMode
       ? "Save Changes"
       : this.inline
-      ? "Create & Select"
-      : "Add Shot Type";
+        ? "Create & Select"
+        : "Add Shot Type";
 
     render(
       html`
         <form
-          ${ref(this.formRef)}
+          ${reference(this.formRef)}
           class="form"
           data-gap="4"
           data-padding="4"
@@ -152,39 +184,18 @@ export class MShotTypeForm extends MElement {
         >
           <h2 class="h1">${title}</h2>
 
-          <m-input 
-            required 
-            minlength="2" 
-            name="name" 
-            label="Name" 
-            placeholder="e.g., Full swing, Punch, Flop"
-            value=${this.shotType?.name || ""}
-            ?disabled=${this.isStockShotType}
-            aria-required="true"
-            clearable
-          ></m-input>
-
-          <m-input 
-            required 
-            minlength="10" 
-            name="description" 
-            label="Description" 
-            placeholder="Describe when and how you use this shot"
-            value=${this.shotType?.description || ""}
-            aria-required="true"
-            clearable
-          ></m-input>
+          ${this.renderNameInput()} ${this.renderDescriptionInput()}
 
           <div class="form-actions stack" data-direction="row">
-            <button class="button" type="submit" >
-              ${submitLabel}
-            </button>
-            <button 
-              class="button" 
-              type="button" 
-              data-variant="secondary" 
+            <button class="button" type="submit">${submitLabel}</button>
+            <button
+              class="button"
+              type="button"
+              data-variant="secondary"
               @click=${() => {
-                this.dispatchEvent(new CustomEvent("cancel", { bubbles: true, composed: true }));
+                this.dispatchEvent(
+                  new CustomEvent("cancel", { bubbles: true, composed: true }),
+                );
                 if (!this.inline) {
                   window.location.href = "/bag";
                 }
@@ -194,17 +205,20 @@ export class MShotTypeForm extends MElement {
             </button>
           </div>
 
-          ${this.isEditMode && !this.isStockShotType && !this.inline
-            ? renderDangerZone({
-              title: "Danger zone",
-              className: "shot-type-danger-zone",
-              actionLabel: "Archive Shot Type",
-              onAction: this.handleDelete,
-              attributes: [["data-margin", "bs-4"]],
-              description:
-                "Archiving hides this shot type from new clubs but preserves it on existing clubs.",
-            })
-            : null}
+          ${
+            this.isEditMode && !this.isStockShotType && !this.inline
+              ? renderDangerZone({
+                  title: "Danger zone",
+                  className: "shot-type-danger-zone",
+                  actionLabel: "Archive Shot Type",
+                  onAction: this.handleDelete,
+                  attributes: [["data-margin", "bs-4"]],
+                  description:
+                    "Archiving hides this shot type from new clubs " +
+                    "but preserves it on existing clubs.",
+                })
+              : null
+          }
         </form>
       `,
       this.shadowRoot!,

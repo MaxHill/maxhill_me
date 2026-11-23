@@ -34,6 +34,8 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
 
   private tables: Map<string, Map<string, string[]>>;
 
+  // Preserve the existing positional public API for callers.
+  // eslint-disable-next-line max-params
   constructor(
     dbName: string = "crdt-db",
     tables: Map<string, Map<string, string[]>>,
@@ -79,10 +81,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
    * Subscribe to data changes across all tables.
    * Second argument filters origin: `"all"` (default), `"local"`, or `"remote"`.
    */
-  subscribe(
-    handler: SubscriptionCallbackHandler,
-    source: SourceFilter = "all",
-  ): () => void {
+  subscribe(handler: SubscriptionCallbackHandler, source: SourceFilter = "all"): () => void {
     return this.tableSubscriptions.subscribeDatabase(handler, source);
   }
 
@@ -93,8 +92,7 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
     if (!indexes) {
       const available = Array.from(this.tables.keys()).join(", ");
       throw new Error(
-        `Database is not setup to have the table ${tableName}.` +
-          `Available tables: ${available}`,
+        `Database is not setup to have the table ${tableName}.` + `Available tables: ${available}`,
       );
     }
     return new Table(tableName, indexes, {
@@ -149,11 +147,10 @@ export class CRDTDatabase<TSchema extends DatabaseSchema = EmptySchema> {
       return;
     }
 
-    const writeTx = this.lifecycle.transaction([
-      CLIENT_STATE_STORE,
-      OPERATIONS_STORE,
-      ROWS_STORE,
-    ], "readwrite");
+    const writeTx = this.lifecycle.transaction(
+      [CLIENT_STATE_STORE, OPERATIONS_STORE, ROWS_STORE],
+      "readwrite",
+    );
     const changedTables = await this.syncManager.handleSyncResponse(
       writeTx,
       this.logicalClock,

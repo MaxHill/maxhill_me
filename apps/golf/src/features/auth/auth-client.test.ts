@@ -16,7 +16,8 @@ describe("AuthClient.getUserSubjects", () => {
         subject: { type: "user", properties: { userID: "user-a" } },
       }),
     } as any);
-    (client as unknown as { getToken: () => Promise<string | null> }).getToken = async () => "token";
+    (client as unknown as { getToken: () => Promise<string | null> }).getToken = async () =>
+      "token";
 
     const subjects = await client.getUserSubjects();
     expect(subjects).to.deep.equal({ userID: "user-a" });
@@ -28,7 +29,8 @@ describe("AuthClient.getUserSubjects", () => {
         subject: { type: "user", properties: { sub: "abc" } },
       }),
     } as any);
-    (client as unknown as { getToken: () => Promise<string | null> }).getToken = async () => "token";
+    (client as unknown as { getToken: () => Promise<string | null> }).getToken = async () =>
+      "token";
 
     const subjects = await client.getUserSubjects();
     expect(subjects).to.equal(null);

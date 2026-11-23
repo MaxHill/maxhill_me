@@ -1,5 +1,5 @@
 import { ClientState } from "./clientState.ts";
-import { Lifecycle, CLIENT_STATE_STORE } from "./lifecycle.ts";
+import { CLIENT_STATE_STORE, Lifecycle } from "./lifecycle.ts";
 import "fake-indexeddb/auto";
 
 describe("ClientState", () => {
@@ -12,9 +12,9 @@ describe("ClientState", () => {
       lifecycle.close();
     }
     await new Promise<void>((resolve, reject) => {
-      const req = indexedDB.deleteDatabase(dbName);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
+      const request = indexedDB.deleteDatabase(dbName);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
     });
     lifecycle = new Lifecycle();
     await lifecycle.open(dbName);

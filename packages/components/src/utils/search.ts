@@ -1,18 +1,21 @@
 /**
- * Normalizes a string by removing diacritics, handling Unicode compositions, and converting to lowercase for consistent
+ * Normalizes a string by removing diacritics, handling Unicode compositions, and converting to
+ * lowercase for consistent
  * string comparison.
  */
 function normalize(str: string): string {
   return str
-    .normalize('NFD') // Decompose characters and diacritics
-    .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
-    .normalize('NFKC') // Normalize to composed form
+    .normalize("NFD") // Decompose characters and diacritics
+    .replace(/[\u0300-\u036f]/g, "") // Remove diacritical marks
+    .normalize("NFKC") // Normalize to composed form
     .toLocaleLowerCase(); // Make it case-insensitive
 }
 
 /**
- * Fuzzy string matching that handles typos, transpositions, and works with any language/script. The higher the
- * threshold (0-1), the pickier it is about matches. 0.7 is a good default that catches most typos while avoiding false
+ * Fuzzy string matching that handles typos, transpositions, and works with any language/script.
+ * The higher the
+ * threshold (0-1), the pickier it is about matches. 0.7 is a good default that catches most typos
+ * while avoiding false
  * positives.
  *
  * @param query The search query to look for
@@ -20,10 +23,20 @@ function normalize(str: string): string {
  * @param threshold Minimum similarity threshold (0-1), where 1 requires exact match
  * @returns a boolean indicating if the fuzzy match meets the threshold
  */
-export function fuzzySearch(query: string, content: string, threshold = 0.7): boolean {
-  if (!content || !query) return false;
-  if (threshold < 0 || threshold > 1) throw new Error('Threshold must be between 0 and 1');
-  if (query.length > content.length) return false;
+export function fuzzySearch(
+  query: string,
+  content: string,
+  threshold = 0.7,
+): boolean {
+  if (!content || !query) {
+    return false;
+  }
+  if (threshold < 0 || threshold > 1) {
+    throw new Error("Threshold must be between 0 and 1");
+  }
+  if (query.length > content.length) {
+    return false;
+  }
 
   // Normalize strings to handle different Unicode compositions, diacritics, etc.
   const normalizedContent = normalize(content);
@@ -32,17 +45,17 @@ export function fuzzySearch(query: string, content: string, threshold = 0.7): bo
   // Convert to lowercase with proper Unicode support
   const lowContent = normalizedContent.toLocaleLowerCase();
   const lowQuery = normalizedQuery.toLocaleLowerCase();
+  return scoreMatch(Array.from(lowContent), Array.from(lowQuery)) >= threshold;
+}
+
+function scoreMatch(contentChars: string[], queryChars: string[]): number {
   let score = 0;
   let contentIndex = 0;
   let queryIndex = 0;
   let lastMatchIndex = -1;
 
-  // Handle surrogate pairs and combining characters
-  const contentChars = [...lowContent];
-  const queryChars = [...lowQuery];
-
   // Track potential transpositions
-  let lastSkippedChar = '';
+  let lastSkippedChar = "";
   let lastSkippedIndex = -1;
 
   // Scan through content looking for query characters in order
@@ -59,7 +72,7 @@ export function fuzzySearch(query: string, content: string, threshold = 0.7): bo
       }
       lastMatchIndex = contentIndex;
       queryIndex++;
-      lastSkippedChar = '';
+      lastSkippedChar = "";
       lastSkippedIndex = -1;
     } else if (
       // Check for transposition with next character
@@ -73,7 +86,7 @@ export function fuzzySearch(query: string, content: string, threshold = 0.7): bo
       lastMatchIndex = contentIndex + 1;
       queryIndex += 2;
       contentIndex++;
-      lastSkippedChar = '';
+      lastSkippedChar = "";
       lastSkippedIndex = -1;
     } else if (
       // Check for transposition with previously skipped character
@@ -84,7 +97,7 @@ export function fuzzySearch(query: string, content: string, threshold = 0.7): bo
       score += 0.8; // Slightly larger penalty for non-adjacent transposition
       lastMatchIndex = contentIndex;
       queryIndex++;
-      lastSkippedChar = '';
+      lastSkippedChar = "";
       lastSkippedIndex = -1;
     } else {
       // No match - track this character for potential later transposition
@@ -98,5 +111,5 @@ export function fuzzySearch(query: string, content: string, threshold = 0.7): bo
   const maxScore = queryChars.length;
   const similarity = queryIndex === queryChars.length ? score / maxScore : 0;
 
-  return similarity >= threshold;
+  return similarity;
 }

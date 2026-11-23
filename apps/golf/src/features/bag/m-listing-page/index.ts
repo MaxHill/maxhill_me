@@ -39,10 +39,14 @@ export class MListingPage extends MElement {
     render(
       html`
           <m-fit-text font-display>Hardware</m-fit-text>
-          <m-club-list @m-listbox-change=${(e: MListboxChangeEvent) => this.selectClub(e)} class="club-list"></m-club-list>
+          <m-club-list
+            @m-listbox-change=${(e: MListboxChangeEvent) => this.selectClub(e)}
+            class="club-list"></m-club-list>
           ${/* TODO: re-enable shot-type list */ ''}
 
-          ${this.selectedClub ? html`<m-club-form club-key=${this.selectedClub} class="form"></m-club-form>` : html`<m-club-form class="form"></m-club-form>`}
+          ${this.selectedClub
+            ? html`<m-club-form club-key=${this.selectedClub} class="form"></m-club-form>`
+            : html`<m-club-form class="form"></m-club-form>`}
       `,
       this.shadowRoot!,
     );

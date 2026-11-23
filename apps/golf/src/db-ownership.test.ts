@@ -10,6 +10,8 @@ type TestContext = {
   resets: string[];
 };
 
+// Suite registration keeps related cases together.
+// oxlint-disable-next-line max-lines-per-function
 describe("reconcileDatabaseOwnership", () => {
   it("keeps authenticated ownership unchanged during guest sessions", async () => {
     const context: TestContext = { owner: "user-a", claims: [], resets: [] };
@@ -111,8 +113,7 @@ describe("reconcileDatabaseOwnership", () => {
         context,
         currentUserID: "user-b",
         storedOwnerUserID: context.owner,
-        claimOwnerUserID: async () => {
-        },
+        claimOwnerUserID: async () => {},
         resetForNewOwner: async () => {
           throw new Error("delete blocked");
         },

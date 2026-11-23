@@ -264,6 +264,8 @@ pub const Tombstone = struct {
     }
 };
 
+// Each slot retains one client's newest contender for a field. Capacity bounds
+// contender slots, not just visible field names.
 pub const RowFieldRegisters = struct {
     field_keys: [constants.crdt_fields_count_max][]const u8 = undefined,
     json_values: [constants.crdt_fields_count_max]JsonValueBytes = undefined,
@@ -273,8 +275,22 @@ pub const RowFieldRegisters = struct {
     pub fn get_index(self: *const @This(), field_key: []const u8) ?usize {
         assert(field_key.len > 0);
         assert(self.count <= constants.crdt_fields_count_max);
+        var winner: ?usize = null;
         for (self.field_keys[0..self.count], 0..self.count) |entry_key, index| {
-            if (std.mem.eql(u8, entry_key, field_key)) return index;
+            if (std.mem.eql(u8, entry_key, field_key) and
+                (winner == null or self.field_dots[index].compare(self.field_dots[winner.?]) == .gt))
+            {
+                winner = index;
+            }
+        }
+        return winner;
+    }
+
+    pub fn get_client_index(self: *const @This(), field_key: []const u8, client_id: ClientId.Bytes) ?usize {
+        assert(field_key.len > 0);
+        assert(self.count <= constants.crdt_fields_count_max);
+        for (self.field_keys[0..self.count], self.field_dots[0..self.count], 0..self.count) |key, dot, index| {
+            if (std.mem.eql(u8, key, field_key) and std.meta.eql(dot.client_id, client_id)) return index;
         }
         return null;
     }
@@ -302,9 +318,15 @@ pub const RowFieldRegisters = struct {
         dot.assert_valid();
 
         for (self.field_keys[0..self.count], self.json_values[0..self.count], self.field_dots[0..self.count]) |entry_key, *entry_value, *entry_dot| {
-            if (std.mem.eql(u8, entry_key, field_key)) {
-                entry_value.* = json_value;
-                entry_dot.* = dot;
+            if (std.mem.eql(u8, entry_key, field_key) and std.meta.eql(entry_dot.client_id, dot.client_id)) {
+                switch (dot.compare(entry_dot.*)) {
+                    .gt => {
+                        entry_value.* = json_value;
+                        entry_dot.* = dot;
+                    },
+                    .eq => assert(std.mem.eql(u8, entry_value.*, json_value)),
+                    .lt => {},
+                }
                 return;
             }
         }
@@ -322,6 +344,11 @@ pub const RowFieldRegisters = struct {
         assert(self.count <= constants.crdt_fields_count_max);
 
         const index = self.get_index(field_key) orelse return false;
+        self.remove_index(index);
+        return true;
+    }
+
+    fn remove_index(self: *@This(), index: usize) void {
         assert(index < self.count);
 
         var shift_index = index;
@@ -333,7 +360,6 @@ pub const RowFieldRegisters = struct {
 
         self.count -= 1;
         assert(self.count <= constants.crdt_fields_count_max);
-        return true;
     }
 
     pub fn clear(self: *@This()) void {
@@ -434,7 +460,6 @@ pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
 
             var index: usize = 0;
             while (index < row.fields.count) {
-                const field_key = row.fields.field_keys[index];
                 const dot = row.fields.field_dots[index];
 
                 const should_delete =
@@ -445,7 +470,7 @@ pub fn apply_operation_to_row(row: *ORMapRow, operation: CRDTOperation) void {
                         false;
 
                 if (should_delete) {
-                    _ = row.fields.remove(field_key);
+                    row.fields.remove_index(index);
                     // Do not increment, a new index shifted into this index
                 } else {
                     index += 1;
@@ -479,25 +504,8 @@ fn update_field(field_update: FieldUpdate, row: *ORMapRow) void {
     row.assert_valid();
     defer row.assert_valid();
 
-    if (pick_field_winner(field_update, row.*) == .incoming) {
-        row.fields.put(field_update.field_key, field_update.json_value, field_update.dot);
-    }
-}
-
-fn pick_field_winner(field_update: FieldUpdate, row: ORMapRow) enum { incoming, existing } {
-    assert_field_key_valid(field_update.field_key);
-    field_update.dot.assert_valid();
-    row.assert_valid();
-    defer row.assert_valid();
-
-    if (row.fields.get(field_update.field_key)) |existing_field| {
-        switch (field_update.dot.compare(existing_field.dot)) {
-            .gt => return .incoming,
-            .eq => std.debug.panic("CRDT invariant violated: duplicate dot for field {s}", .{field_update.field_key}),
-            else => return .existing,
-        }
-    }
-    return .incoming;
+    // Keep the newest write from each client; get() selects the visible winner.
+    row.fields.put(field_update.field_key, field_update.json_value, field_update.dot);
 }
 
 //  ------------------------------------------------------------------
@@ -511,7 +519,7 @@ fn assert_capacity_for_operation(row: *const ORMapRow, operation: CRDTOperation)
         .set_row => |set_row_operation| {
             var missing_fields_count: @TypeOf(row.fields.count) = 0;
             for (set_row_operation.fields.field_keys[0..set_row_operation.fields.count]) |field_key| {
-                if (!row.fields.contains(field_key)) missing_fields_count += 1;
+                if (row.fields.get_client_index(field_key, set_row_operation.dot.client_id) == null) missing_fields_count += 1;
             }
             assert(constants.crdt_fields_count_max >= row.fields.count + missing_fields_count);
         },
@@ -546,6 +554,41 @@ fn test_client_id(client_id_bytes: []const u8) ClientId.Bytes {
     var client_id = @as([@sizeOf(ClientId.Bytes)]u8, @splat(0));
     @memcpy(client_id[0..client_id_bytes.len], client_id_bytes);
     return client_id;
+}
+
+test "remove only observed winner preserves concurrent contender" {
+    const a = test_client_id("a");
+    const b = test_client_id("b");
+    var row = ORMapRow{
+        .table_name = "users",
+        .row_key = "r",
+        .fields = .{},
+        .tombstone = .{ .dot = null },
+    };
+    var values = SetRowOperationFields{};
+    values.put("name", "\"A\"");
+    apply_operation_to_row(&row, .{ .set_row = .{
+        .table_name = "users",
+        .row_key = "r",
+        .fields = values,
+        .dot = .{ .client_id = a, .version = 1 },
+    } });
+    values.put("name", "\"B\"");
+    apply_operation_to_row(&row, .{ .set_row = .{
+        .table_name = "users",
+        .row_key = "r",
+        .fields = values,
+        .dot = .{ .client_id = b, .version = 1 },
+    } });
+    var tombstone = Tombstone{ .dot = .{ .client_id = b, .version = 2 } };
+    tombstone.version_vector.put_client_version_max(b, 1);
+    apply_operation_to_row(&row, .{ .remove_row = .{
+        .table_name = "users",
+        .row_key = "r",
+        .tombstone = tombstone,
+    } });
+    try std.testing.expect(row.fields.get("name") != null);
+    try std.testing.expectEqualStrings("\"A\"", row.fields.get("name").?.value);
 }
 
 test "remove_row removes adjacent observed fields" {

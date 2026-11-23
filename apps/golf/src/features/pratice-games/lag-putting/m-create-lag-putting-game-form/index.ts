@@ -1,9 +1,12 @@
 import { BindAttribute, MElement } from "@maxhill/web-component-utils";
 import styles from "./index.css?inline";
 import { html, render } from "lit-html";
-import { ref, createRef } from "lit-html/directives/ref.js";
+import { "ref" as reference, createRef } from "lit-html/directives/ref.js";
 import { globalStyleSheet } from "../../../../styles/global-styles";
-import { CreateLagPuttCancelEvent, CreateLagPuttingSubmitEventEvent } from "./events";
+import {
+  CreateLagPuttCancelEvent,
+  CreateLagPuttingSubmitEventEvent,
+} from "./events";
 
 const baseStyleSheet = new CSSStyleSheet();
 baseStyleSheet.replaceSync(styles);
@@ -38,17 +41,29 @@ export class MCreateLagPuttingGameForm extends MElement {
     this.render();
   }
 
-  attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown): void {
+  attributeChangedCallback(
+    name: string,
+    oldValue: unknown,
+    newValue: unknown,
+  ): void {
     super.attributeChangedCallback(name, oldValue, newValue);
-    if (oldValue === newValue) return;
-    if (name === "mode" || name === "course-name" || name === "practice-area-name") {
+    if (oldValue === newValue) {
+      return;
+    }
+    if (
+      name === "mode" ||
+      name === "course-name" ||
+      name === "practice-area-name"
+    ) {
       this.render();
     }
   }
 
   handleSubmit(e: SubmitEvent) {
     e.preventDefault();
-    if (!this.formRef.value) throw new Error("No form ref found");
+    if (!this.formRef.value) {
+      throw new Error("No form reference found");
+    }
     const formData = new FormData(this.formRef.value);
     this.dispatchEvent(
       new CreateLagPuttingSubmitEventEvent({
@@ -68,7 +83,7 @@ export class MCreateLagPuttingGameForm extends MElement {
     render(
       html`
         <form
-          ${ref(this.formRef)}
+          ${reference(this.formRef)}
           class="form"
           @submit="${this.handleSubmit.bind(this)}"
         >
@@ -86,7 +101,11 @@ export class MCreateLagPuttingGameForm extends MElement {
             required
           ></m-input>
 
-          <div class="form-actions stack" data-direction="row" data-justify="content-between">
+          <div
+            class="form-actions stack"
+            data-direction="row"
+            data-justify="content-between"
+          >
             <button class="button" value="yes">${submitLabel}</button>
             <button
               @click="${() => {

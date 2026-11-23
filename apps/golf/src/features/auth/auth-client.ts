@@ -10,7 +10,11 @@
 import { createClient } from "@openauthjs/openauth/client";
 import { createSubjects } from "@openauthjs/openauth/subject";
 import { promisifyIDBRequest, promisifyIDBTransaction } from "@maxhill/stdx";
-import type { Challenge, Client as OpenAuthClient, Tokens } from "@openauthjs/openauth/client";
+import type {
+  Challenge,
+  Client as OpenAuthClient,
+  Tokens,
+} from "@openauthjs/openauth/client";
 
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:3002";
 const CLIENT_ID = "golf-app";
@@ -60,10 +64,12 @@ export class AuthClient {
   private openAuthClient: OpenAuthClient;
 
   constructor(openAuthClient?: OpenAuthClient) {
-    this.openAuthClient = openAuthClient ?? createClient({
-      clientID: CLIENT_ID,
-      issuer: AUTH_URL,
-    });
+    this.openAuthClient =
+      openAuthClient ??
+      createClient({
+        clientID: CLIENT_ID,
+        issuer: AUTH_URL,
+      });
   }
 
   // --- Public API ---
@@ -85,10 +91,10 @@ export class AuthClient {
    * via OpenAuth.
    */
   async handleCallback(): Promise<void> {
-    const params = getCallbackParams(window.location);
-    const authError = params.get("error");
+    const parameters = getCallbackParams(window.location);
+    const authError = parameters.get("error");
     if (authError) {
-      const description = params.get("error_description");
+      const description = parameters.get("error_description");
       throw new Error(
         description
           ? `Authorization failed: ${authError} (${description})`
@@ -96,8 +102,8 @@ export class AuthClient {
       );
     }
 
-    const code = params.get("code");
-    const state = params.get("state");
+    const code = parameters.get("code");
+    const state = parameters.get("state");
     const challenge = readChallenge();
 
     if (!code || !state || !challenge?.verifier) {
@@ -110,9 +116,13 @@ export class AuthClient {
 
     sessionStorage.removeItem(CHALLENGE_KEY);
 
-    const exchanged = await this.openAuthClient.exchange(code, REDIRECT_URI, challenge.verifier);
-    if (exchanged.err) {
-      throw new Error(`Token exchange failed: ${exchanged.err.message}`);
+    const exchanged = await this.openAuthClient.exchange(
+      code,
+      REDIRECT_URI,
+      challenge.verifier,
+    );
+    if (exchanged["err"]) {
+      throw new Error(`Token exchange failed: ${exchanged["err"].message}`);
     }
 
     await this.saveTokens(exchanged.tokens);
@@ -148,7 +158,7 @@ export class AuthClient {
 
     try {
       const refreshed = await this.openAuthClient.refresh(refresh, { access });
-      if (refreshed.err) {
+      if (refreshed["err"]) {
         await this.logout();
         return null;
       }
@@ -183,7 +193,7 @@ export class AuthClient {
         refresh ? { refresh } : undefined,
       );
 
-      if (verified.err) {
+      if (verified["err"]) {
         await this.logout();
         return null;
       }
@@ -201,7 +211,7 @@ export class AuthClient {
 
   /** Returns the authenticated account email without storing it in the browser. */
   async getUserEmail(accessToken?: string): Promise<string | null> {
-    const token = accessToken ?? await this.getToken();
+    const token = accessToken ?? (await this.getToken());
     if (!token) {
       return null;
     }
@@ -215,7 +225,11 @@ export class AuthClient {
       }
 
       const result: unknown = await response.json();
-      if (typeof result !== "object" || result === null || !("email" in result)) {
+      if (
+        typeof result !== "object" ||
+        result === null ||
+        !("email" in result)
+      ) {
         return null;
       }
       return typeof result.email === "string" ? result.email : null;
@@ -259,21 +273,22 @@ export class AuthClient {
 
   // --- IndexedDB helpers ---
   private async openDb(): Promise<IDBDatabase> {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
-      if (!req.result.objectStoreNames.contains(TOKENS_STORE_NAME)) {
-        req.result.createObjectStore(TOKENS_STORE_NAME);
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(TOKENS_STORE_NAME)) {
+        request.result.createObjectStore(TOKENS_STORE_NAME);
       }
     };
-    return promisifyIDBRequest(req);
+    return promisifyIDBRequest(request);
   }
 
   private async dbGet<T>(key: string): Promise<T | undefined> {
     const db = await this.openDb();
-    const req = db.transaction(TOKENS_STORE_NAME, "readonly").objectStore(TOKENS_STORE_NAME).get(
-      key,
-    );
-    return (await promisifyIDBRequest(req)) as T | undefined;
+    const request = db
+      .transaction(TOKENS_STORE_NAME, "readonly")
+      .objectStore(TOKENS_STORE_NAME)
+      .get(key);
+    return (await promisifyIDBRequest(request)) as T | undefined;
   }
 
   private async dbSet(key: string, value: unknown): Promise<void> {
@@ -302,13 +317,17 @@ function getCallbackParams(locationLike: Location): URLSearchParams {
     return query;
   }
 
-  const hash = locationLike.hash.startsWith("#") ? locationLike.hash.slice(1) : locationLike.hash;
+  const hash = locationLike.hash.startsWith("#")
+    ? locationLike.hash.slice(1)
+    : locationLike.hash;
   return new URLSearchParams(hash);
 }
 
 function readChallenge(): Challenge | null {
   const raw = sessionStorage.getItem(CHALLENGE_KEY);
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
 
   try {
     return JSON.parse(raw) as Challenge;
@@ -318,15 +337,24 @@ function readChallenge(): Challenge | null {
 }
 
 function extractUserSubjects(subject: unknown): UserSubjects | null {
-  if (typeof subject !== "object" || subject === null) return null;
+  if (typeof subject !== "object" || subject === null) {
+    return null;
+  }
 
   const candidate = subject as {
     type?: unknown;
     properties?: unknown;
   };
 
-  if (candidate.type !== "user") return null;
-  if (typeof candidate.properties !== "object" || candidate.properties === null) return null;
+  if (candidate.type !== "user") {
+    return null;
+  }
+  if (
+    typeof candidate.properties !== "object" ||
+    candidate.properties === null
+  ) {
+    return null;
+  }
 
   const properties = candidate.properties as { userID?: unknown };
   if (typeof properties.userID !== "string" || properties.userID.length === 0) {

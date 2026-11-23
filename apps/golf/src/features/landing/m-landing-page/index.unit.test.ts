@@ -9,14 +9,14 @@ class FakeCSSStyleSheet {
 const dbReady = Promise.withResolvers<unknown>();
 
 vi.mock("../../../db", () => ({
-  get_DB: vi.fn(() => dbReady.promise),
+  get_DB: vi["fn"](() => dbReady.promise),
 }));
 
 vi.mock("../../auth/auth-client", () => ({
   authClient: {
-    onAuthChange: vi.fn(() => () => {}),
-    getToken: vi.fn(async () => null),
-    authorize: vi.fn(),
+    onAuthChange: vi["fn"](() => () => {}),
+    getToken: vi["fn"](async () => null),
+    authorize: vi["fn"](),
   },
 }));
 
@@ -60,22 +60,37 @@ describe("m-landing-page", () => {
 
   it("initializes signed-out settings and persists banner dismissal/reset", async () => {
     const database = await newDatabase(`landing-${crypto.randomUUID()}`)
-      .addTable("user_settings", {}).build().open();
+      .addTable("user_settings", {})
+      .build()
+      .open();
     try {
       await import("./index");
       const element = document.createElement("m-landing-page");
       document.body.appendChild(element);
       dbReady.resolve(database);
-      await expect.poll(() => element.shadowRoot?.textContent).toContain("Sign in to sync");
-      const dismiss = [...element.shadowRoot!.querySelectorAll("button")]
-        .find((button) => button.textContent?.trim() === "Dismiss");
+      await expect
+        .poll(() => element.shadowRoot?.textContent)
+        .toContain("Sign in to sync");
+      const dismiss = [...element.shadowRoot!.querySelectorAll("button")].find(
+        (button) => button.textContent?.trim() === "Dismiss",
+      );
       dismiss!.click();
-      await expect.poll(async () => (await database.table("user_settings")
-        .get("banner_dismissed"))?.value).toBe(true);
+      await expect
+        .poll(
+          async () =>
+            (await database.table("user_settings").get("banner_dismissed"))
+              ?.value,
+        )
+        .toBe(true);
       expect(element.shadowRoot?.textContent).not.toContain("Sign in to sync");
-      const signedOut = vi.mocked(authClient.onAuthChange).mock.calls.at(-1)![0];
+      const signedOut = vi
+        .mocked(authClient.onAuthChange)
+        .mock.calls.at(-1)![0];
       signedOut(false);
-      await expect.poll(async () => database.table("user_settings").get("banner_dismissed"))
+      await expect
+        .poll(async () =>
+          database.table("user_settings").get("banner_dismissed"),
+        )
         .toBeUndefined();
       expect(element.shadowRoot?.textContent).toContain("Sign in to sync");
     } finally {

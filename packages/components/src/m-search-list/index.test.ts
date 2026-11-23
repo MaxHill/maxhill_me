@@ -1,13 +1,17 @@
-import { expect, html, fixture } from '@open-wc/testing';
-import { MSearchList } from './index';
-import '../m-listbox';
-import '../m-option';
+import { expect, html, fixture } from "@open-wc/testing";
+import { MSearchList } from "./index";
+import "../m-listbox";
+import "../m-option";
 
 MSearchList.define();
 
-describe('m-search-list', () => {
-  describe('accessibility', () => {
-    it('should be accessible', async () => {
+// Suite registration groups independent tests, not runtime logic.
+// oxlint-disable-next-line max-lines-per-function
+describe("m-search-list", () => {
+  // Suite registration groups independent tests, not runtime logic.
+  // oxlint-disable-next-line max-lines-per-function
+  describe("accessibility", () => {
+    it("should be accessible", async () => {
       const el = await fixture(html`
         <m-search-list target="m-listbox">
           <label>

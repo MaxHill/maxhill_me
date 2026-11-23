@@ -2,7 +2,11 @@ import { assert } from "@maxhill/stdx";
 
 /** Abort a failed transaction without masking an error if it already ended. */
 export function abortFailedTransaction(transaction: IDBTransaction): void {
-  try { transaction.abort(); } catch { /* The original failure must reach the caller. */ }
+  try {
+    transaction.abort();
+  } catch {
+    /* The original failure must reach the caller. */
+  }
 }
 
 /**
@@ -10,13 +14,13 @@ export function abortFailedTransaction(transaction: IDBTransaction): void {
  * @param tx - Transaction to use.
  * @returns Promise with the Request result on resolve
  */
-export function promisifyIDBRequest<T>(req: IDBRequest<T>): Promise<T> {
+export function promisifyIDBRequest<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
-    req.onsuccess = (event) => {
+    request.onsuccess = (event) => {
       assert(event.target, "No event target returned");
       return resolve((event.target as IDBRequest).result);
     };
-    req.onerror = (event) => {
+    request.onerror = (event) => {
       reject(event.target);
     };
   });
@@ -31,22 +35,18 @@ export function asyncCursorIterator<T>(
   request: IDBRequest<IDBCursorWithValue | null>,
 ): AsyncIterableIterator<T> {
   return (async function* () {
-    let cursor: IDBCursorWithValue | null = await new Promise(
-      (resolve, reject) => {
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      },
-    );
+    let cursor: IDBCursorWithValue | null = await new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
 
     while (cursor) {
       yield cursor.value as T;
-      cursor = await new Promise<IDBCursorWithValue | null>(
-        (resolve, reject) => {
-          cursor!.continue();
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        },
-      );
+      cursor = await new Promise<IDBCursorWithValue | null>((resolve, reject) => {
+        cursor!.continue();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
     }
   })();
 }

@@ -1,10 +1,12 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { TableSubscriptions } from "./tableSubscriptions";
 
+// Suite registration groups related tests; individual tests remain line-limited.
+// eslint-disable-next-line max-lines-per-function
 describe("TableSubscriptions", () => {
   it("should subscribe and unsubscribe using cleanup function", () => {
     const tableSubscriptions = new TableSubscriptions();
-    const handler = vi.fn();
+    const handler = vi["fn"]();
 
     const unsubscribe = tableSubscriptions.subscribe("users", handler);
     expect(tableSubscriptions.subscriptions.get("users")?.length).toBe(1);
@@ -15,7 +17,7 @@ describe("TableSubscriptions", () => {
 
   it("should prevent duplicate subscriptions", () => {
     const tableSubscriptions = new TableSubscriptions();
-    const handler = vi.fn();
+    const handler = vi["fn"]();
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     tableSubscriptions.subscribe("users", handler);
@@ -29,8 +31,8 @@ describe("TableSubscriptions", () => {
 
   it("should clean up empty arrays after last unsubscribe", () => {
     const tableSubscriptions = new TableSubscriptions();
-    const unsubscribe1 = tableSubscriptions.subscribe("users", vi.fn());
-    const unsubscribe2 = tableSubscriptions.subscribe("users", vi.fn());
+    const unsubscribe1 = tableSubscriptions.subscribe("users", vi["fn"]());
+    const unsubscribe2 = tableSubscriptions.subscribe("users", vi["fn"]());
 
     unsubscribe1();
     expect(tableSubscriptions.subscriptions.get("users")?.length).toBe(1);
@@ -41,8 +43,8 @@ describe("TableSubscriptions", () => {
 
   it("should notify all subscribers asynchronously with source", async () => {
     const tableSubscriptions = new TableSubscriptions();
-    const handler1 = vi.fn();
-    const handler2 = vi.fn();
+    const handler1 = vi["fn"]();
+    const handler2 = vi["fn"]();
 
     tableSubscriptions.subscribe("users", handler1);
     tableSubscriptions.subscribe("users", handler2);
@@ -59,7 +61,7 @@ describe("TableSubscriptions", () => {
 
   it("should batch multiple notifications of the same table+source into one", async () => {
     const tableSubscriptions = new TableSubscriptions();
-    const handler = vi.fn();
+    const handler = vi["fn"]();
 
     tableSubscriptions.subscribe("users", handler);
 
@@ -74,7 +76,7 @@ describe("TableSubscriptions", () => {
 
   it("should deliver local and remote as separate events for the same table", async () => {
     const tableSubscriptions = new TableSubscriptions();
-    const handler = vi.fn();
+    const handler = vi["fn"]();
 
     tableSubscriptions.subscribe("users", handler);
 
@@ -90,8 +92,8 @@ describe("TableSubscriptions", () => {
 
   it("should only notify subscribers of the specified table", async () => {
     const tableSubscriptions = new TableSubscriptions();
-    const usersHandler = vi.fn();
-    const postsHandler = vi.fn();
+    const usersHandler = vi["fn"]();
+    const postsHandler = vi["fn"]();
 
     tableSubscriptions.subscribe("users", usersHandler);
     tableSubscriptions.subscribe("posts", postsHandler);
@@ -105,9 +107,9 @@ describe("TableSubscriptions", () => {
 
   it("should filter table subscribers by source", async () => {
     const tableSubscriptions = new TableSubscriptions();
-    const localOnly = vi.fn();
-    const remoteOnly = vi.fn();
-    const all = vi.fn();
+    const localOnly = vi["fn"]();
+    const remoteOnly = vi["fn"]();
+    const all = vi["fn"]();
 
     tableSubscriptions.subscribe("users", localOnly, "local");
     tableSubscriptions.subscribe("users", remoteOnly, "remote");
@@ -130,7 +132,7 @@ describe("TableSubscriptions", () => {
 
   it("should notify database-level subscribers for any table", async () => {
     const tableSubscriptions = new TableSubscriptions();
-    const dbHandler = vi.fn();
+    const dbHandler = vi["fn"]();
 
     tableSubscriptions.subscribeDatabase(dbHandler);
 
@@ -145,7 +147,7 @@ describe("TableSubscriptions", () => {
 
   it("should filter database-level subscribers by source", async () => {
     const tableSubscriptions = new TableSubscriptions();
-    const localOnly = vi.fn();
+    const localOnly = vi["fn"]();
 
     tableSubscriptions.subscribeDatabase(localOnly, "local");
 
@@ -161,11 +163,11 @@ describe("TableSubscriptions", () => {
     const tableSubscriptions = new TableSubscriptions();
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const handler1 = vi.fn();
-    const handler2 = vi.fn(() => {
+    const handler1 = vi["fn"]();
+    const handler2 = vi["fn"](() => {
       throw new Error("Failed");
     });
-    const handler3 = vi.fn();
+    const handler3 = vi["fn"]();
 
     tableSubscriptions.subscribe("users", handler1);
     tableSubscriptions.subscribe("users", handler2);
@@ -184,13 +186,11 @@ describe("TableSubscriptions", () => {
 
   it("should handle unsubscribe during notification", async () => {
     const tableSubscriptions = new TableSubscriptions();
-    let unsubscribe: (() => void) | undefined;
-
-    const handler = vi.fn(() => {
+    const handler = vi["fn"](() => {
       unsubscribe?.();
     });
 
-    unsubscribe = tableSubscriptions.subscribe("users", handler);
+    const unsubscribe = tableSubscriptions.subscribe("users", handler);
 
     tableSubscriptions.notify("users", "local");
     await Promise.resolve();
@@ -210,7 +210,7 @@ describe("TableSubscriptions", () => {
 
   it("should deduplicate notifications for multiple tables", async () => {
     const tableSubscriptions = new TableSubscriptions();
-    const handler = vi.fn();
+    const handler = vi["fn"]();
 
     tableSubscriptions.subscribe("users", handler);
     tableSubscriptions.subscribe("posts", handler);

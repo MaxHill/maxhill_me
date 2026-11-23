@@ -1,0 +1,17 @@
+(copy_files ../../lib/sync_engine/sync_engine_core.ml)
+(copy_files ../../lib/sync_engine/sync_engine_checkpoint.ml)
+
+(library
+ (name checkpoint_under_test)
+ (modules sync_engine_core sync_engine_checkpoint)
+ (libraries yojson))
+
+(test
+ (name checkpoint_test)
+ (modules checkpoint_test)
+ (libraries checkpoint_under_test yojson))
+
+(executable
+ (name checkpoint_bench)
+ (modules checkpoint_bench)
+ (libraries checkpoint_under_test yojson unix))
