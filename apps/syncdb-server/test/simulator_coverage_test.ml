@@ -36,4 +36,13 @@ let test_lost_ack_coverage_with_last_mutation_id () =
   assert (coverage.dropped_acks = 1);
   assert (coverage.retries_before_compaction = 1)
 
-let () = test_lost_ack_coverage_with_last_mutation_id ()
+let test_run_header_format () =
+  let header =
+    Driver.format_run_header ~seed:0xabc123 ~size:64 ~size_max:123456 ~attempt:2
+      ~attempts:100
+  in
+  assert (header = "seed=abc123 size=64/123456 attempt=3/100")
+
+let () =
+  test_lost_ack_coverage_with_last_mutation_id ();
+  test_run_header_format ()

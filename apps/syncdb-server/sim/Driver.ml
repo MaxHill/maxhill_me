@@ -57,21 +57,28 @@ let entropy_of_seed ~seed ~size =
 let fresh_seed = Random.bits
 let stderr_is_tty = Unix.isatty (Unix.descr_of_out_channel stderr)
 
-let print_run_header ~size ~seed ~attempt =
+let format_run_header ~seed ~size ~size_max ~attempt ~attempts =
+  Printf.sprintf "seed=%x size=%d/%d attempt=%d/%d" seed size size_max
+    (attempt + 1) attempts
+
+let print_run_header ~size ~size_max ~seed ~attempt ~attempts =
   if stderr_is_tty then (
     (* Replace previous run's 2 lines: header + progress line. *)
     if attempt > 0 then Printf.eprintf "\027[2A\027[2K\027[1B\027[2K\027[1A";
-    Printf.eprintf "size=%d seed=%d attempt=%d\n" size seed (attempt + 1))
-  else Printf.eprintf "size=%d seed=%d attempt=%d\n" size seed attempt;
+    Printf.eprintf "%s\n"
+      (format_run_header ~seed ~size ~size_max ~attempt ~attempts))
+  else
+    Printf.eprintf "%s\n"
+      (format_run_header ~seed ~size ~size_max ~attempt ~attempts);
   flush stderr
 
-let run_multiple ~sut_path ~size ~attempts ~log_level : multi_outcome =
+let run_multiple ~sut_path ~size ~size_max ~attempts ~log_level : multi_outcome =
   let rec loop = function
     | attempt when attempt = attempts -> All_pass
     | attempt -> (
         let seed = fresh_seed () in
         let entropy = entropy_of_seed ~seed ~size in
-        print_run_header ~size ~seed ~attempt;
+        print_run_header ~size ~size_max ~seed ~attempt ~attempts;
         match run_once ~sut_path ~entropy ~log_level with
         | Pass -> loop (attempt + 1)
         | Fail -> Found_fail seed)
@@ -93,7 +100,7 @@ let search ~sut_path ~attempts ~size_max ~log_level : search_outcome =
       if size_next > size_max then found
       else
         let outcome =
-          run_multiple ~sut_path ~size:size_next ~attempts ~log_level
+          run_multiple ~sut_path ~size:size_next ~size_max ~attempts ~log_level
         in
         let pass_next, found =
           match outcome with
