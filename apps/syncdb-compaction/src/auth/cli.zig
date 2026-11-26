@@ -1,7 +1,10 @@
 const std = @import("std");
+const stdx = @import("stdx");
 const assert = std.debug.assert;
 const http = std.http;
 const auth_callback_server = @import("./auth-callback-server.zig");
+
+const MiB = stdx.MiB;
 
 // TODO: rename AuthInit to something more fitting
 const AuthInit = struct { arena: std.mem.Allocator, io: std.Io };
@@ -311,7 +314,10 @@ pub fn main(init: AuthInit) !void {
     try stdout_writer.print("{s}\n", .{auth_url});
     try stdout_writer.flush();
 
-    try auth_callback_server.listen(init.io, 9999);
+    var code_buffer: [1 * MiB]u8 = undefined;
+    var code: []u8 = &code_buffer;
+    try auth_callback_server.listen(init.io, 9999, &code);
+    std.debug.print("code returned={s}", .{code});
 
     //     // Step 2: After callback, exchange code for token
     // var token = try client.exchangeAuthorizationCode("received_code", &pkce);

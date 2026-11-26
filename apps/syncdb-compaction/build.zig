@@ -16,6 +16,8 @@ pub fn build(b: *std.Build) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
+    // CodeLLDB currently needs LLVM's C-compatible DWARF instead of DW_LANG_Zig.
+    const use_llvm = b.option(bool, "llvm", "Use LLVM for LLDB-compatible debug information");
     // It's also possible to define more custom flags to toggle optional features
     // of this build script using `b.option()`. All defined flags (including
     // target and optimize options) will be listed when running `zig build --help`
@@ -76,6 +78,7 @@ pub fn build(b: *std.Build) void {
     // don't need and to put everything under a single module.
     const exe = b.addExecutable(.{
         .name = "syncdb_compaction",
+        .use_llvm = use_llvm,
         .root_module = b.createModule(.{
             // b.createModule defines a new module just like b.addModule but,
             // unlike b.addModule, it does not expose the module to consumers of
@@ -140,6 +143,7 @@ pub fn build(b: *std.Build) void {
 
     const fuzz_sut = b.addExecutable(.{
         .name = "syncdb_compaction_fuzzer_sut",
+        .use_llvm = use_llvm,
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/fuzz_sut.zig"),
             .target = target,
@@ -155,6 +159,7 @@ pub fn build(b: *std.Build) void {
 
     const fuzz = b.addExecutable(.{
         .name = "syncdb_compaction_fuzzer",
+        .use_llvm = use_llvm,
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/fuzz.zig"),
             .target = target,
@@ -183,6 +188,7 @@ pub fn build(b: *std.Build) void {
     // Here `mod` needs to define a target, which is why earlier we made sure to
     // set the releative field.
     const mod_tests = b.addTest(.{
+        .use_llvm = use_llvm,
         .root_module = mod,
     });
 
@@ -193,6 +199,7 @@ pub fn build(b: *std.Build) void {
     // root module. Note that test executables only test one module at a time,
     // hence why we have to create two separate ones.
     const exe_tests = b.addTest(.{
+        .use_llvm = use_llvm,
         .root_module = exe.root_module,
     });
 
