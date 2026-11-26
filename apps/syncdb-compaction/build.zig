@@ -206,6 +206,19 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_mod_tests.step);
     test_step.dependOn(&run_exe_tests.step);
 
+    // Compile and install test runners for DAP without executing any tests.
+    const debug_test = b.step("debug-test", "Build test runners for debugging (do not run)");
+    const install_mod_tests = b.addInstallArtifact(mod_tests, .{
+        .dest_dir = .{ .override = .{ .custom = "debug-tests" } },
+        .dest_sub_path = "module-tests",
+    });
+    const install_exe_tests = b.addInstallArtifact(exe_tests, .{
+        .dest_dir = .{ .override = .{ .custom = "debug-tests" } },
+        .dest_sub_path = "executable-tests",
+    });
+    debug_test.dependOn(&install_mod_tests.step);
+    debug_test.dependOn(&install_exe_tests.step);
+
     // Just like flags, top level steps are also listed in the `--help` menu.
     //
     // The Zig build system is entirely implemented in userland, which means
