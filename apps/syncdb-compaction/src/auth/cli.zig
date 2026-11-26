@@ -287,7 +287,7 @@ pub fn main(init: AuthInit) !void {
     );
     defer config.deinit();
 
-    try config.set_redirect_uri("http://localhost:4200/callback");
+    try config.set_redirect_uri("http://localhost:9999/callback");
     // try config.setScope("read write");
 
     const pkce = try PKCE.init(init);
@@ -303,9 +303,16 @@ pub fn main(init: AuthInit) !void {
     const auth_url = try client.buildAuthorizationUrl("random_state_123", &pkce);
     defer init.arena.free(auth_url);
 
-    std.debug.print("{s}\n", .{auth_url});
+    // Print the authorization URL to stdout so it appears in the debugger's
+    // program-output stream rather than only in LLDB diagnostics.
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_file_writer: std.Io.File.Writer = .init(.stdout(), init.io, &stdout_buffer);
+    const stdout_writer = &stdout_file_writer.interface;
+    try stdout_writer.print("{s}\n", .{auth_url});
+    try stdout_writer.flush();
 
     try auth_callback_server.listen(init.io, 9999);
+
     //     // Step 2: After callback, exchange code for token
     // var token = try client.exchangeAuthorizationCode("received_code", &pkce);
     // defer token.deinit();

@@ -13,6 +13,7 @@ test {
     _ = lint;
     _ = crdt;
     _ = crdt_pools;
+    _ = @import("auth/auth-callback-server.zig");
 }
 
 /// This is a documentation comment to explain the `printAnotherMessage` function below.
