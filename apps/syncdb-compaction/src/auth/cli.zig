@@ -54,81 +54,15 @@ pub const PKCE = struct {
 };
 
 pub const OAuth2Config = struct {
-    allocator: std.mem.Allocator,
-    client_id: []const u8,
     authorization_endpoint: []const u8,
-    client_secret: ?[]const u8,
     token_endpoint: []const u8,
+    client_id: []const u8,
     redirect_uri: ?[]const u8,
     scope: ?[]const u8,
-
-    pub fn init(
-        allocator: std.mem.Allocator,
-        client_id: []const u8,
-        authorization_endpoint: []const u8,
-        token_endpoint: []const u8,
-    ) !@This() {
-        const owned_client_id = try allocator.dupe(u8, client_id);
-        errdefer allocator.free(owned_client_id);
-        const owned_authorization_endpoint = try allocator.dupe(u8, authorization_endpoint);
-        errdefer allocator.free(owned_authorization_endpoint);
-        const owned_token_endpoint = try allocator.dupe(u8, token_endpoint);
-
-        return .{
-            .allocator = allocator,
-            .client_id = owned_client_id,
-            .authorization_endpoint = owned_authorization_endpoint,
-            .token_endpoint = owned_token_endpoint,
-            .redirect_uri = null,
-            .scope = null,
-            .client_secret = null,
-        };
-    }
-
-    pub fn deinit(self: *OAuth2Config) void {
-        self.allocator.free(self.client_id);
-        self.allocator.free(self.authorization_endpoint);
-        self.allocator.free(self.token_endpoint);
-
-        if (self.client_secret) |cs| {
-            // Zero sensitive data before freeing
-            @memset(@constCast(cs), 0);
-            self.allocator.free(cs);
-        }
-
-        if (self.redirect_uri) |uri| self.allocator.free(uri);
-        if (self.scope) |scope| self.allocator.free(scope);
-    }
-
-    pub fn set_client_secret(self: *OAuth2Config, client_secret: []const u8) !void {
-        const owned = try self.allocator.dupe(u8, client_secret);
-        if (self.client_secret) |old_cs| {
-            // Zero sensitive data before freeing
-            @memset(@constCast(old_cs), 0);
-            self.allocator.free(old_cs);
-        }
-        self.client_secret = owned;
-    }
-
-    pub fn set_redirect_uri(self: *OAuth2Config, redirect_uri: []const u8) !void {
-        const owned = try self.allocator.dupe(u8, redirect_uri);
-        if (self.redirect_uri) |old_redirect_uri| {
-            // Zero sensitive data before freeing
-            @memset(@constCast(old_redirect_uri), 0);
-            self.allocator.free(old_redirect_uri);
-        }
-        self.redirect_uri = owned;
-    }
-
-    pub fn set_scope(self: *OAuth2Config, scope: []const u8) !void {
-        const owned = try self.allocator.dupe(u8, scope);
-        if (self.scope) |old_scope| {
-            // Zero sensitive data before freeing
-            @memset(@constCast(old_scope), 0);
-            self.allocator.free(old_scope);
-        }
-        self.scope = owned;
-    }
+    // "client_secret" is not used in the "Authorization Code with PKCE" flow.
+    // But we'll keep it if we need to implement the "client credentials grant"
+    // flow for a server usage in the future
+    client_secret: ?[]const u8,
 };
 
 pub const OAuth2Client = struct {
@@ -256,7 +190,6 @@ pub const OAuth2Client = struct {
             return error.StatusNotOk;
         }
 
-        std.debug.print("What's the received body now?", .{});
         // Parse JSON response into OAuth2Token
         const TokenResponse = struct {
             access_token: []const u8,
@@ -282,13 +215,13 @@ test "config owns its strings and setters accept their current values" {
     var config = try OAuth2Config.init(std.testing.allocator, "client", "https://example.com/authorize", "https://example.com/token");
     defer config.deinit();
 
-    try config.set_client_secret("secret");
-    try config.set_client_secret(config.client_secret.?);
-    try config.set_redirect_uri("https://localhost/callback");
-    try config.set_redirect_uri(config.redirect_uri.?);
+    // try config.set_client_secret("secret");
+    // try config.set_client_secret(config.client_secret.?);
+    // try config.set_redirect_uri("https://localhost/callback");
+    // try config.set_redirect_uri(config.redirect_uri.?);
     try config.set_scope("read write");
     try config.set_scope(config.scope.?);
-    try std.testing.expectEqualStrings("secret", config.client_secret.?);
+    // try std.testing.expectEqualStrings("secret", config.client_secret.?);
     try std.testing.expectEqualStrings("https://localhost/callback", config.redirect_uri.?);
     try std.testing.expectEqualStrings("read write", config.scope.?);
 }
@@ -296,7 +229,7 @@ test "config owns its strings and setters accept their current values" {
 test "authorization URL encodes optional parameters" {
     var config = try OAuth2Config.init(std.testing.allocator, "client", "https://example.com/authorize", "https://example.com/token");
     defer config.deinit();
-    try config.set_redirect_uri("https://localhost/callback");
+    // try config.set_redirect_uri("https://localhost/callback");
     try config.set_scope("read write");
     const client = OAuth2Client.init(std.testing.allocator, config);
     const url = try client.buildAuthorizationUrl("a&b", null);
@@ -368,23 +301,17 @@ pub fn main(init: AuthInit) !void {
     // defer init.arena.free(response);
     // std.debug.print("Body:\n{s}\n", .{response});
 
-    var config = try OAuth2Config.init(
-        init.arena,
-        "my_client_id",
-        "http://localhost:3002/authorize",
-        "http://localhost:3002/token",
-    );
-    defer config.deinit();
-
-    try config.set_redirect_uri("http://localhost:9999/callback");
-    // try config.setScope("read write");
+    const config = OAuth2Config{
+        .client_id = "my_client_id",
+        .authorization_endpoint = "http://localhost:3002/authorize",
+        .token_endpoint = "http://localhost:3002/token",
+        .redirect_uri = "http://localhost:9999/callback",
+        .scope = null,
+        .client_secret = null,
+    };
 
     const pkce = try PKCE.init(init.io, init.arena);
     defer pkce.deinit();
-    std.debug.print(
-        "PKCE:\nverifier: {s}\nchallenge: {s}\n",
-        .{ pkce.code_verifier, pkce.code_challenge },
-    );
 
     var client = OAuth2Client.init(init.arena, config);
 
@@ -404,21 +331,26 @@ pub fn main(init: AuthInit) !void {
     try stdout_writer.print("{s}\n", .{auth_url});
     try stdout_writer.flush();
 
-    // Wait for callback
+    // Step2: Wait for callback
     var code_buffer: [1 * KiB]u8 = undefined;
     var code: []u8 = &code_buffer;
     try auth_callback_server.listen(init.io, 9999, &code, &state);
     std.debug.print("code returned={s}", .{code});
 
-    // Step 2: After callback, exchange code for token
+    // Step 3: After callback, exchange code for token
+    // TODO(max): We should return the json encoded token response
+    // here instead of intializing a OAuth2Token inside the
+    // exchangeAuthorizationCode
     var token = try client.exchangeAuthorizationCode(code, &pkce, init.io);
     defer token.deinit();
 
-    // // Step 3: Use token for API requests
+    // Step 4: Store the refresh tokens in the database
+    // TODO(max): implement this
+    std.debug.print("Token storage is not implemented", .{});
+
+    // Step 4: Use token for API requests
     const auth_header = try token.getAuthorizationHeader();
     std.debug.print("Auth Header:{s}\n", .{auth_header});
     // defer allocator.free(auth_header);
     // // Authorization: Bearer access_token_12345
-
-    // Generate
 }
