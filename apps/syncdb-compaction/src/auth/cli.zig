@@ -4,71 +4,20 @@ const assert = std.debug.assert;
 const http = std.http;
 const auth_callback_server = @import("./auth-callback-server.zig");
 
-const MiB = stdx.MiB;
+const KiB = stdx.KiB;
 
 // TODO: rename AuthInit to something more fitting
 const AuthInit = struct { arena: std.mem.Allocator, io: std.Io };
-
-const AuthApiClient = struct {
-    issuer_url: []const u8,
-    jwk_url: []u8,
-    jwk_uri: std.Uri,
-    client: http.Client,
-    arena: std.mem.Allocator,
-
-    pub fn init(config: AuthInit, issuer_url: []const u8) !@This() {
-        const jwk_url = try std.fmt.allocPrint(config.arena, "{s}{s}", .{ issuer_url, "/.well-known/jwks.json" });
-        errdefer config.arena.free(jwk_url);
-        const jwk_uri = try std.Uri.parse(jwk_url);
-
-        return .{
-            .issuer_url = issuer_url,
-            .jwk_url = jwk_url,
-            .jwk_uri = jwk_uri,
-            .client = .{ .allocator = config.arena, .io = config.io },
-            .arena = config.arena,
-        };
-    }
-
-    pub fn deinit(self: *@This()) void {
-        defer self.client.deinit();
-        defer self.arena.free(self.jwk_url);
-    }
-
-    pub fn fetch_jwks(self: *@This()) ![]u8 {
-        var req = try self.client.request(.GET, self.jwk_uri, .{
-            .extra_headers = &.{.{ .name = "Custom-header", .value = "Custom Value" }},
-        });
-        defer req.deinit();
-
-        std.debug.print("Sending request\n", .{});
-        try req.sendBodiless();
-
-        var redirect_buffer: [1024]u8 = undefined;
-        var response = try req.receiveHead(&redirect_buffer);
-        var iter = response.head.iterateHeaders();
-        while (iter.next()) |header| {
-            std.debug.print("Name:{s}, Value:{s}\n", .{ header.name, header.value });
-        }
-
-        if (response.head.status != .ok) {
-            return error.StatusNotOk;
-        }
-        const body = try response.reader(&.{}).allocRemaining(self.arena, .unlimited);
-
-        return body;
-    }
-};
 
 pub const PKCE = struct {
     code_verifier: []const u8,
     code_challenge: []const u8,
     arena: std.mem.Allocator,
 
-    pub fn init(config: AuthInit) !PKCE {
+    pub fn init(io: std.Io, arena: std.mem.Allocator) !PKCE {
         // Generate 128-character code verifier (64 random bytes, hex-encoded)
         // RFC 7636 requires 43-128 characters
-        const rng_impl: std.Random.IoSource = .{ .io = config.io };
+        const rng_impl: std.Random.IoSource = .{ .io = io };
         const secureRand = rng_impl.interface();
 
         var verifier_buf: [64]u8 = undefined;
@@ -78,8 +27,8 @@ pub const PKCE = struct {
         const verifier = std.fmt.bytesToHex(verifier_buf, .lower);
         @memcpy(encoded_buf[0..verifier.len], &verifier);
 
-        const owned_verifier = try config.arena.dupe(u8, encoded_buf[0..verifier.len]);
-        errdefer config.arena.free(owned_verifier);
+        const owned_verifier = try arena.dupe(u8, encoded_buf[0..verifier.len]);
+        errdefer arena.free(owned_verifier);
 
         // Generate code challenge (SHA256 hash of verifier, base64url encoded per RFC 7636)
         var hash: [32]u8 = undefined;
@@ -89,12 +38,12 @@ pub const PKCE = struct {
         const encoder = std.base64.url_safe_no_pad.Encoder;
         var challenge_buf: [64]u8 = undefined;
         const challenge = encoder.encode(&challenge_buf, &hash);
-        const owned_challenge = try config.arena.dupe(u8, challenge);
+        const owned_challenge = try arena.dupe(u8, challenge);
 
         return .{
             .code_verifier = owned_verifier,
             .code_challenge = owned_challenge,
-            .arena = config.arena,
+            .arena = arena,
         };
     }
 
@@ -105,13 +54,13 @@ pub const PKCE = struct {
 };
 
 pub const OAuth2Config = struct {
+    allocator: std.mem.Allocator,
     client_id: []const u8,
-    client_secret: ?[]const u8,
     authorization_endpoint: []const u8,
+    client_secret: ?[]const u8,
     token_endpoint: []const u8,
     redirect_uri: ?[]const u8,
     scope: ?[]const u8,
-    allocator: std.mem.Allocator,
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -249,6 +198,84 @@ pub const OAuth2Client = struct {
             }
         }
     }
+
+    pub fn exchangeAuthorizationCode(self: *const OAuth2Client, code: []const u8, pkce: ?*const PKCE, io: std.Io) !OAuth2Token {
+        var client = std.http.Client{ .allocator = self.allocator, .io = io };
+        defer client.deinit();
+
+        // Build request body
+        var body: std.ArrayList(u8) = .empty;
+        defer body.deinit(self.allocator);
+
+        try body.appendSlice(self.allocator, "grant_type=authorization_code");
+        try body.appendSlice(self.allocator, "&code=");
+        try body.appendSlice(self.allocator, code);
+        try body.appendSlice(self.allocator, "&client_id=");
+        try body.appendSlice(self.allocator, self.config.client_id);
+
+        if (self.config.redirect_uri) |uri| {
+            try body.appendSlice(self.allocator, "&redirect_uri=");
+            try self.appendUrlEncoded(&body, uri);
+        }
+
+        if (pkce) |p| {
+            try body.appendSlice(self.allocator, "&code_verifier=");
+            try body.appendSlice(self.allocator, p.code_verifier);
+        }
+
+        // Make POST request to token endpoint
+        const token_endpoint = try std.Uri.parse(self.config.token_endpoint);
+        var req = try client.request(.POST, token_endpoint, .{
+            .extra_headers = &.{
+                .{ .name = "Content-Type", .value = "application/x-www-form-urlencoded" },
+            },
+        });
+        defer req.deinit();
+
+        // req.transfer_encoding = .{ .content_length = body.items.len };
+        try req.sendBodyComplete(body.items);
+
+        var redirect_buffer: [1024]u8 = undefined;
+        var response = try req.receiveHead(&redirect_buffer);
+        var iter = response.head.iterateHeaders();
+        while (iter.next()) |header| {
+            std.debug.print("Name:{s}, Value:{s}\n", .{ header.name, header.value });
+        }
+
+        const received_body = try response.reader(&.{}).allocRemaining(
+            self.allocator,
+            .limited(16 * KiB),
+        );
+        defer self.allocator.free(received_body);
+
+        if (response.head.status != .ok) {
+            std.debug.print("Token exchange failed: {d}\n{s}\n", .{
+                @backingInt(response.head.status),
+                received_body,
+            });
+            return error.StatusNotOk;
+        }
+
+        std.debug.print("What's the received body now?", .{});
+        // Parse JSON response into OAuth2Token
+        const TokenResponse = struct {
+            access_token: []const u8,
+            token_type: []const u8 = "Bearer",
+            expires_in: ?i64 = null,
+            refresh_token: ?[]const u8 = null,
+            scope: ?[]const u8 = null,
+        };
+
+        const token_response = try std.json.parseFromSlice(
+            TokenResponse,
+            self.allocator,
+            received_body,
+            .{},
+        );
+        defer token_response.deinit();
+
+        return OAuth2Token.init(io, self.allocator, token_response.value.access_token, token_response.value.token_type);
+    }
 };
 
 test "config owns its strings and setters accept their current values" {
@@ -277,10 +304,69 @@ test "authorization URL encodes optional parameters" {
     try std.testing.expectEqualStrings("https://example.com/authorize?response_type=code&client_id=client&redirect_uri=https%3A%2F%2Flocalhost%2Fcallback&scope=read+write&state=a%26b", url);
 }
 
+pub const OAuth2Token = struct {
+    access_token: []const u8,
+    token_type: []const u8,
+    expires_in: ?i64,
+    refresh_token: ?[]const u8,
+    scope: ?[]const u8,
+    issued_at: i64,
+    allocator: std.mem.Allocator,
+
+    pub fn init(io: std.Io, allocator: std.mem.Allocator, access_token: []const u8, token_type: []const u8) !OAuth2Token {
+        const owned_access_token = try allocator.dupe(u8, access_token);
+        errdefer allocator.free(owned_access_token);
+
+        const owned_token_type = try allocator.dupe(u8, token_type);
+        errdefer allocator.free(owned_token_type);
+
+        return .{
+            .access_token = owned_access_token,
+            .token_type = owned_token_type,
+            .expires_in = null,
+            .refresh_token = null,
+            .scope = null,
+            .issued_at = std.Io.Timestamp.now(io, std.Io.Clock.real).toMilliseconds(),
+            .allocator = allocator,
+        };
+    }
+
+    pub fn deinit(self: OAuth2Token) void {
+        self.allocator.free(self.access_token);
+        self.allocator.free(self.token_type);
+        if (self.refresh_token) |value| self.allocator.free(value);
+        if (self.scope) |value| self.allocator.free(value);
+    }
+
+    pub fn isExpired(self: *const OAuth2Token) bool {
+        if (self.expires_in) |expires| {
+            const now = std.time.timestamp();
+            const elapsed = now - self.issued_at;
+            return elapsed >= expires;
+        }
+        return false;
+    }
+
+    pub fn getAuthorizationHeader(self: *const OAuth2Token) ![]const u8 {
+        var buffer: std.ArrayList(u8) = .empty;
+        defer buffer.deinit(self.allocator);
+
+        try buffer.appendSlice(self.allocator, self.token_type);
+        try buffer.appendSlice(self.allocator, " ");
+        try buffer.appendSlice(self.allocator, self.access_token);
+
+        return buffer.toOwnedSlice(self.allocator);
+    }
+};
+
 // https://whit3rabbit.github.io/zig-bbq-cookbook/04-specialized/11-network-web/12-oauth2-authentication.html
 pub fn main(init: AuthInit) !void {
-    var api_client = try AuthApiClient.init(init, "http://localhost:3002");
-    defer api_client.deinit();
+    // var api_client = try AuthApiClient.init(init, "http://localhost:3002");
+    // defer api_client.deinit();
+    //
+    // const response = try api_client.fetch_jwks();
+    // defer init.arena.free(response);
+    // std.debug.print("Body:\n{s}\n", .{response});
 
     var config = try OAuth2Config.init(
         init.arena,
@@ -293,7 +379,7 @@ pub fn main(init: AuthInit) !void {
     try config.set_redirect_uri("http://localhost:9999/callback");
     // try config.setScope("read write");
 
-    const pkce = try PKCE.init(init);
+    const pkce = try PKCE.init(init.io, init.arena);
     defer pkce.deinit();
     std.debug.print(
         "PKCE:\nverifier: {s}\nchallenge: {s}\n",
@@ -303,7 +389,11 @@ pub fn main(init: AuthInit) !void {
     var client = OAuth2Client.init(init.arena, config);
 
     // Step 1: Build authorization URL
-    const auth_url = try client.buildAuthorizationUrl("random_state_123", &pkce);
+    var state_buf: [32]u8 = undefined;
+    std.Io.random(init.io, &state_buf);
+    const state = std.fmt.bytesToHex(state_buf, .lower);
+
+    const auth_url = try client.buildAuthorizationUrl(&state, &pkce);
     defer init.arena.free(auth_url);
 
     // Print the authorization URL to stdout so it appears in the debugger's
@@ -314,24 +404,21 @@ pub fn main(init: AuthInit) !void {
     try stdout_writer.print("{s}\n", .{auth_url});
     try stdout_writer.flush();
 
-    var code_buffer: [1 * MiB]u8 = undefined;
+    // Wait for callback
+    var code_buffer: [1 * KiB]u8 = undefined;
     var code: []u8 = &code_buffer;
-    try auth_callback_server.listen(init.io, 9999, &code);
+    try auth_callback_server.listen(init.io, 9999, &code, &state);
     std.debug.print("code returned={s}", .{code});
 
-    //     // Step 2: After callback, exchange code for token
-    // var token = try client.exchangeAuthorizationCode("received_code", &pkce);
-    // defer token.deinit();
-    //
-    //
+    // Step 2: After callback, exchange code for token
+    var token = try client.exchangeAuthorizationCode(code, &pkce, init.io);
+    defer token.deinit();
+
     // // Step 3: Use token for API requests
-    // const auth_header = try token.getAuthorizationHeader();
+    const auth_header = try token.getAuthorizationHeader();
+    std.debug.print("Auth Header:{s}\n", .{auth_header});
     // defer allocator.free(auth_header);
     // // Authorization: Bearer access_token_12345
-
-    const response = try api_client.fetch_jwks();
-    defer init.arena.free(response);
-    std.debug.print("Body:\n{s}\n", .{response});
 
     // Generate
 }

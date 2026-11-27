@@ -6,7 +6,7 @@
 
 [tasks.run]
 description = "Run the Zig compaction app locally."
-run = "zig build run"
+run = "zig build run -Doptimize=Debug -Dllvm=true"
 
 [tasks.test]
 description = "Run Zig tests."

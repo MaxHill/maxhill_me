@@ -46,7 +46,7 @@ const Db = struct {
 
 pub fn main(init: std.process.Init) !void {
     // Prints to stderr, unbuffered, ignoring potential errors.
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    // std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
 
     // This is appropriate for anything that lives as long as the process.
     const arena: std.mem.Allocator = init.arena.allocator();
@@ -65,18 +65,18 @@ pub fn main(init: std.process.Init) !void {
     try db.migrate();
     try db.insert_names(.{ "Leto", "Ghanima" });
     {
-        if (try db.conn.row("select * from test order by name limit 1", .{})) |row| {
-            defer row.deinit();
-            std.debug.print("name: {s}\n", .{row.text(0)});
-        }
+        // if (try db.conn.row("select * from test order by name limit 1", .{})) |row| {
+        //     defer row.deinit();
+        //     std.debug.print("name: {s}\n", .{row.text(0)});
+        // }
     }
 
     {
         var rows = try db.conn.rows("select * from test order by name", .{});
         defer rows.deinit();
-        while (rows.next()) |row| {
-            std.debug.print("name: {s}\n", .{row.text(0)});
-        }
+        // while (rows.next()) |row| {
+        //     std.debug.print("name: {s}\n", .{row.text(0)});
+        // }
         if (rows.err) |err| return err;
     }
 
